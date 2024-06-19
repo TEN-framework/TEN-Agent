@@ -33,7 +33,6 @@ By specifying the direction of these data types in the graph, developers can ena
 A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
 
 ## Example
-
 This project provides an example Agent App to help you get started.
 We'll use following Extensions:
 - *agora_rtc* / [Agora](https://docs.agora.io/en) for RTC transport + VAD + Azure speech-to-text (STT)
@@ -42,11 +41,12 @@ We'll use following Extensions:
 - *chat_transcriber* / A utility ext to forward chat logs into channel
 - *interrupt_detector* / A utility ext to help interrupt agent
 
-We also provide a web playground to help you test with the agent you built.
-
-<div align="center">
- <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="800">
+<div align="left">
+ <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="600">
 </div>
+
+We also provide [a web playground](https://astra-agents.agora.io/) to help you test with the agent you built.
+
 
 ## Running Locally
 Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
