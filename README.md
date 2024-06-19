@@ -8,9 +8,25 @@ ASTRA.ai is an agent framework that supports the creation of real-time multimoda
 ASTRA.ai is the perfect framework for building multimodal AI agents that communicate through text, vision, and audio using the latest AI capabilities, such as those from OpenAI, in real time.
 
 ## Concepts
-- **Extension**: An extension created to perform tasks using multimodal input/output, such as speech-to-text (audio to text), text-to-speech (text to audio), and LLM (text to text), from a specific provider.
-- **Graph**: A set of programmable rules that define how control and data flows between different **Extensions**.
-- **Agent App**: A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
+### Extension
+An extension is the fundamental unit of composition. Developers can create extensions in various languages and combine them in different ways to build diverse scenarios and applications. The ASTRA plugin platform emphasizes cross-language collaboration, allowing plugins written in different programming languages to seamlessly work together within the same application or service.
+
+For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related plugins in C++ for its performance advantages in processing audio and video data. At the same time, they could develop AI plugins in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
+
+### Graph
+Used to describe the data flow between plugins, a graph in ASTRA orchestrates how different plugins interact. For example, the text output from a speech-to-text (STT) plugin might be directed to a large language model (LLM) plugin. Essentially, a graph defines which plugins are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one plugin, such as an STT, into another, like an LLM.
+
+In ASTRA, there are four main types of data flow between plugins:
+
+- Command
+- Data
+- Image frame
+- PCM frame
+
+By specifying the direction of these data types in the graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, making audio and video processing simpler and more intuitive.
+
+### Agent App
+A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
 
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
