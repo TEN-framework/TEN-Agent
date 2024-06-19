@@ -47,6 +47,7 @@ We also provide a web playground to help you test with the agent you built.
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="800">
 </div>
+
 ## Running Locally
 Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
 
