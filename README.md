@@ -107,6 +107,13 @@ npm run dev
 
 Greetings ASTRA.ai Agent!
 
+## Build & Share Your Extensions with  and Package Manager
+### ASTRA Cloud Store
+Provides a hub for developers to share their extensions or use extensions from other developers.
+
+### ASTRA Package Manager
+Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
+
 ## TODO
 - [ ] Extension Support: Python
 - [ ] Extension: elevenlabs, google, whisper, moondream
