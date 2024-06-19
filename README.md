@@ -74,11 +74,9 @@ docker run --restart=always -itd -p 8080:8080 \
 We need to prepare the proper `manifest.json` file first.
 
 ```
-# set up a manifest file with API keys
+# rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
-```
 
-```
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build:0.1.0
 
