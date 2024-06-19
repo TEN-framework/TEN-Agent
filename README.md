@@ -12,7 +12,11 @@ ASTRA.ai is the perfect framework for building multimodal AI agents that communi
 - **Graph**: A set of programmable rules that define how control and data flows between different **Extensions**.
 - **Agent App**: A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
 
-## Example![concept_overview](https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a)
+<div align="center">
+ <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
+</div>
+
+## Example
 
 This project provides an example Agent App to help you get started.
 We'll use following Extensions:
@@ -24,8 +28,9 @@ We'll use following Extensions:
 
 We also provide a web playground to help you test with the agent you built.
 
-<img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/d6bffda1-52fa-470c-866f-2e7836e239ea" width="800">
-
+<div align="center">
+ <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/d6bffda1-52fa-470c-866f-2e7836e239ea" width="800">
+</div>
 ## Running Locally
 Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
 
