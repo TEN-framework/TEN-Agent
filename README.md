@@ -51,7 +51,26 @@ We also provide [a web playground](https://astra-agents.agora.io/) to help you t
 ## Running Locally
 Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
 
-To start, ensure you have Docker installed.
+To start, ensure you have [Docker](https://www.docker.com/) installed.
+
+You can either choose to use our prebuilt agent docker image or build from source.
+
+### Start Prebuilt Agent
+```
+docker run --restart=always -itd -p 8080:8080 \
+        -v /tmp:/tmp \
+        -e AGORA_APP_ID=<your_agora_appid> \
+        -e AGORA_APP_CERTIFICATE=<your_agora_app_certificate> \
+        -e AZURE_STT_KEY=<your_azure_stt_key> \
+        -e AZURE_STT_REGION=<your_azure_stt_region> \
+        -e OPENAI_API_KEY=<your_openai_api_key> \
+        -e AZURE_TTS_KEY=<your_azure_tts_key> \
+        -e AZURE_TTS_REGION=<your_azure_tts_region> \
+        --name astra_agents_server \
+        agoraio/astra_agents_server:0.1.0
+```
+
+### Build Agent From Source
 We need to prepare the proper `manifest.json` file first.
 
 ```
@@ -70,13 +89,7 @@ docker exec -it astra_agents_dev bash
 make build
 ```
 
-We use Agora as RTC transport, so we also need an [Agora](https://console.agora.io/) APP_ID / APP_CERTIFICATE.
-
-We use Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) services.
-
-We use OpenAI's [API](https://openai.com/index/openai-api/) service.
 ```
-
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 export AZURE_STT_KEY=<your_azure_stt_key>
