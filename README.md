@@ -18,7 +18,7 @@ We have prepared a prebuilt agent to help you get started right away.
 
 To start, ensure you have following prepared,
 - [Docker](https://www.docker.com/)
-- We use [Agora](https://console.agora.io/) as RTC transport, so we need an APP_ID / APP_CERTIFICATE.
+- We use [Agora](https://console.agora.io/) as RTC transport, so we need an agora APP_ID / APP_CERTIFICATE.
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API keys.
 
