@@ -69,6 +69,11 @@ An extension is the fundamental unit of composition. Developers can create exten
 
 For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. At the same time, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
 
+#### Supported Languages
+- C++
+- Golang
+- Python (Planned in July)
+
 ### Graph
 A graph is used to describe the data flow between extensions, a graph in ASTRA orchestrates how different extensions interact. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
@@ -142,7 +147,7 @@ make run-server
 ```
 
 ## TODO
-- [ ] Extension Support: Python
+- [ ] Extension Language Support: Python
 - [ ] Extension: elevenlabs, google, whisper, moondream
 - [ ] Example Agent: real-time video agent
 - [ ] Extension Store
