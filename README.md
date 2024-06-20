@@ -91,9 +91,11 @@ Cloud Store is a hub for developers to share their extensions or use extensions 
 ### ASTRA Package Manager
 Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
-## Example
+
+## Fine-tune your agent
+### Example
 This project provides an example Agent App to help you get started.
-We'll use following Extensions:
+It uses following Extensions:
 - *agora_rtc* / [Agora](https://docs.agora.io/en) for RTC transport + VAD + Azure speech-to-text (STT)
 - *azure_tts* / [Azure](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) for text-to-speech (TTS)
 - *openai_chatgpt* / [OpenAI](https://openai.com/index/openai-api/) for LLM
@@ -104,8 +106,9 @@ We'll use following Extensions:
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="600">
 </div>
 
+### Customize your own agent
+We might want to add more flavours and customizations to make the agent better suited to our needs. To achieve this, we need to change the source code of extensions and build the agent ourselves.
 
-## Fine-tune your agent
 We need to prepare the proper `manifest.json` file first.
 
 ```
