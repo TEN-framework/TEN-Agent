@@ -39,7 +39,7 @@ To start, make sure you have:
 - [Docker](https://www.docker.com/)
 
 ```shell
-# run the prebuilt agent image
+# run the pre-built agent image
 docker run --restart=always -itd -p 8080:8080 \
         -v /tmp:/tmp \
         -e AGORA_APP_ID=<your_agora_appid> \
