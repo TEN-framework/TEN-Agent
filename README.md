@@ -116,7 +116,7 @@ A runnable server-side participant application compiled to combine multiple *
 
 ### Cloud Store
 
-Cloud Store is a hub for developers to share their extensions or use extensions from other developers.
+Cloud Store is a centralized platform for developers to share their extensions and access those created by others.
 
 ### Package Manager
 
@@ -161,9 +161,9 @@ docker exec -it  bash
 make build
 ```
 
-This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompt and OpenAI parameters.
+This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompts and OpenAI parameters.
 
-Once done, we can use the following command to start a server which you can test out with Astra AI playground like we did in previous steps.
+Once done, we can use the following commands to start a server you then can test out with Astra Agent playground like we did in previous steps.
 
 ```shell
 
@@ -185,7 +185,7 @@ make run-server
 ## TODO
 
 - [ ] Extension Language Support: Python
-- [ ] Extension: elevenlabs, google, whisper, moondream
+- [ ] Extension: Elevenlabs, Google, Whisper and Moondream
 - [ ] Example Agent: real-time video agent
 - [ ] Extension Store
 - [ ] UI Graph Editor
@@ -194,4 +194,4 @@ make run-server
 
 ## Code Contributors
 
-Thanks to all contributorsThanks to all contributors!Thanks to all contributors!!
+A heartfelt thanks to all contributors!
