@@ -58,7 +58,7 @@ npm run dev
 Greetings ASTRA.ai Agent!
 
 ## Concepts
-
+The ASTRA App/Service is composed of various ASTRA extensions developed using different programming languages. The relationships between extensions are described by the concept of a graph to illustrate the flow of data.
 
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
