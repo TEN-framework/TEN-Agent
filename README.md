@@ -91,10 +91,10 @@ By specifying the direction of these data types in the graph, developers can ena
 A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
 
 
-### ASTRA Cloud Store
+### Cloud Store
 Cloud Store is a hub for developers to share their extensions or use extensions from other developers.
 
-### ASTRA Package Manager
+### Package Manager
 Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 
