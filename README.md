@@ -7,6 +7,56 @@ ASTRA.ai is an agent framework that supports the creation of real-time multimoda
 
 ASTRA.ai is the perfect framework for building multimodal AI agents that communicate through text, vision, and audio using the latest AI capabilities, such as those from OpenAI, in real time.
 
+## Quick Start
+### Try out ASTRA.ai playground demo we deployed
+We provide [a web playground](https://astra-agents.agora.io/) for you to experience.
+
+### Run the agent locally
+Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
+
+We have prepared a prebuilt agent to help you get started right away.
+
+To start, ensure you have following prepared,
+- [Docker](https://www.docker.com/)
+- We use [Agora](https://console.agora.io/) as RTC transport, so we need an APP_ID / APP_CERTIFICATE.
+- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
+- OpenAI's [API](https://openai.com/index/openai-api/) API keys.
+
+
+```
+# run the prebuilt agent image
+docker run --restart=always -itd -p 8080:8080 \
+        -v /tmp:/tmp \
+        -e AGORA_APP_ID=<your_agora_appid> \
+        -e AGORA_APP_CERTIFICATE=<your_agora_app_certificate> \
+        -e AZURE_STT_KEY=<your_azure_stt_key> \
+        -e AZURE_STT_REGION=<your_azure_stt_region> \
+        -e OPENAI_API_KEY=<your_openai_api_key> \
+        -e AZURE_TTS_KEY=<your_azure_tts_key> \
+        -e AZURE_TTS_REGION=<your_azure_tts_region> \
+        --name astra_agents_server \
+        agoraio/astra_agents_server:0.1.0
+```
+
+This should start an agent server running on port 8080.
+
+### Use ASTRA.ai playground to connect to your agent
+You can use the playground project to test with the server you just started.
+
+The playground project is built based on Next.js, it requires Node.js 18.17 or above.
+
+```
+# set up an .env file
+cp ./playground/.env.example ./playground/.env
+cd playground
+
+# install npm dependencies & start
+npm i
+npm run dev
+```
+
+Greetings ASTRA.ai Agent!
+
 ## Concepts
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
@@ -45,32 +95,8 @@ We'll use following Extensions:
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="600">
 </div>
 
-We also provide [a web playground](https://astra-agents.agora.io/) to help you test with the agent you built.
 
-
-## Running Locally
-Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
-
-To start, ensure you have [Docker](https://www.docker.com/) installed.
-
-You can either choose to use our prebuilt agent docker image or build from source.
-
-### Start Prebuilt Agent
-```
-docker run --restart=always -itd -p 8080:8080 \
-        -v /tmp:/tmp \
-        -e AGORA_APP_ID=<your_agora_appid> \
-        -e AGORA_APP_CERTIFICATE=<your_agora_app_certificate> \
-        -e AZURE_STT_KEY=<your_azure_stt_key> \
-        -e AZURE_STT_REGION=<your_azure_stt_region> \
-        -e OPENAI_API_KEY=<your_openai_api_key> \
-        -e AZURE_TTS_KEY=<your_azure_tts_key> \
-        -e AZURE_TTS_REGION=<your_azure_tts_region> \
-        --name astra_agents_server \
-        agoraio/astra_agents_server:0.1.0
-```
-
-### Build Agent From Source
+## Fine-tune Your Agent
 We need to prepare the proper `manifest.json` file first.
 
 ```
@@ -100,30 +126,11 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-## Playground
+## Build & Share Your Extensions with Community
+### ASTRA Cloud Store - WIP
+We are actively working on a hub for developers to share their extensions or use extensions from other developers.
 
-You can use the playground project to test with the server you just started.
-
-The playground project is built based on Next.js, it requires Node.js 18.17 or above.
-
-```
-# set up an .env file with AGORA_APP_ID and AGORA_APP_CERTIFICATE
-cp ./playground/.env.example ./playground/.env
-
-cd playground
-
-# install npm dependencies & start
-npm i
-npm run dev
-```
-
-Greetings ASTRA.ai Agent!
-
-## Build & Share Your Extensions with  and Package Manager
-### ASTRA Cloud Store
-Provides a hub for developers to share their extensions or use extensions from other developers.
-
-### ASTRA Package Manager
+### ASTRA Package Manager - WIP
 Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 ## TODO
