@@ -70,6 +70,7 @@ An extension is the fundamental unit of composition. Developers can create exten
 For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. At the same time, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
 
 #### Supported Languages
+Up until June 2024, we support extensions written in following languages,
 - C++
 - Golang
 - Python (Planned in July)
