@@ -27,9 +27,7 @@ We provide a [playground](https://astra-agents.agora.io/) for you to play with.
 
 ### Local Agent
 
-Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
-
-We have prepared a pre-built agent to help you get started right away.
+Currently, the agent we have built runs only on Linux. However, we have a Docker image ready for you to build and run the agent on Windows and macOS.
 
 To start, make sure you have:
 
@@ -59,7 +57,7 @@ This should start an agent server running on port http://localhost:8080
 
 You can use the playground project to test with the server you just started.
 
-The playground project is built based on Next.js, it requires Node.js 18 or above.
+The playground project is built on NextJS 14, hence it needs Node 18+.
 
 ```shell
 # set up an .env file
@@ -67,17 +65,16 @@ cp ./playground/.env.example ./playground/.env
 cd playground
 
 # install npm dependencies & start
-npm i
-npm run dev
+npm i && npm run
 ```
 
-Greetings Astra AI Agent!
+🎉 Now you have our Astra Agent.
 
 </br>
 
 ## Concepts
 
-The Astra App/Service is built from various Astra extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the Astra cloud store and Astra package manager.
+The Astra Service is built from various Astra extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the Astra cloud store and Astra package manager.
 
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
@@ -143,9 +140,9 @@ It uses following Extensions:
 
 ### Customize your own agent
 
-We might want to add more flavors and customizations to make the agent better suited to our needs. To achieve this, we need to change the source code of extensions and build the agent ourselves.
+You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
 
-We need to prepare the proper `manifest.json` file first.
+You need to prepare the proper `manifest.json` file first.
 
 ```shell
 # rename manifest example
