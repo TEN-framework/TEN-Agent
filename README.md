@@ -51,7 +51,7 @@ docker run --restart=always -itd -p 8080:8080 \
         agoraio/astra_agents_server:0.1.0
 ```
 
-This should start an agent server running on port http://localhost:8080
+This should start an agent server running on port 8080.
 
 ### Use Astra AI playground to connect to your agent
 
