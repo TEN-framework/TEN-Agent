@@ -155,7 +155,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build:0.1.0
 
 # enter docker image
-docker exec -it  bash
+docker exec -it astra_agents_dev bash
 
 # build agent
 make build
