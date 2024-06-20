@@ -67,10 +67,22 @@ func processManifest(manifestJsonFile string) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_region`, azureSttRegion)
 	}
 
+	openaiBaseUrl := os.Getenv("OPENAI_BASE_URL")
+	slog.Info("processManifest", "OPENAI_BASE_URL", openaiBaseUrl)
+	if openaiBaseUrl != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.base_url`, openaiBaseUrl)
+	}
+
 	openaiApiKey := os.Getenv("OPENAI_API_KEY")
 	slog.Info("processManifest", "OPENAI_API_KEY", openaiApiKey)
 	if openaiApiKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.api_key`, openaiApiKey)
+	}
+
+	openaiModel := os.Getenv("OPENAI_MODEL")
+	slog.Info("processManifest", "OPENAI_MODEL", openaiModel)
+	if openaiModel != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.model`, openaiModel)
 	}
 
 	proxyUrl := os.Getenv("PROXY_URL")

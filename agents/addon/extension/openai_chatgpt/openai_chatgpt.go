@@ -26,7 +26,8 @@ type openaiChatGPT struct {
 }
 
 type openaiChatGPTConfig struct {
-	ApiKey string
+	BaseUrl string
+	ApiKey  string
 
 	Model  string
 	Prompt string
@@ -43,7 +44,8 @@ type openaiChatGPTConfig struct {
 
 func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
 	return openaiChatGPTConfig{
-		ApiKey: "",
+		BaseUrl: "https://api.openai.com/v1",
+		ApiKey:  "",
 
 		Model:  openai.GPT4o,
 		Prompt: "You are a voice assistant who talks in a conversational way and can chat with me like my friends. i will speak to you in english or chinese, and you will answer in the corrected and improved version of my text with the language i use. Don't talk like a robot, instead i would like you to talk like real human with emotions. i will use your answer for text-to-speech, so don't return me any meaningless characters. I want you to be helpful, when i'm asking you for advices, give me precise, practical and useful advices instead of being vague. When giving me list of options, express the options in a narrative way instead of bullet points.",
@@ -61,6 +63,11 @@ func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
 
 func newOpenaiChatGPT(config openaiChatGPTConfig) (*openaiChatGPT, error) {
 	conf := openai.DefaultConfig(config.ApiKey)
+
+	if config.BaseUrl != "" {
+		conf.BaseURL = config.BaseUrl
+	}
+
 	if config.ProxyUrl != "" {
 		proxyUrl, err := url.Parse(config.ProxyUrl)
 		if err != nil {

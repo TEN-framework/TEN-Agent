@@ -18,7 +18,7 @@ import styles from "./index.module.scss"
 export default function Home() {
   const chatItems = useAppSelector(state => state.global.chatItems)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
-  const [activeMenu, setActiveMenu] = useState("Agent")
+  const [activeMenu, setActiveMenu] = useState("Settings")
   const { isSmallScreen } = useSmallScreen()
 
   useEffect(() => {

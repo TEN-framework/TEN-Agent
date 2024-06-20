@@ -67,14 +67,23 @@ const (
 	privilegeExpirationInSeconds = uint32(86400)
 	tokenExpirationInSeconds     = uint32(86400)
 
+	languageChinese = "zh-CN"
+	languageEnglish = "en-US"
+
 	voiceTypeMale   = "male"
 	voiceTypeFemale = "female"
 )
 
 var (
-	azureSynthesisVoiceNameMap = map[string]string{
-		voiceTypeMale:   "en-US-BrianNeural",
-		voiceTypeFemale: "en-US-JaneNeural",
+	azureSynthesisVoiceNameMap = map[string]map[string]string{
+		languageChinese: {
+			voiceTypeMale:   "zh-CN-YunxiNeural",
+			voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
+		},
+		languageEnglish: {
+			voiceTypeMale:   "en-US-BrianNeural",
+			voiceTypeFemale: "en-US-JaneNeural",
+		},
 	}
 	logTag = slog.String("service", "HTTP_SERVER")
 )
@@ -222,6 +231,11 @@ func (s *HttpServer) handlerGenerateToken(c *gin.Context) {
 		return
 	}
 
+	if s.config.AppCertificate == "" {
+		s.output(c, codeSuccess, map[string]any{"appId": s.config.AppId, "token": s.config.AppId, "channel_name": req.ChannelName, "uid": req.Uid})
+		return
+	}
+
 	token, err := rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, privilegeExpirationInSeconds)
 	if err != nil {
 		slog.Error("handlerGenerateToken generate token failed", "err", err, "requestId", req.RequestId, logTag)
@@ -276,7 +290,8 @@ func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, lo
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.remote_stream_id`, req.RemoteStreamId)
 	}
 
-	azureSynthesisVoiceName := azureSynthesisVoiceNameMap[req.VoiceType]
+	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
+	azureSynthesisVoiceName := azureSynthesisVoiceNameMap[language][req.VoiceType]
 	if azureSynthesisVoiceName != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, azureSynthesisVoiceName)
 	}
