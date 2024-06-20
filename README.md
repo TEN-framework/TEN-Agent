@@ -132,6 +132,7 @@ make build
 ```
 
 This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompt and openai parameters.
+
 Once done, we can use the following command to start a server which you can test out with ASTRA.ai playground like we did in previous steps.
 
 ```
