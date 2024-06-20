@@ -40,6 +40,7 @@ const (
 	dataOutTextDataPropertyText             = "text"
 	dataOutTextDataPropertyTextEndOfSegment = "end_of_segment"
 
+	propertyBaseUrl          = "base_url"          // Optional
 	propertyApiKey           = "api_key"           // Required
 	propertyModel            = "model"             // Optional
 	propertyPrompt           = "prompt"            // Optional
@@ -83,8 +84,15 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 	slog.Info("OnStart", logTag)
 
 	// prepare configuration
-
 	openaiChatGPTConfig := defaultOpenaiChatGPTConfig()
+
+	if baseUrl, err := rte.GetPropertyString(propertyBaseUrl); err != nil {
+		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyBaseUrl, err), logTag)
+	} else {
+		if len(baseUrl) > 0 {
+			openaiChatGPTConfig.BaseUrl = baseUrl
+		}
+	}
 
 	if apiKey, err := rte.GetPropertyString(propertyApiKey); err != nil {
 		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
