@@ -58,6 +58,8 @@ npm run dev
 Greetings ASTRA.ai Agent!
 
 ## Concepts
+
+
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
 </div>
@@ -81,6 +83,13 @@ By specifying the direction of these data types in the graph, developers can ena
 
 ### Agent App
 A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
+
+
+### ASTRA Cloud Store
+Cloud Store is a hub for developers to share their extensions or use extensions from other developers.
+
+### ASTRA Package Manager
+Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 ## Example
 This project provides an example Agent App to help you get started.
@@ -128,13 +137,6 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 # agent is ready to start on port 8080
 make run-server
 ```
-
-## Build & Share Your Extensions with Community
-### ASTRA Cloud Store - WIP
-We are actively working on a hub for developers to share their extensions or use extensions from other developers.
-
-### ASTRA Package Manager - WIP
-Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 ## TODO
 - [ ] Extension Support: Python
