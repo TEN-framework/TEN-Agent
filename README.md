@@ -1,5 +1,5 @@
 <div align="center">
- <img alt="astra.ai" width="300px" height="auto" src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/20ae3baa-5f84-44b6-8a17-19ca70d37c95">
+ <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
 # ASTRA.ai
