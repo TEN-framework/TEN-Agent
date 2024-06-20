@@ -2,10 +2,18 @@
  <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
-</br>
+<h1 align="center">Astra AI</h1>
 
 <div align="center">
-ASTRA.ai is an agent framework that supports the creation of real-time multimodal AI Agents. It enables the rapid orchestration and reuse of the latest large model capabilities, achieving low-latency, real-time multimodal interaction with AI Agents. ASTRA.ai is the perfect framework for building multimodal AI agents that communicate through text, vision, and audio using the latest AI capabilities, such as those from OpenAI, in real time.
+
+[![](https://dcbadge.limes.pink/api/server/6k6xtWtF)](https://discord.gg/6k6xtWtF)
+
+</div>
+
+<div align="center">
+🎉 Creation of real-time multi-modal AI Agents 🎉
+
+Enables the rapid orchestration and reuses of the latest large model capabilities, achieves low-latency, real-time multi-modal interactions with AI Agents.
 
 </div>
 
@@ -15,7 +23,7 @@ ASTRA.ai is an agent framework that supports the creation of real-time multimoda
 
 ### Playground
 
-We provide [a playground](https://astra-agents.agora.io/) for you to play with.
+We provide a [playground](https://astra-agents.agora.io/) for you to play with.
 
 ### Local Agent
 
@@ -47,7 +55,7 @@ docker run --restart=always -itd -p 8080:8080 \
 
 This should start an agent server running on port http://localhost:8080
 
-### Use ASTRA.ai playground to connect to your agent
+### Use Astra AI playground to connect to your agent
 
 You can use the playground project to test with the server you just started.
 
@@ -63,13 +71,13 @@ npm i
 npm run dev
 ```
 
-Greetings ASTRA.ai Agent!
+Greetings Astra AI Agent!
 
 </br>
 
 ## Concepts
 
-The ASTRA App/Service is built from various ASTRA extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the ASTRA cloud store and ASTRA package manager.
+The Astra App/Service is built from various Astra extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the Astra cloud store and Astra package manager.
 
 <div align="center">
  <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
@@ -77,7 +85,7 @@ The ASTRA App/Service is built from various ASTRA extensions developed in differ
 
 ### Extension
 
-An extension is the fundamental unit of composition. Developers can create extensions in various languages and combine them in different ways to build diverse scenarios and applications. The ASTRA.ai framework emphasizes cross-language collaboration, allowing extensions written in different programming languages to seamlessly work together within the same application or service.
+An extension is the fundamental unit of composition. Developers can create extensions in various languages and combine them in different ways to build diverse scenarios and applications. The Astra framework emphasizes cross-language collaboration, allowing extensions written in different programming languages to seamlessly work together within the same application or service.
 
 For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. At the same time, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
 
@@ -91,9 +99,9 @@ Up until June 2024, we support extensions written in following languages,
 
 ### Graph
 
-A graph is used to describe the data flow between extensions, a graph in ASTRA orchestrates how different extensions interact. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
+A graph is used to describe the data flow between extensions, a graph in Astra orchestrates how different extensions interact. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
-In ASTRA, there are four main types of data flow between extensions:
+In Astra, there are four main types of data flow between extensions:
 
 - Command
 - Data
@@ -112,7 +120,7 @@ Cloud Store is a hub for developers to share their extensions or use extensions 
 
 ### Package Manager
 
-Simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
+Simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 </br>
 
@@ -139,7 +147,7 @@ We might want to add more flavors and customizations to make the agent better su
 
 We need to prepare the proper `manifest.json` file first.
 
-````
+```shell
 # rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
 
@@ -147,17 +155,17 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build:0.1.0
 
 # enter docker image
-docker exec -it astra_agents_dev bash
+docker exec -it  bash
 
 # build agent
 make build
+```
+
+This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompt and OpenAI parameters.
+
+Once done, we can use the following command to start a server which you can test out with Astra AI playground like we did in previous steps.
+
 ```shell
-
-This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompt and openai parameters.
-
-Once done, we can use the following command to start a server which you can test out with ASTRA.ai playground like we did in previous steps.
-
-````
 
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
@@ -170,12 +178,11 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 # agent is ready to start on port 8080
 
 make run-server
-
 ```
 
 </br>
 
-# TODO
+## TODO
 
 - [ ] Extension Language Support: Python
 - [ ] Extension: elevenlabs, google, whisper, moondream
@@ -188,4 +195,3 @@ make run-server
 ## Code Contributors
 
 Thanks to all contributorsThanks to all contributors!Thanks to all contributors!!
-```
