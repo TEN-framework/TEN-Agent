@@ -11,7 +11,7 @@ ASTRA.ai is the perfect framework for building multimodal AI agents that communi
 ### Try out ASTRA.ai playground demo we deployed
 We provide [a web playground](https://astra-agents.agora.io/) for you to experience.
 
-### Run the agent locally
+### Run the example agent locally
 Currently, the agent we build runs on Linux only, while we have prepared a Docker image so that you can build and run the agent on Windows / MacOS too.
 
 We have prepared a prebuilt agent to help you get started right away.
@@ -96,7 +96,7 @@ We'll use following Extensions:
 </div>
 
 
-## Fine-tune Your Agent
+## Fine-tune your agent
 We need to prepare the proper `manifest.json` file first.
 
 ```
