@@ -2,7 +2,7 @@
  <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
-<h1 align="center">Astra.ai </h1>
+<h1 align="center">Astra.ai</h1>
 
 <div align="center">
 
@@ -24,7 +24,9 @@ Enables the rapid orchestration and reuses of the latest large model capabilitie
 
 ### Playground
 
-<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+<div align="center">
+<img  alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+</div>
 
 We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered voice agent.
 
@@ -75,22 +77,11 @@ npm i && npm run dev
 
 </br>
 
-## Concepts
-
-The Astra Service is built from various Astra extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the Astra cloud store and Astra package manager.
-
-<div align="center">
-
-<image alt="Astra.ai" width="800px" src="./images/image.png">
-
-</div>
-
-# Customize your own agent
+# Agent Customization
 
 ### Example
 
-This project provides an example voice agent to help you get started.
-It uses following Extensions:
+Our voice agent is a great place for you to get started with, it uses following Extensions:
 
 - _agora_rtc_ / [Agora](https://docs.agora.io/en) for RTC transport + VAD + Azure speech-to-text (STT)
 - _azure_tts_ / [Azure](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) for text-to-speech (TTS)
@@ -124,9 +115,9 @@ docker exec -it astra_agents_dev bash
 make build
 ```
 
-This will generate an agent executable. We can change the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` for instance to adjust your prompts and OpenAI parameters.
+This code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in agents/addon/extension/openai_chatgpt/openai_chatgpt.go.
 
-Once done, we can use the following commands to start a server you then can test out with Astra Agent playground like we did in previous steps.
+Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the Astra voice agent playground as we did in previous steps.
 
 ```shell
 
@@ -145,23 +136,35 @@ make run-server
 
 🎉 Congratulations! You have created your first personalized voice agent. We appreciate your effort and look forward to seeing it in the extension store. We’d love it if you could share it within the community.
 
-### Extension
+<br />
 
-An extension is the fundamental unit of composition. Developers can create extensions in various languages and combine them in different ways to build diverse scenarios and applications. The Astra framework emphasizes cross-language collaboration, allowing extensions written in different programming languages to seamlessly work together within the same application or service.
+# Astra Service
 
-For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. At the same time, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
+Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using the concept of a graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra cloud store and the Astra package manager.
+
+<div align="center">
+
+<image alt="Astra.ai" width="800px" src="./images/image.png">
+
+</div>
+
+### Astra Extensions
+
+An extension is the fundamental unit of composition within the Astra framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. Astra emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
+
+For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. Meanwhile, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
 
 #### Supported Languages
 
-Up until June 2024, we support extensions written in following languages,
+As of June 2024, we support extensions written in the following languages:
 
 - C++
 - Golang
-- Python (Planned in July)
+- Python (planned for July)
 
 ### Graph
 
-A graph is used to describe the data flow between extensions, a graph in Astra orchestrates how different extensions interact. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
+A graph in Astra describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
 In Astra, there are four main types of data flow between extensions:
 
@@ -170,18 +173,38 @@ In Astra, there are four main types of data flow between extensions:
 - Image frame
 - PCM frame
 
-By specifying the direction of these data types in the graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, making audio and video processing simpler and more intuitive.
+By specifying the direction of these data types in the graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
 
-### Agent App
+### Astra Agent App
 
-A runnable server-side participant application compiled to combine multiple **Extensions** following **Graph** rules to accomplish more sophisticated operations.
+An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
 
-### Cloud Store
+### Astra Store
 
-Cloud Store is a centralized platform for developers to share their extensions and access those created by others.
+The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
 
-### Package Manager
+### Astra Package Manager
 
-Simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
+The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
 
 </br>
+
+## TODO
+
+- [ ] Extension Language Support: Python
+- [ ] Extension: Elevenlabs, Google, Whisper and Moondream
+- [ ] Example Agent: real-time video agent
+- [ ] Extension Store
+- [ ] UI Graph Editor
+
+</br>
+
+## Contributing
+
+Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
+
+</br>
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
