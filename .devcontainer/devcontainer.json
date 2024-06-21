@@ -3,18 +3,24 @@
 {
     "name": "astra",
     "image": "agoraio/astra_agents_build:0.1.0",
-	"extensions": [
-        "golang.go"
-    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": ["golang.go"]
+        }
+    },
+    
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind", 
+    "workspaceFolder": "/app",
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [8080],
+    "forwardPorts": [8080]
 
     // Features to add to the dev container. More info: https://containers.dev/features.
     // "features": {},
 
     // Uncomment the next line to run commands after the container is created.
-    "postCreateCommand": "ln -s /workspaces/ASTRA.ai /app && cd /app"
+    // "postCreateCommand": ""
 
     // Configure tool-specific properties.
     // "customizations": {},
