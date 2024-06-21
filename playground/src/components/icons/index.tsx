@@ -1,6 +1,0 @@
-export * from "./mic"
-export * from "./cam"
-export * from "./network"
-export * from "./github"
-export * from "./logo"
-export * from "./transcription"
