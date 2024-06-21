@@ -8,12 +8,17 @@
 	],
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8080]
+	"forwardPorts": [8080],
 
     // Features to add to the dev container. More info: https://containers.dev/features.
-    // "features": {},
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+
     // Uncomment the next line to run commands after the container is created.
-    // "postCreateCommand": "cat /etc/os-release",
+    "postCreateCommand": "ln -s /workspaces/ASTRA.ai /app && cd /app"
+
     // Configure tool-specific properties.
     // "customizations": {},
     // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
