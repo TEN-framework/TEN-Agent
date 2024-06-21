@@ -60,6 +60,10 @@ You can use the playground project to test with the server you just started.
 The playground project is built on NextJS 14, hence it needs Node 18+.
 
 ```shell
+# download and enter project
+git clone https://github.com/rte-design/ASTRA.ai.git
+cd ASTRA.ai
+
 # set up an .env file
 cp ./playground/.env.example ./playground/.env
 cd playground
