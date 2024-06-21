@@ -6,19 +6,27 @@
 
 <div align="center">
 
-[![](https://dcbadge.limes.pink/api/server/9VDGJ9F7)](https://discord.gg/9VDGJ9F7)
+<a href="https://discord.gg/9VDGJ9F7"><img src="https://img.shields.io/badge/Discord-@Astra AI%20-blue.svg?logo=discord"></a>
+<a href="">
+<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Agora RTE" /></a>
+<a href="">
+<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="Agora RTC" /></a>
+<a href="">
+<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
 
 </div>
 
 <div align="center">
 
+<span>Low Latency</span>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<span>LLM Capabilities</span>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<span>Real-time Multi-model Interactions</span>
+
 🎉 Creation of real-time multi-modal AI Agents 🎉
 
-Enables the rapid orchestration and reuses of the latest large model capabilities, achieves low-latency, real-time multi-modal interactions with AI Agents.
-
 </div>
-
-</br>
 
 ## Quick Start
 
@@ -30,9 +38,9 @@ Enables the rapid orchestration and reuses of the latest large model capabilitie
 
 We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered voice agent.
 
-### Local Agent
+### Run Local Agent
 
-And of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
+Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
 To start, make sure you have:
 
@@ -58,11 +66,11 @@ docker run --restart=always -itd -p 8080:8080 \
 
 This should start an agent server running on port 8080.
 
-### Use Astra.ai playground to connect to your agent
+### Use the playground to connect to your agent
 
 You can use the playground project to test with the server you just started.
 
-The playground project is built on NextJS 14, hence it needs Node 18+.
+The Playground project is built on NextJS 14, hence it needs Node 18+.
 
 ```shell
 # set up an .env file
@@ -79,9 +87,7 @@ npm i && npm run dev
 
 # Agent Customization
 
-### Example
-
-Our voice agent is a great place for you to get started with, it uses following Extensions:
+Our voice agent is a great place for you to start with, it uses following Extensions:
 
 - _agora_rtc_ / [Agora](https://docs.agora.io/en) for RTC transport + VAD + Azure speech-to-text (STT)
 - _azure_tts_ / [Azure](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) for text-to-speech (TTS)
@@ -134,13 +140,13 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-🎉 Congratulations! You have created your first personalized voice agent. We appreciate your effort and look forward to seeing it in the extension store. We’d love it if you could share it within the community.
+🎉 Congratulations! You have created your first personalized voice agent. We appreciate your effort and look forward to seeing it in the Astra Cloud Store. We’d love it if you could share it within the community.
 
 <br />
 
 # Astra Service
 
-Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using the concept of a graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra cloud store and the Astra package manager.
+Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Cloud Store and the Astra Package Manager.
 
 <div align="center">
 
@@ -164,7 +170,7 @@ As of June 2024, we support extensions written in the following languages:
 
 ### Graph
 
-A graph in Astra describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
+A Graph in Astra describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a Graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
 In Astra, there are four main types of data flow between extensions:
 
@@ -173,19 +179,19 @@ In Astra, there are four main types of data flow between extensions:
 - Image frame
 - PCM frame
 
-By specifying the direction of these data types in the graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
+By specifying the direction of these data types in the Graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
 
 ### Astra Agent App
 
 An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
 
-### Astra Store
+### Astra Cloud Store
 
 The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
 
 ### Astra Package Manager
 
-The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the package manager automatically manages these dependencies, making the installation and release of extensions extremely convenient.
+The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the Astra Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
 
 </br>
 
