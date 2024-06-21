@@ -1,0 +1,49 @@
+.rtc {
+  flex: 0 0 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: 8px;
+  border: 1px solid #272A2F;
+  background: #181A1D;
+  box-sizing: border-box;
+
+  .header {
+    display: flex;
+    height: 40px;
+    padding: 0px 16px;
+    align-items: center;
+    gap: 238px;
+    align-self: stretch;
+    color: var(--Grey-300, #EAECF0);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 150%;
+    letter-spacing: 0.449px;
+    border-bottom: 1px solid #272A2F;
+  }
+
+  .you {
+    display: flex;
+    padding: 24px 16px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    align-self: stretch;
+    border-top: 1px solid #272A2F;
+
+    .title {
+      color: var(--Grey-300, #EAECF0);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 150%;
+      letter-spacing: 0.449px;
+      text-align: center;
+    }
+
+  
+  }
+}

@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+SeparateDefinitionBlocks: Always
+ColumnLimit: 120
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: Align
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
