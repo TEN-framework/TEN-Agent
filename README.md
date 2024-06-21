@@ -34,9 +34,9 @@ And of course, you are more than welcome to run your own local agent using the o
 
 To start, make sure you have:
 
-- Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/3.x/video-calling/reference/manage-agora-account?platform=android))
+- Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API keys.
+- [OpenAI](https://openai.com/index/openai-api/) API keys
 - [Docker](https://www.docker.com/)
 
 ```shell
@@ -81,7 +81,7 @@ The Astra Service is built from various Astra extensions developed in different 
 
 <div align="center">
 
-![alt text](image.png)
+<image alt="Astra.ai" width="800px" src="./images/image.png">
 
 </div>
 
@@ -141,7 +141,7 @@ It uses following Extensions:
 
 <div align="center">
 
-![alt text](./images/image-2.png)
+<image alt="Astra.ai" width="800px" src="./images/image-2.png">
 
 </div>
 
