@@ -65,7 +65,7 @@ cp ./playground/.env.example ./playground/.env
 cd playground
 
 # install npm dependencies & start
-npm i && npm run
+npm i && npm run dev
 ```
 
 🎉 Now you have our Astra Agent.
