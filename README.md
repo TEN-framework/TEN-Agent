@@ -24,7 +24,7 @@ Enables the rapid orchestration and reuses of the latest large model capabilitie
 
 ### Playground
 
-![Astra Voice Agent](<Kapture 2024-06-21 at 10.46.38.gif>)
+<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
 
 We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered voice agent.
 
@@ -68,7 +68,7 @@ cp ./playground/.env.example ./playground/.env
 cd playground
 
 # install npm dependencies & start
-npm i && npm run
+npm i && npm run dev
 ```
 
 🎉 Congratulations! You now have our Astra.ai voice agent running locally.
