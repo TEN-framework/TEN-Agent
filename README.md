@@ -6,11 +6,12 @@
 
 <div align="center">
 
-[![](https://dcbadge.limes.pink/api/server/6k6xtWtF)](https://discord.gg/6k6xtWtF)
+[![](https://dcbadge.limes.pink/api/server/9VDGJ9F7)](https://discord.gg/9VDGJ9F7)
 
 </div>
 
 <div align="center">
+
 🎉 Creation of real-time multi-modal AI Agents 🎉
 
 Enables the rapid orchestration and reuses of the latest large model capabilities, achieves low-latency, real-time multi-modal interactions with AI Agents.
@@ -23,11 +24,13 @@ Enables the rapid orchestration and reuses of the latest large model capabilitie
 
 ### Playground
 
-We provide a [playground](https://astra-agents.agora.io/) for you to play with.
+![Astra Voice Agent](<Kapture 2024-06-21 at 10.46.38.gif>)
+
+We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered Voice Agent.
 
 ### Local Agent
 
-Currently, the agent we have built runs only on Linux. However, we have a Docker image ready for you to build and run the agent on Windows and macOS.
+And of course, you are more than welcome to run your own local agent using the one we’ve built. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
 To start, make sure you have:
 
@@ -77,7 +80,9 @@ npm i && npm run
 The Astra Service is built from various Astra extensions developed in different programming languages. The concept of a graph is used to describe the relationships between these extensions and illustrate the flow of data. Additionally, sharing and downloading extensions are made easy through the Astra cloud store and Astra package manager.
 
 <div align="center">
- <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/9fd7fa08-4eff-46b0-bd50-012c8dccfd9a" width="800">
+
+![alt text](image.png)
+
 </div>
 
 ### Extension
@@ -134,8 +139,10 @@ It uses following Extensions:
 - _chat_transcriber_ / A utility ext to forward chat logs into channel
 - _interrupt_detector_ / A utility ext to help interrupt agent
 
-<div align="left">
- <img src="https://github.com/AgoraIO-Community/ASTRA.ai/assets/471561/bff35c13-e19b-43f7-ba1f-f9f0d7ec095f" width="600">
+<div align="center">
+
+![alt text](./images/image-2.png)
+
 </div>
 
 ### Customize your own agent
