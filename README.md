@@ -140,7 +140,7 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-🎉 Congratulations! You have created your first personalized voice agent. We appreciate your effort and look forward to seeing it in the Astra Cloud Store. We’d love it if you could share it within the community.
+🎉 Congratulations! You have created your first personalized voice agent.
 
 <br />
 
