@@ -35,7 +35,7 @@
 
 ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
 
-With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applications with low latency 🎉
+With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applications with low latency. 🎉
 
 ## Quick Start
 
