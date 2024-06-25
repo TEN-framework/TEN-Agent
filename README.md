@@ -2,31 +2,40 @@
  <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
-<h1 align="center">Astra.ai</h1>
+<h1 align="center">ASTRA</h1>
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7"><img src="https://img.shields.io/badge/Discord-@Astra AI%20-blue.svg?logo=discord"></a>
-<a href="">
+<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="" target="_blank">
 <img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Agora RTE" /></a>
-<a href="">
+<a href="" target="_blank">
 <img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="Agora RTC" /></a>
-<a href="">
+<a href="" target="_blank">
 <img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
 
 </div>
 
 <div align="center">
-
-<span>Real-time Multi-model Interactions</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Super Low Latency</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>LLM Capabilities</span>
-
-🎉 Creation of real-time multi-modal AI Agents 🎉
-
+        <a href="" target="">
+        <span>Real-time Multi-model Interactions</span>
+        </a>
+        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+        <a href="" target="">
+        <span>Super Low Latency</span>
+        </a>
+        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+        <a href="" target="">
+        <span>LLM Capabilities</span>
+        </a>
 </div>
+
+<!-- <div align="center"></div> -->
+<br >
+
+ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
+
+With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applications with low latency 🎉
 
 ## Quick Start
 
