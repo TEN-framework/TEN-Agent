@@ -37,6 +37,8 @@ ASTRA is an open-source platform designed for developing applications utilizing 
 
 With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applications with low latency. 🎉
 
+<br>
+
 ## Quick Start
 
 ### Playground
@@ -201,16 +203,6 @@ The Astra Store is a centralized platform where developers can share their exten
 ### Astra Package Manager
 
 The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the Astra Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
-
-</br>
-
-## Roadmap
-
-- [ ] UI Graph Editor, drag and drop, no/low code
-- [ ] Extensions Language Support: Python, JavaScript, TypeScript
-- [ ] Extension: Elevenlabs, Google, Whisper, Moondream and more
-- [ ] Example Agent: real-time video agent
-- [ ] Extension Store
 
 </br>
 
