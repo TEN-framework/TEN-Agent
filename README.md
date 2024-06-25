@@ -44,10 +44,10 @@ With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applicatio
 ### Playground
 
 <div align="center">
-<img  alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
 </div>
 
-We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered voice agent.
+We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the ASTRA powered voice agent.
 
 ### Run Local Agent
 
