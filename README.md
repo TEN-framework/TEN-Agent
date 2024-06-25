@@ -18,11 +18,11 @@
 
 <div align="center">
 
-<span>Low Latency</span>
+<span>Real-time Multi-model Interactions</span>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<span>Super Low Latency</span>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <span>LLM Capabilities</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Real-time Multi-model Interactions</span>
 
 🎉 Creation of real-time multi-modal AI Agents 🎉
 
@@ -46,7 +46,7 @@ To start, make sure you have:
 
 - Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API keys
+- [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
 
 ```shell
@@ -140,13 +140,13 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-🎉 Congratulations! You have created your first personalized voice agent. We appreciate your effort and look forward to seeing it in the Astra Cloud Store. We’d love it if you could share it within the community.
+🎉 Congratulations! You have created your first personalized voice agent.
 
 <br />
 
 # Astra Service
 
-Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Cloud Store and the Astra Package Manager.
+Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Extension Store and the Astra Package Manager.
 
 <div align="center">
 
@@ -185,7 +185,7 @@ By specifying the direction of these data types in the Graph, developers can ena
 
 An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
 
-### Astra Cloud Store
+### Astra Extension Store
 
 The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
 
@@ -195,13 +195,13 @@ The Astra Package Manager simplifies the process of uploading, sharing, download
 
 </br>
 
-## TODO
+## Roadmap
 
-- [ ] Extension Language Support: Python
-- [ ] Extension: Elevenlabs, Google, Whisper and Moondream
+- [ ] UI Graph Editor, drag and drop, no/low code
+- [ ] Extensions Language Support: Python, JavaScript, TypeScript
+- [ ] Extension: Elevenlabs, Google, Whisper, Moondream and more
 - [ ] Example Agent: real-time video agent
 - [ ] Extension Store
-- [ ] UI Graph Editor
 
 </br>
 
