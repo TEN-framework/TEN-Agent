@@ -42,6 +42,11 @@ We provide a [live playground](https://astra-agents.agora.io/) where you can exp
 
 Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
+> **_NOTE:_** You will need to check "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for docker if you are running on non-intel mac
+>
+>  ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
+
+
 To start, make sure you have:
 
 - Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
