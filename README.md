@@ -6,13 +6,13 @@
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
 <a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Agora RTE" /></a>
+<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
 <a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="Agora RTC" /></a>
+<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
 <a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
+<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
 
 </div>
 
@@ -43,17 +43,17 @@ With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applicatio
 
 <br>
 
-## Quick Start
+## Voice Agent
 
-### Playground
+ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
 <div align="center">
 <img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
 </div>
 
-We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the ASTRA powered voice agent.
+As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
 
-### Run Local Agent
+### Run Voice Agent Locally
 
 Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
@@ -96,7 +96,7 @@ cd playground
 npm i && npm run dev
 ```
 
-🎉 Congratulations! You now have our Astra.ai voice agent running locally.
+🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
 
 </br>
 
