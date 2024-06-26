@@ -2,7 +2,7 @@
  <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
-<h1 align="center">ASTRA</h1>
+<br>
 
 <div align="center">
 
@@ -15,6 +15,11 @@
 <img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
 
 </div>
+
+<p align="center">
+<a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+</p>
 
 <div align="center">
         <a href="" target="">
@@ -30,7 +35,6 @@
         </a>
 </div>
 
-<!-- <div align="center"></div> -->
 <br >
 
 ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
