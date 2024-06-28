@@ -18,11 +18,11 @@
 
 <div align="center">
 
-<span>Low Latency</span>
+<span>Real-time Multi-model Interactions</span>
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+<span>Super Low Latency</span>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <span>LLM Capabilities</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Real-time Multi-model Interactions</span>
 
 🎉 Creation of real-time multi-modal AI Agents 🎉
 
@@ -42,11 +42,16 @@ We provide a [live playground](https://astra-agents.agora.io/) where you can exp
 
 Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
+> **_NOTE:_** You will need to check "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for docker if you are running on non-intel mac
+>
+>  ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
+
+
 To start, make sure you have:
 
 - Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API keys
+- [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
 
 ```shell
@@ -146,7 +151,7 @@ make run-server
 
 # Astra Service
 
-Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Cloud Store and the Astra Package Manager.
+Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Extension Store and the Astra Package Manager.
 
 <div align="center">
 
@@ -185,7 +190,7 @@ By specifying the direction of these data types in the Graph, developers can ena
 
 An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
 
-### Astra Cloud Store
+### Astra Extension Store
 
 The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
 
@@ -195,13 +200,13 @@ The Astra Package Manager simplifies the process of uploading, sharing, download
 
 </br>
 
-## TODO
+## Roadmap
 
-- [ ] Extension Language Support: Python
-- [ ] Extension: Elevenlabs, Google, Whisper and Moondream
+- [ ] UI Graph Editor, drag and drop, no/low code
+- [ ] Extensions Language Support: Python, JavaScript, TypeScript
+- [ ] Extension: Elevenlabs, Google, Whisper, Moondream and more
 - [ ] Example Agent: real-time video agent
 - [ ] Extension Store
-- [ ] UI Graph Editor
 
 </br>
 
