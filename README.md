@@ -39,7 +39,7 @@
 
 ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
 
-With ASTRA, you can effortlessly create 🎉 real-time multi-modal AI applications with low latency. 🎉
+With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
 
 <br>
 
@@ -66,6 +66,7 @@ To start, make sure you have:
 
 ```shell
 # run the pre-built agent image
+
 docker run --restart=always -itd -p 8080:8080 \
         -v /tmp:/tmp \
         -e AGORA_APP_ID=<your_agora_appid> \
@@ -80,6 +81,8 @@ docker run --restart=always -itd -p 8080:8080 \
 ```
 
 This should start an agent server running on port 8080.
+
+### M Chip MacBook
 
 ### Use the playground to connect to your agent
 
