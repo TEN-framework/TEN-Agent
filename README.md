@@ -41,7 +41,7 @@ ASTRA is an open-source platform designed for developing applications utilizing 
 
 With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
 
-<br>
+br>
 
 ## Voice Agent
 
@@ -57,8 +57,10 @@ As you can see, the real-time multimodal interactions, low latency, and responsi
 
 Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
+#### Mac with Apple Silicon
+
 > [!NOTE]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon Mac.
+> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon. The default is checked when fresh installing Docker.
 >
 > ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
 
@@ -69,9 +71,8 @@ To start, make sure you have:
 - [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
 
-```shell
+```bash
 # run the pre-built agent image
-
 docker run --restart=always -itd -p 8080:8080 \
         -v /tmp:/tmp \
         -e AGORA_APP_ID=<your_agora_appid> \
@@ -87,15 +88,13 @@ docker run --restart=always -itd -p 8080:8080 \
 
 This should start an agent server running on port 8080.
 
-### M Chip MacBook
-
 ### Use the playground to connect to your agent
 
 You can use the playground project to test with the server you just started.
 
 The Playground project is built on NextJS 14, hence it needs Node 18+.
 
-```shell
+```bash
 # set up an .env file
 cp ./playground/.env.example ./playground/.env
 cd playground
