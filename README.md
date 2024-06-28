@@ -129,7 +129,7 @@ You might want to add more flavors to make the agent better suited to your needs
 
 You need to prepare the proper `manifest.json` file first.
 
-```shell
+```bash
 # rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
 
@@ -147,7 +147,7 @@ This code generates an agent executable. To customize your prompts and OpenAI pa
 
 Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the Astra voice agent playground as we did in previous steps.
 
-```shell
+```bash
 
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
