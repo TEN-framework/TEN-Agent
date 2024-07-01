@@ -27,11 +27,8 @@
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
         <a href="" target="">
-        <span>Super Low Latency</span>
+        <span>Low Latency</span>
         </a>
-        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="">
-        <span>LLM Operations</span>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
         <a href="" target="">
         <span>Supporting Multiple languages</span>
