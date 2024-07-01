@@ -59,7 +59,7 @@ func (p *interruptDetectorExtension) OnData(
 
 	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
 
-	if final {
+	if final || len(text) >= 2 {
 		flushCmd, _ := rtego.NewCmd(cmdNameFlush)
 		rte.SendCmd(flushCmd, nil)
 
