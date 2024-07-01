@@ -51,14 +51,15 @@ func (p *interruptDetectorExtension) OnData(
 		return
 	}
 
-	var final bool
-	if len(text) >= 2 {
-		final = true
+	final, err := data.GetPropertyBool(textDataFinalField)
+	if err != nil {
+		slog.Warn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataFinalField, err), logTag)
+		return
 	}
 
 	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
 
-	if final {
+	if final || len(text) >= 2 {
 		flushCmd, _ := rtego.NewCmd(cmdNameFlush)
 		rte.SendCmd(flushCmd, nil)
 
