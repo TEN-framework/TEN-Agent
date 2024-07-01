@@ -2,48 +2,65 @@
  <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
 </div>
 
-<h1 align="center">Astra.ai</h1>
+<br>
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7"><img src="https://img.shields.io/badge/Discord-@Astra AI%20-blue.svg?logo=discord"></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Agora RTE" /></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="Agora RTC" /></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
+<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
 
 </div>
+
+<p align="center">
+<a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+</p>
 
 <div align="center">
-
-<span>Real-time Multi-model Interactions</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>Super Low Latency</span>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>LLM Capabilities</span>
-
-🎉 Creation of real-time multi-modal AI Agents 🎉
-
+        <a href="" target="">
+        <span>Real-time Multi-model Interactions</span>
+        </a>
+        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+        <a href="" target="">
+        <span>Low Latency</span>
+        </a>
+        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+        <a href="" target="">
+        <span>Supporting Multiple languages</span>
+        </a>
 </div>
 
-## Quick Start
+<br >
 
-### Playground
+ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
+
+With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
+
+<br>
+
+## Voice Agent
+
+ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
 <div align="center">
-<img  alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
 </div>
 
-We provide a [live playground](https://astra-agents.agora.io/) where you can experiment and interact with the Astra powered voice agent.
+As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
 
-### Run Local Agent
+### Run Voice Agent Locally
 
 Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
+#### Mac with Apple Silicon
+
 > [!NOTE]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon Mac.
+> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
 >
 > ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
 
@@ -54,7 +71,7 @@ To start, make sure you have:
 - [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
 
-```shell
+```bash
 # run the pre-built agent image
 docker run --restart=always -itd -p 8080:8080 \
         -v /tmp:/tmp \
@@ -77,7 +94,7 @@ You can use the playground project to test with the server you just started.
 
 The Playground project is built on NextJS 14, hence it needs Node 18+.
 
-```shell
+```bash
 # set up an .env file
 cp ./playground/.env.example ./playground/.env
 cd playground
@@ -86,7 +103,7 @@ cd playground
 npm i && npm run dev
 ```
 
-🎉 Congratulations! You now have our Astra.ai voice agent running locally.
+🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
 
 </br>
 
@@ -112,7 +129,7 @@ You might want to add more flavors to make the agent better suited to your needs
 
 You need to prepare the proper `manifest.json` file first.
 
-```shell
+```bash
 # rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
 
@@ -130,7 +147,7 @@ This code generates an agent executable. To customize your prompts and OpenAI pa
 
 Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the Astra voice agent playground as we did in previous steps.
 
-```shell
+```bash
 
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
@@ -197,16 +214,6 @@ The Astra Store is a centralized platform where developers can share their exten
 ### Astra Package Manager
 
 The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the Astra Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
-
-</br>
-
-## Roadmap
-
-- [ ] UI Graph Editor, drag and drop, no/low code
-- [ ] Extensions Language Support: Python, JavaScript, TypeScript
-- [ ] Extension: Elevenlabs, Google, Whisper, Moondream and more
-- [ ] Example Agent: real-time video agent
-- [ ] Extension Store
 
 </br>
 
