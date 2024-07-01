@@ -31,7 +31,10 @@
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
         <a href="" target="">
-        <span>LLM Capabilities</span>
+        <span>LLM Operations</span>
+        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+        <a href="" target="">
+        <span>Supporting Multiple languages</span>
         </a>
 </div>
 
@@ -41,7 +44,7 @@ ASTRA is an open-source platform designed for developing applications utilizing 
 
 With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
 
-br>
+<br>
 
 ## Voice Agent
 
@@ -60,7 +63,7 @@ Of course, you are more than welcome to run our voice agent locally. We have a D
 #### Mac with Apple Silicon
 
 > [!NOTE]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon. The default is checked when fresh installing Docker.
+> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
 >
 > ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
 
