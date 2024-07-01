@@ -51,10 +51,9 @@ func (p *interruptDetectorExtension) OnData(
 		return
 	}
 
-	final, err := data.GetPropertyBool(textDataFinalField)
-	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataFinalField, err), logTag)
-		return
+	var final bool
+	if len(text) >= 2 {
+		final = true
 	}
 
 	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
