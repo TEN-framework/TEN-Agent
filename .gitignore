@@ -25,3 +25,5 @@ node_modules/
 session_control.conf.agora
 xdump_config
 .vscode/
+speechsdk/
+SpeechSDK-Linux.tar.gz

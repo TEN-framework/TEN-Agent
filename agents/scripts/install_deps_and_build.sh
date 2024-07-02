@@ -82,6 +82,15 @@ main() {
   echo "install dependencies..."
   arpm install
 
+  # Install azure speechsdk
+  export SPEECHSDK_ROOT=speechsdk
+  mkdir -p "$SPEECHSDK_ROOT"
+  wget -O SpeechSDK-Linux.tar.gz https://aka.ms/csspeech/linuxbinary
+  tar --strip 1 -xzf SpeechSDK-Linux.tar.gz -C "$SPEECHSDK_ROOT"
+  cp -r "$SPEECHSDK_ROOT"/include/* addon/extension/azure_tts/include/microsoft/
+  cp "$SPEECHSDK_ROOT"/lib/x64/lib* addon/extension/azure_tts/lib/
+
+  # build addons and app
   build_cxx_addon $APP_HOME
   build_go_app $APP_HOME
 }
