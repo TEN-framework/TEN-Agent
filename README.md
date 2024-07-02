@@ -217,13 +217,12 @@ The Astra Package Manager simplifies the process of uploading, sharing, download
 
 </br>
 
-## Contributing
-
+## Contributing 
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-## Contributors
-[![astra.ai](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 
+## Code Contributors
+[![astra.ai](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 </br>
 
 ## License
