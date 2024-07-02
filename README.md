@@ -1,9 +1,6 @@
-<!-- <div align="center">
- <img alt="ASTRA" width="500px" height="auto" src="./images/logo_banner_ref_line.png">
-</div> -->
-
-![Fancy logo](./images/logo_banner_ref_line_dark#gh-dark-mode-only)
-![Fancy logo](./images/logo_banner_ref_line_light.png#gh-light-mode-only)
+<div align="center">
+ <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
+</div>
 
 <br>
 
