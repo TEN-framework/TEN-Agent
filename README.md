@@ -1,12 +1,12 @@
 <div align="center">
- <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
+ <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
 </div>
 
 <br>
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
 <a href="" target="_blank">
 <img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
 <a href="" target="_blank">
