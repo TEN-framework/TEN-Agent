@@ -117,7 +117,7 @@ npm i && npm run dev
 cp ./agents/manifest.json.example ./agents/manifest.json
 
 # pull the docker image with dev tools and mount your current folder as workspace
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build:0.1.0
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build
 
 # enter docker image
 docker exec -it astra_agents_dev bash
