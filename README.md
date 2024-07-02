@@ -6,7 +6,7 @@
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
 <a href="" target="_blank">
 <img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
 <a href="" target="_blank">
