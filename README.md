@@ -1,6 +1,9 @@
-<div align="center">
- <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
-</div>
+<!-- <div align="center">
+ <img alt="ASTRA" width="500px" height="auto" src="./images/logo_banner_ref_line.png">
+</div> -->
+
+![Fancy logo](./images/logo_banner_ref_line_dark#gh-dark-mode-only)
+![Fancy logo](./images/logo_banner_ref_line_light.png#gh-light-mode-only)
 
 <br>
 
