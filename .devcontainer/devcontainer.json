@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
     "name": "astra",
-    "image": "agoraio/astra_agents_build:0.1.0",
+    "image": "agoraio/astra_agents_build:0.2.0",
 
     "customizations": {
         "vscode": {
