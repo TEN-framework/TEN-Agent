@@ -10,17 +10,22 @@
 namespace azure_tts_extension {
 
 bool AzureTTS::Start() {
-  auto config = Microsoft::CognitiveServices::Speech::SpeechConfig::FromSubscription(key_, region_);
-  config->SetSpeechSynthesisVoiceName(voice_name_);
-  config->SetSpeechSynthesisOutputFormat(format_);
+  try {
+    auto config = Microsoft::CognitiveServices::Speech::SpeechConfig::FromSubscription(key_, region_);
+    config->SetSpeechSynthesisVoiceName(voice_name_);
+    config->SetSpeechSynthesisOutputFormat(format_);
 
-  speech_synthesizer_ = Microsoft::CognitiveServices::Speech::SpeechSynthesizer::FromConfig(config, nullptr);
-  AZURE_TTS_LOGI("speech_synthesizer created");
+    speech_synthesizer_ = Microsoft::CognitiveServices::Speech::SpeechSynthesizer::FromConfig(config, nullptr);
+    AZURE_TTS_LOGI("speech_synthesizer created");
 
-  // pre-connect and reuse SpeechSynthesizer to avoid first time connection latency 
-  connection_ = Microsoft::CognitiveServices::Speech::Connection::FromSpeechSynthesizer(speech_synthesizer_);
-  connection_->Open(true);
-  AZURE_TTS_LOGI("speech_synthesizer opened");
+    // pre-connect and reuse SpeechSynthesizer to avoid first time connection latency 
+    connection_ = Microsoft::CognitiveServices::Speech::Connection::FromSpeechSynthesizer(speech_synthesizer_);
+    connection_->Open(true);
+    AZURE_TTS_LOGI("speech_synthesizer opened");
+  } catch (const std::exception& e) {
+    AZURE_TTS_LOGE("speech_synthesizer exception catched: %s", e.what());
+    return false;
+  }
 
   // start thread to process tts tasks one by one
   thread_ = std::thread([this]() {
