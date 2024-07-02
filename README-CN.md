@@ -1,20 +1,25 @@
 <div align="center">
- <img alt="astra.ai" width="300px" height="auto" src="https://github.com/rte-design/ASTRA.ai/assets/471561/ef098c57-9e5c-479d-8ca5-0ad62a1a1423">
+ <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
 </div>
 
-<h1 align="center">Astra.ai</h1>
+<br>
 
 <div align="center">
 
-<a href="https://discord.gg/9VDGJ9F7"><img src="https://img.shields.io/badge/Discord-@Astra AI%20-blue.svg?logo=discord"></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Agora RTE" /></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="Agora RTC" /></a>
-<a href="">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt="Agora Chat"/></a>
+<a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
+<a href="" target="_blank">
+<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
 
 </div>
+
+<p align="center">
+<a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+</p>
 
 <div align="center">
 
@@ -112,7 +117,7 @@ npm i && npm run dev
 cp ./agents/manifest.json.example ./agents/manifest.json
 
 # pull the docker image with dev tools and mount your current folder as workspace
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build:0.1.0
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build
 
 # enter docker image
 docker exec -it astra_agents_dev bash
