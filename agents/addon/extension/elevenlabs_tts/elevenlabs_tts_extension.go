@@ -198,6 +198,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 			var (
 				firstFrameLatency int64
 				n                 int
+				pcmFrameRead      int
 				readBytes         int
 				sentFrames        int
 			)
@@ -211,25 +212,29 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 					break
 				}
 
-				n, err = r.Read(buf)
+				n, err = r.Read(buf[pcmFrameRead:])
 				readBytes += n
+				pcmFrameRead += n
 
-				if err == io.EOF {
-					break
-				}
 				if err != nil {
+					if err == io.EOF {
+						slog.Info("read pcm stream EOF", logTag)
+						break
+					}
+
 					slog.Error(fmt.Sprintf("read pcm stream failed, err: %v", err), logTag)
 					break
 				}
 
-				if n != pcmFrameSize {
-					slog.Debug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", n), logTag)
+				if pcmFrameRead != pcmFrameSize {
+					slog.Debug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", pcmFrameRead), logTag)
 					continue
 				}
 
 				pcm.send(rte, buf)
 				// clear buf
 				buf = pcm.newBuf()
+				pcmFrameRead = 0
 				sentFrames++
 
 				if firstFrameLatency == 0 {
