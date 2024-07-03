@@ -178,6 +178,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 			slog.Info(fmt.Sprintf("textChan text: [%s]", msg.text), logTag)
 
 			r, w := io.Pipe()
+			startTime := time.Now()
 
 			go func() {
 				defer wg.Done()
@@ -194,7 +195,12 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 
 			slog.Info(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize), logTag)
 
-			var n int
+			var (
+				firstFrameLatency int64
+				n                 int
+				readBytes         int
+				sentFrames        int
+			)
 			buf := pcm.newBuf()
 
 			// read pcm stream
@@ -206,6 +212,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 				}
 
 				n, err = r.Read(buf)
+				readBytes += n
 
 				if err == io.EOF {
 					break
@@ -223,17 +230,25 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 				pcm.send(rte, buf)
 				// clear buf
 				buf = pcm.newBuf()
+				sentFrames++
+
+				if firstFrameLatency == 0 {
+					firstFrameLatency = time.Since(startTime).Milliseconds()
+					slog.Info(fmt.Sprintf("first frame available for text: [%s], receivedTs: %d, firstFrameLatency: %dms", msg.text, msg.receivedTs, firstFrameLatency), logTag)
+				}
 
 				slog.Debug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text), logTag)
 			}
 
 			if pcm.checkBufRemain(buf) {
 				pcm.send(rte, buf)
+				sentFrames++
 				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s]", msg.text), logTag)
 			}
 
 			r.Close()
-			slog.Info(fmt.Sprintf("send pcm data finished, text: [%s]", msg.text), logTag)
+			slog.Info(fmt.Sprintf("send pcm data finished, text: [%s], receivedTs: %d, readBytes: %d, sentFrames: %d, firstFrameLatency: %dms, finishLatency: %dms",
+				msg.text, msg.receivedTs, readBytes, sentFrames, firstFrameLatency, time.Since(startTime).Milliseconds()), logTag)
 		}
 	}()
 
