@@ -29,15 +29,23 @@ type elevenlabsTTSConfig struct {
 	ModelId                  string
 	OptimizeStreamingLatency int
 	RequestTimeoutSeconds    int
+	SimilarityBoost          float32
+	SpeakerBoost             bool
+	Stability                float32
+	Style                    float32
 	VoiceId                  string
 }
 
 func defaultElevenlabsTTSConfig() elevenlabsTTSConfig {
 	return elevenlabsTTSConfig{
 		ApiKey:                   "",
-		ModelId:                  "eleven_multilingual_v1",
-		OptimizeStreamingLatency: 0,
+		ModelId:                  "eleven_multilingual_v2",
+		OptimizeStreamingLatency: 0.0,
 		RequestTimeoutSeconds:    30,
+		SimilarityBoost:          0.75,
+		SpeakerBoost:             false,
+		Stability:                0.5,
+		Style:                    0.0,
 		VoiceId:                  "pNInz6obpgDQGcFmaJgB",
 	}
 }
@@ -51,9 +59,14 @@ func newElevenlabsTTS(config elevenlabsTTSConfig) (*elevenlabsTTS, error) {
 
 func (e *elevenlabsTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
 	req := elevenlabs.TextToSpeechRequest{
-		Text:          text,
-		ModelID:       e.config.ModelId,
-		VoiceSettings: &elevenlabs.VoiceSettings{},
+		Text:    text,
+		ModelID: e.config.ModelId,
+		VoiceSettings: &elevenlabs.VoiceSettings{
+			SimilarityBoost: e.config.SimilarityBoost,
+			SpeakerBoost:    e.config.SpeakerBoost,
+			Stability:       e.config.Stability,
+			Style:           e.config.Style,
+		},
 	}
 	queries := []elevenlabs.QueryFunc{
 		elevenlabs.LatencyOptimizations(e.config.OptimizeStreamingLatency),
