@@ -8,7 +8,12 @@
             "type": "system",
             "name": "rte_runtime",
             "version": "0.1.0"
-        }
+        },
+        {
+            "type": "system",
+            "name": "azure_speech_sdk",
+            "version": "1.38.0"
+        }      
     ],
     "api": {
         "property": {
