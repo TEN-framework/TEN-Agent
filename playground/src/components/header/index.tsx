@@ -1,7 +1,7 @@
 "use client"
 
 import { useAppSelector, GITHUB_URL,useSmallScreen} from "@/common"
-import { LogoIcon } from "@/components/icons"
+import Logo from "@/components/logo"
 import Network from "./network"
 import { GithubIcon } from "@/components/icons"
 
@@ -25,7 +25,7 @@ const Header = () => {
 
   return <div className={styles.header}>
     <span className={styles.logoWrapper}>
-      <LogoIcon size="small"></LogoIcon>
+      <Logo width={24} height={24}></Logo>
       <span className={styles.text}>ASTRA</span>
     </span>
     <span className={styles.content}>{channelNameText}</span>
