@@ -157,12 +157,9 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 	// set elevenlabsTTS instance
 	e.elevenlabsTTS = elevenlabsTTS
 
-	// pcm parameters
-	sampleRate := int32(16000)
-	samplesPer10ms := sampleRate / 100
-	channel := int32(1)
-	bytesPerSample := int32(2)
-	pcmFrameSize := int(samplesPer10ms * channel * bytesPerSample) // per 10ms
+	// create pcm instance
+	pcm := newPcm(defaultPcmConfig())
+	pcmFrameSize := pcm.getPcmFrameSize()
 
 	// init chan
 	textChan = make(chan *message, textChanMax)
@@ -195,15 +192,15 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 				}
 			}()
 
-			slog.Info(fmt.Sprintf("read PCM stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize), logTag)
+			slog.Info(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize), logTag)
 
 			var n int
-			buf := make([]byte, pcmFrameSize)
+			buf := pcm.newBuf()
 
-			// read PCM stream
+			// read pcm stream
 			for {
 				if msg.receivedTs < outdateTs.Load() { // Check whether to interrupt
-					slog.Info(fmt.Sprintf("read PCM stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
+					slog.Info(fmt.Sprintf("read pcm stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
 						msg.text, msg.receivedTs, outdateTs.Load()), logTag)
 					break
 				}
@@ -214,53 +211,29 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 					break
 				}
 				if err != nil {
-					slog.Error(fmt.Sprintf("read PCM stream failed, err: %v", err), logTag)
+					slog.Error(fmt.Sprintf("read pcm stream failed, err: %v", err), logTag)
 					break
 				}
 
 				if n != pcmFrameSize {
-					slog.Warn(fmt.Sprintf("the number of bytes read is [%d] inconsistent with PCM frame size", n), logTag)
+					slog.Debug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", n), logTag)
 					continue
 				}
 
-				pcmFrame, err := rtego.NewPcmFrame("pcm_frame")
-				if err != nil {
-					slog.Error(fmt.Sprintf("NewPcmFrame failed, err: %v", err), logTag)
-					break
-				}
-
-				// send PCM data
-				pcmFrame.SetBytesPerSample(bytesPerSample)
-				pcmFrame.SetSampleRate(sampleRate)
-				pcmFrame.SetChannelLayout(1)
-				pcmFrame.SetNumberOfChannels(channel)
-				pcmFrame.SetTimestamp(0)
-				pcmFrame.SetDataFmt(rtego.PcmFrameDataFmtInterleave)
-				pcmFrame.SetSamplesPerChannel(samplesPer10ms)
-				pcmFrame.AllocBuf(pcmFrameSize)
-
-				borrowedBuf, err := pcmFrame.BorrowBuf()
-				if err != nil {
-					slog.Error(fmt.Sprintf("BorrowBuf failed, err: %v", err), logTag)
-					break
-				}
-
-				// copy data
-				copy(borrowedBuf, buf)
-
-				pcmFrame.GiveBackBuf(&borrowedBuf)
-				if err = rte.SendPcmFrame(pcmFrame); err != nil {
-					slog.Error(fmt.Sprintf("SendPcmFrame failed, err: %v", err), logTag)
-				}
-
+				pcm.send(rte, buf)
 				// clear buf
-				buf = make([]byte, pcmFrameSize)
+				buf = pcm.newBuf()
 
-				slog.Debug(fmt.Sprintf("sending PCM data, text: [%s]", msg.text), logTag)
+				slog.Debug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text), logTag)
+			}
+
+			if pcm.checkBufRemain(buf) {
+				pcm.send(rte, buf)
+				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s]", msg.text), logTag)
 			}
 
 			r.Close()
-			slog.Info(fmt.Sprintf("send PCM data finished, text: [%s]", msg.text), logTag)
+			slog.Info(fmt.Sprintf("send pcm data finished, text: [%s]", msg.text), logTag)
 		}
 	}()
 
