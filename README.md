@@ -1,5 +1,5 @@
 <div align="center">
- <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
+ <img alt="ASTRA"  height="auto" src="./images/new-banner.png">
 </div>
 
 <br>
@@ -7,12 +7,15 @@
 <div align="center">
 
 <a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
+<a href="https://twitter.com/intent/follow?screen_name=AstraFramework" target="_blank">
+<img src="https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5"
+            alt="follow on X"></a>
 <a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
+<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="Real time engagement" /></a>
+<a href="https://github.com/rte-design/astra.ai/graphs/commit-activity" target="_blank">
+<img alt="Commits" src="https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98"></a>
+<a href="https://github.com/rte-design/ASTRA.ai/issues" target="_blank">
+<img alt="Issues closed" src="https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green"></a>
 
 </div>
 
@@ -48,7 +51,7 @@ With ASTRA, you can easily create real-time, multi-modal AI applications with lo
 ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
 <div align="center">
-<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+<img alt="ASTRA Voice Agent" src="./images/astra-voice-agent.gif">
 </div>
 
 As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
@@ -119,7 +122,7 @@ Our voice agent is a great place for you to start with, it uses following Extens
 
 <div align="center">
 
-<image alt="Astra.ai" width="800px" src="./images/image-2.png">
+<image alt="ASTRA" width="800px" src="./images/image-2.png">
 
 </div>
 
@@ -145,7 +148,7 @@ make build
 
 This code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in agents/addon/extension/openai_chatgpt/openai_chatgpt.go.
 
-Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the Astra voice agent playground as we did in previous steps.
+Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent playground as we did in previous steps.
 
 ```bash
 
@@ -166,19 +169,19 @@ make run-server
 
 <br />
 
-# Astra Service
+# ASTRA Service
 
-Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Extension Store and the Astra Package Manager.
+Now let's discuss what's under the hood. The ASTRA Service is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
 <div align="center">
 
-<image alt="Astra.ai" width="800px" src="./images/image.png">
+<image alt="ASTRA" width="800px" src="./images/image.png">
 
 </div>
 
-### Astra Extensions
+### ASTRA Extensions
 
-An extension is the fundamental unit of composition within the Astra framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. Astra emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
+An extension is the fundamental unit of composition within the ASTRA framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. ASTRA emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
 
 For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. Meanwhile, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
 
@@ -192,9 +195,9 @@ As of June 2024, we support extensions written in the following languages:
 
 ### Graph
 
-A Graph in Astra describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a Graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
+A Graph in ASTRA describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a Graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
-In Astra, there are four main types of data flow between extensions:
+In ASTRA, there are four main types of data flow between extensions:
 
 - Command
 - Data
@@ -203,26 +206,27 @@ In Astra, there are four main types of data flow between extensions:
 
 By specifying the direction of these data types in the Graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
 
-### Astra Agent App
+### ASTRA Agent App
 
-An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
+An ASTRA Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
 
-### Astra Extension Store
+### ASTRA Extension Store
 
-The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
+The ASTRA Store is a centralized platform where developers can share their extensions and access those created by others.
 
-### Astra Package Manager
+### ASTRA Package Manager
 
-The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the Astra Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
+The ASTRA Package Manager simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the ASTRA Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
 
 </br>
 
-## Contributing 
+## Contributing
+
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-
 ## Code Contributors
-[![astra.ai](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
+
+[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 </br>
 
 ## License
