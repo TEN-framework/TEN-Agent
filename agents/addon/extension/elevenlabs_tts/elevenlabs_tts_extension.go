@@ -245,10 +245,10 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 				slog.Debug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text), logTag)
 			}
 
-			if pcm.checkBufRemain(buf) {
+			if pcmFrameRead > 0 {
 				pcm.send(rte, buf)
 				sentFrames++
-				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s]", msg.text), logTag)
+				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead), logTag)
 			}
 
 			r.Close()

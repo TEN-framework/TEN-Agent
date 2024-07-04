@@ -49,16 +49,6 @@ func newPcm(config *pcmConfig) *pcm {
 	}
 }
 
-func (p *pcm) checkBufRemain(buf []byte) (remain bool) {
-	for _, b := range buf {
-		if b != 0 {
-			return true
-		}
-	}
-
-	return
-}
-
 func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rtego.PcmFrame, err error) {
 	pcmFrame, err = rtego.NewPcmFrame(p.config.Name)
 	if err != nil {
