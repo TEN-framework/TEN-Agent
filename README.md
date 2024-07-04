@@ -1,5 +1,5 @@
 <div align="center">
- <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
+ <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_ref_line_light.png">
 </div>
 
 <br>
@@ -37,15 +37,15 @@
 
 <br >
 
-ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
+ASTRA is an open-source platform designed for developing agents utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI agents. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI agents.
 
-With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
+With ASTRA, you can easily create real-time, multi-modal AI agents with low latency, even without any coding knowledge. 🎉
 
 <br>
 
 ## Voice Agent
 
-ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
+ASTRA is a versatile platform that can be used to build a wide range of agents. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
 <div align="center">
 <img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
@@ -55,7 +55,7 @@ As you can see, the real-time multimodal interactions, low latency, and responsi
 
 ### Run Voice Agent Locally
 
-Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
+Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the voice agent on both macOS and Windows.
 
 #### Mac with Apple Silicon
 
@@ -66,10 +66,10 @@ Of course, you are more than welcome to run our voice agent locally. We have a D
 
 To start, make sure you have:
 
-- Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/)
+- [Docker App](https://www.docker.com/)
 
 ```bash
 # run the pre-built agent image
@@ -86,13 +86,13 @@ docker run --restart=always -itd -p 8080:8080 \
         agoraio/astra_agents_server:0.1.2
 ```
 
-This should start an agent server running on port 8080.
+This should start server for the voice agent running on the port 8080.
 
-### Use the playground to connect to your agent
+### Connect to voice agent
 
-You can use the playground project to test with the server you just started.
+You can use the voice agent project, in the `./playground`, to test with the server you just started.
 
-The Playground project is built on NextJS 14, hence it needs Node 18+.
+The project is built on NextJS 14, so it requires Node 18 or higher.
 
 ```bash
 # set up an .env file
@@ -103,7 +103,7 @@ cd playground
 npm i && npm run dev
 ```
 
-🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
+Congratulations! You now have our ASTRA powered voice agent running locally. 🎉
 
 </br>
 
@@ -217,11 +217,12 @@ The Astra Package Manager simplifies the process of uploading, sharing, download
 
 </br>
 
-## Contributing 
+## Contributing
+
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-
 ## Code Contributors
+
 [![astra.ai](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 </br>
 
