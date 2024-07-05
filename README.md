@@ -1,5 +1,5 @@
 <div align="center">
- <img alt="ASTRA"  height="auto" src="./images/new-banner.png">
+ <img alt="ASTRA"  height="auto" src="./images/new-banner-without-tagline.png">
 </div>
 
 <br>
