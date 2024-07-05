@@ -25,15 +25,15 @@
 </p>
 
 <div align="center">
-        <a href="" target="">
+        <a href="" target="_blank">
         <span>Real-time Multi-model Interactions</span>
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="">
+        <a href="" target="_blank">
         <span>Low Latency</span>
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="">
+        <a href="" target="_blank">
         <span>Supporting Multiple languages</span>
         </a>
 </div>
