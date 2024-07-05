@@ -38,6 +38,7 @@ build_cxx_addon() {
       exit 1
     fi
 
+    mkdir -p $app_dir/addon/extension/$extension_name/lib
     cp -r $extension/lib/* $app_dir/addon/extension/$extension_name/lib
   done
 }
@@ -81,16 +82,6 @@ main() {
   # Install all dependencies specified in manifest.json.
   echo "install dependencies..."
   arpm install
-
-  # Install azure speechsdk
-  export SPEECHSDK_ROOT=speechsdk
-  mkdir -p "$SPEECHSDK_ROOT"
-  wget -O SpeechSDK-Linux.tar.gz https://aka.ms/csspeech/linuxbinary
-  tar --strip 1 -xzf SpeechSDK-Linux.tar.gz -C "$SPEECHSDK_ROOT"
-  cp -r "$SPEECHSDK_ROOT"/include/* addon/extension/azure_tts/include/microsoft/
-  cp "$SPEECHSDK_ROOT"/lib/x64/lib* addon/extension/azure_tts/lib/
-  cp "$SPEECHSDK_ROOT"/lib/x64/lib* addon/extension/agora_rtc/lib/
-  rm -rf SpeechSDK-Linux.tar.gz "$SPEECHSDK_ROOT"
 
   # build addons and app
   build_cxx_addon $APP_HOME
