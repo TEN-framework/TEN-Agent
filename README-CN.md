@@ -1,18 +1,24 @@
 <div align="center">
- <img alt="ASTRA" width="500px" height="auto" src="./images/logo_banner.png">
+ <img alt="ASTRA"  height="auto" src="./images/new-banner-without-tagline.png">
 </div>
 
 <br>
 
 <div align="center">
 
-<a href="https://discord.gg/bCZQ97wr" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
+<a href="https://twitter.com/intent/follow?screen_name=AstraFramework" target="_blank"><img src="https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5" alt="follow on X"></a>
+<a href="https://github.com/rte-design/astra.ai/graphs/commit-activity" target="_blank">
+<img alt="Commits" src="https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98"></a>
+<a href="https://github.com/rte-design/ASTRA.ai/issues" target="_blank">
+<img alt="Issues closed" src="https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green"></a>
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)]()
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg)]()
+
+[![](https://dcbadge.vercel.app/api/server/p85NR8UD)](https://discord.gg/p85NR8UD)
+
+[![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
 </div>
 
