@@ -1,18 +1,17 @@
 <div align="center">
- <img alt="ASTRA"  height="auto" src="./images/new-banner-without-tagline.png">
+ <img alt="ASTRA" height="auto" src="./images/new-banner-without-tagline.png">
 </div>
 
 <br>
 
 <div align="center">
 
-<a href="https://twitter.com/intent/follow?screen_name=AstraFramework" target="_blank"><img src="https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5" alt="follow on X"></a>
-<a href="https://github.com/rte-design/astra.ai/graphs/commit-activity" target="_blank">
-<img alt="Commits" src="https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98"></a>
-<a href="https://github.com/rte-design/ASTRA.ai/issues" target="_blank">
-<img alt="Issues closed" src="https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green"></a>
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)]()
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg)]()
+[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
 [![](https://dcbadge.vercel.app/api/server/p85NR8UD)](https://discord.gg/p85NR8UD)
 
