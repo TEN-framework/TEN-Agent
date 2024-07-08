@@ -81,7 +81,8 @@
                         "max_tokens": 512,
                         "prompt": "",
                         "proxy_url": "",
-                        "greeting": "ASTRA agent connected. How can i help you today?"
+                        "greeting": "ASTRA agent connected. How can i help you today?",
+                        "max_memory_length": 10
                     }
                 },
                 {
