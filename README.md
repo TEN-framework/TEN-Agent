@@ -58,16 +58,12 @@ ASTRA is a versatile platform that can be used to build a wide range of applicat
 
 As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
 
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+
 ### Run Voice Agent Locally
 
 Of course, you are more than welcome to run the example voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
-
-#### Mac with Apple Silicon
-
-> [!NOTE]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
->
-> ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
 
 To start, make sure you have:
 
@@ -90,6 +86,16 @@ docker run --restart=always -itd -p 8080:8080 \
         --name astra_agents_server \
         agoraio/astra_agents_server:0.1.2
 ```
+
+#### Mac with Apple Silicon
+
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
+
+<div align="center">
+
+![alt text](<Kapture 2024-07-08 at 14.03.25.gif>)
+
+</div>
 
 This should start an agent server running on port 8080.
 
@@ -181,6 +187,9 @@ Now let's discuss what's under the hood. The ASTRA Service is composed of variou
 
 </div>
 
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+
 ### ASTRA Extensions
 
 An extension is the fundamental unit of composition within the ASTRA framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. ASTRA emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
@@ -193,7 +202,10 @@ As of June 2024, we support extensions written in the following languages:
 
 - C++
 - Golang
-- Python (planned for July)
+- Python
+
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
 
 ### Graph
 
@@ -208,17 +220,35 @@ In ASTRA, there are four main types of data flow between extensions:
 
 By specifying the direction of these data types in the Graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
 
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+
 ### ASTRA Agent App
 
 An ASTRA Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
+
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
 
 ### ASTRA Extension Store
 
 The ASTRA Store is a centralized platform where developers can share their extensions and access those created by others.
 
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+
 ### ASTRA Package Manager
 
 The ASTRA Package Manager simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the ASTRA Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
+
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">Join our Community</h2>
+
+- [Discord](https://dcbadge.vercel.app/api/server/p85NR8UD): Ideal for sharing your applications and engaging with the community.
+- [Github Discussion](https://github.com/rte-design/astra.ai/discussions). Perfect for providing feedback and asking questions.
+- [GitHub Issues](https://github.com/rte-design/astra.ai/issues). Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](CONTRIBUTING.md) for more details.
+- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework). Great for sharing your agents and interacting with the community.
 
 <br>
 <hr style="height: 1px; border: none; background-color: lightgray;">
