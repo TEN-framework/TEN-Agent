@@ -27,15 +27,15 @@
 </p>
 
 <div align="center">
-        <a href="" target="_blank">
+        <a href="">
         <span>Real-time Multi-model Interactions</span>
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="_blank">
+        <a href="">
         <span>Low Latency</span>
         </a>
         <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="_blank">
+        <a href="">
         <span>Supporting Multiple languages</span>
         </a>
 </div>
@@ -47,8 +47,8 @@ ASTRA is an open-source platform designed for developing applications utilizing 
 With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
 
 <br>
-
-## Voice Agent
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">Voice Agent</h2>
 
 ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
@@ -60,7 +60,7 @@ As you can see, the real-time multimodal interactions, low latency, and responsi
 
 ### Run Voice Agent Locally
 
-Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
+Of course, you are more than welcome to run the example voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
 #### Mac with Apple Silicon
 
@@ -110,9 +110,9 @@ npm i && npm run dev
 
 🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
 
-</br>
-
-# Agent Customization
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">Agent Customization</h2>
 
 Our voice agent is a great place for you to start with, it uses following Extensions:
 
@@ -169,9 +169,9 @@ make run-server
 
 🎉 Congratulations! You have created your first personalized voice agent.
 
-<br />
-
-# ASTRA Service
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">ASTRA Service</h2>
 
 Now let's discuss what's under the hood. The ASTRA Service is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
@@ -220,17 +220,20 @@ The ASTRA Store is a centralized platform where developers can share their exten
 
 The ASTRA Package Manager simplifies the process of uploading, sharing, downloading, and installing ASTRA extensions. Extensions can specify dependencies on other extensions and the environment, and the ASTRA Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
 
-</br>
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">Code Contributors</h2>
 
-## Contributing
+[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
+
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">Contributing</h2>
 
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-## Code Contributors
-
-[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
-</br>
-
-## License
+<br>
+<hr style="height: 1px; border: none; background-color: lightgray;">
+<h2 style="border-bottom: none; padding-top:10px;">License</h2>
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
