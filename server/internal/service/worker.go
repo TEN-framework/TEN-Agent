@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -65,10 +66,9 @@ func (w *Worker) start(req *common.StartReq) error {
 func (w *Worker) stop(requestId string, channelName string) error {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, logTag)
 
-	shell := fmt.Sprintf("kill -9 %d", w.Pid)
-	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+	err := syscall.Kill(w.Pid, syscall.SIGTERM)
 	if err != nil {
-		slog.Error("Worker kill failed", "err", err, "output", output, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return err
 	}
 
