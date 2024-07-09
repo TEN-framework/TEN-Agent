@@ -152,6 +152,7 @@ class azure_tts_extension_t : public rte::extension_t {
       azure_tts_->Stop();
       azure_tts_ = nullptr;
     }
+    rte_proxy_.reset();
 
     // Extension stop.
     rte.on_stop_done();
