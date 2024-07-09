@@ -46,8 +46,6 @@ func main() {
 		workerQuitTimeoutSeconds = 60
 	}
 
-	var manifestJsonFile string
-
 	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
 	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
 	flag.StringVar(&httpServerConfig.Address, "port", ":8080", "http server listen address")
@@ -60,7 +58,7 @@ func main() {
 	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	httpServerConfig.ManifestJson, err = loadManifest(manifestJsonFile)
+	httpServerConfig.ManifestJson, err = loadManifest(ManifestJsonFile)
 	if err != nil {
 		panic(err)
 	}
