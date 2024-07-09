@@ -69,7 +69,7 @@ docker run --restart=always -itd -p 8080:8080 \
         -e AZURE_TTS_KEY=<your_azure_tts_key> \
         -e AZURE_TTS_REGION=<your_azure_tts_region> \
         --name astra_agents_server \
-        agoraio/astra_agents_server:0.1.2
+        agoraio/astra_agents_server:latest
 ```
 
 这条命令将启动一个运行在 8080 端口的代理服务器。
