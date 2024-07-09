@@ -2,15 +2,15 @@ name: Build Docker
 
 on: 
   push:
-    branches: [ "main", "feature/docker" ]
+    branches: [ "main", "faeture/docker" ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
-    # paths-ignore:
-    #   - '.devcontainer/**'
-    #   - '.github/ISSUE_TEMPLATE/**'
-    #   - 'images/**'
-    #   - 'playground/**'
-    #   - '**.md'
+    paths-ignore:
+      - '.devcontainer/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'images/**'
+      - 'playground/**'
+      - '**.md'
   pull_request:
     branches: [ "main" ]
 
