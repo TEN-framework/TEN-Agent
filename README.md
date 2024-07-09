@@ -42,10 +42,8 @@ ASTRA is an open-source platform designed for developing applications utilizing 
 
 With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:20px;">Voice Agent</h2>
-</div>
+<br>
+<h2>Voice Agent</h2>
 
 ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
 
@@ -55,10 +53,7 @@ ASTRA is a versatile platform that can be used to build a wide range of applicat
 
 As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="border-bottom: none; padding-top:20px;">Run Voice Agent Locally</h3>
-</div>
+<h3>Run Voice Agent Locally</h3>
 
 Of course, you are more than welcome to run the example voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
@@ -96,7 +91,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 
 This should start an agent server running on port 8080.
 
-<h3 style="border-bottom: none; padding-top:20px;">Connect to Your Agent</h3>
+<h3>Connect to Your Agent</h3>
 
 You can use the playground project to test with the server you just started.
 
@@ -113,10 +108,8 @@ npm i && npm run dev
 
 🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:20px;">Agent Customization</h2>
-</div>
+<br />
+<h2>Agent Customization</h2>
 
 Our voice agent is a great place for you to start with, it uses following Extensions:
 
@@ -132,7 +125,7 @@ Our voice agent is a great place for you to start with, it uses following Extens
 
 </div>
 
-<h3 style="border-bottom: none; padding-top:20px;">Customize Agent</h3>
+<h3>Customize Agent</h3>
 
 You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
 
@@ -174,8 +167,7 @@ make run-server
 🎉 Congratulations! You have created your first personalized voice agent.
 
 <br>
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:10px;">ASTRA Service</h2>
+<h2>ASTRA Service</h2>
 
 Now let's discuss what's under the hood. The ASTRA Service is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
@@ -186,8 +178,7 @@ Now let's discuss what's under the hood. The ASTRA Service is composed of variou
 </div>
 
 <br>
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="border-bottom: none; padding-top:20px;">ASTRA Extension</h3>
+<h2>ASTRA Extension</h2>
 
 An extension is the fundamental unit of composition within the ASTRA framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. ASTRA emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
 
@@ -198,8 +189,7 @@ For example, if an application requires real-time communication (RTC) features a
 As of July 2024, we support extensions written in **C++**, **Golang** and **Python**.
 
 <br>
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="border-bottom: none; padding-top:20px;">Graph</h3>
+<h2>Graph</h2>
 
 A Graph in ASTRA describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a Graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
 
@@ -207,60 +197,46 @@ In ASTRA, there are four main types of data flow between extensions, they are **
 
 By specifying the direction of these data types in the Graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="padding-top:20px;">ASTRA Agent App</h3>
-</div>
+<br>
+<h2>ASTRA Agent App</h2>
 
 An ASTRA Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.An ASTRA Agent App is a robust, server-side application that executes complex operations by integrating multiple Extensions within a flexible framework defined by Graph rules. These Graph rules orchestrate the interplay between various Extensions, enabling the app to perform sophisticated tasks that go beyond the capabilities of individual components.
 
 By leveraging this architecture, an ASTRA Agent App can seamlessly manage and coordinate different functionalities, ensuring that each Extension interacts harmoniously with others. This design allows developers to create powerful and scalable applications capable of handling intricate workflows and data processing requirements.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="padding-top:20px;"> ASTRA Extension Store</h3>
-</div>
+<br>
+<h2> ASTRA Extension Store</h2>
 
 The ASTRA Store is a centralized platform designed to foster collaboration and innovation among developers by providing a space where they can share their extensions. This allows developers to contribute to the community, showcase their work, and receive feedback from peers, enhancing the overall quality and functionality of the ASTRA ecosystem.
 
 In addition to sharing their own extensions, developers can also access a wide array of extensions created by others. This extensive library of extensions makes it easier to find tools and functionalities that can be integrated into their own projects, accelerating development and promoting best practices within the community. The ASTRA Store thus serves as a valuable resource for both novice and experienced developers looking to expand their capabilities and leverage the collective expertise of the community.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h3 style="padding-top:20px;"> ASTRA Package Manager</h3>
-</div>
+<br>
+<h2> ASTRA Package Manager</h2>
 
 The ASTRA Package Manager streamlines the entire process of handling ASTRA extensions, making it easy to upload, share, download, and install them. It significantly simplifies the workflow by allowing extensions to specify their dependencies on other extensions and the environment. This ensures that all necessary components are automatically managed and installed, reducing the potential for errors and conflicts.
 
 By automatically managing these dependencies, the ASTRA Package Manager makes the installation and release of extensions extremely convenient and intuitive. This tool not only saves time but also enhances the user experience by ensuring that every extension works seamlessly within the larger ecosystem. This level of automation and ease of use encourages the development and distribution of more robust and complex extensions, further enriching the ASTRA framework.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:20px;">Join Community</h2>
-</div>
+<br>
+<h2>Join Community</h2>
 
-- [Discord](https://dcbadge.vercel.app/api/server/p85NR8UD): Ideal for sharing your applications and engaging with the community.
+- [Discord](https://discord.gg/p85NR8UD): Ideal for sharing your applications and engaging with the community.
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](CONTRIBUTING.md) for more details.
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
 
-<div style="padding-top:20px;">
- <hr style="height: 1px; border: none; background-color: lightgray;">
- <h2 style="border-bottom: none; padding-top:20px;">Code Contributors</h2>
-</div>
+ <br>
+ <h2>Code Contributors</h2>
 
 [![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:20px;">Contribution Guidelines</h2>
-</div>
+<br>
+<h2>Contribution Guidelines</h2>
 
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-<div style="padding-top:20px;">
-<hr style="height: 1px; border: none; background-color: lightgray;">
-<h2 style="border-bottom: none; padding-top:20px;">License</h2>
-</div>
+<br>
+<h2>License</h2>
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
