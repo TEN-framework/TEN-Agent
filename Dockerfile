@@ -1,4 +1,4 @@
-FROM agoraio/astra_agents_build:0.1.0 AS builder
+FROM agoraio/astra_agents_build:latest AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
@@ -6,30 +6,22 @@ WORKDIR /app
 
 COPY . .
 COPY agents/manifest.json.example agents/manifest.json
+COPY agents/manifest.json.elevenlabs.example agents/manifest.elevenlabs.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN make build && \
+RUN export GOPROXY=https://proxy.golang.com.cn && make build && \
     cd agents && ./scripts/package.sh
 
-FROM agoraio/astra_agents_run:0.1.0
+FROM ubuntu:22.04
 
-ARG AGORA_APP_ID
-ARG AGORA_APP_CERTIFICATE
-ARG MANIFEST_JSON_FILE=./agents/manifest.json
-ARG AZURE_STT_KEY
-ARG AZURE_STT_REGION
-ARG OPENAI_API_KEY
-ARG AZURE_TTS_KEY
-ARG AZURE_TTS_REGION
-
-ENV AGORA_APP_ID=${AGORA_APP_ID}
-ENV AGORA_APP_CERTIFICATE=${AGORA_APP_CERTIFICATE}
-ENV MANIFEST_JSON_FILE=${MANIFEST_JSON_FILE}
-ENV AZURE_STT_KEY=${AZURE_STT_KEY}
-ENV AZURE_STT_REGION=${AZURE_STT_REGION}
-ENV OPENAI_API_KEY=${OPENAI_API_KEY}
-ENV AZURE_TTS_KEY=${AZURE_TTS_KEY}
-ENV AZURE_TTS_REGION=${AZURE_TTS_REGION}
+RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
+    libasound2 \
+    libgstreamer1.0-dev \
+    libunwind-dev \
+    libc++1 \
+    libssl-dev \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
 WORKDIR /app
 

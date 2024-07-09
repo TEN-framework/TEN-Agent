@@ -18,7 +18,7 @@ build-server:
 
 docker-build-server:
 	@echo ">> docker build server"
-	docker build -t $(REGISTRY)$(PROJECT_NAME):$(PROJECT_VERSION) -f Dockerfile_build .
+	docker build -t $(REGISTRY)$(PROJECT_NAME):$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
 	@echo ">> done"
 
 run-server:
