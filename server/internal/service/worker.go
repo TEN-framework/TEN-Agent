@@ -1,7 +1,7 @@
 package service
 
 import (
-	"app/internal/common"
+	"app/pkg/common"
 	"fmt"
 	"log/slog"
 	"os/exec"

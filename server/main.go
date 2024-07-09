@@ -12,28 +12,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tidwall/sjson"
-
 	"app/internal"
+	"app/internal/provider"
 	"app/internal/service"
-)
-
-const (
-	ManifestJsonFile           = "./agents/manifest.json"
-	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
+	"app/third_party/azure"
 )
 
 func main() {
-	httpServerConfig := internal.HttpServerConfig{}
-
 	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
 	if len(ttsVendorChinese) == 0 {
-		ttsVendorChinese = service.TTSVendorAzure //TODO vendor provider
+		ttsVendorChinese = azure.NAME
 	}
 
 	ttsVendorEnglish := os.Getenv("TTS_VENDOR_ENGLISH")
 	if len(ttsVendorEnglish) == 0 {
-		ttsVendorEnglish = service.TTSVendorAzure //TODO vendor provider
+		ttsVendorEnglish = azure.NAME
 	}
 
 	workersMax, err := strconv.Atoi(os.Getenv("WORKERS_MAX"))
@@ -46,29 +39,43 @@ func main() {
 		workerQuitTimeoutSeconds = 60
 	}
 
-	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
-	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
+	var manifestJsonDir string
+	flag.StringVar(&manifestJsonDir, "manifestJsonDir", "./agents/", "manifest json dir")
+
+	httpServerConfig := internal.HttpServerConfig{}
 	flag.StringVar(&httpServerConfig.Address, "port", ":8080", "http server listen address")
-	flag.StringVar(&httpServerConfig.TTSVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
-	flag.StringVar(&httpServerConfig.TTSVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
-	flag.IntVar(&httpServerConfig.WorkersMax, "workersMax", workersMax, "workers max")
-	flag.IntVar(&httpServerConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
+
+	mainServiceConfig := service.MainServiceConfig{}
+	flag.StringVar(&mainServiceConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
+	flag.StringVar(&mainServiceConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
+	flag.StringVar(&mainServiceConfig.TTSVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
+	flag.StringVar(&mainServiceConfig.TTSVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
+	flag.IntVar(&mainServiceConfig.WorkersMax, "workersMax", workersMax, "workers max")
+	flag.IntVar(&mainServiceConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
+
 	flag.Parse()
 
-	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
-		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
+	slog.Info("server config",
+		"ttsVendorChinese", mainServiceConfig.TTSVendorChinese,
+		"ttsVendorEnglish", mainServiceConfig.TTSVendorEnglish,
+		"workersMax", mainServiceConfig.WorkersMax,
+		"workerQuitTimeoutSeconds", mainServiceConfig.WorkerQuitTimeoutSeconds)
 
-	httpServerConfig.ManifestJson, err = loadManifest(ManifestJsonFile)
+	manifestProvider := provider.NewManifestProvider()
+	err = manifestProvider.LoadManifest(manifestJsonDir)
 	if err != nil {
 		panic(err)
 	}
 
-	httpServerConfig.ManifestJsonElevenlabs, err = loadManifest(ManifestJsonFileElevenlabs)
-	if err != nil {
-		panic(err)
-	}
+	mainSvc := service.NewMainService(service.MainServiceDepends{
+		Config:           mainServiceConfig,
+		ManifestProvider: manifestProvider,
+	})
 
-	httpServer := internal.NewHttpServer(httpServerConfig)
+	httpServer := internal.NewHttpServer(internal.HttpServerDepends{
+		Config:  httpServerConfig,
+		MainSvc: mainSvc,
+	})
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -97,66 +104,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func loadManifest(manifestJsonFile string) (string, error) {
-	content, err := os.ReadFile(manifestJsonFile)
-	if err != nil {
-		slog.Error("read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile)
-		return "", err
-	}
-
-	manifestJson := string(content)
-
-	appId := os.Getenv("AGORA_APP_ID")
-	if appId != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, appId)
-	}
-
-	azureSttKey := os.Getenv("AZURE_STT_KEY")
-	if azureSttKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_key`, azureSttKey)
-	}
-
-	azureSttRegion := os.Getenv("AZURE_STT_REGION")
-	if azureSttRegion != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_region`, azureSttRegion)
-	}
-
-	openaiBaseUrl := os.Getenv("OPENAI_BASE_URL")
-	if openaiBaseUrl != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.base_url`, openaiBaseUrl)
-	}
-
-	openaiApiKey := os.Getenv("OPENAI_API_KEY")
-	if openaiApiKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.api_key`, openaiApiKey)
-	}
-
-	openaiModel := os.Getenv("OPENAI_MODEL")
-	if openaiModel != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.model`, openaiModel)
-	}
-
-	proxyUrl := os.Getenv("PROXY_URL")
-	if proxyUrl != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.proxy_url`, proxyUrl)
-	}
-
-	azureTtsKey := os.Getenv("AZURE_TTS_KEY")
-	if azureTtsKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_key`, azureTtsKey)
-	}
-
-	azureTtsRegion := os.Getenv("AZURE_TTS_REGION")
-	if azureTtsRegion != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azureTtsRegion)
-	}
-
-	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
-	if elevenlabsTtsKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
-	}
-
-	return manifestJson, nil
 }

@@ -21,40 +21,41 @@ import (
 )
 
 type HttpServer struct {
-	config HttpServerConfig
+	deps   HttpServerDepends
 	server *http.Server
+}
+
+type HttpServerDepends struct {
+	Config  HttpServerConfig
+	MainSvc *service.MainService
 }
 
 type HttpServerConfig struct {
 	Address string
-
-	service.MainServiceConfig
 }
 
 var (
 	logTag = slog.String("service", "HTTP_SERVER")
 )
 
-func NewHttpServer(httpServerConfig HttpServerConfig) *HttpServer {
+func NewHttpServer(deps HttpServerDepends) *HttpServer {
+	r := gin.Default()
+	r.Use(corsMiddleware())
+
+	router.Apply(r, deps.MainSvc)
+
 	return &HttpServer{
-		config: httpServerConfig,
+		deps: deps,
+		server: &http.Server{
+			Addr:    deps.Config.Address,
+			Handler: r,
+		},
 	}
 }
 
 func (s *HttpServer) Run() error {
-	r := gin.Default()
-	r.Use(corsMiddleware())
-
-	mainSvc := service.NewMainService(s.config.MainServiceConfig)
-	go mainSvc.CleanWorker()
-	router.Apply(r, mainSvc)
-
-	slog.Info("server start", "address", s.config.Address, logTag)
-
-	s.server = &http.Server{
-		Addr:    s.config.Address,
-		Handler: r,
-	}
+	slog.Info("server start", "address", s.server.Addr, logTag)
+	go s.deps.MainSvc.CleanWorker()
 	return s.server.ListenAndServe()
 }
 

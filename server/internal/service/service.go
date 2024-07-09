@@ -1,7 +1,10 @@
 package service
 
 import (
-	"app/internal/common"
+	"app/internal/provider"
+	"app/pkg/common"
+	pkgProvider "app/pkg/provider"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -22,62 +25,34 @@ import (
 const (
 	privilegeExpirationInSeconds = uint32(86400)
 	tokenExpirationInSeconds     = uint32(86400)
-
-	languageChinese = "zh-CN"
-	languageEnglish = "en-US"
-
-	TTSVendorAzure      = "azure"
-	TTSVendorElevenlabs = "elevenlabs"
-
-	voiceTypeMale   = "male"
-	voiceTypeFemale = "female"
 )
 
 var (
-	voiceNameMap = map[string]map[string]map[string]string{
-		languageChinese: {
-			TTSVendorAzure: {
-				voiceTypeMale:   "zh-CN-YunxiNeural",
-				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
-			},
-			TTSVendorElevenlabs: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-		},
-		languageEnglish: {
-			TTSVendorAzure: {
-				voiceTypeMale:   "en-US-BrianNeural",
-				voiceTypeFemale: "en-US-JaneNeural",
-			},
-			TTSVendorElevenlabs: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-		},
-	}
 	logTag = slog.String("service", "MAIN_SERVICE")
 )
 
 type MainService struct {
-	config  MainServiceConfig
+	deps    MainServiceDepends
 	workers *gmap.Map
+}
+
+type MainServiceDepends struct {
+	Config           MainServiceConfig
+	ManifestProvider *provider.ManifestProvider
 }
 
 type MainServiceConfig struct {
 	AppId                    string
 	AppCertificate           string
-	ManifestJson             string
-	ManifestJsonElevenlabs   string
 	TTSVendorChinese         string
 	TTSVendorEnglish         string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
 }
 
-func NewMainService(config MainServiceConfig) *MainService {
+func NewMainService(deps MainServiceDepends) *MainService {
 	return &MainService{
-		config:  config,
+		deps:    deps,
 		workers: gmap.New(true),
 	}
 }
@@ -145,8 +120,8 @@ func (s *MainService) HandlerStart(c *gin.Context) {
 		return
 	}
 
-	if workersRunning >= s.config.WorkersMax {
-		slog.Error("handlerStart workers exceed", "workersRunning", workersRunning, "WorkersMax", s.config.WorkersMax, "requestId", req.RequestId, logTag)
+	if workersRunning >= s.deps.Config.WorkersMax {
+		slog.Error("handlerStart workers exceed", "workersRunning", workersRunning, "WorkersMax", s.deps.Config.WorkersMax, "requestId", req.RequestId, logTag)
 		s.output(c, common.CodeErrWorkersLimit, http.StatusTooManyRequests)
 		return
 	}
@@ -165,7 +140,7 @@ func (s *MainService) HandlerStart(c *gin.Context) {
 	}
 
 	worker := newWorker(req.ChannelName, logFile, manifestJsonFile)
-	worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
+	worker.QuitTimeoutSeconds = s.deps.Config.WorkerQuitTimeoutSeconds
 	if err := worker.start(&req); err != nil {
 		slog.Error("handlerStart start worker failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, common.CodeErrStartWorkerFailed, http.StatusInternalServerError)
@@ -229,12 +204,12 @@ func (s *MainService) HandlerGenerateToken(c *gin.Context) {
 		return
 	}
 
-	if s.config.AppCertificate == "" {
-		s.output(c, common.CodeSuccess, map[string]any{"appId": s.config.AppId, "token": s.config.AppId, "channel_name": req.ChannelName, "uid": req.Uid})
+	if s.deps.Config.AppCertificate == "" {
+		s.output(c, common.CodeSuccess, map[string]any{"appId": s.deps.Config.AppId, "token": s.deps.Config.AppId, "channel_name": req.ChannelName, "uid": req.Uid})
 		return
 	}
 
-	token, err := rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, privilegeExpirationInSeconds)
+	token, err := rtctokenbuilder.BuildTokenWithUid(s.deps.Config.AppId, s.deps.Config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, privilegeExpirationInSeconds)
 	if err != nil {
 		slog.Error("handlerGenerateToken generate token failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, common.CodeErrGenerateTokenFailed, http.StatusBadRequest)
@@ -242,22 +217,35 @@ func (s *MainService) HandlerGenerateToken(c *gin.Context) {
 	}
 
 	slog.Info("handlerGenerateToken end", "requestId", req.RequestId, logTag)
-	s.output(c, common.CodeSuccess, map[string]any{"appId": s.config.AppId, "token": token, "channel_name": req.ChannelName, "uid": req.Uid})
+	s.output(c, common.CodeSuccess, map[string]any{"appId": s.deps.Config.AppId, "token": token, "channel_name": req.ChannelName, "uid": req.Uid})
 }
 
 // createWorkerManifest create worker temporary Mainfest.
 func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFile string, logFile string, err error) {
-	manifestJson := s.getManifestJson(req.AgoraAsrLanguage)
+	vendor := s.getTtsVendor(req.AgoraAsrLanguage)
+	tts := pkgProvider.GetTts(vendor)
+	if tts == nil {
+		err = errors.New(fmt.Sprintf("unknow tts vendor", vendor))
+		slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
+		return "", "", err
+	}
 
-	if s.config.AppId != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, s.config.AppId)
+	manifestJson, ok := s.deps.ManifestProvider.GetManifestJson(vendor)
+	if !ok {
+		err = errors.New(fmt.Sprintf("unknow manifest vendor", vendor))
+		slog.Error("handlerStart get manifest json failed", "err", err, "requestId", req.RequestId, logTag)
+		return "", "", err
+	}
+
+	if s.deps.Config.AppId != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, s.deps.Config.AppId)
 	}
 	appId := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`).String()
 
 	// Generate token
 	token := appId
-	if s.config.AppCertificate != "" {
-		token, err = rtctokenbuilder.BuildTokenWithUid(appId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, privilegeExpirationInSeconds)
+	if s.deps.Config.AppCertificate != "" {
+		token, err = rtctokenbuilder.BuildTokenWithUid(appId, s.deps.Config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, privilegeExpirationInSeconds)
 		if err != nil {
 			slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
 			return "", "", err
@@ -275,16 +263,11 @@ func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFi
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.remote_stream_id`, req.RemoteStreamId)
 	}
 
-	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
-
-	ttsVendor := s.getTtsVendor(language)
-	voiceName := voiceNameMap[language][ttsVendor][req.VoiceType]
-	if voiceName != "" {
-		if ttsVendor == TTSVendorAzure {
-			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, voiceName)
-		} else if ttsVendor == TTSVendorElevenlabs {
-			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.voice_id`, voiceName)
-		}
+	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String() //TODO check is correct? not req.AgoraAsrLanguage?
+	manifestJson, err = tts.ProcessManifest(manifestJson, common.Language(language), req.VoiceType)
+	if err != nil {
+		slog.Error("handlerStart tts ProcessManifest failed", "err", err, "requestId", req.RequestId, logTag)
+		return "", "", err
 	}
 
 	channelNameMd5 := gmd5.MustEncryptString(req.ChannelName)
@@ -322,21 +305,10 @@ func (s *MainService) CleanWorker() {
 	}
 }
 
-func (s *MainService) getManifestJson(language string) (manifestJson string) {
-	ttsVendor := s.getTtsVendor(language)
-	manifestJson = s.config.ManifestJson
-
-	if ttsVendor == TTSVendorElevenlabs {
-		manifestJson = s.config.ManifestJsonElevenlabs
+func (s *MainService) getTtsVendor(language common.Language) string {
+	if language == common.LanguageChinese {
+		return s.deps.Config.TTSVendorChinese
 	}
 
-	return manifestJson
-}
-
-func (s *MainService) getTtsVendor(language string) string {
-	if language == languageChinese {
-		return s.config.TTSVendorChinese
-	}
-
-	return s.config.TTSVendorEnglish
+	return s.deps.Config.TTSVendorEnglish
 }
