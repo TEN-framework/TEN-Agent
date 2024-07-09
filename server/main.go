@@ -43,7 +43,7 @@ func main() {
 	flag.IntVar(&httpServerConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
 	flag.Parse()
 
-	slog.Info("server config", "appId", httpServerConfig.AppId, "ttsVendorChinese", httpServerConfig.TtsVendorChinese, "ttsVendorEnglish", httpServerConfig.TtsVendorEnglish,
+	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TtsVendorChinese, "ttsVendorEnglish", httpServerConfig.TtsVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
 	processManifest(internal.ManifestJsonFile)
@@ -62,61 +62,51 @@ func processManifest(manifestJsonFile string) (err error) {
 	manifestJson := string(content)
 
 	appId := os.Getenv("AGORA_APP_ID")
-	slog.Info("processManifest", "AGORA_APP_ID", appId)
 	if appId != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, appId)
 	}
 
 	azureSttKey := os.Getenv("AZURE_STT_KEY")
-	slog.Info("processManifest", "AZURE_STT_KEY", azureSttKey)
 	if azureSttKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_key`, azureSttKey)
 	}
 
 	azureSttRegion := os.Getenv("AZURE_STT_REGION")
-	slog.Info("processManifest", "AZURE_STT_REGION", azureSttRegion)
 	if azureSttRegion != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_region`, azureSttRegion)
 	}
 
 	openaiBaseUrl := os.Getenv("OPENAI_BASE_URL")
-	slog.Info("processManifest", "OPENAI_BASE_URL", openaiBaseUrl)
 	if openaiBaseUrl != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.base_url`, openaiBaseUrl)
 	}
 
 	openaiApiKey := os.Getenv("OPENAI_API_KEY")
-	slog.Info("processManifest", "OPENAI_API_KEY", openaiApiKey)
 	if openaiApiKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.api_key`, openaiApiKey)
 	}
 
 	openaiModel := os.Getenv("OPENAI_MODEL")
-	slog.Info("processManifest", "OPENAI_MODEL", openaiModel)
 	if openaiModel != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.model`, openaiModel)
 	}
 
 	proxyUrl := os.Getenv("PROXY_URL")
-	slog.Info("processManifest", "PROXY_URL", proxyUrl)
 	if proxyUrl != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.proxy_url`, proxyUrl)
 	}
 
 	azureTtsKey := os.Getenv("AZURE_TTS_KEY")
-	slog.Info("processManifest", "AZURE_TTS_KEY", azureTtsKey)
 	if azureTtsKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_key`, azureTtsKey)
 	}
 
 	azure_tts_region := os.Getenv("AZURE_TTS_REGION")
-	slog.Info("processManifest", "AZURE_TTS_REGION", azure_tts_region)
 	if azure_tts_region != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azure_tts_region)
 	}
 
 	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
-	slog.Info("processManifest", "ELEVENLABS_TTS_KEY", elevenlabsTtsKey)
 	if elevenlabsTtsKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
 	}
