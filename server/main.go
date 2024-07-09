@@ -16,12 +16,12 @@ func main() {
 
 	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
 	if len(ttsVendorChinese) == 0 {
-		ttsVendorChinese = internal.TtsVendorAzure
+		ttsVendorChinese = internal.TTSVendorAzure
 	}
 
 	ttsVendorEnglish := os.Getenv("TTS_VENDOR_ENGLISH")
 	if len(ttsVendorEnglish) == 0 {
-		ttsVendorEnglish = internal.TtsVendorAzure
+		ttsVendorEnglish = internal.TTSVendorAzure
 	}
 
 	workersMax, err := strconv.Atoi(os.Getenv("WORKERS_MAX"))
@@ -37,13 +37,13 @@ func main() {
 	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
 	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
 	flag.StringVar(&httpServerConfig.Port, "port", ":8080", "http server port")
-	flag.StringVar(&httpServerConfig.TtsVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
-	flag.StringVar(&httpServerConfig.TtsVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
+	flag.StringVar(&httpServerConfig.TTSVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
+	flag.StringVar(&httpServerConfig.TTSVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
 	flag.IntVar(&httpServerConfig.WorkersMax, "workersMax", workersMax, "workers max")
 	flag.IntVar(&httpServerConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
 	flag.Parse()
 
-	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TtsVendorChinese, "ttsVendorEnglish", httpServerConfig.TtsVendorEnglish,
+	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
 	processManifest(internal.ManifestJsonFile)
@@ -101,9 +101,9 @@ func processManifest(manifestJsonFile string) (err error) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_key`, azureTtsKey)
 	}
 
-	azure_tts_region := os.Getenv("AZURE_TTS_REGION")
-	if azure_tts_region != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azure_tts_region)
+	azureTtsRegion := os.Getenv("AZURE_TTS_REGION")
+	if azureTtsRegion != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azureTtsRegion)
 	}
 
 	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")

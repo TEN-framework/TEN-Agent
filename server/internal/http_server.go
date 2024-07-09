@@ -35,8 +35,8 @@ type HttpServerConfig struct {
 	AppCertificate           string
 	ManifestJsonFile         string
 	Port                     string
-	TtsVendorChinese         string
-	TtsVendorEnglish         string
+	TTSVendorChinese         string
+	TTSVendorEnglish         string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
 }
@@ -75,8 +75,8 @@ const (
 	ManifestJsonFile           = "./agents/manifest.json"
 	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
 
-	TtsVendorAzure      = "azure"
-	TtsVendorElevenlabs = "elevenlabs"
+	TTSVendorAzure      = "azure"
+	TTSVendorElevenlabs = "elevenlabs"
 
 	voiceTypeMale   = "male"
 	voiceTypeFemale = "female"
@@ -85,21 +85,21 @@ const (
 var (
 	voiceNameMap = map[string]map[string]map[string]string{
 		languageChinese: {
-			TtsVendorAzure: {
+			TTSVendorAzure: {
 				voiceTypeMale:   "zh-CN-YunxiNeural",
 				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
 			},
-			TtsVendorElevenlabs: {
+			TTSVendorElevenlabs: {
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
 				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
 			},
 		},
 		languageEnglish: {
-			TtsVendorAzure: {
+			TTSVendorAzure: {
 				voiceTypeMale:   "en-US-BrianNeural",
 				voiceTypeFemale: "en-US-JaneNeural",
 			},
-			TtsVendorElevenlabs: {
+			TTSVendorElevenlabs: {
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
 				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
 			},
@@ -119,7 +119,7 @@ func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile stri
 	ttsVendor := s.getTtsVendor(language)
 	manifestJsonFile = ManifestJsonFile
 
-	if ttsVendor == TtsVendorElevenlabs {
+	if ttsVendor == TTSVendorElevenlabs {
 		manifestJsonFile = ManifestJsonFileElevenlabs
 	}
 
@@ -128,10 +128,10 @@ func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile stri
 
 func (s *HttpServer) getTtsVendor(language string) string {
 	if language == languageChinese {
-		return s.config.TtsVendorChinese
+		return s.config.TTSVendorChinese
 	}
 
-	return s.config.TtsVendorEnglish
+	return s.config.TTSVendorEnglish
 }
 
 func (s *HttpServer) handlerHealth(c *gin.Context) {
@@ -336,9 +336,9 @@ func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, lo
 	ttsVendor := s.getTtsVendor(language)
 	voiceName := voiceNameMap[language][ttsVendor][req.VoiceType]
 	if voiceName != "" {
-		if ttsVendor == TtsVendorAzure {
+		if ttsVendor == TTSVendorAzure {
 			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, voiceName)
-		} else if ttsVendor == TtsVendorElevenlabs {
+		} else if ttsVendor == TTSVendorElevenlabs {
 			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.voice_id`, voiceName)
 		}
 	}
