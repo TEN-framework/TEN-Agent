@@ -1,0 +1,38 @@
+name: Build Docker
+
+on: 
+  push:
+    branches: [ "main", "feature/docker" ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ "main" ]
+  paths-ignore:
+    - '.devcontainer/**'
+    - '.github/ISSUE_TEMPLATE/**'
+    - 'images/**'
+    - 'playground/**'
+    - '**.md'
+
+env:
+  IMAGE_NAME: astra_agents_server
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - id: pre-step
+      shell: bash
+      run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+    - name: Build & Publish to Github Container Registry
+      uses: elgohr/Publish-Docker-Github-Action@v5
+      with:
+        name: ${{ github.actor }}/${{ env.IMAGE_NAME }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        registry: ghcr.io
+        tags: "latest,${{ steps.pre-step.outputs.image-tag }}"
+        no_push: ${{ github.event_name == 'pull_request' }}
+
