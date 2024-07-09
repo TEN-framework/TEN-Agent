@@ -9,7 +9,7 @@ COPY agents/manifest.json.example agents/manifest.json
 COPY agents/manifest.json.elevenlabs.example agents/manifest.elevenlabs.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN export GOPROXY=https://proxy.golang.com.cn && make build && \
+RUN make build && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
