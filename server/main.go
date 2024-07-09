@@ -18,6 +18,11 @@ import (
 	"app/internal/service"
 )
 
+const (
+	ManifestJsonFile           = "./agents/manifest.json"
+	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
+)
+
 func main() {
 	httpServerConfig := internal.HttpServerConfig{}
 
@@ -41,6 +46,8 @@ func main() {
 		workerQuitTimeoutSeconds = 60
 	}
 
+	var manifestJsonFile string
+
 	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
 	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
 	flag.StringVar(&httpServerConfig.Address, "port", ":8080", "http server listen address")
@@ -53,8 +60,16 @@ func main() {
 	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	processManifest(service.ManifestJsonFile)
-	processManifest(service.ManifestJsonFileElevenlabs)
+	httpServerConfig.ManifestJson, err = loadManifest(manifestJsonFile)
+	if err != nil {
+		panic(err)
+	}
+
+	httpServerConfig.ManifestJsonElevenlabs, err = loadManifest(ManifestJsonFileElevenlabs)
+	if err != nil {
+		panic(err)
+	}
+
 	httpServer := internal.NewHttpServer(httpServerConfig)
 
 	errCh := make(chan error, 1)
@@ -86,11 +101,11 @@ func main() {
 	}
 }
 
-func processManifest(manifestJsonFile string) (err error) {
+func loadManifest(manifestJsonFile string) (string, error) {
 	content, err := os.ReadFile(manifestJsonFile)
 	if err != nil {
 		slog.Error("read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile)
-		return
+		return "", err
 	}
 
 	manifestJson := string(content)
@@ -145,6 +160,5 @@ func processManifest(manifestJsonFile string) (err error) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
 	}
 
-	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
-	return
+	return manifestJson, nil
 }

@@ -26,9 +26,6 @@ const (
 	languageChinese = "zh-CN"
 	languageEnglish = "en-US"
 
-	ManifestJsonFile           = "./agents/manifest.json"
-	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
-
 	TTSVendorAzure      = "azure"
 	TTSVendorElevenlabs = "elevenlabs"
 
@@ -70,7 +67,8 @@ type MainService struct {
 type MainServiceConfig struct {
 	AppId                    string
 	AppCertificate           string
-	ManifestJsonFile         string
+	ManifestJson             string
+	ManifestJsonElevenlabs   string
 	TTSVendorChinese         string
 	TTSVendorEnglish         string
 	WorkersMax               int
@@ -249,13 +247,7 @@ func (s *MainService) HandlerGenerateToken(c *gin.Context) {
 
 // createWorkerManifest create worker temporary Mainfest.
 func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFile string, logFile string, err error) {
-	content, err := os.ReadFile(s.config.ManifestJsonFile)
-	if err != nil {
-		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", s.config.ManifestJsonFile, "requestId", req.RequestId, logTag)
-		return "", "", err
-	}
-
-	manifestJson := string(content)
+	manifestJson := s.getManifestJson(req.AgoraAsrLanguage)
 
 	if s.config.AppId != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, s.config.AppId)
@@ -301,7 +293,7 @@ func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFi
 	logFile = fmt.Sprintf("/tmp/app-%s-%d.log", channelNameMd5, ts)
 	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
 	if err != nil {
-		slog.Error("handlerStart write manifest.json failed", "err", err, "manifestJsonFile", s.config.ManifestJsonFile, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart write manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile, "requestId", req.RequestId, logTag)
 		return "", "", err
 	}
 
@@ -330,15 +322,15 @@ func (s *MainService) CleanWorker() {
 	}
 }
 
-func (s *MainService) getManifestJsonFile(language string) (manifestJsonFile string) {
+func (s *MainService) getManifestJson(language string) (manifestJson string) {
 	ttsVendor := s.getTtsVendor(language)
-	manifestJsonFile = ManifestJsonFile
+	manifestJson = s.config.ManifestJson
 
 	if ttsVendor == TTSVendorElevenlabs {
-		manifestJsonFile = ManifestJsonFileElevenlabs
+		manifestJson = s.config.ManifestJsonElevenlabs
 	}
 
-	return
+	return manifestJson
 }
 
 func (s *MainService) getTtsVendor(language string) string {
