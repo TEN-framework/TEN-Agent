@@ -36,7 +36,7 @@ bool AzureTTS::Start() {
 
       {
         std::unique_lock<std::mutex> lk(tasks_mutex_);
-        tasks_cv_.wait(lk, [this]() { return !tasks_.empty(); });
+        tasks_cv_.wait(lk);
         if (tasks_.empty()) {
           continue;
         }
