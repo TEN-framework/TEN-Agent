@@ -14,10 +14,12 @@
     "workspaceFolder": "/app",
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [8080]
+    "forwardPorts": [8080],
 
     // Features to add to the dev container. More info: https://containers.dev/features.
-    // "features": {},
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {}
+    }
 
     // Uncomment the next line to run commands after the container is created.
     // "postCreateCommand": ""
