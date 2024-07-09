@@ -159,9 +159,9 @@ func (s *MainService) HandlerStart(c *gin.Context) {
 		return
 	}
 
-	manifestJsonFile, logFile, err := s.processWorkerManifest(&req)
+	manifestJsonFile, logFile, err := s.createWorkerManifest(&req)
 	if err != nil {
-		slog.Error("handlerStart process manifest", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart create worker manifest", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 		s.output(c, common.CodeErrProcessManifestFailed, http.StatusInternalServerError)
 		return
 	}
@@ -247,13 +247,12 @@ func (s *MainService) HandlerGenerateToken(c *gin.Context) {
 	s.output(c, common.CodeSuccess, map[string]any{"appId": s.config.AppId, "token": token, "channel_name": req.ChannelName, "uid": req.Uid})
 }
 
-// processWorkerManifest create channel temporary Mainfest.
-func (s *MainService) processWorkerManifest(req *common.StartReq) (manifestJsonFile string, logFile string, err error) {
-	manifestJsonFile = s.getManifestJsonFile(req.AgoraAsrLanguage)
+// createWorkerManifest create worker temporary Mainfest.
+func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(s.config.ManifestJsonFile)
 	if err != nil {
 		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", s.config.ManifestJsonFile, "requestId", req.RequestId, logTag)
-		return
+		return "", "", err
 	}
 
 	manifestJson := string(content)
@@ -269,7 +268,7 @@ func (s *MainService) processWorkerManifest(req *common.StartReq) (manifestJsonF
 		token, err = rtctokenbuilder.BuildTokenWithUid(appId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, privilegeExpirationInSeconds)
 		if err != nil {
 			slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
-			return
+			return "", "", err
 		}
 	}
 
@@ -300,9 +299,13 @@ func (s *MainService) processWorkerManifest(req *common.StartReq) (manifestJsonF
 	ts := time.Now().UnixNano()
 	manifestJsonFile = fmt.Sprintf("/tmp/manifest-%s-%d.json", channelNameMd5, ts)
 	logFile = fmt.Sprintf("/tmp/app-%s-%d.log", channelNameMd5, ts)
-	os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
+	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
+	if err != nil {
+		slog.Error("handlerStart write manifest.json failed", "err", err, "manifestJsonFile", s.config.ManifestJsonFile, "requestId", req.RequestId, logTag)
+		return "", "", err
+	}
 
-	return
+	return manifestJsonFile, logFile, nil
 }
 
 // CleanWorker clean unused workers in background.

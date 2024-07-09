@@ -36,12 +36,12 @@ func newWorker(channelName string, logFile string, manifestJsonFile string) *Wor
 	}
 }
 
-func (w *Worker) start(req *common.StartReq) (err error) {
+func (w *Worker) start(req *common.StartReq) error {
 	shell := fmt.Sprintf("cd /app/agents && nohup %s --manifest %s > %s 2>&1 &", workerExec, w.ManifestJsonFile, w.LogFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
-	if _, err = exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
+	if _, err := exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
 		slog.Error("Worker start failed", "err", err, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	shell = fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", w.ManifestJsonFile)
@@ -49,29 +49,29 @@ func (w *Worker) start(req *common.StartReq) (err error) {
 	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
 	if err != nil {
 		slog.Error("Worker get pid failed", "err", err, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	pid, err := strconv.Atoi(strings.TrimSpace(string(output)))
 	if err != nil || pid <= 0 {
 		slog.Error("Worker convert pid failed", "err", err, "pid", pid, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	w.Pid = pid
-	return
+	return nil
 }
 
-func (w *Worker) stop(requestId string, channelName string) (err error) {
+func (w *Worker) stop(requestId string, channelName string) error {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, logTag)
 
 	shell := fmt.Sprintf("kill -9 %d", w.Pid)
 	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
 	if err != nil {
 		slog.Error("Worker kill failed", "err", err, "output", output, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
-		return
+		return err
 	}
 
 	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
-	return
+	return err
 }
