@@ -21,26 +21,21 @@ import (
 )
 
 type HttpServer struct {
-	config *HttpServerConfig
+	config HttpServerConfig
 	server *http.Server
 }
 
 type HttpServerConfig struct {
-	AppId                    string
-	AppCertificate           string
-	ManifestJsonFile         string
-	Address                  string
-	TTSVendorChinese         string
-	TTSVendorEnglish         string
-	WorkersMax               int
-	WorkerQuitTimeoutSeconds int
+	Address string
+
+	service.MainServiceConfig
 }
 
 var (
 	logTag = slog.String("service", "HTTP_SERVER")
 )
 
-func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
+func NewHttpServer(httpServerConfig HttpServerConfig) *HttpServer {
 	return &HttpServer{
 		config: httpServerConfig,
 	}
@@ -50,16 +45,7 @@ func (s *HttpServer) Run() error {
 	r := gin.Default()
 	r.Use(corsMiddleware())
 
-	mainSvcConf := service.MainServiceConfig{
-		AppId:                    s.config.AppId,
-		AppCertificate:           s.config.AppCertificate,
-		ManifestJsonFile:         s.config.ManifestJsonFile,
-		TTSVendorChinese:         s.config.TTSVendorChinese,
-		TTSVendorEnglish:         s.config.TTSVendorEnglish,
-		WorkersMax:               s.config.WorkersMax,
-		WorkerQuitTimeoutSeconds: s.config.WorkerQuitTimeoutSeconds,
-	}
-	mainSvc := service.NewMainService(mainSvcConf)
+	mainSvc := service.NewMainService(s.config.MainServiceConfig)
 	go mainSvc.CleanWorker()
 	router.Apply(r, mainSvc)
 

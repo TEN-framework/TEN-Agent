@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	httpServerConfig := &internal.HttpServerConfig{}
+	httpServerConfig := internal.HttpServerConfig{}
 
 	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
 	if len(ttsVendorChinese) == 0 {
