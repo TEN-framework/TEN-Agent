@@ -21,7 +21,7 @@
         },
         {
             "type": "extension",
-            "name": "azure_tts",
+            "name": "elevenlabs_tts",
             "version": "0.1.0"
         },
         {
@@ -88,12 +88,18 @@
                 {
                     "type": "extension",
                     "extension_group": "tts",
-                    "addon": "azure_tts",
-                    "name": "azure_tts",
+                    "addon": "elevenlabs_tts",
+                    "name": "elevenlabs_tts",
                     "property": {
-                        "azure_subscription_key": "<azure_tts_key>",
-                        "azure_subscription_region": "<azure_tts_region>",
-                        "azure_synthesis_voice_name": "en-US-JaneNeural"
+                        "api_key": "<elevenlabs_tts_key>",
+                        "model_id": "eleven_multilingual_v2",
+                        "optimize_streaming_latency": 0,
+                        "request_timeout_seconds": 30,
+                        "similarity_boost": 0.75,
+                        "speaker_boost": false,
+                        "stability": 0.5,
+                        "style": 0.0,
+                        "voice_id": "pNInz6obpgDQGcFmaJgB"
                     }
                 },
                 {
@@ -156,7 +162,7 @@
                             "dest": [
                                 {
                                     "extension_group": "tts",
-                                    "extension": "azure_tts"
+                                    "extension": "elevenlabs_tts"
                                 },
                                 {
                                     "extension_group": "transcriber",
@@ -191,7 +197,7 @@
                             "dest": [
                                 {
                                     "extension_group": "tts",
-                                    "extension": "azure_tts"
+                                    "extension": "elevenlabs_tts"
                                 }
                             ]
                         }
@@ -199,7 +205,7 @@
                 },
                 {
                     "extension_group": "tts",
-                    "extension": "azure_tts",
+                    "extension": "elevenlabs_tts",
                     "pcm_frame": [
                         {
                             "name": "pcm_frame",

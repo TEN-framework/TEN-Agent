@@ -17,6 +17,7 @@ include/
 interface/
 lib/
 agents/manifest.json
+agents/manifest.elevenlabs.json
 !agents/addon/manifest.json
 node_modules/
 /out/
