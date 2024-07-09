@@ -1,0 +1,55 @@
+{
+  "type": "extension",
+  "name": "openai_chatgpt_python",
+  "version": "0.1.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "property": {
+      "width": {
+        "type": "int32"
+      },
+      "height": {
+        "type": "int32"
+      }
+    },
+    "image_frame_in": [
+      {
+        "name": "image_frame",
+        "property": {
+          "timestamp": {
+            "type": "int64"
+          },
+          "width": {
+            "type": "int32"
+          },
+          "height": {
+            "type": "int32"
+          }
+        }
+      }
+    ],
+    "image_frame_out": [
+      {
+        "name": "image_frame",
+        "property": {
+          "timestamp": {
+            "type": "int64"
+          },
+          "width": {
+            "type": "int32"
+          },
+          "height": {
+            "type": "int32"
+          }
+        }
+      }
+    ]
+  }
+}

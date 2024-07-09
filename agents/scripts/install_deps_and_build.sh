@@ -85,7 +85,7 @@ main() {
 
   # build addons and app
   build_cxx_addon $APP_HOME
-  build_go_app $APP_HOME
+  # build_go_app $APP_HOME
 }
 
 main "$@"
