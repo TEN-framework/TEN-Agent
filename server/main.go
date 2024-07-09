@@ -1,10 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/tidwall/sjson"
 
@@ -37,7 +43,7 @@ func main() {
 
 	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
 	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
-	flag.StringVar(&httpServerConfig.Port, "port", ":8080", "http server port")
+	flag.StringVar(&httpServerConfig.Address, "port", ":8080", "http server listen address")
 	flag.StringVar(&httpServerConfig.TTSVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
 	flag.StringVar(&httpServerConfig.TTSVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
 	flag.IntVar(&httpServerConfig.WorkersMax, "workersMax", workersMax, "workers max")
@@ -50,7 +56,34 @@ func main() {
 	processManifest(service.ManifestJsonFile)
 	processManifest(service.ManifestJsonFileElevenlabs)
 	httpServer := internal.NewHttpServer(httpServerConfig)
-	httpServer.Start()
+
+	errCh := make(chan error, 1)
+	go func() {
+		defer close(errCh)
+		err := httpServer.Run()
+		if errors.Is(err, http.ErrServerClosed) {
+			errCh <- nil
+		}
+		errCh <- err
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	defer close(sigCh)
+	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
+	<-sigCh
+
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
+	err = httpServer.Shutdown(ctx)
+	if err != nil {
+		slog.Error("httpServer Shutdown error", "err", err)
+	}
+	defer cancel() // fix warning lostcancel
+
+	err = <-errCh
+	if err != nil {
+		panic(err)
+	}
 }
 
 func processManifest(manifestJsonFile string) (err error) {

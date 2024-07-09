@@ -13,20 +13,23 @@ package internal
 import (
 	"app/internal/router"
 	"app/internal/service"
+	"context"
 	"log/slog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type HttpServer struct {
 	config *HttpServerConfig
+	server *http.Server
 }
 
 type HttpServerConfig struct {
 	AppId                    string
 	AppCertificate           string
 	ManifestJsonFile         string
-	Port                     string
+	Address                  string
 	TTSVendorChinese         string
 	TTSVendorEnglish         string
 	WorkersMax               int
@@ -43,7 +46,7 @@ func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
 	}
 }
 
-func (s *HttpServer) Start() {
+func (s *HttpServer) Run() error {
 	r := gin.Default()
 	r.Use(corsMiddleware())
 
@@ -57,10 +60,18 @@ func (s *HttpServer) Start() {
 		WorkerQuitTimeoutSeconds: s.config.WorkerQuitTimeoutSeconds,
 	}
 	mainSvc := service.NewMainService(mainSvcConf)
+	go mainSvc.CleanWorker()
 	router.Apply(r, mainSvc)
 
-	slog.Info("server start", "port", s.config.Port, logTag)
+	slog.Info("server start", "address", s.config.Address, logTag)
 
-	go mainSvc.CleanWorker()
-	r.Run(s.config.Port)
+	s.server = &http.Server{
+		Addr:    s.config.Address,
+		Handler: r,
+	}
+	return s.server.ListenAndServe()
+}
+
+func (s *HttpServer) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
