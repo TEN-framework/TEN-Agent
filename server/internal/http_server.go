@@ -35,6 +35,8 @@ type HttpServerConfig struct {
 	AppCertificate           string
 	ManifestJsonFile         string
 	Port                     string
+	TtsVendorChinese         string
+	TtsVendorEnglish         string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
 }
@@ -70,21 +72,40 @@ const (
 	languageChinese = "zh-CN"
 	languageEnglish = "en-US"
 
+	ManifestJsonFile           = "./agents/manifest.json"
+	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
+
+	TtsVendorAzure      = "azure"
+	TtsVendorElevenlabs = "elevenlabs"
+
 	voiceTypeMale   = "male"
 	voiceTypeFemale = "female"
 )
 
 var (
-	azureSynthesisVoiceNameMap = map[string]map[string]string{
+	voiceNameMap = map[string]map[string]map[string]string{
 		languageChinese: {
-			voiceTypeMale:   "zh-CN-YunxiNeural",
-			voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
+			TtsVendorAzure: {
+				voiceTypeMale:   "zh-CN-YunxiNeural",
+				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
+			},
+			TtsVendorElevenlabs: {
+				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
+				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+			},
 		},
 		languageEnglish: {
-			voiceTypeMale:   "en-US-BrianNeural",
-			voiceTypeFemale: "en-US-JaneNeural",
+			TtsVendorAzure: {
+				voiceTypeMale:   "en-US-BrianNeural",
+				voiceTypeFemale: "en-US-JaneNeural",
+			},
+			TtsVendorElevenlabs: {
+				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
+				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+			},
 		},
 	}
+
 	logTag = slog.String("service", "HTTP_SERVER")
 )
 
@@ -92,6 +113,25 @@ func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
 	return &HttpServer{
 		config: httpServerConfig,
 	}
+}
+
+func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile string) {
+	ttsVendor := s.getTtsVendor(language)
+	manifestJsonFile = ManifestJsonFile
+
+	if ttsVendor == TtsVendorElevenlabs {
+		manifestJsonFile = ManifestJsonFileElevenlabs
+	}
+
+	return
+}
+
+func (s *HttpServer) getTtsVendor(language string) string {
+	if language == languageChinese {
+		return s.config.TtsVendorChinese
+	}
+
+	return s.config.TtsVendorEnglish
 }
 
 func (s *HttpServer) handlerHealth(c *gin.Context) {
@@ -256,9 +296,10 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 }
 
 func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, logFile string, err error) {
-	content, err := os.ReadFile(s.config.ManifestJsonFile)
+	manifestJsonFile = s.getManifestJsonFile(req.AgoraAsrLanguage)
+	content, err := os.ReadFile(manifestJsonFile)
 	if err != nil {
-		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", s.config.ManifestJsonFile, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile, "requestId", req.RequestId, logTag)
 		return
 	}
 
@@ -291,9 +332,15 @@ func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, lo
 	}
 
 	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
-	azureSynthesisVoiceName := azureSynthesisVoiceNameMap[language][req.VoiceType]
-	if azureSynthesisVoiceName != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, azureSynthesisVoiceName)
+
+	ttsVendor := s.getTtsVendor(language)
+	voiceName := voiceNameMap[language][ttsVendor][req.VoiceType]
+	if voiceName != "" {
+		if ttsVendor == TtsVendorAzure {
+			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, voiceName)
+		} else if ttsVendor == TtsVendorElevenlabs {
+			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.voice_id`, voiceName)
+		}
 	}
 
 	channelNameMd5 := gmd5.MustEncryptString(req.ChannelName)

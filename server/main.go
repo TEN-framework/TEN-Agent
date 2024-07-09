@@ -14,6 +14,16 @@ import (
 func main() {
 	httpServerConfig := &internal.HttpServerConfig{}
 
+	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
+	if len(ttsVendorChinese) == 0 {
+		ttsVendorChinese = internal.TtsVendorAzure
+	}
+
+	ttsVendorEnglish := os.Getenv("TTS_VENDOR_ENGLISH")
+	if len(ttsVendorEnglish) == 0 {
+		ttsVendorEnglish = internal.TtsVendorAzure
+	}
+
 	workersMax, err := strconv.Atoi(os.Getenv("WORKERS_MAX"))
 	if err != nil || workersMax <= 0 {
 		workersMax = 2
@@ -26,21 +36,23 @@ func main() {
 
 	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
 	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
-	flag.StringVar(&httpServerConfig.ManifestJsonFile, "manifestJsonFile", os.Getenv("MANIFEST_JSON_FILE"), "manifest json file")
+	flag.StringVar(&httpServerConfig.Port, "port", ":8080", "http server port")
+	flag.StringVar(&httpServerConfig.TtsVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
+	flag.StringVar(&httpServerConfig.TtsVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
 	flag.IntVar(&httpServerConfig.WorkersMax, "workersMax", workersMax, "workers max")
 	flag.IntVar(&httpServerConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
-	flag.StringVar(&httpServerConfig.Port, "port", ":8080", "http server port")
 	flag.Parse()
 
-	slog.Info("server config", "appId", httpServerConfig.AppId, "manifestJsonFile", httpServerConfig.ManifestJsonFile,
+	slog.Info("server config", "appId", httpServerConfig.AppId, "ttsVendorChinese", httpServerConfig.TtsVendorChinese, "ttsVendorEnglish", httpServerConfig.TtsVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	processManifest(httpServerConfig.ManifestJsonFile)
+	processManifest(internal.ManifestJsonFile)
+	processManifest(internal.ManifestJsonFileElevenlabs)
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }
 
-func processManifest(manifestJsonFile string) {
+func processManifest(manifestJsonFile string) (err error) {
 	content, err := os.ReadFile(manifestJsonFile)
 	if err != nil {
 		slog.Error("read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile)
@@ -103,6 +115,12 @@ func processManifest(manifestJsonFile string) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azure_tts_region)
 	}
 
-	os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
+	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
+	slog.Info("processManifest", "ELEVENLABS_TTS_KEY", elevenlabsTtsKey)
+	if elevenlabsTtsKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
+	}
+
+	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
 	return
 }

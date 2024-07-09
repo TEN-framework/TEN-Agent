@@ -1,4 +1,3 @@
-MANIFEST_JSON_FILE := ./agents/manifest.json
 PROJECT_NAME := astra
 PROJECT_VERSION ?= "0.1."$(shell date -u +'%Y%m%d%H')
 REGISTRY ?= agoraio/
@@ -24,5 +23,5 @@ docker-build-server:
 
 run-server:
 	@echo ">> run server"
-	server/bin/api --manifestJsonFile=$(MANIFEST_JSON_FILE)
+	server/bin/api
 	@echo ">> done"
