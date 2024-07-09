@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/sjson"
 
 	"app/internal"
+	"app/internal/service"
 )
 
 func main() {
@@ -16,12 +17,12 @@ func main() {
 
 	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
 	if len(ttsVendorChinese) == 0 {
-		ttsVendorChinese = internal.TTSVendorAzure
+		ttsVendorChinese = service.TTSVendorAzure //TODO vendor provider
 	}
 
 	ttsVendorEnglish := os.Getenv("TTS_VENDOR_ENGLISH")
 	if len(ttsVendorEnglish) == 0 {
-		ttsVendorEnglish = internal.TTSVendorAzure
+		ttsVendorEnglish = service.TTSVendorAzure //TODO vendor provider
 	}
 
 	workersMax, err := strconv.Atoi(os.Getenv("WORKERS_MAX"))
@@ -46,8 +47,8 @@ func main() {
 	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	processManifest(internal.ManifestJsonFile)
-	processManifest(internal.ManifestJsonFileElevenlabs)
+	processManifest(service.ManifestJsonFile)
+	processManifest(service.ManifestJsonFileElevenlabs)
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }

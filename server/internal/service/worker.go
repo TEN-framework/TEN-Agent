@@ -1,15 +1,13 @@
-package internal
+package service
 
 import (
+	"app/internal/common"
 	"fmt"
 	"log/slog"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gogf/gf/container/gmap"
-	"github.com/google/uuid"
 )
 
 type Worker struct {
@@ -27,10 +25,6 @@ const (
 	workerExec              = "/app/agents/bin/worker"
 )
 
-var (
-	workers = gmap.New(true)
-)
-
 func newWorker(channelName string, logFile string, manifestJsonFile string) *Worker {
 	return &Worker{
 		ChannelName:        channelName,
@@ -42,7 +36,7 @@ func newWorker(channelName string, logFile string, manifestJsonFile string) *Wor
 	}
 }
 
-func (w *Worker) start(req *StartReq) (err error) {
+func (w *Worker) start(req *common.StartReq) (err error) {
 	shell := fmt.Sprintf("cd /app/agents && nohup %s --manifest %s > %s 2>&1 &", workerExec, w.ManifestJsonFile, w.LogFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
 	if _, err = exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
@@ -78,29 +72,6 @@ func (w *Worker) stop(requestId string, channelName string) (err error) {
 		return
 	}
 
-	workers.Remove(channelName)
-
 	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 	return
-}
-
-func cleanWorker() {
-	for {
-		for _, channelName := range workers.Keys() {
-			worker := workers.Get(channelName).(*Worker)
-
-			nowTs := time.Now().Unix()
-			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
-				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
-					slog.Error("Worker cleanWorker failed", "err", err, "channelName", channelName, logTag)
-					continue
-				}
-
-				slog.Info("Worker cleanWorker success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
-			}
-		}
-
-		slog.Debug("Worker cleanWorker sleep", "sleep", workerCleanSleepSeconds, logTag)
-		time.Sleep(workerCleanSleepSeconds * time.Second)
-	}
 }
