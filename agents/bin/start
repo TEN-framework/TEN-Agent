@@ -10,14 +10,14 @@ source activate
 cd ..
 
 if [[ -f "requirements.txt" ]]; then
-  pip install -i https://pypi.tuna.tsinghua.edu.cn/simple/ -r requirements.txt
+  pip install -r requirements.txt
 fi
 
 # traverse the addon/extension directory to find the requirements.txt
 if [[ -d "addon/extension" ]]; then
   for extension in addon/extension/*; do
     if [[ -f "$extension/requirements.txt" ]]; then
-      pip install -i https://pypi.tuna.tsinghua.edu.cn/simple/ -r $extension/requirements.txt
+      pip install -r $extension/requirements.txt
     fi
   done
 fi
