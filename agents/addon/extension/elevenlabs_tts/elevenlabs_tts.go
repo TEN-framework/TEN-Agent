@@ -40,7 +40,7 @@ func defaultElevenlabsTTSConfig() elevenlabsTTSConfig {
 	return elevenlabsTTSConfig{
 		ApiKey:                   "",
 		ModelId:                  "eleven_multilingual_v2",
-		OptimizeStreamingLatency: 0.0,
+		OptimizeStreamingLatency: 0,
 		RequestTimeoutSeconds:    30,
 		SimilarityBoost:          0.75,
 		SpeakerBoost:             false,
