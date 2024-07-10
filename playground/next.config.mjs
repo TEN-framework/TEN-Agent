@@ -2,6 +2,7 @@
 const nextConfig = {
   // basePath: '/ai-agent',
   // output: 'export',
+  output: 'standalone', // for docker build
   reactStrictMode: false,
   webpack(config) {
     // Grab the existing rule that handles SVG imports
