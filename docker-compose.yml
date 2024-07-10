@@ -4,7 +4,7 @@ services:
   astra_agents_server:
     image: agoraio/astra_agents_server:latest
     build:
-      context: ./server
+      context: .
       dockerfile: Dockerfile
     container_name: astra_agents_server
     restart: always
