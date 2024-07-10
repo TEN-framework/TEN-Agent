@@ -263,7 +263,7 @@ func (s *MainService) createWorkerManifest(req *common.StartReq) (manifestJsonFi
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.remote_stream_id`, req.RemoteStreamId)
 	}
 
-	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String() //TODO check is correct? not req.AgoraAsrLanguage?
+	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
 	manifestJson, err = tts.ProcessManifest(manifestJson, common.Language(language), req.VoiceType)
 	if err != nil {
 		slog.Error("handlerStart tts ProcessManifest failed", "err", err, "requestId", req.RequestId, logTag)
