@@ -20,7 +20,7 @@
 
 [Lightning Fast](astra-service.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interaction](astra-service.md)
+[Multimodal Interactive](astra-service.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Highly Customizeable](astra-service.md)
 
@@ -153,7 +153,7 @@ make run-server
 To understand how the ASTRA service works under the hood, please refer to the [ ASTRA service documentation ](astra-service.md).
 
 <br>
-<h2>Staying tuned</h2>
+<h2>Staying Tuned</h2>
 
 Star our repository and get instant notifications for all new releases!
 <br>
