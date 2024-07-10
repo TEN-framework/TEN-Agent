@@ -1,4 +1,4 @@
- ![ASTRA Banner Image](https://github.com/rte-design/ASTRA.ai/raw/main/images/banner-image-without-tagline.png)
+![ASTRA Banner Image](https://github.com/rte-design/ASTRA.ai/raw/main/images/banner-image-without-tagline.png)
 
 <div align="center">
 
@@ -18,24 +18,22 @@
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-
-[Lightning Fast](astra-servie.md)
+[Lightning Fast](astra-service.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interaction](astra-serice.md)
+[Multimodal Interaction](astra-service.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Highly Customizeable](astra-service.md)
 
 </div>
 
-<br >
-
-ASTRA is an open-source platform designed for developing agents utilizing large language models. With ASTRA, you can easily create lightning fast, multimodal AI agents, even without any coding knowledge. 
+ASTRA is an open-source platform designed for developing agents utilizing large language models. With ASTRA, you can easily create lightning fast, multimodal AI agents, even without any coding knowledge.
 
 <br>
 <h2>Showcase: Voice Agent</h2>
 
+[ASTRA Voice Agent](https://theastra.ai)
 
-ASTRA is a versatile platform that can be used to build a wide range of agents. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA. It feels natural to talk with, it 
+ASTRA is a versatile platform capable of building a wide range of agents. Here, we showcase an impressive Voice Agent powered by ASTRA, demonstrating its ability to create intuitive and seamless interactions.
 
 ![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)
 
@@ -154,7 +152,6 @@ make run-server
 
 To understand how the ASTRA service works under the hood, please refer to the [ ASTRA service documentation ](astra-service.md).
 
-
 <br>
 <h2>Staying tuned</h2>
 
@@ -164,7 +161,6 @@ Star our repository and get instant notifications for all new releases!
 ![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 <br>
-
 
 <br>
 <h2>Join Community</h2>
