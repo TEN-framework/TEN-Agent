@@ -29,7 +29,7 @@
 ASTRA is an open-source platform designed for developing agents utilizing large language models. With ASTRA, you can easily create lightning fast, multimodal AI agents, even without any coding knowledge.
 
 <br>
-<h2>Showcase: Voice Agent</h2>
+<h2>Voice Agent Showcase</h2>
 
 [ASTRA Voice Agent](https://theastra.ai)
 
@@ -153,7 +153,7 @@ make run-server
 To understand how the ASTRA service works under the hood, please refer to the [ ASTRA service documentation ](astra-service.md).
 
 <br>
-<h2>Staying Tuned</h2>
+<h2>Stay Tuned</h2>
 
 Star our repository and get instant notifications for all new releases!
 <br>
