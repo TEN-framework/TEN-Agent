@@ -29,7 +29,7 @@ jobs:
     - name: Build & Publish to Github Container Registry
       uses: elgohr/Publish-Docker-Github-Action@v5
       with:
-        name: ${{ github.actor }}/${{ env.IMAGE_NAME }}
+        name: rte-design/${{ env.IMAGE_NAME }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
