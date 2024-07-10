@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  astra_agents_server:
+    image: agoraio/astra_agents_server:latest
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: astra_agents_server
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - /tmp:/tmp
+    environment:
+      AGORA_APP_ID: ${AGORA_APP_ID}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
+      AZURE_STT_KEY: ${AZURE_STT_KEY}
+      AZURE_STT_REGION: ${AZURE_STT_REGION}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AZURE_TTS_KEY: ${AZURE_TTS_KEY}
+      AZURE_TTS_REGION: ${AZURE_TTS_REGION}
+  astra_playground:
+    image: agoraio/astra_playground:latest
+    build:
+      context: ./playground
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_REQUEST_URL: ${ASTRA_AGENTS_SERVER_URL}
+    container_name: astra_playground
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - /tmp:/tmp
