@@ -23,6 +23,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - id: pre-step
       shell: bash
       run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
