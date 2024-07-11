@@ -22,12 +22,12 @@ import time
 import logging
 from pb import chat_text_pb2 as pb
 
+CMD_NAME_FLUSH = "flush"
+
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"
 TEXT_DATA_STREAM_ID_FIELD = "stream_id"
 TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
-
-CMD_NAME_FLUSH = "flush"
 
 # record the cached text data for each stream id
 cached_text_map = {}
@@ -68,7 +68,7 @@ class ChatTranscriberExtension(Extension):
 
     def on_data(self, rte: Rte, data: Data) -> None:
         """
-        OnData receives data from rte graph.
+        on_data receives data from rte graph.
         current supported data:
           - name: text_data
             example:
