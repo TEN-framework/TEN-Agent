@@ -19,10 +19,10 @@ from rte_runtime_python import (
     MetadataInfo,
 )
 
+CMD_NAME_FLUSH = "flush"
+
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"
-
-CMD_NAME_FLUSH = "flush"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(process)d - [%(filename)s:%(lineno)d] - %(message)s",
@@ -60,7 +60,7 @@ class InterruptDetectorExtension(Extension):
 
     def on_data(self, rte: Rte, data: Data) -> None:
         """
-        OnData receives data from rte graph.
+        on_data receives data from rte graph.
         current supported data:
           - name: text_data
             example:
