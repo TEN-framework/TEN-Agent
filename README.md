@@ -69,13 +69,11 @@ This should start an agent server running on port 8080.
 
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
 
-
 <div align="center">
 
 ![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
 </div>
-
 
 <h3>Connect to Your Agent</h3>
 
@@ -94,66 +92,65 @@ npm i && npm run dev
 
 🎉 Congratulations! You now have a ASTRA powered voice agent running locally.
 
-<br />
+<br>
 <h2>Agent Customization</h2>
 
-To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which are interchangeable. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
 <div align="center">
 
 <table style="width: 100%;">
   <tr>
     <th align="center">Extension</th>
-    <th align="center">Interchangeable</th> 
-    <th align="center">Modal</th>
+    <!-- <th align="center">Interchangeable</th>  -->
+    <th align="center">Feature</th>
     <th align="center">Description</th>
   </tr>
   <tr>
   <td align="center">openai_chatgpt</td>
-    <td align="center">✅</td>
+    <!-- <td align="center">✅</td> -->
     <td align="center">LLM</td>
     <td align="center">Large Language Modal</td>
   </tr>
   <tr>
   <td align="center">elevenlabs_tts</td>
-    <td align="center">✅</td>
+    <!-- <td align="center">✅</td> -->
     <td align="center">Text-to-speech</td>
     <td align="center">Convert text to audio</td>
   </tr>
   <tr>
   <td align="center">azure_tts</td>
-    <td align="center">✅</td>
+    <!-- <td align="center">✅</td> -->
     <td align="center">Text-to-speech</td>
     <td align="center">Convert text to audio</td>
   </tr>
   <tr>
   <td align="center">azure_stt</td>
-    <td align="center">NA</td>
+    <!-- <td align="center">NA</td> -->
     <td align="center">Speech-to-text</td>
     <td align="center">Convert audio to text</td>
   </tr>
   <tr>
   <td align="center">chat_transcriber</td>
-    <td align="center">NA</td>
+    <!-- <td align="center">NA</td> -->
     <td align="center">Transcriber</td>
     <td align="center">A utility ext to forward chat logs into channel</td>
   </tr>
    <tr>
   <td align="center">agora_rtc</td>
-  <td align="center">NA</td>
+  <!-- <td align="center">NA</td> -->
     <td align="center">Transporter</td>
     <td align="center">A low latency transporter powered by agora_rtc</td>
   </tr> 
   <tr>
   <td align="center">interrupt_detector</td>
-  <td align="center">NA</td>
+  <!-- <td align="center">NA</td> -->
   <td align="center">Interrupter</td>
   <td align="center">A utility ext to help interrupt agent</td>
   </tr>
 </table>
 
 </div>
-
 
 <h3>Customize Agent</h3>
 
@@ -211,7 +208,6 @@ make run-server
 
 🎉 Congratulations! You have created your first personalized voice agent.
 
-
 <h3>Build More</h3>
 
 Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](astra-architecture.md).
@@ -223,7 +219,6 @@ Star our repository and get instant notifications for all new releases!
 <br>
 
 ![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
-
 
 <br>
 <h2>Join Community</h2>
