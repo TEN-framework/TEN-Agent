@@ -1,68 +1,45 @@
-<div align="center">
- <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
-</div>
-
-<br>
+![ASTRA Banner Image](https://github.com/rte-design/ASTRA.ai/raw/main/images/banner-image-without-tagline.png)
 
 <div align="center">
 
-<a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
+[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
-</div>
+[![](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-<p align="center">
+[![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
+
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-</p>
 
-<div align="center">
-        <a href="" target="">
-        <span>Real-time Multi-model Interactions</span>
-        </a>
-        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="">
-        <span>Low Latency</span>
-        </a>
-        <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-        <a href="" target="">
-        <span>Supporting Multiple languages</span>
-        </a>
+[Lightning Fast](astra-service.md)
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+[Multimodal Interactive](astra-service.md)
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+[Highly Customizeable](astra-service.md)
+
 </div>
 
-<br >
-
-ASTRA is an open-source platform designed for developing applications utilizing large language models. It merges the ideas of Backend-as-a-Service and LLM operations, allowing developers to swiftly create production-ready generative AI applications. Additionally, it empowers non-technical users to engage in defining and managing data operations for AI applications.
-
-With ASTRA, you can easily create real-time, multi-modal AI applications with low latency, even without any coding knowledge. 🎉
+ASTRA is an open-source platform designed for developing agents utilizing large language models. With ASTRA, you can easily create lightning fast, multimodal AI agents, even without any coding knowledge.
 
 <br>
+<h2>Voice Agent Showcase</h2>
 
-## Voice Agent
+[ASTRA Voice Agent](https://theastra.ai)
 
-ASTRA is a versatile platform that can be used to build a wide range of applications. Here, we present a fantastic example of [an intuitive Voice Agent ](https://astra-agents.agora.io/) built on ASTRA.
+ASTRA is a versatile platform capable of building a wide range of agents. Here, we showcase an impressive Voice Agent powered by ASTRA, demonstrating its ability to create intuitive and seamless interactions.
 
-<div align="center">
-<img alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
-</div>
+![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)
 
-As you can see, the real-time multimodal interactions, low latency, and responsive feedback all showcase the power of ASTRA.
+<h3>Run Voice Agent Locally</h3>
 
-### Run Voice Agent Locally
-
-Of course, you are more than welcome to run our voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
-
-#### Mac with Apple Silicon
-
-> [!NOTE]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
->
-> ![run_on_rosetta](https://github.com/rte-design/ASTRA.ai/assets/471561/6332341c-cd18-429f-af5e-dca65e675b1c)
+Of course, you are more than welcome to run the example voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
 
 To start, make sure you have:
 
@@ -83,12 +60,22 @@ docker run --restart=always -itd -p 8080:8080 \
         -e AZURE_TTS_KEY=<your_azure_tts_key> \
         -e AZURE_TTS_REGION=<your_azure_tts_region> \
         --name astra_agents_server \
-        agoraio/astra_agents_server:0.1.2
+        agoraio/astra_agents_server:latest
 ```
+
+#### Mac with Apple Silicon
+
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
+
+<div align="center">
+
+![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
+
+</div>
 
 This should start an agent server running on port 8080.
 
-### Use the playground to connect to your agent
+<h3>Connect to Your Agent</h3>
 
 You can use the playground project to test with the server you just started.
 
@@ -105,9 +92,8 @@ npm i && npm run dev
 
 🎉 Congratulations! You now have our ASTRA powered voice agent running locally.
 
-</br>
-
-# Agent Customization
+<br />
+<h2>Agent Customization</h2>
 
 Our voice agent is a great place for you to start with, it uses following Extensions:
 
@@ -119,11 +105,11 @@ Our voice agent is a great place for you to start with, it uses following Extens
 
 <div align="center">
 
-<image alt="Astra.ai" width="800px" src="./images/image-2.png">
+<image alt="ASTRA" src="./images/image-2.png">
 
 </div>
 
-### Customize your own agent
+<h3>Customize Agent</h3>
 
 You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
 
@@ -145,7 +131,7 @@ make build
 
 This code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in agents/addon/extension/openai_chatgpt/openai_chatgpt.go.
 
-Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the Astra voice agent playground as we did in previous steps.
+Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent playground as we did in previous steps.
 
 ```bash
 
@@ -164,67 +150,37 @@ make run-server
 
 🎉 Congratulations! You have created your first personalized voice agent.
 
-<br />
+To understand how the ASTRA service works under the hood, please refer to the [ ASTRA service documentation ](astra-service.md).
 
-# Astra Service
+<br>
+<h2>Stay Tuned</h2>
 
-Now let's discuss what's under the hood. The Astra Service is composed of various Astra extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the Astra Extension Store and the Astra Package Manager.
+Star our repository and get instant notifications for all new releases!
+<br>
 
-<div align="center">
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
-<image alt="Astra.ai" width="800px" src="./images/image.png">
+<br>
 
-</div>
+<br>
+<h2>Join Community</h2>
 
-### Astra Extensions
+- [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
+- [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
+- [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](CONTRIBUTING.md) for more details.
+- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
 
-An extension is the fundamental unit of composition within the Astra framework. Developers can create extensions in various programming languages and combine them to build diverse scenarios and applications. Astra emphasizes cross-language collaboration, allowing extensions written in different languages to work together seamlessly within the same application or service.
+ <br>
+ <h2>Code Contributors</h2>
 
-For example, if an application requires real-time communication (RTC) features and advanced AI capabilities, a developer might choose to write RTC-related extensions in C++ for its performance advantages in processing audio and video data. Meanwhile, they could develop AI extensions in Python to leverage its extensive libraries and frameworks for data analysis and machine learning tasks.
+[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 
-#### Supported Languages
+<br>
+<h2>Contribution Guidelines</h2>
 
-As of June 2024, we support extensions written in the following languages:
-
-- C++
-- Golang
-- Python (planned for July)
-
-### Graph
-
-A Graph in Astra describes the data flow between extensions, orchestrating their interactions. For example, the text output from a speech-to-text (STT) extension might be directed to a large language model (LLM) extension. Essentially, a Graph defines which extensions are involved and the direction of data flow between them. Developers can customize this flow, directing outputs from one extension, such as an STT, into another, like an LLM.
-
-In Astra, there are four main types of data flow between extensions:
-
-- Command
-- Data
-- Image frame
-- PCM frame
-
-By specifying the direction of these data types in the Graph, developers can enable mutual invocation and unidirectional data flow between plugins. This is especially useful for PCM and image data types, simplifying audio and video processing.
-
-### Astra Agent App
-
-An Astra Agent App is a runnable server-side application that combines multiple Extensions following Graph rules to accomplish more sophisticated operations.
-
-### Astra Extension Store
-
-The Astra Store is a centralized platform where developers can share their extensions and access those created by others.
-
-### Astra Package Manager
-
-The Astra Package Manager simplifies the process of uploading, sharing, downloading, and installing Astra extensions. Extensions can specify dependencies on other extensions and the environment, and the Astra Package Manager automatically manages these dependencies, making the installation and release of extensions extremely convenient and intuitive.
-
-</br>
-
-## Contributing 
 Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
 
-
-## Code Contributors
-[![astra.ai](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
-</br>
-
-## License
+<br>
+<h2>License</h2>
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.

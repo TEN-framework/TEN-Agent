@@ -1,25 +1,28 @@
 <div align="center">
- <img alt="ASTRA" width="400px" height="auto" src="./images/logo_banner_dark.png">
+ <img alt="ASTRA" height="auto" src="./images/new-banner-without-tagline.png">
 </div>
 
 <br>
 
 <div align="center">
 
-<a href="https://discord.gg/p85NR8UD" target="_blank"><img alt="ASTRA Discord" src="https://img.shields.io/badge/Discord-@ASTRA%20-blue.svg?logo=discord"></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTE&message=Real-Time Engagement&color=yellow" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTC&message=Video Call SDK&color=orange" alt="" /></a>
-<a href="" target="_blank">
-<img src="https://img.shields.io/static/v1?label=RTM&message=IM Chat&color=success" alt=""/></a>
+[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
-</div>
+[![](https://dcbadge.vercel.app/api/server/p85NR8UD)](https://discord.gg/p85NR8UD)
 
-<p align="center">
+[![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
+
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-</p>
+
+</div>
 
 <div align="center">
 
@@ -38,10 +41,10 @@
 ### Playground
 
 <div align="center">
-<img  alt="Astra Voice Agent" src="./images/astra-voice-agent.gif">
+<img  alt="ASTRA Voice Agent" src="./images/astra-voice-agent.gif">
 </div>
 
-我们把 Astra.ai Agent 放在一个线上 [Playground](https://astra-agents.agora.io/)， 欢迎试玩。
+我们把 ASTRA Voice Agent 放在一个线上 [Playground](https://astra-agents.agora.io/)， 欢迎试玩。
 
 ### 本地运行 Agent
 
@@ -66,7 +69,7 @@ docker run --restart=always -itd -p 8080:8080 \
         -e AZURE_TTS_KEY=<your_azure_tts_key> \
         -e AZURE_TTS_REGION=<your_azure_tts_region> \
         --name astra_agents_server \
-        agoraio/astra_agents_server:0.1.2
+        agoraio/astra_agents_server:latest
 ```
 
 这条命令将启动一个运行在 8080 端口的代理服务器。
@@ -86,7 +89,7 @@ cd playground
 npm i && npm run dev
 ```
 
-🎉 恭喜！您现在已经成功在本地运行了我们的 Astra Voice Agent.
+🎉 恭喜！您现在已经成功在本地运行了我们的 ASTRA Voice Agent.
 
 </br>
 
@@ -102,7 +105,7 @@ npm i && npm run dev
 
 <div align="center">
 
-<image alt="Astra.ai" width="800px" src="./images/image-2.png">
+<image alt="ASTRA" width="800px" src="./images/image-2.png">
 
 </div>
 
@@ -128,7 +131,7 @@ make build
 
 该代码生成一个代理可执行文件。要自定义提示和 OpenAI 参数，请修改 agents/addon/extension/openai_chatgpt/openai_chatgpt.go 源代码。
 
-完成修改后，您可以使用以下命令启动服务器。然后，您可以像之前的步骤一样，使用 Astra Voice Agent 在 Playground 进行测试。
+完成修改后，您可以使用以下命令启动服务器。然后，您可以像之前的步骤一样，使用 ASTRA Voice Agent 在 Playground 进行测试。
 
 ```shell
 
@@ -145,23 +148,23 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-🎉 恭喜你！你已经创建了你的第一个个性化语音代理。我们对你的努力表示赞赏，并期待在 Astra 云商店中看到它。如果你能在社区中分享它，我们将不胜感激。
+🎉 恭喜你！你已经创建了你的第一个个性化语音代理。我们对你的努力表示赞赏，并期待在 ASTRA 云商店中看到它。如果你能在社区中分享它，我们将不胜感激。
 
 <br />
 
-## Astra 服务
+## ASTRA 服务
 
-现在让我们来深入了解一下。Astra 服务由多种不同编程语言开发的 Astra 扩展组成。这些扩展通过图谱相互连接，描述它们的关系并展示数据流动。此外，通过 Astra 云商店和 Astra 包管理器，扩展的分享和下载变得更加简便。
+现在让我们来深入了解一下。ASTRA 服务由多种不同编程语言开发的 ASTRA 扩展组成。这些扩展通过图谱相互连接，描述它们的关系并展示数据流动。此外，通过 ASTRA 云商店和 ASTRA 包管理器，扩展的分享和下载变得更加简便。
 
 <div align="center">
 
-<image alt="Astra.ai" width="800px" src="./images/image.png">
+<image alt="ASTRA" width="800px" src="./images/image.png">
 
 </div>
 
-### Astra 扩展
+### ASTRA 扩展
 
-扩展是 Astra 框架中的基本组合单元。开发人员可以使用多种编程语言创建扩展，并将它们组合起来构建不同的场景和应用程序。Astra 强调跨语言协作，允许使用不同语言编写的扩展在同一应用程序或服务中无缝协同工作。
+扩展是 ASTRA 框架中的基本组合单元。开发人员可以使用多种编程语言创建扩展，并将它们组合起来构建不同的场景和应用程序。ASTRA 强调跨语言协作，允许使用不同语言编写的扩展在同一应用程序或服务中无缝协同工作。
 
 例如，如果一个应用程序需要实时通信（RTC）功能和先进的人工智能能力，开发人员可以选择使用 C++ 编写与音频和视频数据处理性能优势相关的 RTC 相关扩展。同时，他们可以使用 Python 开发 AI 扩展，利用其丰富的库和框架进行数据分析和机器学习任务。
 
@@ -173,15 +176,15 @@ make run-server
 - Golang
 - Python (7 月)
 
-开发人员可以灵活选择最适合他们需求的语言，并将其无缝集成到 Astra 框架中。
+开发人员可以灵活选择最适合他们需求的语言，并将其无缝集成到 ASTRA 框架中。
 
-这段内容详细描述了截至指定日期的 Astra 扩展支持的编程语言。
+这段内容详细描述了截至指定日期的 ASTRA 扩展支持的编程语言。
 
 ## 图谱
 
-在 Astra 中，图谱描述了扩展之间的数据流，协调它们的交互。例如，语音转文本（STT）扩展的文本输出可以指向大型语言模型（LLM）扩展。简而言之，图谱定义了涉及的扩展以及它们之间数据流的方向。开发者可以定制这种流程，将一个扩展（如 STT）的输出引导到另一个（如 LLM）。
+在 ASTRA 中，图谱描述了扩展之间的数据流，协调它们的交互。例如，语音转文本（STT）扩展的文本输出可以指向大型语言模型（LLM）扩展。简而言之，图谱定义了涉及的扩展以及它们之间数据流的方向。开发者可以定制这种流程，将一个扩展（如 STT）的输出引导到另一个（如 LLM）。
 
-在 Astra 中，有四种主要类型的扩展之间数据流：
+在 ASTRA 中，有四种主要类型的扩展之间数据流：
 
 - Command
 - Data
@@ -190,21 +193,27 @@ make run-server
 
 通过在图谱中指定这些数据类型的方向，开发人员可以实现插件之间的相互调用和单向数据流。这对于 PCM 和图像数据类型尤其有用，简化了音频和视频处理。
 
-### Astra 代理应用
+### ASTRA 代理应用
 
-Astra 代理应用是一个可运行的服务器端应用程序，根据图谱规则结合多个扩展来完成更复杂的操作。
+ASTRA 代理应用是一个可运行的服务器端应用程序，根据图谱规则结合多个扩展来完成更复杂的操作。
 
-### Astra 云商店
+### ASTRA 云商店
 
-Astra 商店是一个集中的平台，开发人员可以在这里分享他们的扩展，并访问其他人创建的扩展。
+ASTRA 商店是一个集中的平台，开发人员可以在这里分享他们的扩展，并访问其他人创建的扩展。
 
-### Astra 包管理器
+### ASTRA 包管理器
 
-Astra 包管理器简化了上传、分享、下载和安装 Astra 扩展的过程。扩展可以指定对其他扩展和环境的依赖关系，Astra 包管理器会自动管理这些依赖关系，使扩展的安装和发布变得非常方便和直观。
+ASTRA 包管理器简化了上传、分享、下载和安装 ASTRA 扩展的过程。扩展可以指定对其他扩展和环境的依赖关系，ASTRA 包管理器会自动管理这些依赖关系，使扩展的安装和发布变得非常方便和直观。
+
+</br>
 
 </br>
 
-</br>
+## 微信 ASTRA 中文群
+
+<div align="center">
+ <img alt="ASTRA" width="300px" height="auto" src="./images/wechat-qrcode.png">
+</div>
 
 ## Contributing
 

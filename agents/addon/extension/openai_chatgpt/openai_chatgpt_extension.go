@@ -51,13 +51,13 @@ const (
 	propertyMaxTokens        = "max_tokens"        // Optional
 	propertyGreeting         = "greeting"          // Optional
 	propertyProxyUrl         = "proxy_url"         // Optional
-
-	maxMemoryLength = 20
+	propertyMaxMemoryLength  = "max_memory_length" // Optional
 )
 
 var (
-	memory     []openai.ChatCompletionMessage
-	memoryChan chan openai.ChatCompletionMessage
+	memory          []openai.ChatCompletionMessage
+	memoryChan      chan openai.ChatCompletionMessage
+	maxMemoryLength = 10
 
 	outdateTs atomic.Int64
 	wg        sync.WaitGroup
@@ -158,6 +158,14 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 	greeting, err := rte.GetPropertyString(propertyGreeting)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyGreeting, err), logTag)
+	}
+
+	if propMaxMemoryLength, err := rte.GetPropertyInt64(propertyMaxMemoryLength); err != nil {
+		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxMemoryLength, err), logTag)
+	} else {
+		if propMaxMemoryLength > 0 {
+			maxMemoryLength = int(propMaxMemoryLength)
+		}
 	}
 
 	// create openaiChatGPT instance

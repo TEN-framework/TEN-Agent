@@ -38,6 +38,9 @@
             },
             "greeting": {
                 "type": "string"
+            },
+            "max_memory_length": {
+                "type": "int64"
             }
         },
         "data_in": [

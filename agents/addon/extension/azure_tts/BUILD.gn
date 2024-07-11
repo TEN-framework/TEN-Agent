@@ -38,8 +38,8 @@ rte_package("azure_tts") {
     ]
 
     include_dirs = [
-      "include/microsoft/c_api",
-      "include/microsoft/cxx_api",
+      "//include/microsoft/c_api",
+      "//include/microsoft/cxx_api",
       "//include",
       "//include/utils",
       "//include/nlohmann_json",

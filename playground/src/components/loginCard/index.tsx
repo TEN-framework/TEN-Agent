@@ -4,7 +4,8 @@ import { version } from "../../../package.json"
 import { useRouter } from 'next/navigation'
 import { message } from "antd"
 import { ChangeEvent, InputHTMLAttributes, useState } from "react"
-import { GithubIcon, LogoIcon } from "../icons"
+import { GithubIcon } from "../icons"
+import Logo from "@/components/logo"
 import { GITHUB_URL, getRandomUserId, useAppDispatch, getRandomChannel } from "@/common"
 import { setOptions } from "@/store/reducers/global"
 import styles from "./index.module.scss"
@@ -52,7 +53,7 @@ const LoginCard = () => {
     </section>
     <section className={styles.content}>
       <div className={styles.title}>
-        <LogoIcon ></LogoIcon>
+        <Logo width={64} height={64}></Logo>
         <span className={styles.text}>ASTRA.ai Agents Playground</span>
       </div>
       <div className={styles.section}>

@@ -12,7 +12,7 @@
         {
             "type": "extension",
             "name": "agora_rtc",
-            "version": "0.1.0"
+            "version": "0.1.1"
         },
         {
             "type": "extension",
@@ -81,7 +81,8 @@
                         "max_tokens": 512,
                         "prompt": "",
                         "proxy_url": "",
-                        "greeting": "ASTRA agent connected. How can i help you today?"
+                        "greeting": "ASTRA agent connected. How can i help you today?",
+                        "max_memory_length": 10
                     }
                 },
                 {
@@ -101,7 +102,7 @@
                     "addon": "chat_transcriber",
                     "name": "chat_transcriber"
                 },
-                                {
+                {
                     "type": "extension_group",
                     "addon": "default_extension_group",
                     "name": "default"
