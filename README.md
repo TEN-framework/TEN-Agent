@@ -79,9 +79,9 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 
 <h3>Connect to Your Agent</h3>
 
-You can use the showcase project, in `/playground` folder, to test with the server you just started, on 8080.
+You can use the showcase voice agent, in `/playground` folder, to test with the server you just started.
 
-The showcase project is built on NextJS 14, hence it needs Node 18 or later.
+The project is built on NextJS 14, hence it needs Node 18 or later.
 
 ```bash
 # Set up an .env file
@@ -97,14 +97,14 @@ npm i && npm run dev
 <br />
 <h2>Agent Customization</h2>
 
-To do more, ASTRA voice agent is a great place for you to start, it uses following extensions:
+To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which are interchangeable. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
 <div align="center">
 
 <table style="width: 100%;">
   <tr>
     <th align="center">Extension</th>
-    <th align="center">Switchable</th> 
+    <th align="center">Interchangeable</th> 
     <th align="center">Modal</th>
     <th align="center">Description</th>
   </tr>
