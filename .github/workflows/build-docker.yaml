@@ -23,13 +23,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+        fetch-depth: '0'
     - id: pre-step
       shell: bash
       run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
     - name: Build & Publish to Github Container Registry
       uses: elgohr/Publish-Docker-Github-Action@v5
       with:
-        name: rte-design/${{ env.IMAGE_NAME }}
+        name: ${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
