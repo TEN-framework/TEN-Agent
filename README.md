@@ -18,11 +18,11 @@
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-[Lightning Fast](astra-service.md)
+[Lightning Fast](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-service)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interactive](astra-service.md)
+[Multimodal Interactive](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Highly Customizeable](astra-service.md)
+[Highly Customizable](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-extension)
 
 </div>
 
