@@ -3,4 +3,6 @@ export interface IconProps {
   height?: number
   color?: string
   viewBox?: string
+  // style?: React.CSSProperties
+  transform?: string
 }
