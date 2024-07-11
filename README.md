@@ -18,11 +18,11 @@
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-[Lightning Fast](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-service)
+[Lightning Fast](https://github.com/rte-design/ASTRA.ai/blob/main/astra-architecture.md#astra-architecture)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interactive](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-extension)
+[Multimodal Interactive](https://github.com/rte-design/ASTRA.ai/blob/main/astra-architecture.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Highly Customizable](https://github.com/rte-design/ASTRA.ai/blob/main/astra-service.md#astra-extension)
+[Highly Customizable](https://github.com/rte-design/ASTRA.ai/blob/main/astra-architecture.md#astra-extension)
 
 </div>
 
@@ -214,7 +214,7 @@ make run-server
 
 <h3>Build More</h3>
 
-Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA service works under the hood. Please refer to the [ ASTRA service documentation ](astra-service.md).
+Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](astra-architecture.md).
 
 <br>
 <h2>Stay Tuned</h2>

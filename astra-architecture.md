@@ -1,6 +1,6 @@
-<h2>ASTRA Service</h2>
+<h2>ASTRA Architecture</h2>
 
-Now let's discuss what's under the hood. The ASTRA Service is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
+Now let's discuss what's under the hood. The ASTRA architecture is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
 <div align="center">
 
