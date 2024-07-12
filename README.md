@@ -97,52 +97,16 @@ npm i && npm run dev
 
 To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
-<div align="center">
+| Extension           | Feature         | Description                                                                                                 |
+|---------------------|-----------------|-------------------------------------------------------------------------------------------------------------|
+| openai_chatgpt      | LLM             | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
+| elevenlabs_tts      | Text-to-speech  | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                               |
+| azure_tts           | Text-to-speech  | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts audio to text |
+| azure_stt           | Speech-to-text  | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                       |
+| chat_transcriber    | Transcriber     | A utility ext to forward chat logs into channel                                                             |
+| agora_rtc           | Transporter     | A low latency transporter powered by agora_rtc                                                              |
+| interrupt_detector | Interrupter     | A utility ext to help interrupt agent                                                                       |
 
-<table style="width: 100%;">
-  <tr>
-    <th align="center">Extension</th>
-    <th align="center">Feature</th>
-    <th align="center">Description</th>
-  </tr>
-  <tr>
-  <td align="center">openai_chatgpt</td>
-    <td align="center">LLM</td>
-    <td align="center">GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo</td>
-  </tr>
-  <tr>
-  <td align="center">elevenlabs_tts</td>
-    <td align="center">Text-to-speech</td>
-    <td align="center">Convert text to audio ([ toggle by server command ](https://github.com/rte-design/ASTRA.ai?tab=readme-ov-file#start-server))</td>
-  </tr>
-  <tr>
-  <td align="center">azure_tts</td>
-    <td align="center">Text-to-speech</td>
-    <td align="center">Convert text to audio([ toggle by server command ](https://github.com/rte-design/ASTRA.ai?tab=readme-ov-file#start-server))</td>
-  </tr>
-  <tr>
-  <td align="center">azure_stt</td>
-    <td align="center">Speech-to-text</td>
-    <td align="center">Convert audio to text</td>
-  </tr>
-  <tr>
-  <td align="center">chat_transcriber</td>
-    <td align="center">Transcriber</td>
-    <td align="center">A utility ext to forward chat logs into channel</td>
-  </tr>
-   <tr>
-  <td align="center">agora_rtc</td>
-    <td align="center">Transporter</td>
-    <td align="center">A low latency transporter powered by agora_rtc</td>
-  </tr> 
-  <tr>
-  <td align="center">interrupt_detector</td>
-  <td align="center">Interrupter</td>
-  <td align="center">A utility ext to help interrupt agent</td>
-  </tr>
-</table>
-
-</div>
 
 <h3>Customize Agent</h3>
 
