@@ -19,10 +19,9 @@ from rte_runtime_python import (
 from rte_runtime_python.image_frame import ImageFrame
 from PIL import Image, ImageFilter
 
+
 class OpenAIChatGPTExtension(Extension):
-    def on_init(
-        self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
+    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
         print("OpenAIChatGPTExtension on_init")
         rte.on_init_done(manifest, property)
 
@@ -50,6 +49,7 @@ class OpenAIChatGPTExtension(Extension):
     def on_image_frame(self, rte: Rte, image_frame: ImageFrame) -> None:
         print("OpenAIChatGPTExtension on_cmd")
 
+
 @register_addon_as_extension("openai_chatgpt_python")
 class OpenAIChatGPTExtensionAddon(Addon):
     def on_init(self, rte: Rte, manifest, property) -> None:
@@ -57,9 +57,9 @@ class OpenAIChatGPTExtensionAddon(Addon):
         rte.on_init_done(manifest, property)
         return
 
-    def on_create_instance(self, rte: Rte, addon_name: str) -> Extension:
-        print("OpenAIChatGPTExtensionAddon on_create_instance")
-        return OpenAIChatGPTExtension(addon_name)
+    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
+        print("on_create_instance")
+        rte.on_create_instance_done(OpenAIChatGPTExtension(addon_name), context)
 
     def on_deinit(self, rte: Rte) -> None:
         print("OpenAIChatGPTExtensionAddon on_deinit")
