@@ -6,7 +6,6 @@
 #
 #
 
-import logging
 from rte_runtime_python import (
     Addon,
     Extension,
@@ -19,8 +18,8 @@ from rte_runtime_python import (
     MetadataInfo,
 )
 import time
-import logging
-from pb import chat_text_pb2 as pb
+from .pb import chat_text_pb2 as pb
+from .log import logger
 
 CMD_NAME_FLUSH = "flush"
 
@@ -32,35 +31,28 @@ TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 # record the cached text data for each stream id
 cached_text_map = {}
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(process)d - [%(filename)s:%(lineno)d] - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=logging.INFO,
-    encoding="utf-8",
-)
-
 
 class ChatTranscriberExtension(Extension):
     def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
-        logging.info("on_init")
+        logger.info("on_init")
         rte.on_init_done(manifest, property)
 
     def on_start(self, rte: Rte) -> None:
-        logging.info("on_start")
+        logger.info("on_start")
         rte.on_start_done()
 
     def on_stop(self, rte: Rte) -> None:
-        logging.info("on_stop")
+        logger.info("on_stop")
         rte.on_stop_done()
 
     def on_deinit(self, rte: Rte) -> None:
-        logging.info("on_deinit")
+        logger.info("on_deinit")
         rte.on_deinit_done()
 
     def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
-        logging.info("on_cmd")
+        logger.info("on_cmd")
         cmd_json = cmd.to_json()
-        logging.info("on_cmd json: " % cmd_json)
+        logger.info("on_cmd json: " % cmd_json)
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
@@ -77,7 +69,7 @@ class ChatTranscriberExtension(Extension):
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
-            logging.warning(
+            logger.warning(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
             )
             return
@@ -85,7 +77,7 @@ class ChatTranscriberExtension(Extension):
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception as e:
-            logging.warning(
+            logger.warning(
                 f"on_data get_property_bool {TEXT_DATA_FINAL_FIELD} error: {e}"
             )
             return
@@ -93,7 +85,7 @@ class ChatTranscriberExtension(Extension):
         try:
             stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
         except Exception as e:
-            logging.warning(
+            logger.warning(
                 f"on_data get_property_int {TEXT_DATA_STREAM_ID_FIELD} error: {e}"
             )
             return
@@ -101,12 +93,12 @@ class ChatTranscriberExtension(Extension):
         try:
             end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
         except Exception as e:
-            logging.warning(
+            logger.warning(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
             )
             return
 
-        logging.debug(
+        logger.debug(
             f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final} {TEXT_DATA_STREAM_ID_FIELD}: {stream_id} {TEXT_DATA_END_OF_SEGMENT_FIELD}: {end_of_segment}"
         )
 
@@ -138,7 +130,7 @@ class ChatTranscriberExtension(Extension):
         try:
             pb_serialized_text = pb_text.SerializeToString()
         except Exception as e:
-            logging.warning(f"on_data SerializeToString error: {e}")
+            logger.warning(f"on_data SerializeToString error: {e}")
             return
 
         try:
@@ -146,7 +138,7 @@ class ChatTranscriberExtension(Extension):
             rte_data = data.create("data")
             rte_data.set_property_string("data", pb_serialized_text)
         except Exception as e:
-            logging.warning(f"on_data new_data error: {e}")
+            logger.warning(f"on_data new_data error: {e}")
             return
 
         rte.send_data(rte_data)
@@ -155,15 +147,15 @@ class ChatTranscriberExtension(Extension):
 @register_addon_as_extension("chat_transcriber_python")
 class ChatTranscriberExtensionAddon(Addon):
     def on_init(self, rte: Rte, manifest, property) -> None:
-        logging.info("on_init")
+        logger.info("on_init")
         rte.on_init_done(manifest, property)
         return
 
-    def on_create_instance(self, rte: Rte, addon_name: str) -> Extension:
-        logging.info("on_create_instance")
-        return ChatTranscriberExtension(addon_name)
+    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
+        logger.info("on_create_instance")
+        rte.on_create_instance_done(ChatTranscriberExtension(addon_name), context)
 
     def on_deinit(self, rte: Rte) -> None:
-        logging.info("on_deinit")
+        logger.info("on_deinit")
         rte.on_deinit_done()
         return
