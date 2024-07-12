@@ -66,6 +66,8 @@ class ChatTranscriberExtension(Extension):
             example:
             {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
         """
+        logger.info(f"on_data")
+
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
@@ -135,7 +137,7 @@ class ChatTranscriberExtension(Extension):
 
         try:
             # convert the origin text data to the protobuf data and send it to the graph.
-            rte_data = data.create("data")
+            rte_data = Data.create("data")
             rte_data.set_property_string("data", pb_serialized_text)
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")

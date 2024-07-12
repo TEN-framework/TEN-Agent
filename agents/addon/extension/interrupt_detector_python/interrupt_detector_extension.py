@@ -60,6 +60,8 @@ class InterruptDetectorExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello", is_final: false}
         """
+        logger.info(f"on_data")
+
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
@@ -81,7 +83,7 @@ class InterruptDetectorExtension(Extension):
         )
 
         if final or len(text) >= 2:
-            flush_cmd = rte.new_cmd(CMD_NAME_FLUSH)
+            flush_cmd = Cmd.create(CMD_NAME_FLUSH)
             rte.send_cmd(flush_cmd, None)
 
             logger.info(f"sent cmd: {CMD_NAME_FLUSH}")

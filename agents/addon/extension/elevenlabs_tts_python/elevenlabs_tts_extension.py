@@ -175,7 +175,7 @@ class ElevenlabsTTSExtension(Extension):
             self.outdate_ts = int(time.time() * 1000000)
 
             # send out
-            out_cmd = cmd.create(CMD_OUT_FLUSH)
+            out_cmd = Cmd.create(CMD_OUT_FLUSH)
             rte.send_cmd(out_cmd)
 
         cmd_result = CmdResult.create(StatusCode.OK)
@@ -213,6 +213,8 @@ class ElevenlabsTTSExtension(Extension):
 
         while True:
             msg = self.text_queue.get()
+            logger.debug(f"process_text_queue, text: [{msg.text}]")
+
             if msg.received_ts < self.outdate_ts:
                 logger.info(
                     f"textChan interrupt and flushing for input text: [{msg.text}], received_ts: {msg.received_ts}, outdate_ts: {self.outdate_ts}"
@@ -227,7 +229,7 @@ class ElevenlabsTTSExtension(Extension):
             read_bytes = 0
             sent_frames = 0
 
-            audio_stream = self.elevenlabs_tts.text_to_speech_stream(msg)
+            audio_stream = self.elevenlabs_tts.text_to_speech_stream(msg.text)
 
             for chunk in self.pcm.read_pcm_stream(audio_stream, self.pcm_frame_size):
                 if msg.received_ts < self.outdate_ts:
