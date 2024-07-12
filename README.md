@@ -102,49 +102,41 @@ To explore further, the ASTRA voice agent is an excellent starting point. It inc
 <table style="width: 100%;">
   <tr>
     <th align="center">Extension</th>
-    <!-- <th align="center">Interchangeable</th>  -->
     <th align="center">Feature</th>
     <th align="center">Description</th>
   </tr>
   <tr>
   <td align="center">openai_chatgpt</td>
-    <!-- <td align="center">✅</td> -->
     <td align="center">LLM</td>
-    <td align="center">Large Language Modal</td>
+    <td align="center">GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo</td>
   </tr>
   <tr>
   <td align="center">elevenlabs_tts</td>
-    <!-- <td align="center">✅</td> -->
     <td align="center">Text-to-speech</td>
-    <td align="center">Convert text to audio</td>
+    <td align="center">Convert text to audio ([ toggle by server command ](https://github.com/rte-design/ASTRA.ai?tab=readme-ov-file#start-server))</td>
   </tr>
   <tr>
   <td align="center">azure_tts</td>
-    <!-- <td align="center">✅</td> -->
     <td align="center">Text-to-speech</td>
-    <td align="center">Convert text to audio</td>
+    <td align="center">Convert text to audio([ toggle by server command ](https://github.com/rte-design/ASTRA.ai?tab=readme-ov-file#start-server))</td>
   </tr>
   <tr>
   <td align="center">azure_stt</td>
-    <!-- <td align="center">NA</td> -->
     <td align="center">Speech-to-text</td>
     <td align="center">Convert audio to text</td>
   </tr>
   <tr>
   <td align="center">chat_transcriber</td>
-    <!-- <td align="center">NA</td> -->
     <td align="center">Transcriber</td>
     <td align="center">A utility ext to forward chat logs into channel</td>
   </tr>
    <tr>
   <td align="center">agora_rtc</td>
-  <!-- <td align="center">NA</td> -->
     <td align="center">Transporter</td>
     <td align="center">A low latency transporter powered by agora_rtc</td>
   </tr> 
   <tr>
   <td align="center">interrupt_detector</td>
-  <!-- <td align="center">NA</td> -->
   <td align="center">Interrupter</td>
   <td align="center">A utility ext to help interrupt agent</td>
   </tr>
@@ -173,6 +165,8 @@ make build
 ```
 
 The above code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`.
+
+<h3>Start Server</h3>
 
 Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent from the showcase.
 
@@ -208,7 +202,7 @@ make run-server
 
 🎉 Congratulations! You have created your first personalized voice agent.
 
-<h3>Build More</h3>
+<h3>Discover More</h3>
 
 Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](astra-architecture.md).
 
