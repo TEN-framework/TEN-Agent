@@ -101,7 +101,7 @@ To explore further, the ASTRA voice agent is an excellent starting point. It inc
 |---------------------|-----------------|-------------------------------------------------------------------------------------------------------------|
 | openai_chatgpt      | LLM             | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
 | elevenlabs_tts      | Text-to-speech  | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                               |
-| azure_tts           | Text-to-speech  | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts audio to text |
+| azure_tts           | Text-to-speech  | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio |
 | azure_stt           | Speech-to-text  | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                       |
 | chat_transcriber    | Transcriber     | A utility ext to forward chat logs into channel                                                             |
 | agora_rtc           | Transporter     | A low latency transporter powered by agora_rtc                                                              |
