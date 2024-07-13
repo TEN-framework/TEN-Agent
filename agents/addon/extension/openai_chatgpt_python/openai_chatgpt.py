@@ -2,6 +2,7 @@ import random
 import requests
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
+from .log import logger
 
 
 class OpenAIChatGPTConfig:
@@ -50,7 +51,7 @@ class OpenAIChatGPT:
     client = None
     def __init__(self, config: OpenAIChatGPTConfig):
         self.config = config
-        print(f"OpenAIChatGPT initialized with config: {config.api_key}")
+        logger.info(f"OpenAIChatGPT initialized with config: {config.api_key}")
         self.client = OpenAI(
             api_key=config.api_key,
             base_url=config.base_url

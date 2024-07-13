@@ -1,3 +1,4 @@
 from . import openai_chatgpt_extension
+from .log import logger
 
-print("openai_chatgpt_python extension loaded")
+logger.info("openai_chatgpt_python extension loaded")
