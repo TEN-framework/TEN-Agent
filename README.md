@@ -26,20 +26,26 @@
 
 </div>
 
-ASTRA is an open-source platform designed for developing agents utilizing large language models. With ASTRA, you can easily create lightning fast, multimodal AI agents, even without any coding knowledge.
+ASTRA is a highly customizable platform that simplifies the development of AI agents like never before. With ASTRA, you can easily create lightning-fast, multimodal AI agents, even without any coding knowledge.
 
 <br>
 <h2>Voice Agent Showcase</h2>
 
 [ASTRA Voice Agent](https://theastra.ai)
 
-ASTRA is a versatile platform capable of building a wide range of agents. Here, we showcase an impressive Voice Agent powered by ASTRA, demonstrating its ability to create intuitive and seamless interactions.
+We showcase an impressive voice agent powered by ASTRA, demonstrating its ability to create intuitive and seamless conversational interactions.
 
-![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)
+[![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
+
+<h3>Stay Tuned</h3>
+
+Before we dive further, be sure to star our repository and get instant notifications for all new releases!
+
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 <h3>Run Voice Agent Locally</h3>
 
-Of course, you are more than welcome to run the showcased voice agent locally. We have a Docker image ready for you to build and run the agent on both macOS and Windows.
+Feel free to run the showcased voice agent locally. We provide a Docker image that you can easily build and run on both macOS and Windows.
 
 To start, make sure you have:
 
@@ -169,14 +175,6 @@ make run-server
 <h3>Discover More</h3>
 
 Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](astra-architecture.md).
-
-<br>
-<h2>Stay Tuned</h2>
-
-Star our repository and get instant notifications for all new releases!
-<br>
-
-![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 <br>
 <h2>Join Community</h2>
