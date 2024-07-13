@@ -20,6 +20,9 @@ from rte_runtime_python import (
 from rte_runtime_python.image_frame import ImageFrame
 from typing import List, Any
 import dashscope
+import queue
+from datetime import datetime
+import threading
 from http import HTTPStatus
 
 def isEnd(content: str) -> bool:
@@ -37,18 +40,32 @@ class QWenLLMExtension(Extension):
         self.model = ""
         self.prompt = ""
         self.max_history = 10
+        self.stopped = False
+        self.thread = None
+        self.outdateTs = datetime.now()
+
+        self.queue = queue.Queue()
+        self.mutex = threading.Lock()
 
     def on_msg(self, role: str, content: str) -> None:
-        self.history.append({'role': role, 'content': content})
-        if len(self.history) > 10:
-            self.history = self.history[1:]
+        self.mutex.acquire()
+        try:
+            self.history.append({'role': role, 'content': content})
+            if len(self.history) > self.max_history:
+                self.history = self.history[1:]
+        finally:
+            self.mutex.release()
 
     def get_messages(self) -> List[Any]:
         messages = []
         if len(self.prompt) > 0:
             messages.append({'role': 'system', 'content': self.prompt})
-        for h in self.history:
-            messages.append(h)
+        self.mutex.acquire()
+        try:
+            for h in self.history:
+                messages.append(h)
+        finally:
+            self.mutex.release()
         return messages
         
     def call(self, messages: List[Any]):
@@ -65,8 +82,10 @@ class QWenLLMExtension(Extension):
         else:
             print("Failed to get response", response)
     
-    def call_with_stream(self, rte: Rte, messages: List[Any]):
+    def call_with_stream(self, rte: Rte, ts :datetime.time, messages: List[Any]):
         print("before call", messages)
+        if self.outdateTs > ts:
+            return
         responses = dashscope.Generation.call("qwen-max",
                                 messages=messages,
                                 result_format='message',  # set the result to be "message"  format.
@@ -76,6 +95,8 @@ class QWenLLMExtension(Extension):
         total = ""
         partial = ""
         for response in responses:
+            if self.outdateTs > ts:
+              return
             if response.status_code == HTTPStatus.OK:
                 temp = response.output.choices[0]['message']['content']
                 partial += temp
@@ -116,15 +137,25 @@ class QWenLLMExtension(Extension):
         self.max_history = rte.get_property_int("max_memory_length")
 
         dashscope.api_key = self.api_key
+        self.thread = threading.Thread(target=self.async_handle, args=[rte])
+        self.thread.start()
         rte.on_start_done()
 
     def on_stop(self, rte: Rte) -> None:
         print("QWenLLMExtension on_stop")
+        self.stopped = True
+        self.flush()
+        self.thread.join()
         rte.on_stop_done()
 
     def on_deinit(self, rte: Rte) -> None:
         print("QWenLLMExtension on_deinit")
         rte.on_deinit_done()
+
+    def flush(self):
+        print("QWenLLMExtension flush")
+        while not self.queue.empty():
+            self.queue.get()
 
     def on_data(self, rte: Rte, data: Data) -> None:
         print("QWenLLMExtension on_data")
@@ -138,15 +169,32 @@ class QWenLLMExtension(Extension):
             print("ignore empty text")
             return
         
-        print("on data " + inputText)
-        self.on_msg("user", inputText)
-        messages = self.get_messages()
-        self.call_with_stream(rte, messages)
+        ts = datetime.now()
+        
+        print("on data ", inputText, ts)
+        self.queue.put((inputText, ts))
+    
+    def async_handle(self, rte: Rte):
+        while not self.stopped:
+            inputText, ts = self.queue.get()
+            if self.outdateTs > ts:
+                continue
+            print("fetch from queue", inputText)
+            self.on_msg("user", inputText)
+            messages = self.get_messages()
+            self.call_with_stream(rte, ts, messages)
 
     def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
         print("QWenLLMExtension on_cmd")
         cmd_json = cmd.to_json()
         print("QWenLLMExtension on_cmd json: " + cmd_json)
+
+        cmdName = cmd.get_name()
+        if cmdName == "flush":
+            self.outdateTs = datetime.now()
+            self.flush()
+        else:
+            print("unknown cmd", cmdName)
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
