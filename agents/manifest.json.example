@@ -79,7 +79,7 @@
                     "type": "extension",
                     "extension_group": "default",
                     "addon": "interrupt_detector_python",
-                    "name": "interrupt_detector_python"
+                    "name": "interrupt_detector"
                 },
                 {
                     "type": "extension_group",
@@ -107,7 +107,7 @@
                             "dest": [
                                 {
                                     "extension_group": "default",
-                                    "extension": "interrupt_detector_python"
+                                    "extension": "interrupt_detector"
                                 },
                                 {
                                     "extension_group": "chatgpt",
@@ -182,7 +182,7 @@
                 },
                 {
                     "extension_group": "default",
-                    "extension": "interrupt_detector_python",
+                    "extension": "interrupt_detector",
                     "cmd": [
                         {
                             "name": "flush",
