@@ -1,6 +1,6 @@
 import random
 import requests
-import openai
+from openai import OpenAI
 from typing import List, Dict, Any, Optional
 
 
@@ -47,41 +47,44 @@ class OpenAIChatGPTConfig:
     
 
 class OpenAIChatGPT:
+    client = None
     def __init__(self, config: OpenAIChatGPTConfig):
         self.config = config
-        openai.api_key = config.api_key
-        openai.api_base = config.base_url
+        print(f"OpenAIChatGPT initialized with config: {config.api_key}")
+        self.client = OpenAI(
+            api_key=config.api_key,
+            base_url=config.base_url
+        )
+        self.session = requests.Session()
         if config.proxy_url:
             proxies = {
                 "http": config.proxy_url,
                 "https": config.proxy_url,
             }
-            self.session = requests.Session()
             self.session.proxies.update(proxies)
-        else:
-            self.session = requests.Session()
+        self.client.session = self.session
 
     def get_chat_completions_stream(self, messages):
         req = {
-            "model": self.config["Model"],
+            "model": self.config.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": self.config["Prompt"],
+                    "content": self.config.prompt,
                 },
                 *messages,
             ],
-            "temperature": self.config["Temperature"],
-            "top_p": self.config["TopP"],
-            "presence_penalty": self.config["PresencePenalty"],
-            "frequency_penalty": self.config["FrequencyPenalty"],
-            "max_tokens": self.config["MaxTokens"],
-            "seed": self.config["Seed"],
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "presence_penalty": self.config.presence_penalty,
+            "frequency_penalty": self.config.frequency_penalty,
+            "max_tokens": self.config.max_tokens,
+            "seed": self.config.seed,
             "stream": True,
         }
 
         try:
-            response = self.client.Completion.create(**req)
+            response = self.client.chat.completions.create(**req)
             return response
         except Exception as e:
             raise Exception(f"CreateChatCompletionStream failed, err: {e}")
