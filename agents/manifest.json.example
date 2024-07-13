@@ -76,6 +76,12 @@
                     }
                 },
                 {
+                    "type": "extension",
+                    "extension_group": "default",
+                    "addon": "interrupt_detector_python",
+                    "name": "interrupt_detector_python"
+                },
+                {
                     "type": "extension_group",
                     "addon": "default_extension_group",
                     "name": "default"
@@ -99,6 +105,10 @@
                         {
                             "name": "text_data",
                             "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "interrupt_detector_python"
+                                },
                                 {
                                     "extension_group": "chatgpt",
                                     "extension": "openai_chatgpt"
@@ -165,6 +175,21 @@
                                 {
                                     "extension_group": "default",
                                     "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector_python",
+                    "cmd": [
+                        {
+                            "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "chatgpt",
+                                    "extension": "openai_chatgpt"
                                 }
                             ]
                         }

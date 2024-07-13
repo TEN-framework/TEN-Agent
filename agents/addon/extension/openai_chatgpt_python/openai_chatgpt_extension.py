@@ -195,6 +195,20 @@ class OpenAIChatGPTExtension(Extension):
         cmd_json = cmd.to_json()
         print("OpenAIChatGPTExtension on_cmd json: " + cmd_json)
 
+        cmd_name = cmd.get_name()
+
+        if cmd_name == CMD_IN_FLUSH:
+            self.outdate_ts = get_current_time()
+            print(f"OpenAIChatGPTExtension on_cmd flush")
+            cmd_out = Cmd.create(CMD_OUT_FLUSH)
+            rte.send_cmd(cmd_out, None)
+        else:
+            print(f"OpenAIChatGPTExtension on_cmd unknown cmd: {cmd_name}")
+            cmd_result = CmdResult.create(StatusCode.ERROR)
+            cmd_result.set_property_string("detail", "unknown cmd")
+            rte.return_result(cmd_result, cmd)
+            return
+
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
         rte.return_result(cmd_result, cmd)

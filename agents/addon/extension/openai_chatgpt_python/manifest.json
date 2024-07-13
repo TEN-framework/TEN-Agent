@@ -68,6 +68,16 @@
           }
         }
       }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
     ]
   }
 }
