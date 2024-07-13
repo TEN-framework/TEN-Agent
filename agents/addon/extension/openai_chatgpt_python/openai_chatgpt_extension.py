@@ -308,7 +308,7 @@ class OpenAIChatGPTExtension(Extension):
         start_time = get_current_time()
         thread = Thread(target=chat_completions_stream_worker, args=(start_time, input_text, self.memory))
         thread.start()
-        thread.join()
+        print(f"OpenAIChatGPTExtension on_data end")
         # try:
         #     rte_data = Data.create("text_data")
         #     rte_data.set_property_string("text", "hello, world, who are you!")
