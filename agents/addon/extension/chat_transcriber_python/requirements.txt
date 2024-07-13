@@ -1,1 +1,2 @@
 protobuf==5.27.2
+google==3.0.0
