@@ -1,3 +1,7 @@
+# next.js
+/.next/
+/out/
+
 *.log
 addon/extension_group/
 agoradns.dat
