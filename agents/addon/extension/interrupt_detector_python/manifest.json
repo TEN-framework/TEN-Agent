@@ -1,0 +1,33 @@
+{
+  "type": "extension",
+  "name": "interrupt_detector_python",
+  "version": "0.1.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  }
+}

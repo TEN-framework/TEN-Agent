@@ -12,41 +12,59 @@
   ],
   "api": {
     "property": {
-      "width": {
-        "type": "int32"
+      "api_key": {
+        "type": "string"
       },
-      "height": {
-        "type": "int32"
+      "frequency_penalty": {
+        "type": "float64"
+      },
+      "presence_penalty": {
+        "type": "float64"
+      },
+      "temperature": {
+        "type": "float64"
+      },
+      "top_p": {
+        "type": "float64"
+      },
+      "model": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int64"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "proxy_url": {
+        "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int64"
       }
     },
-    "image_frame_in": [
+    "data_in": [
       {
-        "name": "image_frame",
+        "name": "text_data",
         "property": {
-          "timestamp": {
-            "type": "int64"
-          },
-          "width": {
-            "type": "int32"
-          },
-          "height": {
-            "type": "int32"
+          "text": {
+            "type": "string"
           }
         }
       }
     ],
-    "image_frame_out": [
+    "data_out": [
       {
-        "name": "image_frame",
+        "name": "text_data",
         "property": {
-          "timestamp": {
-            "type": "int64"
-          },
-          "width": {
-            "type": "int32"
-          },
-          "height": {
-            "type": "int32"
+          "text": {
+            "type": "string"
           }
         }
       }

@@ -4,10 +4,10 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-python3 -m venv .
-cd bin
-source activate
-cd ..
+# python3 -m venv .
+# cd bin
+# source activate
+# cd ..
 
 if [[ -f "requirements.txt" ]]; then
   pip install -r requirements.txt
