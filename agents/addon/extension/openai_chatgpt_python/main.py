@@ -11,6 +11,7 @@ from rte_runtime_python import (
     register_addon_as_extension,
     Rte,
     Cmd,
+    Data,
     StatusCode,
     CmdResult,
     MetadataInfo,
@@ -48,6 +49,25 @@ class OpenAIChatGPTExtension(Extension):
 
     def on_image_frame(self, rte: Rte, image_frame: ImageFrame) -> None:
         print("OpenAIChatGPTExtension on_cmd")
+
+    def on_data(self, rte: Rte, data: Data) -> None:
+        """
+        on_data receives data from rte graph.
+        current supported data:
+          - name: text_data
+            example:
+            {name: text_data, properties: {text: "hello"}
+        """
+        print(f"OpenAIChatGPTExtension on_data")
+
+        try:
+            rte_data = Data.create("text_data")
+            rte_data.set_property_string("text", "hello, world, who are you!")
+        except Exception as e:
+            print(f"on_data new_data error, ", e)
+            return
+
+        rte.send_data(rte_data)
 
 
 @register_addon_as_extension("openai_chatgpt_python")
