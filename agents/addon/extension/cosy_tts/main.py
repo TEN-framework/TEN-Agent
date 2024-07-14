@@ -51,7 +51,8 @@ class CosyTTSCallback(ResultCallback):
         logger.info("websocket is closed.")
 
     def on_event(self, message):
-        logger.info(f"recv speech synthsis message {message}")
+        pass
+        #logger.info(f"recv speech synthsis message {message}")
 
     def get_frame(self, data: bytes) -> PcmFrame:
         f = PcmFrame.create("pcm_frame")
@@ -61,9 +62,11 @@ class CosyTTSCallback(ResultCallback):
         # f.set_timestamp = 0
         f.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_INTERLEAVE)
         f.set_samples_per_channel(self.sample_rate // 100)
-        f.alloc_buf(len(data))
+        f.alloc_buf(self.frame_size)
         buff = f.lock_buf()
-        buff[:] = data
+        if len(data) < self.frame_size:
+            buff[:] = bytes(self.frame_size) #fill with 0
+        buff[:len(data)] = data
         f.unlock_buf(buff)
         return f
     
@@ -74,7 +77,7 @@ class CosyTTSCallback(ResultCallback):
         if self.canceled:
             return
         
-        logger.info("audio result length: %d, %d", len(data), self.frame_size)
+        #logger.info("audio result length: %d, %d", len(data), self.frame_size)
         try:
             chunk = int(len(data) / self.frame_size)
             offset = 0
@@ -151,7 +154,7 @@ class CosyTTSExtension(Extension):
         logger.info("CosyTTSExtension on_stop")
 
         self.stopped = True
-        self.tts.streaming_complete()
+        self.queue.put(None)
         self.flush()
         self.thread.join()
         rte.on_stop_done()
@@ -164,40 +167,46 @@ class CosyTTSExtension(Extension):
         return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
     
     def async_handle(self, rte: Rte):
-        tts = None
-        callback = None
-        while not self.stopped:
-            try:
-                inputText, is_end, ts = self.queue.get()
-                if len(inputText) == 0:
-                    if tts is not None:
-                        tts.streaming_cancel()
-                    if callback is not None:
-                        callback.cancel()
-                    tts = None
-                    callback = None
-                    continue
-                
-                if tts is None:
-                    callback = CosyTTSCallback(rte, self.sample_rate)
-                    tts = SpeechSynthesizer(model=self.model, voice=self.voice, format=self.format, callback=callback)
-                
-                logger.info("on message %s", inputText)
-                tts.streaming_call(inputText)
-                if is_end:
-                    tts.streaming_complete()
-                    tts = None
-            except Exception as e:
-                logger.exception(e)
-            finally:
-                tts = None
-                callback = None
+        try:
+            tts = None
+            callback = None
+            while not self.stopped:
+                try:
+                    value = self.queue.get()
+                    if value is None:
+                        break
+                    inputText, ts = value
+                    if len(inputText) == 0:
+                        logger.warning("empty input for interrupt")
+                        if tts is not None:
+                            tts.streaming_cancel()
+                        if callback is not None:
+                            callback.cancel()
+                        tts = None
+                        callback = None
+                        continue
+
+                    if self.need_interrupt(ts):
+                        continue
+                    
+                    if tts is None:
+                        logger.info("creating tts")
+                        callback = CosyTTSCallback(rte, self.sample_rate)
+                        tts = SpeechSynthesizer(model=self.model, voice=self.voice, format=self.format, callback=callback)
+                    
+                    logger.info("on message %s", inputText)
+                    tts.streaming_call(inputText)
+                except Exception as e:
+                    logger.exception(e)
+        finally:
+            if tts is not None:
+                tts.streaming_complete()
     
     def flush(self):
         logger.info("CosyTTSExtension flush")
         while not self.queue.empty():
             self.queue.get()
-        self.queue.put(("", True, datetime.now()))
+        self.queue.put(("", datetime.now()))
 
     def on_data(self, rte: Rte, data: Data) -> None:
         logger.info("CosyTTSExtension on_data")
@@ -209,7 +218,7 @@ class CosyTTSExtension(Extension):
         is_end = data.get_property_bool("end_of_segment")
         
         logger.info("on data %s %d", inputText, is_end)
-        self.queue.put((inputText, is_end, datetime.now()))
+        self.queue.put((inputText, datetime.now()))
 
     def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
         logger.info("CosyTTSExtension on_cmd")
