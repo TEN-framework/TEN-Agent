@@ -197,7 +197,6 @@ class QWenLLMExtension(Extension):
             print("unknown cmd", cmdName)
 
         cmd_result = CmdResult.create(StatusCode.OK)
-        cmd_result.set_property_string("detail", "success")
         rte.return_result(cmd_result, cmd)
 
     def on_image_frame(self, rte: Rte, image_frame: ImageFrame) -> None:

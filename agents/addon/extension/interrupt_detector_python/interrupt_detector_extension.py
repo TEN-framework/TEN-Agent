@@ -78,6 +78,7 @@ class InterruptDetectorExtension(Extension):
             )
             return
 
+        print("on data", text)
         logger.debug(
             f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final}"
         )
@@ -96,9 +97,9 @@ class InterruptDetectorExtensionAddon(Addon):
         rte.on_init_done(manifest, property)
         return
 
-    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
+    def on_create_instance(self, rte: Rte, addon_name: str) -> None:
         logger.info("on_create_instance")
-        rte.on_create_instance_done(InterruptDetectorExtension(addon_name), context)
+        return InterruptDetectorExtension(addon_name)
 
     def on_deinit(self, rte: Rte) -> None:
         logger.info("on_deinit")
