@@ -168,6 +168,6 @@ class azure_tts_extension_t : public rte::extension_t {
   const std::string kDataFieldText{"text"};
 };
 
-RTE_CXX_REGISTER_ADDON_AS_EXTENSION(azure_tts, azure_tts_extension_t);
+RTE_CPP_REGISTER_ADDON_AS_EXTENSION(azure_tts, azure_tts_extension_t);
 
 }  // namespace azure_tts_extension

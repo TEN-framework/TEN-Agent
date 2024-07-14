@@ -22,6 +22,7 @@ from rte_runtime_python import (
 from typing import List, Any
 import dashscope
 from dashscope.audio.tts_v2 import ResultCallback, SpeechSynthesizer, AudioFormat
+from .log import logger
 
 class CosyTTSCallback(ResultCallback):
     _player = None
@@ -167,9 +168,9 @@ class CosyTTSExtensionAddon(Addon):
         rte.on_init_done(manifest, property)
         return
 
-    def on_create_instance(self, rte: Rte, addon_name: str) -> Extension:
-        print("CosyTTSExtensionAddon on_create_instance")
-        return CosyTTSExtension(addon_name)
+    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
+        logger.info("on_create_instance")
+        rte.on_create_instance_done(CosyTTSExtension(addon_name), context)
 
     def on_deinit(self, rte: Rte) -> None:
         print("CosyTTSExtensionAddon on_deinit")
