@@ -221,7 +221,7 @@ RTE platform 的 built-in command:
 }
 ```
 
-<span class="title-ref">或</span>
+<span class="title-ref">Or</span>
 
 ``` json
 {

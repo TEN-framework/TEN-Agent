@@ -113,7 +113,7 @@ Note
 
 In addition, we provide a base compilation image where all of the above dependencies are already installed and configured. You can refer to the [ASTRA.ai](https://github.com/rte-design/ASTRA.ai) project on GitHub.
 
-## 创建 C++ extension 工程
+## Creating C++ extension project
 
 ### Creating Based on Templates
 
