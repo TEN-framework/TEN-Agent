@@ -23,6 +23,14 @@ copy_extension() {
     if [[ $EXTENSION_LANGUAGE == "python" ]]; then
       # TODO: package 'publish' contents only
       cp addon/extension/$extension/*.py .release/addon/extension/$extension/
+      if [[ -f addon/extension/$extension/requirements.txt ]]; then
+        cp addon/extension/$extension/requirements.txt .release/addon/extension/$extension/
+      fi
+      
+      # TODO: copy specific contents
+      if [[ -d addon/extension/$extension/pb ]]; then
+        cp -r addon/extension/$extension/pb .release/addon/extension/$extension/
+      fi
     fi
   fi
 
@@ -34,7 +42,7 @@ copy_extension() {
 cp -r bin .release
 cp -r lib .release
 cp manifest.json .release
-cp manifest.elevenlabs.json .release
+#cp manifest.elevenlabs.json .release
 cp manifest.cn.json .release
 cp manifest.en.json .release
 cp property.json .release
