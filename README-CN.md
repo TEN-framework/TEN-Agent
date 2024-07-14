@@ -120,7 +120,7 @@ npm i && npm run dev
 cp ./agents/manifest.json.example ./agents/manifest.json
 
 # pull the docker image with dev tools and mount your current folder as workspace
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev agoraio/astra_agents_build
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.1 
 
 # enter docker image
 docker exec -it astra_agents_dev bash
@@ -140,8 +140,7 @@ export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
 export OPENAI_API_KEY=<your_openai_api_key>
-export AZURE_TTS_KEY=<your_azure_tts_key>
-export AZURE_TTS_REGION=<your_azure_tts_region>
+export COSY_TTS_KEY=<your_cosy_tts_key>
 
 # agent is ready to start on port 8080
 
