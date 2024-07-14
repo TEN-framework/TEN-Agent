@@ -117,13 +117,14 @@ npm i && npm run dev
 
 ```shell
 # rename manifest example
-cp ./agents/manifest.json.example ./agents/manifest.json
+cp ./agents/manifest.json.en.example ./agents/manifest.en.json
+cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
 
 # pull the docker image with dev tools and mount your current folder as workspace
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.1
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
 
 # for windows git bash
-# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.1
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
 
 # enter docker image
 docker exec -it astra_agents_dev bash
@@ -144,6 +145,12 @@ export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
 export OPENAI_API_KEY=<your_openai_api_key>
 export COSY_TTS_KEY=<your_cosy_tts_key>
+
+
+# if you use AZURE_TTS
+export AZURE_TTS_KEY=<your_azure_tts_key>
+export AZURE_TTS_REGION=<your_azure_tts_region>
+
 
 # agent is ready to start on port 8080
 
