@@ -1,4 +1,4 @@
-FROM agoraio/astra_agents_build:latest AS builder
+FROM agoraio/astra_agents_build:0.3.1 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
@@ -22,6 +22,10 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     libunwind-dev \
     libc++1 \
     libssl-dev \
+    python3 \
+    python3-venv \
+    python3-pip \
+    python3-dev \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
