@@ -118,6 +118,11 @@ func processManifest(manifestJsonFile string) (err error) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="cosy_tts").property.api_key`, cosyTtsKey)
 	}
 
+	qwenApiKey := os.Getenv("QWEN_API_KEY")
+	if qwenApiKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="qwen_llm").property.api_key`, qwenApiKey)
+	}
+
 	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
 	return
 }

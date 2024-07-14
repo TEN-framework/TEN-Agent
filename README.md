@@ -160,10 +160,14 @@ export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
+
+# LLM
 export OPENAI_API_KEY=<your_openai_api_key>
+export QWEN_API_KEY=<your_qwern_api_key>
+
+# TTS
+# cosy
 export COSY_TTS_KEY=<your_cosy_tts_key>
-
-
 # if you use AZURE_TTS
 export AZURE_TTS_KEY=<your_azure_tts_key>
 export AZURE_TTS_REGION=<your_azure_tts_region>

@@ -12,7 +12,7 @@
         {
             "type": "extension",
             "name": "agora_rtc",
-            "version": "0.2.0-alpha"
+            "version": "0.2.1"
         },
         {
             "type": "system",
@@ -49,14 +49,18 @@
                 },
                 {
                     "type": "extension",
-                    "extension_group": "llm",
-                    "addon": "qwen_llm_python",
-                    "name": "qwen_llm",
+                    "extension_group": "chatgpt",
+                    "addon": "openai_chatgpt_python",
+                    "name": "openai_chatgpt",
                     "property": {
-                        "api_key": "<qwen_key>",
-                        "model": "qwen-max",
+                        "base_url": "",
+                        "api_key": "<openai_api_key>",
+                        "frequency_penalty": 0.9,
+                        "model": "gpt-3.5-turbo",
                         "max_tokens": 512,
                         "prompt": "",
+                        "proxy_url": "",
+                        "greeting": "ASTRA agent connected. How can i help you today?",
                         "max_memory_length": 10
                     }
                 },
@@ -66,7 +70,7 @@
                     "addon": "cosy_tts",
                     "name": "cosy_tts",
                     "property": {
-                        "api_key": "<qwen_key>",
+                        "api_key": "<cosy_api_key>",
                         "model": "cosyvoice-v1",
                         "voice": "longxiaochun",
                         "sample_rate": 16000
@@ -86,7 +90,7 @@
                 {
                     "type": "extension_group",
                     "addon": "default_extension_group",
-                    "name": "llm"
+                    "name": "chatgpt"
                 },
                 {
                     "type": "extension_group",
@@ -105,6 +109,10 @@
                                 {
                                     "extension_group": "default",
                                     "extension": "interrupt_detector"
+                                },
+                                {
+                                    "extension_group": "chatgpt",
+                                    "extension": "openai_chatgpt"
                                 }
                             ]
                         }
@@ -114,42 +122,16 @@
                             "name": "pcm_frame",
                             "dest": [
                                 {
-                                    "extension_group": "llm",
-                                    "extension": "qwen_llm"
+                                    "extension_group": "chatgpt",
+                                    "extension": "openai_chatgpt"
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    "extension_group": "default",
-                    "extension": "interrupt_detector",
-                    "cmd": [
-                        {
-                            "name": "flush",
-                            "dest": [
-                                {
-                                    "extension_group": "llm",
-                                    "extension": "qwen_llm"
-                                }
-                            ]
-                        }
-                    ],
-                    "data": [
-                        {
-                            "name": "text_data",
-                            "dest": [
-                                {
-                                    "extension_group": "llm",
-                                    "extension": "qwen_llm"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "extension_group": "llm",
-                    "extension": "qwen_llm",
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt",
                     "data": [
                         {
                             "name": "text_data",
@@ -194,6 +176,21 @@
                                 {
                                     "extension_group": "default",
                                     "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector",
+                    "cmd": [
+                        {
+                            "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "chatgpt",
+                                    "extension": "openai_chatgpt"
                                 }
                             ]
                         }
