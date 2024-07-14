@@ -107,15 +107,18 @@ class QWenLLMExtension(Extension):
         for response in responses:
             if self.need_interrupt(ts):
                 if len(self.ongoing) > 0:
+                    self.on_msg('user', inputText)
                     self.on_msg('assistant', self.ongoing)
                     self.ongoing = ''
                 logger.warning("out of date, %s, %s", self.outdateTs, ts)
                 return
             if response.status_code == HTTPStatus.OK:
                 temp = response.output.choices[0]['message']['content']
+                if len(temp) == 0:
+                    continue
                 partial += temp
                 self.ongoing += temp
-                if isEnd(temp) or len(partial) > 10:
+                if (isEnd(temp) and len(partial) > 10) or len(partial) > 50:
                     d = Data.create("text_data")
                     d.set_property_bool("end_of_segment", isEnd(partial))
                     d.set_property_string("text", partial)
@@ -161,6 +164,7 @@ class QWenLLMExtension(Extension):
     def on_stop(self, rte: Rte) -> None:
         logger.info("QWenLLMExtension on_stop")
         self.stopped = True
+        self.queue.put(None)
         self.flush()
         self.thread.join()
         rte.on_stop_done()
@@ -194,7 +198,10 @@ class QWenLLMExtension(Extension):
     def async_handle(self, rte: Rte):
         while not self.stopped:
             try:
-                inputText, ts = self.queue.get()
+                value = self.queue.get()
+                if value is None:
+                    break
+                inputText, ts = value
                 if self.need_interrupt(ts):
                     continue
                 logger.info("fetch from queue %s", inputText)
