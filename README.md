@@ -138,6 +138,9 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.1 
 
+# for windows git bash
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.1
+
 # enter docker image
 docker exec -it astra_agents_dev bash
 
