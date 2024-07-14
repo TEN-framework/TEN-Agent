@@ -51,12 +51,12 @@ class CosyTTSCallback(ResultCallback):
 
     def get_frame(self, data: bytes) -> PcmFrame:
         f = PcmFrame.create("pcm_frame")
-        f.set_sample_rate = self.sample_rate
-        f.set_bytes_per_sample = 2
-        f.set_number_of_channels = 1
-        f.set_timestamp = 0
-        f.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_NON_INTERLEAVE)
-        f.set_samples_per_channel = self.sample_rate / 100
+        f.set_sample_rate(self.sample_rate)
+        f.set_bytes_per_sample(2)
+        f.set_number_of_channels(1)
+        # f.set_timestamp = 0
+        f.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_INTERLEAVE)
+        f.set_samples_per_channel(self.sample_rate // 100)
         f.alloc_buf(len(data))
         buff = f.lock_buf()
         buff[:] = data
