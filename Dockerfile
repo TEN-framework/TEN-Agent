@@ -26,6 +26,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     python3-venv \
     python3-pip \
     python3-dev \
+    jq \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
