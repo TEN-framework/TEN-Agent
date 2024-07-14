@@ -84,7 +84,7 @@ class InterruptDetectorExtension(Extension):
 
         if final or len(text) >= 2:
             flush_cmd = Cmd.create(CMD_NAME_FLUSH)
-            rte.send_cmd(flush_cmd, None)
+            rte.send_cmd(flush_cmd, lambda rte, result: print("DefaultExtension send_cmd done"))
 
             logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
 
