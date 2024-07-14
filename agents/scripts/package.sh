@@ -35,6 +35,8 @@ cp -r bin .release
 cp -r lib .release
 cp manifest.json .release
 cp manifest.elevenlabs.json .release
+cp manifest.cn.json .release
+cp manifest.en.json .release
 cp property.json .release
 
 # python main and deps
