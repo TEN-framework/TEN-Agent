@@ -2,11 +2,7 @@
 
 Now let's discuss what's under the hood. The ASTRA architecture is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
-<div align="center">
-
-<image alt="ASTRA" src="./images/image.png">
-
-</div>
+![ASTRA](../images/image.png)
 
 <br>
 <h2>ASTRA Extension</h2>
@@ -18,6 +14,13 @@ For example, if an application requires real-time communication (RTC) features a
 #### Supported Languages
 
 As of July 2024, we support extensions written in **C++**, **Golang** and **Python**.
+
+
+#### Extension Tutorials
+
+Here we have extension tutorials for C++ and Go.
+- [Extension Tutorial C++](./tutorials/extension-tutorial-cpp.md)
+- [Extension Tutorial Go](./tutorials/extension-tutorial-go.md)
 
 <br>
 <h2>Graph</h2>
