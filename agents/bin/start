@@ -34,4 +34,4 @@ export PYTHONPATH=lib:interface
 export RTE_HOME=.
 # export PYTHONMALLOC=malloc
 
-python3 main.py
+python3 main.py "$@"
