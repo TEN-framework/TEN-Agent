@@ -7,6 +7,8 @@ WORKDIR /app
 COPY . .
 COPY agents/manifest.json.example agents/manifest.json
 COPY agents/manifest.json.elevenlabs.example agents/manifest.elevenlabs.json
+COPY agents/manifest.json.cn.example agents/manifest.cn.json
+COPY agents/manifest.json.en.example agents/manifest.en.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
 RUN make build && \

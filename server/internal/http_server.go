@@ -74,6 +74,8 @@ const (
 
 	ManifestJsonFile           = "./agents/manifest.json"
 	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
+	ManifestJsonFileEN         = "./agents/manifest.en.json"
+	ManifestJsonFileCN         = "./agents/manifest.cn.json"
 
 	TTSVendorAzure      = "azure"
 	TTSVendorElevenlabs = "elevenlabs"
@@ -116,12 +118,17 @@ func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
 }
 
 func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile string) {
-	ttsVendor := s.getTtsVendor(language)
+	// ttsVendor := s.getTtsVendor(language)
 	manifestJsonFile = ManifestJsonFile
 
-	if ttsVendor == TTSVendorElevenlabs {
-		manifestJsonFile = ManifestJsonFileElevenlabs
+	if language == languageEnglish {
+		manifestJsonFile = ManifestJsonFileEN
+	} else if language == languageChinese {
+		manifestJsonFile = ManifestJsonFileCN
 	}
+	// if ttsVendor == TTSVendorElevenlabs {
+	// 	manifestJsonFile = ManifestJsonFileElevenlabs
+	// }
 
 	return
 }

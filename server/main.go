@@ -46,8 +46,10 @@ func main() {
 	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	processManifest(internal.ManifestJsonFile)
-	processManifest(internal.ManifestJsonFileElevenlabs)
+	// processManifest(internal.ManifestJsonFile)
+	// processManifest(internal.ManifestJsonFileElevenlabs)
+	processManifest(internal.ManifestJsonFileEN)
+	processManifest(internal.ManifestJsonFileCN)
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }
@@ -109,6 +111,11 @@ func processManifest(manifestJsonFile string) (err error) {
 	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
 	if elevenlabsTtsKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
+	}
+
+	cosyTtsKey := os.Getenv("COSY_TTS_KEY")
+	if cosyTtsKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="cosy_tts").property.api_key`, cosyTtsKey)
 	}
 
 	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
