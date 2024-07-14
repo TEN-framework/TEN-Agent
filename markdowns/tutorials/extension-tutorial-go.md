@@ -82,6 +82,119 @@ The "manifest.json" file includes a dependency on "rte_runtime_go" by default:
   "api": {}
 }
 ```
+<div class="note">
+
+<div class="title">
+
+Note
+
+</div>
+
+- Please note that according to ASTRA's naming convention, the <span class="title-ref">name</span> should be alphanumeric because when integrating the extension into an app, a directory will be created based on the extension name. Additionally, ASTRA will provide functionality to load the <span class="title-ref">manifest.json</span> and <span class="title-ref">property.json</span> files from the extension directory.
+- The dependencies section declares the dependencies of the current extension. When installing the ASTRA package, arpm will automatically download the declared dependencies.
+- The api section is used to declare the schema of the extension. For the usage of schema, refer to: [rte-schema](../rte-schema.md)
+
+</div>
+
+ASTRA GO API is not publicly available and needs to be installed locally using arpm. Therefore, the <span class="title-ref">go.mod</span> file uses the <span class="title-ref">replace</span> directive to reference the ASTRA GO API. For example:
+
+``` GO
+replace agora.io/rte => ../../../interface
+```
+
+When the extension is installed in an app, it will be placed in the <span class="title-ref">addon/extension/</span> directory. At the same time, the ASTRA GO API will be installed in the root directory of the app. The expected directory structure is as follows:
+
+``` text
+.
+├── addon
+│   └── extension
+│       └── first_go_extension
+│           ├── default_extension.go
+│           ├── go.mod
+│           ├── manifest.json
+│           └── property.json
+├── go.mod
+├── go.sum
+├── interface
+│   └── rtego
+└── main.go
+```
+
+Therefore, the <span class="title-ref">replace</span> directive in the extension's go.mod file points to the <span class="title-ref">interface</span> directory in the app.
+
+### Manual Creation
+
+Alternatively, developers can create a go module project using the <span class="title-ref">go init</span> command and then create the <span class="title-ref">manifest.json</span> and <span class="title-ref">property.json</span> files based on the examples provided above.
+
+Do not add the dependency on the ASTRA GO API yet because the required <span class="title-ref">interface</span> directory is not available locally. It needs to be installed using arpm before adding the dependency.
+
+To convert a newly created go module project or an existing one into an extension project, follow these steps:
+
+- Create the <span class="title-ref">property.json</span> file in the project directory and add the necessary configuration for the extension.
+- Create the <span class="title-ref">manifest.json</span> file in the project directory and specify the <span class="title-ref">type</span>, <span class="title-ref">name</span>, <span class="title-ref">version</span>, <span class="title-ref">language</span>, and <span class="title-ref">dependencies</span> information. Note that these fields are required.
+  - The <span class="title-ref">type</span> should be <span class="title-ref">extension</span>.
+  - The <span class="title-ref">language</span> should be <span class="title-ref">go</span>.
+  - The <span class="title-ref">dependencies</span> should include the dependency on <span class="title-ref">rte_runtime_go</span> and any other dependencies as needed.
+
+## Download Dependencies
+
+Execute the following command in the extension project directory to download dependencies:
+
+``` shell
+$ arpm install
+```
+
+After the command is successfully executed, a <span class="title-ref">.rte</span> directory will be generated in the current directory, which contains all the dependencies of the current extension.
+
+<div class="note">
+
+<div class="title">
+
+Note
+
+</div>
+
+- There are two modes for an extension: development mode and runtime mode. In development mode, the root directory is the source code directory of the extension. In runtime mode, the root directory is the app directory. Therefore, the placement path of dependencies is different in these two modes. The <span class="title-ref">.rte</span> directory mentioned here is the root directory of dependencies in development mode.
+
+</div>
+
+The directory structure is as follows:
+
+``` text
+├── default_extension.go
+├── go.mod
+├── manifest.json
+├── property.json
+└── .rte
+  └── app
+
+```
+
+In this structure, <span class="title-ref">.rte/app/interface</span> is the module for the ASTRA GO API.
+
+Therefore, in development mode, the <span class="title-ref">go.mod</span> file of the extension should be modified as follows:
+
+``` GO
+replace agora.io/rte => ./.rte/app/interface
+```
+
+If you manually created the extension as mentioned in the previous section, you also need to execute the following command in the extension directory:
+
+``` shell
+$ go get agora.io/rte
+```
+
+The expected output should be:
+
+``` shell
+go: added agora.io/rte v0.0.0-00010101000000-000000000000
+```
+
+At this point, an ASTRA GO extension project has been created.
+
+## Implementing Extension Functionality
+
+
 
 The "go.mod" file uses the "replace" directive to reference the ASTRA GO API:
 
@@ -212,7 +325,8 @@ Lifecycle functions:
 
 Message handling functions:
 
-- OnCmd/OnData/OnImageFrame/OnPcmFrame: Callback functions for receiving four types of messages. The message types in ASTRA can be referred to as `message type and name`.
+- OnCmd/OnData/OnImageFrame/OnPcmFrame: Callback functions for receiving four types of messages. The message types in ASTRA can be referred to as [message-type-and-name](../message-type-and-name.md)
+
 
 For the implementation of the extension, you may only need to focus on a subset of message types. To facilitate implementation, ASTRA provides a default `DefaultExtension`. Developers have two options: either directly implement the `rtego.Extension` interface or embed `DefaultExtension` and override the necessary methods.
 

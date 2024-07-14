@@ -403,6 +403,98 @@ protected:
 }
 ```
 
+In the markdown content you provided, there are descriptions of the lifecycle functions and message handling functions in Chinese. Here is the translation:
+
+Lifecycle Functions:
+
+- on_init: Used to initialize the extension instance, such as setting the extension's configuration.
+- on_start: Used to start the extension instance, such as establishing connections to external services. The extension will not receive messages until on_start is completed. In on_start, you can use the rte.get_property API to retrieve the extension's configuration.
+- on_stop: Used to stop the extension instance, such as closing connections to external services.
+- on_deinit: Used to destroy the extension instance, such as releasing memory resources.
+
+Message Handling Functions:
+
+- on_cmd/on_data/on_pcm_frame/on_image_frame: These are callback methods used to receive messages of four different types. For more information on ASTRA message types, you can refer to the [message-type-and-name](../message-type-and-name.md)
+
+The rte::extension_t class provides default implementations for these functions, and developers can override them according to their needs.
+
+### Registering the Extension
+
+After defining the extension, it needs to be registered as an addon in the ASTRA runtime. For example, in the `first_cxx_extension/src/main.cc` file, the registration code is as follows:
+
+``` C++
+RTE_CPP_REGISTER_ADDON_AS_EXTENSION(first_cxx_extension, first_cxx_extension_extension_t);
+```
+
+- RTE_CPP_REGISTER_ADDON_AS_EXTENSION is a macro provided by the ASTRA runtime for registering extension addons.
+  - The first parameter is the name of the addon, which serves as a unique identifier for the addon. It will be used to define the extension in the graph using a declarative approach.
+  - The second parameter is the implementation class of the extension, which is the class that inherits from rte::extension_t.
+
+Please note that the addon name must be unique because it is used as a unique index to find the implementation in the graph.
+
+### on_init
+
+Developers can set the extension's configuration in the on_init() function, as shown in the example:
+
+``` C++
+void on_init(rte::rte_t& rte, rte::metadata_info_t& manifest,
+             rte::metadata_info_t& property) override {
+  property.set(RTE_METADATA_JSON_FILENAME, "customized_property.json");
+  rte.on_init_done(manifest, property);
+}
+```
+
+Both the property and manifest can be customized using the set() method. In the example, the first parameter RTE_METADATA_JSON_FILENAME indicates that the custom property is stored as a local file, and the second parameter is the file path relative to the extension directory. So in this example, when the app loads the extension, it will load `<app>/addon/extension/first_cxx_extension/customized_property.json`.
+
+ASTRA's on_init provides default logic for loading default configurations. If developers do not call property.set(), the property.json file in the extension directory will be loaded by default. Similarly, if manifest.set() is not called, the manifest.json file in the extension directory will be loaded by default. In the example, since property.set() is called, the property.json file will not be loaded by default.
+
+Please note that on_init is an asynchronous method, and developers need to call rte.on_init_done() to inform the ASTRA runtime that on_init has completed as expected.
+
+### on_start
+
+When on_start is called, it means that on_init_done() has been executed and the extension's property has been loaded. From this point on, the extension can access the configuration. For example:
+
+``` C++
+void on_start(rte::rte_t& rte) override {
+  auto prop = rte.get_property_string("some_string");
+  // do something
+
+  rte.on_start_done();
+}
+```
+
+rte.get_property_string() is used to retrieve a property of type string with the name "some_string". If the property does not exist or the type does not match, an error will be returned. If the extension's configuration contains the following content:
+
+``` json
+{
+  "some_string": "hello world"
+}
+```
+
+Then the value of prop will be "hello world".
+
+Similar to on_init, on_start is also an asynchronous method, and developers need to call rte.on_start_done() to inform the ASTRA runtime that on_start has completed as expected.
+
+For more information, you can refer to the API documentation: rte api doc.
+
+### Error Handling
+
+As shown in the previous example, if "some_string" does not exist or is not of type string, rte.get_property_string() will return an error. You can handle the error as follows:
+
+``` C++
+void on_start(rte::rte_t& rte) override {
+  rte::error_t err;
+  auto prop = rte.get_property_string("some_string", &err);
+
+  // error handling
+  if (!err.is_success()) {
+    RTE_LOGE("Failed to get property: %s", err.errmsg());
+  }
+
+  rte.on_start_done();
+}
+```
+
 ### Message Handling
 
 ASTRA provides four types of messages: `cmd`, `data`, `image_frame`, and `pcm_frame`. Developers can handle these four types of messages by implementing the `on_cmd`, `on_data`, `on_image_frame`, and `on_pcm_frame` callback methods.
@@ -461,7 +553,7 @@ Note
 
 </div>
 
-For the usage of schema, refer to: `usage of rte schema <usage_of_rte_schema_cn>`.
+For the usage of schema, refer to: [rte-schema](../rte-schema.md)
 
 </div>
 
