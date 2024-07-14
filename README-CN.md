@@ -117,6 +117,7 @@ npm i && npm run dev
 
 ```shell
 # rename manifest example
+cp ./agents/manifest.json.example ./agents/manifest.json
 cp ./agents/manifest.json.en.example ./agents/manifest.en.json
 cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
 

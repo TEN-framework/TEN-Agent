@@ -133,6 +133,7 @@ You need to prepare the proper `manifest.json` file first.
 
 ```bash
 # rename manifest example
+cp ./agents/manifest.json.example ./agents/manifest.json
 cp ./agents/manifest.json.en.example ./agents/manifest.en.json
 cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
 
