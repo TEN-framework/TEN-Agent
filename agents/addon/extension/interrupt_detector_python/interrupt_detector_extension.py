@@ -84,10 +84,14 @@ class InterruptDetectorExtension(Extension):
 
         if final or len(text) >= 2:
             flush_cmd = Cmd.create(CMD_NAME_FLUSH)
-            rte.send_cmd(flush_cmd, lambda rte, result: print("DefaultExtension send_cmd done"))
+            rte.send_cmd(flush_cmd, lambda rte, result: print("InterruptDetectorExtensionAddon send_cmd done"))
 
             logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
-
+        
+        d = Data.create("text_data")
+        d.set_property_bool(TEXT_DATA_FINAL_FIELD, final)
+        d.set_property_string(TEXT_DATA_TEXT_FIELD, text)
+        rte.send_data(d)
 
 @register_addon_as_extension("interrupt_detector_python")
 class InterruptDetectorExtensionAddon(Addon):
