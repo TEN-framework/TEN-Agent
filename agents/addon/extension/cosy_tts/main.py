@@ -21,6 +21,9 @@ from rte_runtime_python import (
 )
 from typing import List, Any
 import dashscope
+import queue
+import threading
+from datetime import datetime
 from dashscope.audio.tts_v2 import ResultCallback, SpeechSynthesizer, AudioFormat
 from .log import logger
 
@@ -33,21 +36,22 @@ class CosyTTSCallback(ResultCallback):
         self.rte = rte
         self.sample_rate = sample_rate
         self.frame_size = int(self.sample_rate * 1 * 2 / 100)
+        self.canceled = False
 
     def on_open(self):
-        print("websocket is open.")
+        logger.info("websocket is open.")
 
     def on_complete(self):
-        print("speech synthesis task complete successfully.")
+        logger.info("speech synthesis task complete successfully.")
 
     def on_error(self, message: str):
-        print(f"speech synthesis task failed, {message}")
+        logger.info(f"speech synthesis task failed, {message}")
 
     def on_close(self):
-        print("websocket is closed.")
+        logger.info("websocket is closed.")
 
     def on_event(self, message):
-        print(f"recv speech synthsis message {message}")
+        logger.info(f"recv speech synthsis message {message}")
 
     def get_frame(self, data: bytes) -> PcmFrame:
         f = PcmFrame.create("pcm_frame")
@@ -62,27 +66,33 @@ class CosyTTSCallback(ResultCallback):
         buff[:] = data
         f.unlock_buf(buff)
         return f
+    
+    def cancel(self) -> None:
+        self.canceled = True
 
     def on_data(self, data: bytes) -> None:
-        print("audio result length:", len(data), self.frame_size)
+        if self.canceled:
+            return
+        
+        logger.info("audio result length: %d, %d", len(data), self.frame_size)
         try:
-          chunk = int(len(data) / self.frame_size)
-          offset = 0
-          for i in range(0, chunk):
-              #print("****", i, offset, self.frame_size)
-              f = self.get_frame(data[offset:offset + self.frame_size])
-              self.rte.send_pcm_frame(f)
-              #print("send pcm chunk", i)
-              offset += self.frame_size
+            chunk = int(len(data) / self.frame_size)
+            offset = 0
+            for i in range(0, chunk):
+                if self.canceled:
+                    return
+                f = self.get_frame(data[offset:offset + self.frame_size])
+                self.rte.send_pcm_frame(f)
+                offset += self.frame_size
           
-          if offset < len(data):
-              #print("-----")
-              size = len(data) - offset
-              f = self.get_frame(data[offset:offset+size])
-              self.rte.send_pcm_frame(f)
-              #print("send last pcm chunk")
+            if self.canceled:
+                return
+            if offset < len(data):
+                size = len(data) - offset
+                f = self.get_frame(data[offset:offset+size])
+                self.rte.send_pcm_frame(f)
         except Exception as e:
-            print("exception:", e)
+            logger.exception(e)
 
 class CosyTTSExtension(Extension):
     def __init__(self, name: str):
@@ -93,19 +103,21 @@ class CosyTTSExtension(Extension):
         self.sample_rate = 16000
         self.tts = None
         self.callback = None
+        self.format = None
         
-    def on_msg(self, msg: str):
-        print("on message", msg)
-        self.tts.streaming_call(msg)
+        self.stopped = False
+        self.thread = None
+        self.queue = queue.Queue()
+        self.mutex = threading.Lock()
 
     def on_init(
         self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo
     ) -> None:
-        print("CosyTTSExtension on_init")
+        logger.info("CosyTTSExtension on_init")
         rte.on_init_done(manifest, property)
 
     def on_start(self, rte: Rte) -> None:
-        print("CosyTTSExtension on_start")
+        logger.info("CosyTTSExtension on_start")
         self.api_key = rte.get_property_string("api_key")
         self.voice = rte.get_property_string("voice")
         self.model = rte.get_property_string("model")
@@ -126,36 +138,92 @@ class CosyTTSExtension(Extension):
         elif self.sample_rate == 48000:
           f = AudioFormat.PCM_48000HZ_MONO_16BIT
         else:
-          print("unknown sample rate", self.sample_rate)
+          logger.info("unknown sample rate %d", self.sample_rate)
           exit()
 
-        self.callback = CosyTTSCallback(rte, self.sample_rate)
-        self.tts = SpeechSynthesizer(model=self.model, voice=self.voice, format=f, callback=self.callback)
+        self.format = f
+
+        self.thread = threading.Thread(target=self.async_handle, args=[rte])
+        self.thread.start()
         rte.on_start_done()
 
     def on_stop(self, rte: Rte) -> None:
-        print("CosyTTSExtension on_stop")
+        logger.info("CosyTTSExtension on_stop")
+
+        self.stopped = True
         self.tts.streaming_complete()
+        self.flush()
+        self.thread.join()
         rte.on_stop_done()
 
     def on_deinit(self, rte: Rte) -> None:
-        print("CosyTTSExtension on_deinit")
+        logger.info("CosyTTSExtension on_deinit")
         rte.on_deinit_done()
 
+    def need_interrupt(self, ts: datetime.time) -> bool:
+        return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
+    
+    def async_handle(self, rte: Rte):
+        tts = None
+        callback = None
+        while not self.stopped:
+            try:
+                inputText, is_end, ts = self.queue.get()
+                if len(inputText) == 0:
+                    if tts is not None:
+                        tts.streaming_cancel()
+                    if callback is not None:
+                        callback.cancel()
+                    tts = None
+                    callback = None
+                    continue
+                
+                if tts is None:
+                    callback = CosyTTSCallback(rte, self.sample_rate)
+                    tts = SpeechSynthesizer(model=self.model, voice=self.voice, format=self.format, callback=callback)
+                
+                logger.info("on message %s", inputText)
+                tts.streaming_call(inputText)
+                if is_end:
+                    tts.streaming_complete()
+                    tts = None
+            except Exception as e:
+                logger.exception(e)
+            finally:
+                tts = None
+                callback = None
+    
+    def flush(self):
+        logger.info("CosyTTSExtension flush")
+        while not self.queue.empty():
+            self.queue.get()
+        self.queue.put(("", True, datetime.now()))
+
     def on_data(self, rte: Rte, data: Data) -> None:
-        print("CosyTTSExtension on_data")
+        logger.info("CosyTTSExtension on_data")
         inputText = data.get_property_string("text")
         if len(inputText) == 0:
-            print("ignore empty text")
+            logger.info("ignore empty text")
             return
         
-        print("on data", inputText)
-        self.on_msg(inputText)
+        is_end = data.get_property_bool("end_of_segment")
+        
+        logger.info("on data %s %d", inputText, is_end)
+        self.queue.put((inputText, is_end, datetime.now()))
 
     def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
-        print("CosyTTSExtension on_cmd")
+        logger.info("CosyTTSExtension on_cmd")
         cmd_json = cmd.to_json()
-        print("CosyTTSExtension on_cmd json: " + cmd_json)
+        logger.info("CosyTTSExtension on_cmd json: %s" + cmd_json)
+
+        cmdName = cmd.get_name()
+        if cmdName == "flush":
+            self.outdateTs = datetime.now()
+            self.flush()
+            cmd_out = Cmd.create("flush")
+            rte.send_cmd(cmd_out, lambda rte, result: print("DefaultExtension send_cmd done"))
+        else:
+            logger.info("unknown cmd %s", cmdName)
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
@@ -164,7 +232,7 @@ class CosyTTSExtension(Extension):
 @register_addon_as_extension("cosy_tts")
 class CosyTTSExtensionAddon(Addon):
     def on_init(self, rte: Rte, manifest, property) -> None:
-        print("CosyTTSExtensionAddon on_init")
+        logger.info("CosyTTSExtensionAddon on_init")
         rte.on_init_done(manifest, property)
         return
 
@@ -173,6 +241,6 @@ class CosyTTSExtensionAddon(Addon):
         rte.on_create_instance_done(CosyTTSExtension(addon_name), context)
 
     def on_deinit(self, rte: Rte) -> None:
-        print("CosyTTSExtensionAddon on_deinit")
+        logger.info("CosyTTSExtensionAddon on_deinit")
         rte.on_deinit_done()
         return

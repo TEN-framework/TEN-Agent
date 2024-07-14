@@ -28,6 +28,19 @@
       {
         "name": "flush"
       }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        }
+      }
     ]
   }
 }
