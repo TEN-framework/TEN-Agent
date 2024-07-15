@@ -1,8 +1,4 @@
-<div align="center">
- <img alt="ASTRA" height="auto" src="./images/new-banner-without-tagline.png">
-</div>
-
-<br>
+![ASTRA Banner Image](https://github.com/rte-design/ASTRA.ai/raw/main/images/banner-image-without-tagline.png)
 
 <div align="center">
 
@@ -13,38 +9,41 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
-[![](https://dcbadge.vercel.app/api/server/p85NR8UD)](https://discord.gg/p85NR8UD)
+[![](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
 [![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-
+<a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 </div>
 
 <div align="center">
 
-<span>实时多模型交互</span>
+[超低延迟](./docs/astra-architecture.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>兼容各种大语言模型</span>
+[超多模态](./docs/astra-architecture.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<span>超低延时</span>
+[超高可配](./docs/astra-architecture.md#-astra-extension-store)
 
-🎉 创建实时多模态 AI 代理 🎉
+🎉 简单易用，丝滑体验，创建属于这个时代的 AI Agents 🎉
 
 </div>
 
-## Quick Start
+## Voice Agent Showcase
 
-### Playground
+[ASTRA Voice Agent](https://theastra.ai)
 
-<div align="center">
-<img  alt="ASTRA Voice Agent" src="./images/astra-voice-agent.gif">
-</div>
+感谢 ASTRA 的多模态能力，这里搭建的 Voice Agent 速度流畅，体验丝滑。
 
-我们把 ASTRA Voice Agent 放在一个线上 [Playground](https://astra-agents.agora.io/)， 欢迎试玩。
+[![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
+
+<h3>点星收藏</h3>
+
+我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
+
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 ### 本地运行 Agent
 
@@ -103,11 +102,7 @@ npm i && npm run dev
 - _chat_transcriber_ / A utility ext to forward chat logs into channel
 - _interrupt_detector_ / A utility ext to help interrupt agent
 
-<div align="center">
-
-<image alt="ASTRA" width="800px" src="./images/image-2.png">
-
-</div>
+![](../../images/image-2.png)
 
 ### 定制个性化 Agent
 
@@ -156,11 +151,7 @@ make run-server
 
 现在让我们来深入了解一下。ASTRA 服务由多种不同编程语言开发的 ASTRA 扩展组成。这些扩展通过图谱相互连接，描述它们的关系并展示数据流动。此外，通过 ASTRA 云商店和 ASTRA 包管理器，扩展的分享和下载变得更加简便。
 
-<div align="center">
-
-<image alt="ASTRA" width="800px" src="./images/image.png">
-
-</div>
+![ASTRA Architecture](../../images/image.png)
 
 ### ASTRA 扩展
 
@@ -212,12 +203,12 @@ ASTRA 包管理器简化了上传、分享、下载和安装 ASTRA 扩展的过�
 ## 微信 ASTRA 中文群
 
 <div align="center">
- <img alt="ASTRA" width="300px" height="auto" src="./images/wechat-qrcode.png">
+ <img alt="ASTRA" width="300px" height="auto" src="../../images/wechat-qrcode.png">
 </div>
 
 ## Contributing
 
-欢迎贡献！请先阅读 [贡献指南](CONTRIBUTING.md)。
+欢迎贡献！请先阅读 [贡献指南](../code-of-conduct/contributing.md)。
 
 </br>
 

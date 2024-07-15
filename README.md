@@ -16,13 +16,13 @@
 [![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="./README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-[Lightning Fast](./markdowns/astra-architecture.md)
+[Lightning Fast](./docs/astra-architecture.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interactive](./markdowns/astra-architecture.md#astra-extension)
+[Multimodal Interactive](./docs/astra-architecture.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Highly Customizable](./markdowns/astra-architecture.md#astra-extension)
+[Highly Customizable](./docs/astra-architecture.md#-astra-extension-store)
 
 </div>
 
@@ -177,14 +177,14 @@ make run-server
 
 <h3>Discover More</h3>
 
-Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](./markdowns/astra-architecture.md).
+Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](./docs/astra-architecture.md).
 
 <br>
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
-- [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./markdowns/code-of-conduct/contributing.md) for more details.
+- [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
 
  <br>
