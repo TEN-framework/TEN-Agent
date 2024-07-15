@@ -67,6 +67,17 @@ docker run --restart=always -itd -p 8080:8080 \
         -e AZURE_TTS_REGION=<your_azure_tts_region> \
         --name astra_agents_server \
         agoraio/astra_agents_server:latest
+
+# Here are two TTS options, either one will work
+# Make sure to comment out the one you don't use
+# 1. using Azure
+-e TTS_VENDOR_CHINESE=azure
+-e AZURE_TTS_KEY=<your_azure_tts_key>
+-e AZURE_TTS_REGION=<your_azure_tts_region>
+
+# 2. using ElevenLabs
+-e TTS_VENDOR_ENGLISH=elevenlabs
+-e ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
 ```
 
 This should start an agent server running on port 8080.
@@ -103,15 +114,15 @@ npm i && npm run dev
 
 To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
-| Extension           | Feature         | Description                                                                                                 |
-|---------------------|-----------------|-------------------------------------------------------------------------------------------------------------|
-| openai_chatgpt      | LLM             | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
-| elevenlabs_tts      | Text-to-speech  | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                               |
-| azure_tts           | Text-to-speech  | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio |
-| azure_stt           | Speech-to-text  | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                       |
-| chat_transcriber    | Transcriber     | A utility ext to forward chat logs into channel                                                             |
-| agora_rtc           | Transporter     | A low latency transporter powered by agora_rtc                                                              |
-| interrupt_detector | Interrupter     | A utility ext to help interrupt agent                                                                       |
+| Extension          | Feature        | Description                                                                                                                                                                                                          |
+| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
+| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
+| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
+| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
+| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
+| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
+| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
 
 <h3>Voice Agent Diagram</h3>
 
