@@ -27,13 +27,13 @@ import (
 )
 
 type HttpServer struct {
-	config *HttpServerConfig
+	config           *HttpServerConfig
+	manifestProvider *ManifestProvider
 }
 
 type HttpServerConfig struct {
 	AppId                    string
 	AppCertificate           string
-	ManifestJsonFile         string
 	Port                     string
 	TTSVendorChinese         string
 	TTSVendorEnglish         string
@@ -72,9 +72,6 @@ const (
 	languageChinese = "zh-CN"
 	languageEnglish = "en-US"
 
-	ManifestJsonFile           = "./agents/manifest.json"
-	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
-
 	TTSVendorAzure      = "azure"
 	TTSVendorElevenlabs = "elevenlabs"
 
@@ -109,21 +106,11 @@ var (
 	logTag = slog.String("service", "HTTP_SERVER")
 )
 
-func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
+func NewHttpServer(httpServerConfig *HttpServerConfig, manifestProvider *ManifestProvider) *HttpServer {
 	return &HttpServer{
-		config: httpServerConfig,
+		config:           httpServerConfig,
+		manifestProvider: manifestProvider,
 	}
-}
-
-func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile string) {
-	ttsVendor := s.getTtsVendor(language)
-	manifestJsonFile = ManifestJsonFile
-
-	if ttsVendor == TTSVendorElevenlabs {
-		manifestJsonFile = ManifestJsonFileElevenlabs
-	}
-
-	return
 }
 
 func (s *HttpServer) getTtsVendor(language string) string {
@@ -295,11 +282,12 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
+// processManifest create worker temporary Mainfest.
 func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, logFile string, err error) {
-	manifestJsonFile = s.getManifestJsonFile(req.AgoraAsrLanguage)
-	content, err := os.ReadFile(manifestJsonFile)
+	ttsVendor := s.getTtsVendor(req.AgoraAsrLanguage)
+	content, err := s.manifestProvider.GetManifestJson(ttsVendor)
 	if err != nil {
-		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart get manifest json failed", "err", err, "ttsVendor", ttsVendor, "requestId", req.RequestId, logTag)
 		return
 	}
 
@@ -333,7 +321,6 @@ func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, lo
 
 	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
 
-	ttsVendor := s.getTtsVendor(language)
 	voiceName := voiceNameMap[language][ttsVendor][req.VoiceType]
 	if voiceName != "" {
 		if ttsVendor == TTSVendorAzure {
