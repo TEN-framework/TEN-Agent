@@ -41,7 +41,7 @@
                         "publish_data": true,
                         "enable_agora_asr": true,
                         "agora_asr_vendor_name": "microsoft",
-                        "agora_asr_language": "en-US",
+                        "agora_asr_language": "zh-CN",
                         "agora_asr_vendor_key": "<azure_stt_key>",
                         "agora_asr_vendor_region": "<azure_stt_region>",
                         "agora_asr_session_control_file_path": "session_control.conf"
