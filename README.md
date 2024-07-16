@@ -161,14 +161,15 @@ export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
 
-# LLM
+# openai
 export OPENAI_API_KEY=<your_openai_api_key>
+# qwen
 export QWEN_API_KEY=<your_qwern_api_key>
 
 # TTS
 # cosy
 export COSY_TTS_KEY=<your_cosy_tts_key>
-# if you use AZURE_TTS
+# azure
 export AZURE_TTS_KEY=<your_azure_tts_key>
 export AZURE_TTS_REGION=<your_azure_tts_region>
 
@@ -178,6 +179,36 @@ make run-server
 ```
 
 🎉 Congratulations! You have created your first personalized voice agent.
+
+<h3>Quick Agent Customize Test</h3>
+The default agent control is managed via server gateway. For quick testing, you can also run the agent directly.
+
+```
+
+# rename manifest example
+cp ./agents/manifest.json.example ./agents/manifest.json
+cp ./agents/manifest.json.en.example ./agents/manifest.en.json
+cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
+
+# pull the docker image with dev tools and mount your current folder as workspace
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2 
+
+# for windows git bash
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
+
+# enter docker image
+docker exec -it astra_agents_dev bash
+
+make build
+
+cd ./agents
+# manipulate values in manifest.json to replace <agora_appid>, <qwern_api_key>, <stt_api_key>, <stt_region> with your keys
+./bin/start
+```
+
+use `https://webdemo.agora.io/` to quickly test.
+
+Note the `channel` and `remote_stream_id` needs to match with the one you give on `https://webdemo.agora.io/`
 
 <br>
 <h2>ASTRA Service</h2>
