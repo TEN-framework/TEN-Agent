@@ -107,6 +107,7 @@ class CosyTTSExtension(Extension):
         self.tts = None
         self.callback = None
         self.format = None
+        self.outdateTs = datetime.now()
         
         self.stopped = False
         self.thread = None
