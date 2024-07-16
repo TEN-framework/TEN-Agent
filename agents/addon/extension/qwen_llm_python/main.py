@@ -96,7 +96,7 @@ class QWenLLMExtension(Extension):
         messages.append({'role':'user', 'content':inputText})
         logger.info("before call %s %s", messages, ts)
 
-        responses = dashscope.Generation.call("qwen-max",
+        responses = dashscope.Generation.call(self.model,
                                 messages=messages,
                                 result_format='message',  # set the result to be "message"  format.
                                 stream=True, # set streaming output
@@ -152,7 +152,7 @@ class QWenLLMExtension(Extension):
     def on_start(self, rte: Rte) -> None:
         logger.info("QWenLLMExtension on_start")
         self.api_key = rte.get_property_string("api_key")
-        self.mode = rte.get_property_string("model")
+        self.model = rte.get_property_string("model")
         self.prompt = rte.get_property_string("prompt")
         self.max_history = rte.get_property_int("max_memory_length")
 
