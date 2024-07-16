@@ -23,6 +23,7 @@ func NewManifestProvider() *ManifestProvider {
 	}
 }
 
+// LoadManifest read manifest from dir.
 func (p *ManifestProvider) LoadManifest(manifestJsonDir string) error {
 	files, err := os.ReadDir(manifestJsonDir)
 	if err != nil {
@@ -55,6 +56,7 @@ func (p *ManifestProvider) LoadManifest(manifestJsonDir string) error {
 	return nil
 }
 
+// injectEnvVar inject Environment Variable to json content.
 func (p *ManifestProvider) injectEnvVar(manifestJson string) string {
 	appId := os.Getenv("AGORA_APP_ID")
 	if appId != "" {
@@ -109,6 +111,7 @@ func (p *ManifestProvider) injectEnvVar(manifestJson string) string {
 	return manifestJson
 }
 
+// GetManifestJson give a vendor, return manifestJson.
 func (p *ManifestProvider) GetManifestJson(vendor string) (manifestJson string, err error) {
 	if len(vendor) > 0 {
 		vendor = "." + vendor
