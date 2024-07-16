@@ -1,15 +1,14 @@
-package internal
+package service
 
 import (
+	"app/pkg/common"
 	"fmt"
 	"log/slog"
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
-
-	"github.com/gogf/gf/container/gmap"
-	"github.com/google/uuid"
 )
 
 type Worker struct {
@@ -27,10 +26,6 @@ const (
 	workerExec              = "/app/agents/bin/worker"
 )
 
-var (
-	workers = gmap.New(true)
-)
-
 func newWorker(channelName string, logFile string, manifestJsonFile string) *Worker {
 	return &Worker{
 		ChannelName:        channelName,
@@ -42,12 +37,12 @@ func newWorker(channelName string, logFile string, manifestJsonFile string) *Wor
 	}
 }
 
-func (w *Worker) start(req *StartReq) (err error) {
+func (w *Worker) start(req *common.StartReq) error {
 	shell := fmt.Sprintf("cd /app/agents && nohup %s --manifest %s > %s 2>&1 &", workerExec, w.ManifestJsonFile, w.LogFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
-	if _, err = exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
+	if _, err := exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
 		slog.Error("Worker start failed", "err", err, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	shell = fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", w.ManifestJsonFile)
@@ -55,52 +50,28 @@ func (w *Worker) start(req *StartReq) (err error) {
 	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
 	if err != nil {
 		slog.Error("Worker get pid failed", "err", err, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	pid, err := strconv.Atoi(strings.TrimSpace(string(output)))
 	if err != nil || pid <= 0 {
 		slog.Error("Worker convert pid failed", "err", err, "pid", pid, "requestId", req.RequestId, logTag)
-		return
+		return err
 	}
 
 	w.Pid = pid
-	return
+	return nil
 }
 
-func (w *Worker) stop(requestId string, channelName string) (err error) {
+func (w *Worker) stop(requestId string, channelName string) error {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, logTag)
 
-	shell := fmt.Sprintf("kill -9 %d", w.Pid)
-	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+	err := syscall.Kill(w.Pid, syscall.SIGTERM)
 	if err != nil {
-		slog.Error("Worker kill failed", "err", err, "output", output, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
-		return
+		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		return err
 	}
-
-	workers.Remove(channelName)
 
 	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
-	return
-}
-
-func cleanWorker() {
-	for {
-		for _, channelName := range workers.Keys() {
-			worker := workers.Get(channelName).(*Worker)
-
-			nowTs := time.Now().Unix()
-			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
-				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
-					slog.Error("Worker cleanWorker failed", "err", err, "channelName", channelName, logTag)
-					continue
-				}
-
-				slog.Info("Worker cleanWorker success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
-			}
-		}
-
-		slog.Debug("Worker cleanWorker sleep", "sleep", workerCleanSleepSeconds, logTag)
-		time.Sleep(workerCleanSleepSeconds * time.Second)
-	}
+	return err
 }
