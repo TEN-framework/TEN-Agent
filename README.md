@@ -206,9 +206,9 @@ cd ./agents
 ./bin/start
 ```
 
-use `https://webdemo.agora.io/` to quickly test.
+use [https://webdemo.agora.io/](https://webdemo.agora.io/) to quickly test.
 
-Note the `channel` and `remote_stream_id` needs to match with the one you give on `https://webdemo.agora.io/`
+Note the `agora_appid` `channel` and `remote_stream_id` needs to match with the one you use on `https://webdemo.agora.io/`
 
 <br>
 <h2>ASTRA Service</h2>
