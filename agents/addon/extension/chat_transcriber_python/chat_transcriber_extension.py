@@ -6,6 +6,7 @@
 #
 #
 
+import json
 from rte_runtime_python import (
     Addon,
     Extension,
@@ -130,7 +131,12 @@ class ChatTranscriberExtension(Extension):
         )
 
         try:
-            pb_serialized_text = pb_text.SerializeToString()
+            text = json.dumps({
+                "uid": stream_id,
+                "text" :text,
+                "is_final": end_of_segment,
+            })
+            text_buf = text.encode("utf-8")
         except Exception as e:
             logger.warning(f"on_data SerializeToString error: {e}")
             return
@@ -139,9 +145,9 @@ class ChatTranscriberExtension(Extension):
             # convert the origin text data to the protobuf data and send it to the graph.
             rte_data = Data.create("data")
             # rte_data.set_property_string("data", pb_serialized_text)
-            rte_data.alloc_buf(len(pb_serialized_text))
+            rte_data.alloc_buf(len(text_buf))
             buf = rte_data.lock_buf()
-            buf[:] = pb_serialized_text[:]
+            buf[:] = text_buf[:]
             rte_data.unlock_buf(buf)
             rte.send_data(rte_data)
             logger.info("data sent")
