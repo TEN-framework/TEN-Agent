@@ -52,7 +52,7 @@ class ChatTranscriberExtension(Extension):
     def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
         logger.info("on_cmd")
         cmd_json = cmd.to_json()
-        logger.info("on_cmd json: " % cmd_json)
+        logger.info("on_cmd json: {}".format(cmd_json))
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
@@ -138,7 +138,13 @@ class ChatTranscriberExtension(Extension):
         try:
             # convert the origin text data to the protobuf data and send it to the graph.
             rte_data = Data.create("data")
-            rte_data.set_property_string("data", pb_serialized_text)
+            # rte_data.set_property_string("data", pb_serialized_text)
+            rte_data.alloc_buf(len(pb_serialized_text))
+            buf = rte_data.lock_buf()
+            buf[:] = pb_serialized_text[:]
+            rte_data.unlock_buf(buf)
+            rte.send_data(rte_data)
+            logger.info("data sent")
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")
             return
