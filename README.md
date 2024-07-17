@@ -68,16 +68,16 @@ docker run --restart=always -itd -p 8080:8080 \
         --name astra_agents_server \
         agoraio/astra_agents_server:latest
 
-        # Here are two TTS options, either one will work
-        # Make sure to comment out the one you don't use
-        # 1. using Azure
+        # For Chinese, using either Azure or ElevenLabs
         -e TTS_VENDOR_CHINESE=azure
+        # -e TTS_VENDOR_CHINESE=elevenlabs
         -e AZURE_TTS_KEY=<your_azure_tts_key>
         -e AZURE_TTS_REGION=<your_azure_tts_region>
         
-        # 2. using ElevenLabs
+        # For English, using either ElevenLabs or Azure
         -e TTS_VENDOR_ENGLISH=elevenlabs
-        -e ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
+        # -e TTS_VENDOR_ENGLISH=azure
+        -e ELEVENLABS_TTS_KEY=<your_elevenlabs_tts_key>
 ```
 
 This should start an agent server running on port 8080.
@@ -169,17 +169,16 @@ export OPENAI_API_KEY=<your_openai_api_key>
 export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
 
-# Here are two TTS options, either one will work
-# Make sure to comment out the one you don't use
-
-# 1. using Azure
+# For Chinese, using either Azure or ElevenLabs
 export TTS_VENDOR_CHINESE=azure
+# export TTS_VENDOR_CHINESE=elevenlabs
 export AZURE_TTS_KEY=<your_azure_tts_key>
 export AZURE_TTS_REGION=<your_azure_tts_region>
-
-# 2. using ElevenLabs
+        
+# For English, using either ElevenLabs or Azure
 export TTS_VENDOR_ENGLISH=elevenlabs
-export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
+# export TTS_VENDOR_ENGLISH=azure
+export ELEVENLABS_TTS_KEY=<your_elevenlabs_tts_key>
 
 # agent is ready to start on port 8080
 
