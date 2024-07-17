@@ -149,9 +149,6 @@ class ChatTranscriberExtension(Extension):
             logger.warning(f"on_data new_data error: {e}")
             return
 
-        rte.send_data(rte_data)
-
-
 @register_addon_as_extension("chat_transcriber_python")
 class ChatTranscriberExtensionAddon(Addon):
     def on_init(self, rte: Rte, manifest, property) -> None:
