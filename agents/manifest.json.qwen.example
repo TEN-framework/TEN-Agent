@@ -74,6 +74,12 @@
                 },
                 {
                     "type": "extension",
+                    "extension_group": "chat_transcriber",
+                    "addon": "chat_transcriber_python",
+                    "name": "chat_transcriber"
+                },
+                {
+                    "type": "extension",
                     "extension_group": "default",
                     "addon": "interrupt_detector_python",
                     "name": "interrupt_detector"
@@ -92,6 +98,11 @@
                     "type": "extension_group",
                     "addon": "default_extension_group",
                     "name": "tts"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "chat_transcriber"
                 }
             ],
             "connections": [
@@ -105,6 +116,10 @@
                                 {
                                     "extension_group": "default",
                                     "extension": "interrupt_detector"
+                                },
+                                {
+                                    "extension_group": "chat_transcriber",
+                                    "extension": "chat_transcriber"
                                 }
                             ]
                         }
@@ -157,7 +172,31 @@
                                 {
                                     "extension_group": "tts",
                                     "extension": "cosy_tts"
-                                }
+                                },
+                                {
+                                    "extension_group": "chat_transcriber",
+                                    "extension": "chat_transcriber",
+                                    "cmd_conversions": [
+                                        {
+                                            "cmd": {
+                                                "type": "per_property",
+                                                "keep_original": true,
+                                                "rules": [
+                                                    {
+                                                        "path": "is_final",
+                                                        "type": "fixed_value",
+                                                        "value": "bool(true)"
+                                                    },
+                                                    {
+                                                        "path": "stream_id",
+                                                        "type": "fixed_value",
+                                                        "value": "uint32(999)"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }        
                             ]
                         }
                     ],
@@ -191,6 +230,21 @@
                         {
                             "name": "flush",
                             "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "chat_transcriber",
+                    "extension": "chat_transcriber",
+                    "data": [
+                        {
+                            "name": "data",
+                            "dest":[
                                 {
                                     "extension_group": "default",
                                     "extension": "agora_rtc"
