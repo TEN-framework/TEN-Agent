@@ -5,6 +5,7 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
+import traceback
 from rte_runtime_python import (
     Addon,
     Extension,
@@ -37,6 +38,7 @@ class CosyTTSCallback(ResultCallback):
         self.sample_rate = sample_rate
         self.frame_size = int(self.sample_rate * 1 * 2 / 100)
         self.canceled = False
+        self.closed = False
 
     def on_open(self):
         logger.info("websocket is open.")
@@ -49,10 +51,11 @@ class CosyTTSCallback(ResultCallback):
 
     def on_close(self):
         logger.info("websocket is closed.")
+        self.closed = True
 
     def on_event(self, message):
         pass
-        #logger.info(f"recv speech synthsis message {message}")
+        # logger.info(f"recv speech synthsis message {message}")
 
     def get_frame(self, data: bytes) -> PcmFrame:
         f = PcmFrame.create("pcm_frame")
@@ -180,7 +183,10 @@ class CosyTTSExtension(Extension):
                     if len(inputText) == 0:
                         logger.warning("empty input for interrupt")
                         if tts is not None:
-                            tts.streaming_cancel()
+                            try:
+                                tts.streaming_cancel()
+                            except Exception as e:
+                                logger.exception(e)
                         if callback is not None:
                             callback.cancel()
                         tts = None
@@ -190,6 +196,9 @@ class CosyTTSExtension(Extension):
                     if self.need_interrupt(ts):
                         continue
                     
+                    if callback is not None and callback.closed is True:
+                        tts = None
+
                     if tts is None:
                         logger.info("creating tts")
                         callback = CosyTTSCallback(rte, self.sample_rate)
@@ -199,6 +208,7 @@ class CosyTTSExtension(Extension):
                     tts.streaming_call(inputText)
                 except Exception as e:
                     logger.exception(e)
+                    logger.exception(traceback.format_exc())
         finally:
             if tts is not None:
                 tts.streaming_complete()
