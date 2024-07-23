@@ -8,9 +8,7 @@
 
 import json
 from rte_runtime_python import (
-    Addon,
     Extension,
-    register_addon_as_extension,
     Rte,
     Cmd,
     Data,
@@ -131,11 +129,13 @@ class ChatTranscriberExtension(Extension):
         )
 
         try:
-            text = json.dumps({
-                "uid": stream_id,
-                "text" :text,
-                "is_final": end_of_segment,
-            })
+            text = json.dumps(
+                {
+                    "uid": stream_id,
+                    "text": text,
+                    "is_final": end_of_segment,
+                }
+            )
             text_buf = text.encode("utf-8")
         except Exception as e:
             logger.warning(f"on_data SerializeToString error: {e}")
@@ -154,19 +154,3 @@ class ChatTranscriberExtension(Extension):
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")
             return
-
-@register_addon_as_extension("chat_transcriber_python")
-class ChatTranscriberExtensionAddon(Addon):
-    def on_init(self, rte: Rte, manifest, property) -> None:
-        logger.info("on_init")
-        rte.on_init_done(manifest, property)
-        return
-
-    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
-        logger.info("on_create_instance")
-        rte.on_create_instance_done(ChatTranscriberExtension(addon_name), context)
-
-    def on_deinit(self, rte: Rte) -> None:
-        logger.info("on_deinit")
-        rte.on_deinit_done()
-        return
