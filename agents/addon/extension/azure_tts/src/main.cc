@@ -13,10 +13,6 @@
 
 #include "log.h"
 #include "macro/check.h"
-#include "rte_runtime/binding/cpp/internal/msg/cmd/cmd.h"
-#include "rte_runtime/binding/cpp/internal/msg/cmd_result.h"
-#include "rte_runtime/binding/cpp/internal/msg/pcm_frame.h"
-#include "rte_runtime/binding/cpp/internal/rte_proxy.h"
 #include "rte_runtime/binding/cpp/rte.h"
 #include "tts.h"
 
@@ -32,7 +28,7 @@ class azure_tts_extension_t : public rte::extension_t {
   //   - azure_subscription_key
   //   - azure_subscription_region
   //   - azure_synthesis_voice_name
-  void on_start(rte::rte_t &rte) override {
+  void on_start(rte::rte_env_t &rte) override {
     AZURE_TTS_LOGI("start");
 
     // read properties
@@ -46,7 +42,7 @@ class azure_tts_extension_t : public rte::extension_t {
       return;
     }
 
-    rte_proxy_ = std::unique_ptr<rte::rte_proxy_t>(rte::rte_proxy_t::create(rte));
+    rte_proxy_ = std::unique_ptr<rte::rte_env_proxy_t>(rte::rte_env_proxy_t::create(rte));
     RTE_ASSERT(rte_proxy_ != nullptr, "rte_proxy should not be nullptr");
 
     // pcm parameters
@@ -80,7 +76,7 @@ class azure_tts_extension_t : public rte::extension_t {
 
           auto pcm_frame_shared = std::make_shared<std::unique_ptr<rte::pcm_frame_t>>(std::move(pcm_frame));
           rte_proxy->notify(
-              [frame = std::move(pcm_frame_shared)](rte::rte_t &rte) { rte.send_pcm_frame(std::move(*frame)); });
+              [frame = std::move(pcm_frame_shared)](rte::rte_env_t &rte) { rte.send_pcm_frame(std::move(*frame)); });
         };
 
 
@@ -105,7 +101,7 @@ class azure_tts_extension_t : public rte::extension_t {
   //  - name: flush
   //    example:
   //      {"name": "flush"}
-  void on_cmd(rte::rte_t &rte, std::unique_ptr<rte::cmd_t> cmd) override {
+  void on_cmd(rte::rte_env_t &rte, std::unique_ptr<rte::cmd_t> cmd) override {
 
     std::string command = cmd->get_name();
     AZURE_TTS_LOGI("%s", command.c_str());
@@ -116,8 +112,8 @@ class azure_tts_extension_t : public rte::extension_t {
 
       // passthrough cmd
       auto ret = rte.send_cmd(rte::cmd_t::create(kCmdNameFlush.c_str()));
-      if (ret != RTE_STATUS_CODE_OK) {
-        AZURE_TTS_LOGE("Failed to send cmd %s, ret:%d", kCmdNameFlush.c_str(), int(ret));
+      if (!ret) {
+        AZURE_TTS_LOGE("Failed to send cmd %s", kCmdNameFlush.c_str());
         rte.return_result(rte::cmd_result_t::create(RTE_STATUS_CODE_ERROR), std::move(cmd));
       } else {
         rte.return_result(rte::cmd_result_t::create(RTE_STATUS_CODE_OK), std::move(cmd));
@@ -132,7 +128,7 @@ class azure_tts_extension_t : public rte::extension_t {
   //  - name: text_data
   //    example:
   //      {"name": "text_data", "properties": {"text": "hello"}
-  void on_data(rte::rte_t &rte, std::unique_ptr<rte::data_t> data) override {
+  void on_data(rte::rte_env_t &rte, std::unique_ptr<rte::data_t> data) override {
 
     auto text = data->get_property_string(kDataFieldText.c_str());
     if (text.empty()) {
@@ -146,7 +142,7 @@ class azure_tts_extension_t : public rte::extension_t {
   }
 
   // on_stop will be called when the extension is stopping.
-  void on_stop(rte::rte_t &rte) override {
+  void on_stop(rte::rte_env_t &rte) override {
     AZURE_TTS_LOGI("stop");
     if (azure_tts_) {
       azure_tts_->Stop();
@@ -160,7 +156,7 @@ class azure_tts_extension_t : public rte::extension_t {
   }
 
  private:
-  std::unique_ptr<rte::rte_proxy_t> rte_proxy_;
+  std::unique_ptr<rte::rte_env_proxy_t> rte_proxy_;
 
   std::unique_ptr<AzureTTS> azure_tts_;
 

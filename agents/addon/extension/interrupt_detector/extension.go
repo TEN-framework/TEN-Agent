@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 )
 
 const (
@@ -29,10 +29,10 @@ var (
 )
 
 type interruptDetectorExtension struct {
-	rtego.DefaultExtension
+	rte.DefaultExtension
 }
 
-func newExtension(name string) rtego.Extension {
+func newExtension(name string) rte.Extension {
 	return &interruptDetectorExtension{}
 }
 
@@ -42,8 +42,8 @@ func newExtension(name string) rtego.Extension {
 //     example:
 //     {name: text_data, properties: {text: "hello", is_final: false}
 func (p *interruptDetectorExtension) OnData(
-	rte rtego.Rte,
-	data rtego.Data,
+	rteEnv rte.RteEnv,
+	data rte.Data,
 ) {
 	text, err := data.GetPropertyString(textDataTextField)
 	if err != nil {
@@ -60,8 +60,8 @@ func (p *interruptDetectorExtension) OnData(
 	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
 
 	if final || len(text) >= 2 {
-		flushCmd, _ := rtego.NewCmd(cmdNameFlush)
-		rte.SendCmd(flushCmd, nil)
+		flushCmd, _ := rte.NewCmd(cmdNameFlush)
+		rteEnv.SendCmd(flushCmd, nil)
 
 		slog.Info(fmt.Sprintf("sent cmd: %s", cmdNameFlush), logTag)
 	}
@@ -71,8 +71,8 @@ func init() {
 	slog.Info("interrupt_detector extension init", logTag)
 
 	// Register addon
-	rtego.RegisterAddonAsExtension(
+	rte.RegisterAddonAsExtension(
 		"interrupt_detector",
-		rtego.NewDefaultExtensionAddon(newExtension),
+		rte.NewDefaultExtensionAddon(newExtension),
 	)
 }

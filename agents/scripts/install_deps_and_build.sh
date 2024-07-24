@@ -43,6 +43,23 @@ build_cxx_addon() {
   done
 }
 
+install_python_requirements() {
+  local app_dir=$1
+
+  if [[ -f "requirements.txt" ]]; then
+    pip install -r requirements.txt
+  fi
+
+  # traverse the addon/extension directory to find the requirements.txt
+  if [[ -d "addon/extension" ]]; then
+    for extension in addon/extension/*; do
+      if [[ -f "$extension/requirements.txt" ]]; then
+        pip install -r $extension/requirements.txt
+      fi
+    done
+  fi
+}
+
 build_go_app() {
   local app_dir=$1
   cd $app_dir
@@ -84,8 +101,12 @@ main() {
   arpm install
 
   # build addons and app
+  echo "build_cxx_addon..."
   build_cxx_addon $APP_HOME
-  # build_go_app $APP_HOME
+  echo "build_go_app..."
+  build_go_app $APP_HOME
+  echo "install_python_requirements..."
+  install_python_requirements $APP_HOME
 }
 
 main "$@"
