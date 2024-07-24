@@ -2,22 +2,32 @@
     "type": "app",
     "name": "astra_agents",
     "version": "0.2.0",
-    "language": "python",
+    "language": "go",
     "dependencies": [
+        {
+            "type": "system",
+            "name": "rte_runtime_python",
+            "version": "0.3.1"
+        },
+        {
+            "type": "system",
+            "name": "rte_runtime_go",
+            "version": "0.3.1"
+        },
+        {
+            "type": "extension",
+            "name": "py_init_extension_cpp",
+            "version": "0.3.1"
+        },
         {
             "type": "extension_group",
             "name": "default_extension_group",
-            "version": "0.2.0"
+            "version": "0.3.1"
         },
         {
             "type": "extension",
             "name": "agora_rtc",
-            "version": "0.2.0-alpha"
-        },
-        {
-            "type": "system",
-            "name": "rte_runtime_python",
-            "version": "0.2.0"
+            "version": "0.3.0-rc1"
         }
     ],
     "predefined_graphs": [
