@@ -6,9 +6,9 @@
 #
 #
 import traceback
-from rte_runtime_python import (
+from rte import (
     Extension,
-    Rte,
+    RteEnv,
     Cmd,
     PcmFrame,
     RTE_PCM_FRAME_DATA_FMT,
@@ -30,7 +30,7 @@ class CosyTTSCallback(ResultCallback):
     _player = None
     _stream = None
 
-    def __init__(self, rte: Rte, sample_rate: int):
+    def __init__(self, rte: RteEnv, sample_rate: int):
         super().__init__()
         self.rte = rte
         self.sample_rate = sample_rate
@@ -116,11 +116,11 @@ class CosyTTSExtension(Extension):
         self.queue = queue.Queue()
         self.mutex = threading.Lock()
 
-    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
+    def on_init(self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo) -> None:
         logger.info("CosyTTSExtension on_init")
         rte.on_init_done(manifest, property)
 
-    def on_start(self, rte: Rte) -> None:
+    def on_start(self, rte: RteEnv) -> None:
         logger.info("CosyTTSExtension on_start")
         self.api_key = rte.get_property_string("api_key")
         self.voice = rte.get_property_string("voice")
@@ -151,7 +151,7 @@ class CosyTTSExtension(Extension):
         self.thread.start()
         rte.on_start_done()
 
-    def on_stop(self, rte: Rte) -> None:
+    def on_stop(self, rte: RteEnv) -> None:
         logger.info("CosyTTSExtension on_stop")
 
         self.stopped = True
@@ -160,14 +160,14 @@ class CosyTTSExtension(Extension):
         self.thread.join()
         rte.on_stop_done()
 
-    def on_deinit(self, rte: Rte) -> None:
+    def on_deinit(self, rte: RteEnv) -> None:
         logger.info("CosyTTSExtension on_deinit")
         rte.on_deinit_done()
 
     def need_interrupt(self, ts: datetime.time) -> bool:
         return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
 
-    def async_handle(self, rte: Rte):
+    def async_handle(self, rte: RteEnv):
         try:
             tts = None
             callback = None
@@ -221,7 +221,7 @@ class CosyTTSExtension(Extension):
             self.queue.get()
         self.queue.put(("", datetime.now()))
 
-    def on_data(self, rte: Rte, data: Data) -> None:
+    def on_data(self, rte: RteEnv, data: Data) -> None:
         logger.info("CosyTTSExtension on_data")
         inputText = data.get_property_string("text")
         if len(inputText) == 0:
@@ -233,7 +233,7 @@ class CosyTTSExtension(Extension):
         logger.info("on data %s %d", inputText, is_end)
         self.queue.put((inputText, datetime.now()))
 
-    def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
+    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("CosyTTSExtension on_cmd")
         cmd_json = cmd.to_json()
         logger.info("CosyTTSExtension on_cmd json: %s" + cmd_json)

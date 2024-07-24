@@ -5,9 +5,9 @@
   "language": "python",
   "dependencies": [
     {
-        "type": "system",
-        "name": "rte_runtime_python",
-        "version": "0.2.0"
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.3.1"
     }
   ],
   "api": {

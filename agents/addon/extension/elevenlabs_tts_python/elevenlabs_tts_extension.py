@@ -10,11 +10,11 @@ import queue
 import threading
 import time
 
-from rte_runtime_python import (
+from rte import (
     Addon,
     Extension,
     register_addon_as_extension,
-    Rte,
+    RteEnv,
     Cmd,
     CmdResult,
     StatusCode,
@@ -47,7 +47,9 @@ class Message:
 
 
 class ElevenlabsTTSExtension(Extension):
-    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
+    def on_init(
+        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
+    ) -> None:
         logger.info("on_init")
 
         self.elevenlabs_tts = None
@@ -58,7 +60,7 @@ class ElevenlabsTTSExtension(Extension):
 
         rte.on_init_done(manifest, property)
 
-    def on_start(self, rte: Rte) -> None:
+    def on_start(self, rte: RteEnv) -> None:
         logger.info("on_start")
 
         # prepare configuration
@@ -150,15 +152,15 @@ class ElevenlabsTTSExtension(Extension):
 
         rte.on_start_done()
 
-    def on_stop(self, rte: Rte) -> None:
+    def on_stop(self, rte: RteEnv) -> None:
         logger.info("on_stop")
         rte.on_stop_done()
 
-    def on_deinit(self, rte: Rte) -> None:
+    def on_deinit(self, rte: RteEnv) -> None:
         logger.info("on_deinit")
         rte.on_deinit_done()
 
-    def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
+    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         """
         on_cmd receives cmd from rte graph.
         current supported cmd:
@@ -182,7 +184,7 @@ class ElevenlabsTTSExtension(Extension):
         cmd_result.set_property_string("detail", "success")
         rte.return_result(cmd_result, cmd)
 
-    def on_data(self, rte: Rte, data: Data) -> None:
+    def on_data(self, rte: RteEnv, data: Data) -> None:
         """
         on_data receives data from rte graph.
         current supported data:
@@ -208,7 +210,7 @@ class ElevenlabsTTSExtension(Extension):
 
         self.text_queue.put(Message(text, int(time.time() * 1000000)))
 
-    def process_text_queue(self, rte: Rte):
+    def process_text_queue(self, rte: RteEnv):
         logger.info("process_text_queue")
 
         while True:
@@ -281,16 +283,16 @@ class ElevenlabsTTSExtension(Extension):
 
 @register_addon_as_extension("elevenlabs_tts_python")
 class ElevenlabsTTSExtensionAddon(Addon):
-    def on_init(self, rte: Rte, manifest, property) -> None:
+    def on_init(self, rte: RteEnv, manifest, property) -> None:
         logger.info("on_init")
         rte.on_init_done(manifest, property)
         return
 
-    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
+    def on_create_instance(self, rte: RteEnv, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(ElevenlabsTTSExtension(addon_name), context)
 
-    def on_deinit(self, rte: Rte) -> None:
+    def on_deinit(self, rte: RteEnv) -> None:
         logger.info("on_deinit")
         rte.on_deinit_done()
         return

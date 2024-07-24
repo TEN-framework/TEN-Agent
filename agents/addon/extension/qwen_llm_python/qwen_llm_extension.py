@@ -5,16 +5,15 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from rte_runtime_python import (
+from rte import (
     Extension,
-    Rte,
+    RteEnv,
     Cmd,
     Data,
     StatusCode,
     CmdResult,
     MetadataInfo,
 )
-from rte_runtime_python.image_frame import ImageFrame
 from typing import List, Any
 import dashscope
 import queue
@@ -99,7 +98,7 @@ class QWenLLMExtension(Extension):
             logger.info("Failed to get response %s", response)
 
     def call_with_stream(
-        self, rte: Rte, ts: datetime.time, inputText: str, messages: List[Any]
+        self, rte: RteEnv, ts: datetime.time, inputText: str, messages: List[Any]
     ):
         if self.need_interrupt(ts):
             logger.warning("out of date, %s, %s", self.outdateTs, ts)
@@ -162,11 +161,13 @@ class QWenLLMExtension(Extension):
         self.on_msg("assistant", total)
         logger.info("on response %s", total)
 
-    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
+    def on_init(
+        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
+    ) -> None:
         logger.info("QWenLLMExtension on_init")
         rte.on_init_done(manifest, property)
 
-    def on_start(self, rte: Rte) -> None:
+    def on_start(self, rte: RteEnv) -> None:
         logger.info("QWenLLMExtension on_start")
         self.api_key = rte.get_property_string("api_key")
         self.model = rte.get_property_string("model")
@@ -178,7 +179,7 @@ class QWenLLMExtension(Extension):
         self.thread.start()
         rte.on_start_done()
 
-    def on_stop(self, rte: Rte) -> None:
+    def on_stop(self, rte: RteEnv) -> None:
         logger.info("QWenLLMExtension on_stop")
         self.stopped = True
         self.queue.put(None)
@@ -186,7 +187,7 @@ class QWenLLMExtension(Extension):
         self.thread.join()
         rte.on_stop_done()
 
-    def on_deinit(self, rte: Rte) -> None:
+    def on_deinit(self, rte: RteEnv) -> None:
         logger.info("QWenLLMExtension on_deinit")
         rte.on_deinit_done()
 
@@ -195,7 +196,7 @@ class QWenLLMExtension(Extension):
         while not self.queue.empty():
             self.queue.get()
 
-    def on_data(self, rte: Rte, data: Data) -> None:
+    def on_data(self, rte: RteEnv, data: Data) -> None:
         logger.info("QWenLLMExtension on_data")
         is_final = data.get_property_bool("is_final")
         if not is_final:
@@ -212,7 +213,7 @@ class QWenLLMExtension(Extension):
         logger.info("on data %s, %s", inputText, ts)
         self.queue.put((inputText, ts))
 
-    def async_handle(self, rte: Rte):
+    def async_handle(self, rte: RteEnv):
         while not self.stopped:
             try:
                 value = self.queue.get()
@@ -227,7 +228,7 @@ class QWenLLMExtension(Extension):
             except Exception as e:
                 logger.exception(e)
 
-    def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
+    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("QWenLLMExtension on_cmd")
         cmd_json = cmd.to_json()
         logger.info("QWenLLMExtension on_cmd json: %s", cmd_json)
@@ -246,6 +247,3 @@ class QWenLLMExtension(Extension):
 
         cmd_result = CmdResult.create(StatusCode.OK)
         rte.return_result(cmd_result, cmd)
-
-    def on_image_frame(self, rte: Rte, image_frame: ImageFrame) -> None:
-        logger.info("QWenLLMExtension on_cmd")

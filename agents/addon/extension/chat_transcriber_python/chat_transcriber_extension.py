@@ -7,9 +7,9 @@
 #
 
 import json
-from rte_runtime_python import (
+from rte import (
     Extension,
-    Rte,
+    RteEnv,
     Cmd,
     Data,
     StatusCode,
@@ -32,23 +32,25 @@ cached_text_map = {}
 
 
 class ChatTranscriberExtension(Extension):
-    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
+    def on_init(
+        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
+    ) -> None:
         logger.info("on_init")
         rte.on_init_done(manifest, property)
 
-    def on_start(self, rte: Rte) -> None:
+    def on_start(self, rte: RteEnv) -> None:
         logger.info("on_start")
         rte.on_start_done()
 
-    def on_stop(self, rte: Rte) -> None:
+    def on_stop(self, rte: RteEnv) -> None:
         logger.info("on_stop")
         rte.on_stop_done()
 
-    def on_deinit(self, rte: Rte) -> None:
+    def on_deinit(self, rte: RteEnv) -> None:
         logger.info("on_deinit")
         rte.on_deinit_done()
 
-    def on_cmd(self, rte: Rte, cmd: Cmd) -> None:
+    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("on_cmd")
         cmd_json = cmd.to_json()
         logger.info("on_cmd json: {}".format(cmd_json))
@@ -57,7 +59,7 @@ class ChatTranscriberExtension(Extension):
         cmd_result.set_property_string("detail", "success")
         rte.return_result(cmd_result, cmd)
 
-    def on_data(self, rte: Rte, data: Data) -> None:
+    def on_data(self, rte: RteEnv, data: Data) -> None:
         """
         on_data receives data from rte graph.
         current supported data:

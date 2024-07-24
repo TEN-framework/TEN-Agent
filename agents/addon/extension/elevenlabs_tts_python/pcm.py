@@ -8,7 +8,7 @@
 
 import logging
 from typing import Iterator
-from rte_runtime_python import PcmFrame, Rte, RTE_PCM_FRAME_DATA_FMT
+from rte import PcmFrame, RteEnv, RTE_PCM_FRAME_DATA_FMT
 
 
 class Pcm:
@@ -56,7 +56,7 @@ class Pcm:
         if chunk:
             yield chunk
 
-    def send(self, rte: Rte, buf: memoryview) -> None:
+    def send(self, rte: RteEnv, buf: memoryview) -> None:
         try:
             frame = self.get_pcm_frame(buf)
             rte.send_pcm_frame(frame)

@@ -7,31 +7,31 @@
     {
       "type": "system",
       "name": "rte_runtime_python",
-      "version": "0.2.0"
+      "version": "0.3.1"
     }
   ],
   "api": {
     "property": {
       "access_key": {
-          "type": "string"
+        "type": "string"
       },
       "secret_key": {
-          "type": "string"
+        "type": "string"
       },
       "model": {
-          "type": "string"
+        "type": "string"
       },
       "max_tokens": {
-          "type": "int64"
+        "type": "int64"
       },
       "prompt": {
-          "type": "string"
+        "type": "string"
       },
       "greeting": {
-          "type": "string"
+        "type": "string"
       },
       "max_memory_length": {
-          "type": "int64"
+        "type": "int64"
       }
     },
     "data_in": [
