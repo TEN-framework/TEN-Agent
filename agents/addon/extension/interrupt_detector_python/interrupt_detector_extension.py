@@ -7,9 +7,7 @@
 #
 
 from rte_runtime_python import (
-    Addon,
     Extension,
-    register_addon_as_extension,
     Rte,
     Cmd,
     Data,
@@ -84,27 +82,16 @@ class InterruptDetectorExtension(Extension):
 
         if final or len(text) >= 2:
             flush_cmd = Cmd.create(CMD_NAME_FLUSH)
-            rte.send_cmd(flush_cmd, lambda rte, result: print("InterruptDetectorExtensionAddon send_cmd done"))
+            rte.send_cmd(
+                flush_cmd,
+                lambda rte, result: print(
+                    "InterruptDetectorExtensionAddon send_cmd done"
+                ),
+            )
 
             logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
-        
+
         d = Data.create("text_data")
         d.set_property_bool(TEXT_DATA_FINAL_FIELD, final)
         d.set_property_string(TEXT_DATA_TEXT_FIELD, text)
         rte.send_data(d)
-
-@register_addon_as_extension("interrupt_detector_python")
-class InterruptDetectorExtensionAddon(Addon):
-    def on_init(self, rte: Rte, manifest, property) -> None:
-        logger.info("on_init")
-        rte.on_init_done(manifest, property)
-        return
-
-    def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
-        logger.info("on_create_instance")
-        rte.on_create_instance_done(InterruptDetectorExtension(addon_name), context)
-
-    def on_deinit(self, rte: Rte) -> None:
-        logger.info("on_deinit")
-        rte.on_deinit_done()
-        return

@@ -6,16 +6,13 @@
 #
 #
 from rte_runtime_python import (
-    Addon,
     Extension,
-    register_addon_as_extension,
     Rte,
     Cmd,
     Data,
     StatusCode,
     CmdResult,
     MetadataInfo,
-    RTE_PIXEL_FMT,
 )
 from rte_runtime_python.image_frame import ImageFrame
 from typing import List, Any
@@ -26,12 +23,20 @@ import threading
 from http import HTTPStatus
 from .log import logger
 
+
 def isEnd(content: str) -> bool:
-    last = content[len(content)-1]
-    return last == ',' or last == '，' or \
-        last == '.' or last == '。' or \
-		last == '?' or last == '？' or \
-		last == '!' or last == '！'
+    last = content[len(content) - 1]
+    return (
+        last == ","
+        or last == "，"
+        or last == "."
+        or last == "。"
+        or last == "?"
+        or last == "？"
+        or last == "!"
+        or last == "！"
+    )
+
 
 class QWenLLMExtension(Extension):
     def __init__(self, name: str):
@@ -52,7 +57,7 @@ class QWenLLMExtension(Extension):
     def on_msg(self, role: str, content: str) -> None:
         self.mutex.acquire()
         try:
-            self.history.append({'role': role, 'content': content})
+            self.history.append({"role": role, "content": content})
             if len(self.history) > self.max_history:
                 self.history = self.history[1:]
         finally:
@@ -61,7 +66,7 @@ class QWenLLMExtension(Extension):
     def get_messages(self) -> List[Any]:
         messages = []
         if len(self.prompt) > 0:
-            messages.append({'role': 'system', 'content': self.prompt})
+            messages.append({"role": "system", "content": self.prompt})
         self.mutex.acquire()
         try:
             for h in self.history:
@@ -72,48 +77,57 @@ class QWenLLMExtension(Extension):
 
     def need_interrupt(self, ts: datetime.time) -> bool:
         return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
-    
+
     def call(self, messages: List[Any]):
         logger.info("before call %s", messages)
-        response = dashscope.Generation.call("qwen-max",
-                                messages=messages,
-                                result_format='message',  # set the result to be "message"  format.
-                                stream=False, # set streaming output
-                                incremental_output=False  # get streaming output incrementally
-                                )
+        response = dashscope.Generation.call(
+            "qwen-max",
+            messages=messages,
+            result_format="message",  # set the result to be "message"  format.
+            stream=False,  # set streaming output
+            incremental_output=False,  # get streaming output incrementally
+        )
         if response.status_code == HTTPStatus.OK:
-            self.on_msg(response.output.choices[0]['message']['role'], response.output.choices[0]['message']['content'])
-            logger.info("on response %s", response.output.choices[0]['message']['content'])
+            self.on_msg(
+                response.output.choices[0]["message"]["role"],
+                response.output.choices[0]["message"]["content"],
+            )
+            logger.info(
+                "on response %s", response.output.choices[0]["message"]["content"]
+            )
         else:
             logger.info("Failed to get response %s", response)
-    
-    def call_with_stream(self, rte: Rte, ts :datetime.time, inputText: str, messages: List[Any]):
+
+    def call_with_stream(
+        self, rte: Rte, ts: datetime.time, inputText: str, messages: List[Any]
+    ):
         if self.need_interrupt(ts):
             logger.warning("out of date, %s, %s", self.outdateTs, ts)
             return
         if len(self.ongoing) > 0:
-            messages.append({'role':'assistant', 'content':self.ongoing})
-        messages.append({'role':'user', 'content':inputText})
+            messages.append({"role": "assistant", "content": self.ongoing})
+        messages.append({"role": "user", "content": inputText})
         logger.info("before call %s %s", messages, ts)
 
-        responses = dashscope.Generation.call(self.model,
-                                messages=messages,
-                                result_format='message',  # set the result to be "message"  format.
-                                stream=True, # set streaming output
-                                incremental_output=True  # get streaming output incrementally
-                                )
+        responses = dashscope.Generation.call(
+            self.model,
+            messages=messages,
+            result_format="message",  # set the result to be "message"  format.
+            stream=True,  # set streaming output
+            incremental_output=True,  # get streaming output incrementally
+        )
         total = ""
         partial = ""
         for response in responses:
             if self.need_interrupt(ts):
                 if len(self.ongoing) > 0:
-                    self.on_msg('user', inputText)
-                    self.on_msg('assistant', self.ongoing)
-                    self.ongoing = ''
+                    self.on_msg("user", inputText)
+                    self.on_msg("assistant", self.ongoing)
+                    self.ongoing = ""
                 logger.warning("out of date, %s, %s", self.outdateTs, ts)
                 return
             if response.status_code == HTTPStatus.OK:
-                temp = response.output.choices[0]['message']['content']
+                temp = response.output.choices[0]["message"]["content"]
                 if len(temp) == 0:
                     continue
                 partial += temp
@@ -126,10 +140,15 @@ class QWenLLMExtension(Extension):
                     total += partial
                     partial = ""
             else:
-                logger.info('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
-                    response.request_id, response.status_code,
-                    response.code, response.message
-                ))
+                logger.info(
+                    "Request id: %s, Status code: %s, error code: %s, error message: %s"
+                    % (
+                        response.request_id,
+                        response.status_code,
+                        response.code,
+                        response.message,
+                    )
+                )
                 return
         if len(partial) > 0:
             d = Data.create("text_data")
@@ -142,10 +161,8 @@ class QWenLLMExtension(Extension):
         self.on_msg("user", inputText)
         self.on_msg("assistant", total)
         logger.info("on response %s", total)
-    
-    def on_init(
-        self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
+
+    def on_init(self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo) -> None:
         logger.info("QWenLLMExtension on_init")
         rte.on_init_done(manifest, property)
 
@@ -184,17 +201,17 @@ class QWenLLMExtension(Extension):
         if not is_final:
             logger.info("ignore non final")
             return
-        
+
         inputText = data.get_property_string("text")
         if len(inputText) == 0:
             logger.info("ignore empty text")
             return
-        
+
         ts = datetime.now()
-        
+
         logger.info("on data %s, %s", inputText, ts)
         self.queue.put((inputText, ts))
-    
+
     def async_handle(self, rte: Rte):
         while not self.stopped:
             try:
@@ -218,9 +235,12 @@ class QWenLLMExtension(Extension):
         cmdName = cmd.get_name()
         if cmdName == "flush":
             self.outdateTs = datetime.now()
-            #self.flush()
+            # self.flush()
             cmd_out = Cmd.create("flush")
-            rte.send_cmd(cmd_out, lambda rte, result: print("QWenLLMExtensionAddon send_cmd done"))
+            rte.send_cmd(
+                cmd_out,
+                lambda rte, result: print("QWenLLMExtensionAddon send_cmd done"),
+            )
         else:
             logger.info("unknown cmd %s", cmdName)
 
@@ -229,19 +249,3 @@ class QWenLLMExtension(Extension):
 
     def on_image_frame(self, rte: Rte, image_frame: ImageFrame) -> None:
         logger.info("QWenLLMExtension on_cmd")
-
-@register_addon_as_extension("qwen_llm_python")
-class QWenLLMExtensionAddon(Addon):
-    def on_init(self, rte: Rte, manifest, property) -> None:
-        logger.info("QWenLLMExtensionAddon on_init")
-        rte.on_init_done(manifest, property)
-        return
-
-    def on_create_instance(self, rte: Rte, addon_name: str, context) -> Extension:
-        logger.info("on_create_instance")
-        rte.on_create_instance_done(QWenLLMExtension(addon_name), context)
-
-    def on_deinit(self, rte: Rte) -> None:
-        logger.info("QWenLLMExtensionAddon on_deinit")
-        rte.on_deinit_done()
-        return

@@ -1,4 +1,4 @@
-from . import elevenlabs_tts_extension
+from . import elevenlabs_tts_addon
 from .log import logger
 
 
