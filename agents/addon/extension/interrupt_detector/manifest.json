@@ -6,13 +6,8 @@
   "dependencies": [
     {
       "type": "system",
-      "name": "rte_runtime",
-      "version": "0.1.0"
-    },
-    {
-      "type": "system",
       "name": "rte_runtime_go",
-      "version": "0.1.0"
+      "version": "0.3.1"
     }
   ],
   "api": {
