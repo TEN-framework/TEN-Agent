@@ -1,0 +1,68 @@
+{
+  "type": "extension",
+  "name": "bedrock_llm_python",
+  "version": "0.1.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "property": {
+      "access_key": {
+          "type": "string"
+      },
+      "secret_key": {
+          "type": "string"
+      },
+      "model": {
+          "type": "string"
+      },
+      "max_tokens": {
+          "type": "int64"
+      },
+      "prompt": {
+          "type": "string"
+      },
+      "greeting": {
+          "type": "string"
+      },
+      "max_memory_length": {
+          "type": "int64"
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  }
+}
