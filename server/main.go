@@ -108,6 +108,26 @@ func processManifest(manifestJsonFile string) (err error) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azureTtsRegion)
 	}
 
+	awsRegion := os.Getenv("AWS_REGION")
+	if awsRegion != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.region`, awsRegion)
+	}
+
+	awsAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	if awsAccessKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.access_key`, awsAccessKey)
+	}
+
+	awsSecretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if awsSecretKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.secret_key`, awsSecretKey)
+	}
+
+	bedrockModel := os.Getenv("AWS_BEDROCK_MODEL")
+	if bedrockModel != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.model`, bedrockModel)
+	}
+
 	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
 	if elevenlabsTtsKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
