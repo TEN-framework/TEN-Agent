@@ -72,7 +72,7 @@ class ChatTranscriberExtension(Extension):
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
-            logger.warning(
+            logger.exception(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
             )
             return
@@ -80,7 +80,7 @@ class ChatTranscriberExtension(Extension):
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception as e:
-            logger.warning(
+            logger.exception(
                 f"on_data get_property_bool {TEXT_DATA_FINAL_FIELD} error: {e}"
             )
             return
@@ -88,7 +88,7 @@ class ChatTranscriberExtension(Extension):
         try:
             stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
         except Exception as e:
-            logger.warning(
+            logger.exception(
                 f"on_data get_property_int {TEXT_DATA_STREAM_ID_FIELD} error: {e}"
             )
             return
@@ -96,7 +96,7 @@ class ChatTranscriberExtension(Extension):
         try:
             end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
         except Exception as e:
-            logger.warning(
+            logger.exception(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
             )
             return
@@ -131,14 +131,7 @@ class ChatTranscriberExtension(Extension):
         )
 
         try:
-            text = json.dumps(
-                {
-                    "uid": stream_id,
-                    "text": text,
-                    "is_final": end_of_segment,
-                }
-            )
-            text_buf = text.encode("utf-8")
+            pb_serialized_text = pb_text.SerializeToString()
         except Exception as e:
             logger.warning(f"on_data SerializeToString error: {e}")
             return
@@ -146,11 +139,7 @@ class ChatTranscriberExtension(Extension):
         try:
             # convert the origin text data to the protobuf data and send it to the graph.
             rte_data = Data.create("data")
-            # rte_data.set_property_string("data", pb_serialized_text)
-            rte_data.alloc_buf(len(text_buf))
-            buf = rte_data.lock_buf()
-            buf[:] = text_buf[:]
-            rte_data.unlock_buf(buf)
+            rte_data.set_property_buf("data", pb_serialized_text)
             rte.send_data(rte_data)
             logger.info("data sent")
         except Exception as e:
