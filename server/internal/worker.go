@@ -24,7 +24,7 @@ type Worker struct {
 
 const (
 	workerCleanSleepSeconds = 5
-	workerExec              = "/app/agents/bin/start"
+	workerExec              = "/app/agents/bin/worker"
 )
 
 var (
