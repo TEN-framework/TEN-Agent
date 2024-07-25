@@ -1,4 +1,4 @@
-FROM ghcr.io/rte-design/astra_agents_build:0.3.2 AS builder
+FROM ghcr.io/rte-design/astra_agents_build:0.3.3 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
@@ -34,6 +34,8 @@ WORKDIR /app
 
 COPY --from=builder /app/agents/.release/ agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
+COPY --from=builder /usr/local/lib /usr/local/lib
+COPY --from=builder /usr/lib/python3 /usr/lib/python3
 
 EXPOSE 8080
 

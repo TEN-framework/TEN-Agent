@@ -47,13 +47,10 @@ cp manifest.cn.json .release
 cp manifest.en.json .release
 cp property.json .release
 
-# python main and deps
-if [[ -f main.py ]]; then
-  cp main.py .release
-fi
-if [[ -d interface/rte_runtime_python ]]; then
+# python deps
+if [[ -d interface/rte ]]; then
   mkdir -p .release/interface
-  cp -r interface/rte_runtime_python .release/interface
+  cp -r interface/rte .release/interface
 fi
 
 # extension group
