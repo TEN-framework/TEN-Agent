@@ -18,7 +18,7 @@ var (
 
 	codeErrProcessManifestFailed = NewCode("10100", "process manifest json failed")
 	codeErrStartWorkerFailed     = NewCode("10101", "start worker failed")
-	codeErrStopWorkerFailed         = NewCode("10102", "stop worker failed")
+	codeErrStopWorkerFailed      = NewCode("10102", "stop worker failed")
 )
 
 func NewCode(code string, msg string) *Code {
