@@ -59,8 +59,14 @@
                 },
                 {
                     "type": "extension",
+                    "extension_group": "default",
+                    "addon": "interrupt_detector",
+                    "name": "interrupt_detector"
+                },
+                {
+                    "type": "extension",
                     "extension_group": "chatgpt",
-                    "addon": "openai_chatgpt_python",
+                    "addon": "openai_chatgpt",
                     "name": "openai_chatgpt",
                     "property": {
                         "base_url": "",
@@ -87,9 +93,9 @@
                 },
                 {
                     "type": "extension",
-                    "extension_group": "default",
-                    "addon": "interrupt_detector_python",
-                    "name": "interrupt_detector"
+                    "extension_group": "transcriber",
+                    "addon": "chat_transcriber",
+                    "name": "chat_transcriber"
                 },
                 {
                     "type": "extension_group",
@@ -105,6 +111,11 @@
                     "type": "extension_group",
                     "addon": "default_extension_group",
                     "name": "tts"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "transcriber"
                 }
             ],
             "connections": [
@@ -122,17 +133,10 @@
                                 {
                                     "extension_group": "chatgpt",
                                     "extension": "openai_chatgpt"
-                                }
-                            ]
-                        }
-                    ],
-                    "pcm_frame": [
-                        {
-                            "name": "pcm_frame",
-                            "dest": [
+                                },
                                 {
-                                    "extension_group": "chatgpt",
-                                    "extension": "openai_chatgpt"
+                                    "extension_group": "transcriber",
+                                    "extension": "chat_transcriber"
                                 }
                             ]
                         }
@@ -148,6 +152,30 @@
                                 {
                                     "extension_group": "tts",
                                     "extension": "azure_tts"
+                                },
+                                {
+                                    "extension_group": "transcriber",
+                                    "extension": "chat_transcriber",
+                                    "cmd_conversions": [
+                                        {
+                                            "cmd": {
+                                                "type": "per_property",
+                                                "keep_original": true,
+                                                "rules": [
+                                                    {
+                                                        "path": "is_final",
+                                                        "type": "fixed_value",
+                                                        "value": "bool(true)"
+                                                    },
+                                                    {
+                                                        "path": "stream_id",
+                                                        "type": "fixed_value",
+                                                        "value": "uint32(999)"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
                                 }
                             ]
                         }
@@ -181,6 +209,21 @@
                     "cmd": [
                         {
                             "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "transcriber",
+                    "extension": "chat_transcriber",
+                    "data": [
+                        {
+                            "name": "data",
                             "dest": [
                                 {
                                     "extension_group": "default",
