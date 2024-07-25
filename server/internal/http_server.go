@@ -253,7 +253,7 @@ func (s *HttpServer) handlerStop(c *gin.Context) {
 	worker := workers.Get(req.ChannelName).(*Worker)
 	if err := worker.stop(req.RequestId, req.ChannelName); err != nil {
 		slog.Error("handlerStop kill app failed", "err", err, "worker", workers.Get(req.ChannelName), "requestId", req.RequestId, logTag)
-		s.output(c, codeErrStopAppFailed, http.StatusInternalServerError)
+		s.output(c, codeErrStopWorkerFailed, http.StatusInternalServerError)
 		return
 	}
 
