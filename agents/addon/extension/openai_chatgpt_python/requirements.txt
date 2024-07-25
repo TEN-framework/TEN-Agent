@@ -1,3 +1,2 @@
-# pillow==10.4.0
 openai==1.35.13
 requests==2.32.3
