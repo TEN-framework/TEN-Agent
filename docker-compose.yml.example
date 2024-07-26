@@ -10,18 +10,21 @@ services:
         volumes:
             - /tmp:/tmp
         environment:
+            # Agora App ID and Agora App Certificate
             AGORA_APP_ID: <agora_app_id>
             AGORA_APP_CERTIFICATE: <agora_app_certificate>
+            # Azure STT key and region
             AZURE_STT_KEY: <azure_stt_key>
             AZURE_STT_REGION: <azure_stt_region>
+            # OpenAI API key
             OPENAI_API_KEY: <openai_api_key>
             # TTS vendor: azure/elevenlabs
             TTS_VENDOR_CHINESE: azure
             TTS_VENDOR_ENGLISH: azure
-            # if you choose azure, you need to provide the following keys
+            # If you choose azure, you need to provide the following Azure STT key and region
             AZURE_TTS_KEY: <azure_tts_key>
             AZURE_TTS_REGION: <azure_tts_region>
-            # if you choose elevenlabs, you need to provide the following key
+            # If you choose elevenlabs, you need to provide the following Elevenlabs TTS key
             ELEVENLABS_TTS_KEY: <elevenlabs_tts_key>
     astra_playground:
         image: agoraio/astra_playground:latest
