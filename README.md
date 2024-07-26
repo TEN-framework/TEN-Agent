@@ -53,34 +53,19 @@ To start, make sure you have:
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
 
 ```bash
-# Run the pre-built agent image
-docker run --restart=always -itd -p 8080:8080 \
-        -v /tmp:/tmp \
-        -e AGORA_APP_ID=<your_agora_appid> \
-        -e AGORA_APP_CERTIFICATE=<your_agora_app_certificate> \
-        -e AZURE_STT_KEY=<your_azure_stt_key> \
-        -e AZURE_STT_REGION=<your_azure_stt_region> \
-        -e OPENAI_API_KEY=<your_openai_api_key> \
-        -e AZURE_TTS_KEY=<your_azure_tts_key> \
-        -e AZURE_TTS_REGION=<your_azure_tts_region> \
-        --name astra_agents_server \
-        agoraio/astra_agents_server:latest
-
-# Here are two TTS options, either one will work
-# Make sure to comment out the one you don't use
-# 1. using Azure
--e TTS_VENDOR_CHINESE=azure
--e AZURE_TTS_KEY=<your_azure_tts_key>
--e AZURE_TTS_REGION=<your_azure_tts_region>
-
-# 2. using ElevenLabs
--e TTS_VENDOR_ENGLISH=elevenlabs
--e ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
+# Copy the docker-compose.yml.example file to a new file named docker-compose.yml
+cp ./docker-compose.yml.example ./docker-compose.yml
+# Execute docker compose up to start the services
+docker compose up
 ```
 
-This should start an agent server running on port 8080.
+This should start an playground running on port 3000 and agent server running on port 8080.
+<br>
+🎉 Congratulations! You now have a ASTRA powered voice agent running locally, access the DASTRA in your browser at http://localhost:3000
+
 
 #### Mac with Apple Silicon
 
@@ -91,23 +76,6 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 ![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
 </div>
-
-<h3>Connect to Your Agent</h3>
-
-You can use the showcase voice agent, in `/playground` folder, to test with the server you just started.
-
-The project is built on NextJS 14, hence it needs Node 18 or later.
-
-```bash
-# Set up an .env file
-cp ./playground/.env.example ./playground/.env
-cd playground
-
-# Install npm dependencies & start
-npm i && npm run dev
-```
-
-🎉 Congratulations! You now have a ASTRA powered voice agent running locally.
 
 <br>
 <h2>Agent Customization</h2>
@@ -137,8 +105,7 @@ You need to prepare the proper `manifest.json` file first.
 ```bash
 # Rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.en.example ./agents/manifest.en.json
-cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
+cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
 
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
@@ -160,15 +127,13 @@ The above code generates an agent executable. To customize your prompts and Open
 Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent from the showcase.
 
 ```bash
-# TODO: need to refactor the contents 
+# TODO: need to refactor the contents
 # Agora App ID and Agora App Certificate
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 
 # OpenAI API key
 export OPENAI_API_KEY=<your_openai_api_key>
-# Or QWEN key
-export QWEN_API_KEY=<your_qwern_api_key>
 
 # Azure STT key and region
 export AZURE_STT_KEY=<your_azure_stt_key>
@@ -187,11 +152,7 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 export TTS_VENDOR_ENGLISH=elevenlabs
 export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
 
-# 3. using Cosy
-export COSY_TTS_KEY=<your_cosy_tts_key>
-
 # agent is ready to start on port 8080
-
 make run-server
 ```
 
@@ -204,8 +165,7 @@ The default agent control is managed via server gateway. For quick testing, you 
 
 # rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.en.example ./agents/manifest.en.json
-cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
+cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
 
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
