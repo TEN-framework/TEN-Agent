@@ -1,13 +1,13 @@
 {
     "type": "extension",
     "name": "azure_tts",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "language": "cpp",
     "dependencies": [
         {
             "type": "system",
             "name": "rte_runtime",
-            "version": "0.1.0"
+            "version": "0.3.1"
         },
         {
             "type": "system",

@@ -16,6 +16,13 @@ build-server:
 	cd server && go mod tidy && go mod download && go build -o bin/api main.go
 	@echo ">> done"
 
+clean: clean-agents
+
+clean-agents:
+	@echo ">> clean agents"
+	rm -rf agents/manifest.json agents/bin agents/out agents/interface agents/include agents/lib agents/lib64 agents/addon/system agents/addon/extension_group agents/.release
+	@echo ">> done"
+
 docker-build-server:
 	@echo ">> docker build server"
 	docker build -t $(REGISTRY)$(PROJECT_NAME):$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .

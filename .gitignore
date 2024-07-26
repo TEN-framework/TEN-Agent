@@ -20,8 +20,11 @@ crash_context_v1
 include/
 interface/
 lib/
+lib64
 agents/manifest.json
 agents/manifest.elevenlabs.json
+agents/manifest.cn.json
+agents/manifest.en.json
 !agents/addon/manifest.json
 node_modules/
 /out/
@@ -32,3 +35,5 @@ xdump_config
 .vscode/
 speechsdk/
 SpeechSDK-Linux.tar.gz
+pyvenv.cfg
+xdump_config

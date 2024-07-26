@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 )
 
 const (
@@ -50,7 +50,7 @@ var (
 )
 
 type elevenlabsTTSExtension struct {
-	rtego.DefaultExtension
+	rte.DefaultExtension
 	elevenlabsTTS *elevenlabsTTS
 }
 
@@ -59,7 +59,7 @@ type message struct {
 	receivedTs int64
 }
 
-func newElevenlabsTTSExtension(name string) rtego.Extension {
+func newElevenlabsTTSExtension(name string) rte.Extension {
 	return &elevenlabsTTSExtension{}
 }
 
@@ -75,7 +75,7 @@ func newElevenlabsTTSExtension(name string) rtego.Extension {
 //   - stability
 //   - style
 //   - voice_id
-func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
+func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 	slog.Info("OnStart", logTag)
 
 	// prepare configuration
@@ -266,13 +266,14 @@ func (e *elevenlabsTTSExtension) OnStart(rte rtego.Rte) {
 //     example:
 //     {"name": "flush"}
 func (e *elevenlabsTTSExtension) OnCmd(
-	rte rtego.Rte,
-	cmd rtego.Cmd,
+	rteEnv rte.RteEnv,
+	cmd rte.Cmd,
 ) {
-	cmdName, err := cmd.CmdName()
+	cmdName, err := cmd.GetName()
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
-		rte.ReturnString(rtego.Error, "error", cmd)
+		cmdResult, _ := rte.NewCmdResult(rte.Error)
+		rteEnv.ReturnResult(cmdResult, cmd)
 		return
 	}
 
@@ -283,23 +284,26 @@ func (e *elevenlabsTTSExtension) OnCmd(
 		outdateTs.Store(time.Now().UnixMicro())
 
 		// send out
-		outCmd, err := rtego.NewCmd(cmdOutFlush)
+		outCmd, err := rte.NewCmd(cmdOutFlush)
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			rte.ReturnString(rtego.Error, "error", cmd)
+			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		}
 
-		if err := rte.SendCmd(outCmd, nil); err != nil {
+		if err := rteEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			rte.ReturnString(rtego.Error, "error", cmd)
+			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
 		}
 	}
 
-	rte.ReturnString(rtego.Ok, "ok", cmd)
+	cmdResult, _ := rte.NewCmdResult(rte.Ok)
+	rteEnv.ReturnResult(cmdResult, cmd)
 }
 
 // OnData receives data from rte graph.
@@ -308,8 +312,8 @@ func (e *elevenlabsTTSExtension) OnCmd(
 //     example:
 //     {name: text_data, properties: {text: "hello"}
 func (e *elevenlabsTTSExtension) OnData(
-	rte rtego.Rte,
-	data rtego.Data,
+	rteEnv rte.RteEnv,
+	data rte.Data,
 ) {
 	text, err := data.GetPropertyString(dataInTextDataPropertyText)
 	if err != nil {
@@ -333,8 +337,8 @@ func init() {
 	slog.Info("elevenlabs_tts extension init", logTag)
 
 	// Register addon
-	rtego.RegisterAddonAsExtension(
+	rte.RegisterAddonAsExtension(
 		"elevenlabs_tts",
-		rtego.NewDefaultExtensionAddon(newElevenlabsTTSExtension),
+		rte.NewDefaultExtensionAddon(newElevenlabsTTSExtension),
 	)
 }

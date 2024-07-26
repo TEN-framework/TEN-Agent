@@ -5,34 +5,29 @@
     "language": "go",
     "dependencies": [
         {
+            "type": "system",
+            "name": "rte_runtime_python",
+            "version": "0.3.1"
+        },
+        {
+            "type": "system",
+            "name": "rte_runtime_go",
+            "version": "0.3.1"
+        },
+        {
+            "type": "extension",
+            "name": "py_init_extension_cpp",
+            "version": "0.3.1"
+        },
+        {
             "type": "extension_group",
             "name": "default_extension_group",
-            "version": "0.1.0"
+            "version": "0.3.1"
         },
         {
             "type": "extension",
             "name": "agora_rtc",
-            "version": "0.1.1"
-        },
-        {
-            "type": "extension",
-            "name": "chat_transcriber",
-            "version": "0.1.0"
-        },
-        {
-            "type": "extension",
-            "name": "elevenlabs_tts",
-            "version": "0.1.0"
-        },
-        {
-            "type": "extension",
-            "name": "interrupt_detector",
-            "version": "0.1.0"
-        },
-        {
-            "type": "extension",
-            "name": "openai_chatgpt",
-            "version": "0.1.0"
+            "version": "0.3.0-rc1"
         }
     ],
     "predefined_graphs": [

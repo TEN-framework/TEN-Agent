@@ -19,7 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -28,7 +28,7 @@ var (
 )
 
 type openaiChatGPTExtension struct {
-	rtego.DefaultExtension
+	rte.DefaultExtension
 	openaiChatGPT *openaiChatGPT
 }
 
@@ -63,7 +63,7 @@ var (
 	wg        sync.WaitGroup
 )
 
-func newChatGPTExtension(name string) rtego.Extension {
+func newChatGPTExtension(name string) rte.Extension {
 	return &openaiChatGPTExtension{}
 }
 
@@ -80,13 +80,13 @@ func newChatGPTExtension(name string) rtego.Extension {
 //   - max_tokens
 //   - greeting
 //   - proxy_url
-func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
+func (p *openaiChatGPTExtension) OnStart(rteEnv rte.RteEnv) {
 	slog.Info("OnStart", logTag)
 
 	// prepare configuration
 	openaiChatGPTConfig := defaultOpenaiChatGPTConfig()
 
-	if baseUrl, err := rte.GetPropertyString(propertyBaseUrl); err != nil {
+	if baseUrl, err := rteEnv.GetPropertyString(propertyBaseUrl); err != nil {
 		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyBaseUrl, err), logTag)
 	} else {
 		if len(baseUrl) > 0 {
@@ -94,14 +94,14 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 		}
 	}
 
-	if apiKey, err := rte.GetPropertyString(propertyApiKey); err != nil {
+	if apiKey, err := rteEnv.GetPropertyString(propertyApiKey); err != nil {
 		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
 		return
 	} else {
 		openaiChatGPTConfig.ApiKey = apiKey
 	}
 
-	if model, err := rte.GetPropertyString(propertyModel); err != nil {
+	if model, err := rteEnv.GetPropertyString(propertyModel); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s error:%v", propertyModel, err), logTag)
 	} else {
 		if len(model) > 0 {
@@ -109,7 +109,7 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 		}
 	}
 
-	if prompt, err := rte.GetPropertyString(propertyPrompt); err != nil {
+	if prompt, err := rteEnv.GetPropertyString(propertyPrompt); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s error:%v", propertyPrompt, err), logTag)
 	} else {
 		if len(prompt) > 0 {
@@ -117,31 +117,31 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 		}
 	}
 
-	if frequencyPenalty, err := rte.GetPropertyFloat64(propertyFrequencyPenalty); err != nil {
+	if frequencyPenalty, err := rteEnv.GetPropertyFloat64(propertyFrequencyPenalty); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyFrequencyPenalty, err), logTag)
 	} else {
 		openaiChatGPTConfig.FrequencyPenalty = float32(frequencyPenalty)
 	}
 
-	if presencePenalty, err := rte.GetPropertyFloat64(propertyPresencePenalty); err != nil {
+	if presencePenalty, err := rteEnv.GetPropertyFloat64(propertyPresencePenalty); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyPresencePenalty, err), logTag)
 	} else {
 		openaiChatGPTConfig.PresencePenalty = float32(presencePenalty)
 	}
 
-	if temperature, err := rte.GetPropertyFloat64(propertyTemperature); err != nil {
+	if temperature, err := rteEnv.GetPropertyFloat64(propertyTemperature); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTemperature, err), logTag)
 	} else {
 		openaiChatGPTConfig.Temperature = float32(temperature)
 	}
 
-	if topP, err := rte.GetPropertyFloat64(propertyTopP); err != nil {
+	if topP, err := rteEnv.GetPropertyFloat64(propertyTopP); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTopP, err), logTag)
 	} else {
 		openaiChatGPTConfig.TopP = float32(topP)
 	}
 
-	if maxTokens, err := rte.GetPropertyInt64(propertyMaxTokens); err != nil {
+	if maxTokens, err := rteEnv.GetPropertyInt64(propertyMaxTokens); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxTokens, err), logTag)
 	} else {
 		if maxTokens > 0 {
@@ -149,18 +149,18 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 		}
 	}
 
-	if proxyUrl, err := rte.GetPropertyString(propertyProxyUrl); err != nil {
+	if proxyUrl, err := rteEnv.GetPropertyString(propertyProxyUrl); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyProxyUrl, err), logTag)
 	} else {
 		openaiChatGPTConfig.ProxyUrl = proxyUrl
 	}
 
-	greeting, err := rte.GetPropertyString(propertyGreeting)
+	greeting, err := rteEnv.GetPropertyString(propertyGreeting)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyGreeting, err), logTag)
 	}
 
-	if propMaxMemoryLength, err := rte.GetPropertyInt64(propertyMaxMemoryLength); err != nil {
+	if propMaxMemoryLength, err := rteEnv.GetPropertyInt64(propertyMaxMemoryLength); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxMemoryLength, err), logTag)
 	} else {
 		if propMaxMemoryLength > 0 {
@@ -183,17 +183,17 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 
 	// send greeting if available
 	if len(greeting) > 0 {
-		outputData, _ := rtego.NewData("text_data")
+		outputData, _ := rte.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, greeting)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := rte.SendData(outputData); err != nil {
+		if err := rteEnv.SendData(outputData); err != nil {
 			slog.Error(fmt.Sprintf("greeting [%s] send failed, err: %v", greeting, err), logTag)
 		} else {
 			slog.Info(fmt.Sprintf("greeting [%s] sent", greeting), logTag)
 		}
 	}
 
-	rte.OnStartDone()
+	rteEnv.OnStartDone()
 }
 
 // OnCmd receives cmd from rte graph.
@@ -202,13 +202,14 @@ func (p *openaiChatGPTExtension) OnStart(rte rtego.Rte) {
 //     example:
 //     {"name": "flush"}
 func (p *openaiChatGPTExtension) OnCmd(
-	rte rtego.Rte,
-	cmd rtego.Cmd,
+	rteEnv rte.RteEnv,
+	cmd rte.Cmd,
 ) {
-	cmdName, err := cmd.CmdName()
+	cmdName, err := cmd.GetName()
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
-		rte.ReturnString(rtego.Error, "error", cmd)
+		cmdResult, _ := rte.NewCmdResult(rte.Error)
+		rteEnv.ReturnResult(cmdResult, cmd)
 		return
 	}
 	slog.Info(fmt.Sprintf("OnCmd %s", cmdInFlush), logTag)
@@ -220,21 +221,24 @@ func (p *openaiChatGPTExtension) OnCmd(
 		wg.Wait() // wait for chat completion stream to finish
 
 		// send out
-		outCmd, err := rtego.NewCmd(cmdOutFlush)
+		outCmd, err := rte.NewCmd(cmdOutFlush)
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			rte.ReturnString(rtego.Error, "error", cmd)
+			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		}
-		if err := rte.SendCmd(outCmd, nil); err != nil {
+		if err := rteEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			rte.ReturnString(rtego.Error, "error", cmd)
+			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
 		}
 	}
-	rte.ReturnString(rtego.Ok, "ok", cmd)
+	cmdResult, _ := rte.NewCmdResult(rte.Ok)
+	rteEnv.ReturnResult(cmdResult, cmd)
 }
 
 // OnData receives data from rte graph.
@@ -243,8 +247,8 @@ func (p *openaiChatGPTExtension) OnCmd(
 //     example:
 //     {"name": "text_data", "properties": {"text": "hello", "is_final": true}
 func (p *openaiChatGPTExtension) OnData(
-	rte rtego.Rte,
-	data rtego.Data,
+	rteEnv rte.RteEnv,
+	data rte.Data,
 ) {
 	// Get isFinal
 	isFinal, err := data.GetPropertyBool(dataInTextDataPropertyIsFinal)
@@ -339,14 +343,14 @@ func (p *openaiChatGPTExtension) OnData(
 				slog.Debug(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] got sentence: [%s]", inputText, sentence), logTag)
 
 				// send sentence
-				outputData, err := rtego.NewData("text_data")
+				outputData, err := rte.NewData("text_data")
 				if err != nil {
 					slog.Error(fmt.Sprintf("NewData failed, err: %v", err), logTag)
 					break
 				}
 				outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 				outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, false)
-				if err := rte.SendData(outputData); err != nil {
+				if err := rteEnv.SendData(outputData); err != nil {
 					slog.Error(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] send sentence [%s] failed, err: %v", inputText, sentence, err), logTag)
 					break
 				} else {
@@ -369,10 +373,10 @@ func (p *openaiChatGPTExtension) OnData(
 		}
 
 		// send end of segment
-		outputData, _ := rtego.NewData("text_data")
+		outputData, _ := rte.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := rte.SendData(outputData); err != nil {
+		if err := rteEnv.SendData(outputData); err != nil {
 			slog.Error(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] send failed, err: %v", inputText, sentence, err), logTag)
 		} else {
 			slog.Info(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] sent", inputText, sentence), logTag)
@@ -384,8 +388,8 @@ func init() {
 	slog.Info("init")
 
 	// Register addon
-	rtego.RegisterAddonAsExtension(
+	rte.RegisterAddonAsExtension(
 		"openai_chatgpt",
-		rtego.NewDefaultExtensionAddon(newChatGPTExtension),
+		rte.NewDefaultExtensionAddon(newChatGPTExtension),
 	)
 }

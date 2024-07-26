@@ -1,7 +1,9 @@
 *.log
 addon/extension_group/
 addon/extension/agora_rtc
+addon/extension/py_init_extension_cpp
 addon/system
+.rte
 agoradns.dat
 agorareport.dat
 bin/
@@ -23,3 +25,4 @@ lib/
 session_control.conf.agora
 xdump_config
 .vscode
+*.pyc

@@ -1,0 +1,71 @@
+{
+  "type": "extension",
+  "name": "qwen_llm_python",
+  "version": "0.1.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.3.1"
+    }
+  ],
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int64"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int64"
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  }
+}

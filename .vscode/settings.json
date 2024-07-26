@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+      "./agents/interface",
+    ],
+    "editor.formatOnSave": true,
+  }
