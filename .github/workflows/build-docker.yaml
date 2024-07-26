@@ -36,6 +36,6 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
-        tags: "latest,${{ steps.pre-step.outputs.image-tag }}"
+        tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
         no_push: ${{ github.event_name == 'pull_request' }}
 
