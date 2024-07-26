@@ -13,6 +13,7 @@ bin/
 core
 crash_context_v1
 .deps/
+docker-compose.yml
 .DS_Store
 .env
 /.gn
