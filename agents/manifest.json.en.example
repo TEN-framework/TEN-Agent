@@ -140,6 +140,17 @@
                                 }
                             ]
                         }
+                    ],
+                    "pcm_frame": [
+                        {
+                            "name": "pcm_frame",
+                            "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "interrupt_detector"
+                                }
+                            ]
+                        }
                     ]
                 },
                 {

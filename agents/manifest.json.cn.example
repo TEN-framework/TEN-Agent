@@ -139,8 +139,8 @@
                             "name": "pcm_frame",
                             "dest": [
                                 {
-                                    "extension_group": "llm",
-                                    "extension": "qwen_llm"
+                                    "extension_group": "default",
+                                    "extension": "interrupt_detector"
                                 }
                             ]
                         }
