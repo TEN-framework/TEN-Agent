@@ -56,7 +56,8 @@ To start, make sure you have:
 - [Docker Compose](https://docs.docker.com/compose/)
 
 ```bash
-# Copy the docker-compose.yml.example file to a new file named docker-compose.yml, update the corresponding values in your docker-compose.yml file
+# Copy the docker-compose.yml.example file to a new file named docker-compose.yml
+# remember to provide your api keys in your docker-compose.yml file
 cp ./docker-compose.yml.example ./docker-compose.yml
 # Execute docker compose up to start the services
 docker compose up
