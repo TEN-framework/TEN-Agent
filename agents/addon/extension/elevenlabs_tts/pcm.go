@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 )
 
 type pcm struct {
@@ -49,8 +49,8 @@ func newPcm(config *pcmConfig) *pcm {
 	}
 }
 
-func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rtego.PcmFrame, err error) {
-	pcmFrame, err = rtego.NewPcmFrame(p.config.Name)
+func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rte.PcmFrame, err error) {
+	pcmFrame, err = rte.NewPcmFrame(p.config.Name)
 	if err != nil {
 		slog.Error(fmt.Sprintf("NewPcmFrame failed, err: %v", err), logTag)
 		return
@@ -62,20 +62,20 @@ func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rtego.PcmFrame, err error) {
 	pcmFrame.SetChannelLayout(p.config.ChannelLayout)
 	pcmFrame.SetNumberOfChannels(p.config.Channel)
 	pcmFrame.SetTimestamp(p.config.Timestamp)
-	pcmFrame.SetDataFmt(rtego.PcmFrameDataFmtInterleave)
+	pcmFrame.SetDataFmt(rte.PcmFrameDataFmtInterleave)
 	pcmFrame.SetSamplesPerChannel(p.config.SamplesPerChannel)
 	pcmFrame.AllocBuf(p.getPcmFrameSize())
 
-	borrowedBuf, err := pcmFrame.BorrowBuf()
+	borrowedBuf, err := pcmFrame.LockBuf()
 	if err != nil {
-		slog.Error(fmt.Sprintf("BorrowBuf failed, err: %v", err), logTag)
+		slog.Error(fmt.Sprintf("LockBuf failed, err: %v", err), logTag)
 		return
 	}
 
 	// copy data
 	copy(borrowedBuf, buf)
 
-	pcmFrame.GiveBackBuf(&borrowedBuf)
+	pcmFrame.UnlockBuf(&borrowedBuf)
 	return
 }
 
@@ -87,7 +87,7 @@ func (p *pcm) newBuf() []byte {
 	return make([]byte, p.getPcmFrameSize())
 }
 
-func (p *pcm) send(rte rtego.Rte, buf []byte) (err error) {
+func (p *pcm) send(rteEnv rte.RteEnv, buf []byte) (err error) {
 	pcmFrame, err := p.getPcmFrame(buf)
 	if err != nil {
 		slog.Error(fmt.Sprintf("getPcmFrame failed, err: %v", err), logTag)
@@ -95,7 +95,7 @@ func (p *pcm) send(rte rtego.Rte, buf []byte) (err error) {
 	}
 
 	// send pcm
-	if err = rte.SendPcmFrame(pcmFrame); err != nil {
+	if err = rteEnv.SendPcmFrame(pcmFrame); err != nil {
 		slog.Error(fmt.Sprintf("SendPcmFrame failed, err: %v", err), logTag)
 		return
 	}

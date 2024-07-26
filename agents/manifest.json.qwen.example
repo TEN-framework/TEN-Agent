@@ -1,0 +1,269 @@
+{
+    "type": "app",
+    "name": "astra_agents",
+    "version": "0.2.0",
+    "language": "go",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "rte_runtime_python",
+            "version": "0.3.1"
+        },
+        {
+            "type": "system",
+            "name": "rte_runtime_go",
+            "version": "0.3.1"
+        },
+        {
+            "type": "extension",
+            "name": "py_init_extension_cpp",
+            "version": "0.3.1"
+        },
+        {
+            "type": "extension_group",
+            "name": "default_extension_group",
+            "version": "0.3.1"
+        },
+        {
+            "type": "extension",
+            "name": "agora_rtc",
+            "version": "0.3.0-rc1"
+        }
+    ],
+    "predefined_graphs": [
+        {
+            "name": "astra_agents",
+            "auto_start": true,
+            "nodes": [
+                {
+                    "type": "extension",
+                    "extension_group": "default",
+                    "addon": "agora_rtc",
+                    "name": "agora_rtc",
+                    "property": {
+                        "app_id": "<agora_appid>",
+                        "token": "<agora_token>",
+                        "channel": "astra_agents_test",
+                        "stream_id": 1234,
+                        "remote_stream_id": 123,
+                        "subscribe_audio": true,
+                        "publish_audio": true,
+                        "publish_data": true,
+                        "enable_agora_asr": true,
+                        "agora_asr_vendor_name": "microsoft",
+                        "agora_asr_language": "en-US",
+                        "agora_asr_vendor_key": "<azure_stt_key>",
+                        "agora_asr_vendor_region": "<azure_stt_region>",
+                        "agora_asr_session_control_file_path": "session_control.conf"
+                    }
+                },
+                {
+                    "type": "extension",
+                    "extension_group": "llm",
+                    "addon": "qwen_llm_python",
+                    "name": "qwen_llm",
+                    "property": {
+                        "api_key": "<qwen_key>",
+                        "model": "qwen-max",
+                        "max_tokens": 512,
+                        "prompt": "",
+                        "max_memory_length": 10
+                    }
+                },
+                {
+                    "type": "extension",
+                    "extension_group": "tts",
+                    "addon": "cosy_tts",
+                    "name": "cosy_tts",
+                    "property": {
+                        "api_key": "<qwen_key>",
+                        "model": "cosyvoice-v1",
+                        "voice": "longxiaochun",
+                        "sample_rate": 16000
+                    }
+                },
+                {
+                    "type": "extension",
+                    "extension_group": "chat_transcriber",
+                    "addon": "chat_transcriber_python",
+                    "name": "chat_transcriber"
+                },
+                {
+                    "type": "extension",
+                    "extension_group": "default",
+                    "addon": "interrupt_detector_python",
+                    "name": "interrupt_detector"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "default"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "llm"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "tts"
+                },
+                {
+                    "type": "extension_group",
+                    "addon": "default_extension_group",
+                    "name": "chat_transcriber"
+                }
+            ],
+            "connections": [
+                {
+                    "extension_group": "default",
+                    "extension": "agora_rtc",
+                    "data": [
+                        {
+                            "name": "text_data",
+                            "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "interrupt_detector"
+                                },
+                                {
+                                    "extension_group": "chat_transcriber",
+                                    "extension": "chat_transcriber"
+                                }
+                            ]
+                        }
+                    ],
+                    "pcm_frame": [
+                        {
+                            "name": "pcm_frame",
+                            "dest": [
+                                {
+                                    "extension_group": "llm",
+                                    "extension": "qwen_llm"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector",
+                    "cmd": [
+                        {
+                            "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "llm",
+                                    "extension": "qwen_llm"
+                                }
+                            ]
+                        }
+                    ],
+                    "data": [
+                        {
+                            "name": "text_data",
+                            "dest": [
+                                {
+                                    "extension_group": "llm",
+                                    "extension": "qwen_llm"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "llm",
+                    "extension": "qwen_llm",
+                    "data": [
+                        {
+                            "name": "text_data",
+                            "dest": [
+                                {
+                                    "extension_group": "tts",
+                                    "extension": "cosy_tts"
+                                },
+                                {
+                                    "extension_group": "chat_transcriber",
+                                    "extension": "chat_transcriber",
+                                    "cmd_conversions": [
+                                        {
+                                            "cmd": {
+                                                "type": "per_property",
+                                                "keep_original": true,
+                                                "rules": [
+                                                    {
+                                                        "path": "is_final",
+                                                        "type": "fixed_value",
+                                                        "value": "bool(true)"
+                                                    },
+                                                    {
+                                                        "path": "stream_id",
+                                                        "type": "fixed_value",
+                                                        "value": "uint32(999)"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }        
+                            ]
+                        }
+                    ],
+                    "cmd": [
+                        {
+                            "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "tts",
+                                    "extension": "cosy_tts"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "tts",
+                    "extension": "cosy_tts",
+                    "pcm_frame": [
+                        {
+                            "name": "pcm_frame",
+                            "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ],
+                    "cmd": [
+                        {
+                            "name": "flush",
+                            "dest": [
+                                {
+                                    "extension_group": "default",
+                                    "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "extension_group": "chat_transcriber",
+                    "extension": "chat_transcriber",
+                    "data": [
+                        {
+                            "name": "data",
+                            "dest":[
+                                {
+                                    "extension_group": "default",
+                                    "extension": "agora_rtc"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

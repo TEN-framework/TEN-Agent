@@ -11,7 +11,7 @@ import (
 	"flag"
 	"log"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 )
 
 type appConfig struct {
@@ -19,26 +19,26 @@ type appConfig struct {
 }
 
 type defaultApp struct {
-	rtego.DefaultApp
+	rte.DefaultApp
 
 	cfg *appConfig
 }
 
 func (p *defaultApp) OnInit(
-	rte rtego.Rte,
-	manifest rtego.MetadataInfo,
-	property rtego.MetadataInfo,
+	rteEnv rte.RteEnv,
+	manifest rte.MetadataInfo,
+	property rte.MetadataInfo,
 ) {
 	// Using the default manifest.json if not specified.
 	if len(p.cfg.Manifest) > 0 {
-		manifest.Set(rtego.MetadataTypeJSONFileName, p.cfg.Manifest)
+		manifest.Set(rte.MetadataTypeJSONFileName, p.cfg.Manifest)
 	}
 
-	rte.OnInitDone(manifest, property)
+	rteEnv.OnInitDone(manifest, property)
 }
 
 func startAppBlocking(cfg *appConfig) {
-	appInstance, err := rtego.NewApp(&defaultApp{
+	appInstance, err := rte.NewApp(&defaultApp{
 		cfg: cfg,
 	})
 	if err != nil {
@@ -47,9 +47,9 @@ func startAppBlocking(cfg *appConfig) {
 
 	appInstance.Run(true)
 	appInstance.Wait()
-	rtego.UnloadAllAddons()
+	rte.UnloadAllAddons()
 
-	rtego.EnsureCleanupWhenProcessExit()
+	rte.EnsureCleanupWhenProcessExit()
 }
 
 func setDefaultLog() {

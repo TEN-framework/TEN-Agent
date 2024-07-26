@@ -36,16 +36,12 @@ bool AzureTTS::Start() {
 
       {
         std::unique_lock<std::mutex> lk(tasks_mutex_);
-        tasks_cv_.wait(lk, [this]() { return !tasks_.empty(); });
-        if (tasks_.empty()) {
-          continue;
+        tasks_cv_.wait(lk, [this]() { return stop_.load() || !tasks_.empty(); });
+        if (stop_.load()) {
+          break;
         }
         task = std::move(tasks_.front());
         tasks_.pop();
-      }
-
-      if (stop_.load()) {
-        break;
       }
 
       SpeechText(task->text, task->ts);

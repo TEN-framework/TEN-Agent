@@ -13,7 +13,7 @@ import (
 	"log/slog"
 	"time"
 
-	"agora.io/rte/rtego"
+	"agora.io/rte/rte"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,12 +29,12 @@ var (
 )
 
 type chatTranscriberExtension struct {
-	rtego.DefaultExtension
+	rte.DefaultExtension
 
 	cachedTextMap map[uint32]string // record the cached text data for each stream id
 }
 
-func newExtension(name string) rtego.Extension {
+func newExtension(name string) rte.Extension {
 	return &chatTranscriberExtension{
 		cachedTextMap: make(map[uint32]string),
 	}
@@ -46,8 +46,8 @@ func newExtension(name string) rtego.Extension {
 //     example:
 //     {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
 func (p *chatTranscriberExtension) OnData(
-	rte rtego.Rte,
-	data rtego.Data,
+	rteEnv rte.RteEnv,
+	data rte.Data,
 ) {
 	// Get the text data from data.
 	text, err := data.GetPropertyString(textDataTextField)
@@ -126,22 +126,22 @@ func (p *chatTranscriberExtension) OnData(
 	}
 
 	// convert the origin text data to the protobuf data and send it to the graph.
-	rteData, err := rtego.NewData("data")
+	rteData, err := rte.NewData("data")
 	rteData.SetPropertyBytes("data", pbData)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("OnData NewData error: %v", err), logTag)
 		return
 	}
 
-	rte.SendData(rteData)
+	rteEnv.SendData(rteData)
 }
 
 func init() {
 	slog.Info("chat_transcriber extension init", logTag)
 
 	// Register addon
-	rtego.RegisterAddonAsExtension(
+	rte.RegisterAddonAsExtension(
 		"chat_transcriber",
-		rtego.NewDefaultExtensionAddon(newExtension),
+		rte.NewDefaultExtensionAddon(newExtension),
 	)
 }
