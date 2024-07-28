@@ -78,6 +78,7 @@ const (
 	ManifestJsonFileCN         = "./agents/manifest.cn.json"
 
 	TTSVendorAzure      = "azure"
+	TTSVendorAWS        = "aws"
 	TTSVendorElevenlabs = "elevenlabs"
 
 	voiceTypeMale   = "male"
@@ -91,6 +92,10 @@ var (
 				voiceTypeMale:   "zh-CN-YunxiNeural",
 				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
 			},
+			TTSVendorAWS: {
+				voiceTypeMale:   "Zhiyu",
+				voiceTypeFemale: "Zhiyu",
+			},
 			TTSVendorElevenlabs: {
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
 				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
@@ -100,6 +105,10 @@ var (
 			TTSVendorAzure: {
 				voiceTypeMale:   "en-US-BrianNeural",
 				voiceTypeFemale: "en-US-JaneNeural",
+			},
+			TTSVendorAWS: {
+				voiceTypeMale:   "Matthew",
+				voiceTypeFemale: "Ruth",
 			},
 			TTSVendorElevenlabs: {
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
@@ -345,6 +354,15 @@ func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, lo
 	if voiceName != "" {
 		if ttsVendor == TTSVendorAzure {
 			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, voiceName)
+		} else if ttsVendor == TTSVendorAWS {
+			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.voice`, voiceName)
+			if language == "en-US" {
+				manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.engine`, "generative")
+				manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.lang_code`, "en-US")
+			} else if language == "zh-CN" {
+				manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.engine`, "neural")
+				manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.lang_code`, "cmn-CN")
+			}
 		} else if ttsVendor == TTSVendorElevenlabs {
 			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.voice_id`, voiceName)
 		}

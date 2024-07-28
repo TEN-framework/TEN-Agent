@@ -66,12 +66,16 @@
                 {
                     "type": "extension",
                     "extension_group": "tts",
-                    "addon": "azure_tts",
-                    "name": "azure_tts",
+                    "addon": "polly_tts",
+                    "name": "polly_tts",
                     "property": {
-                        "azure_subscription_key": "<azure_tts_key>",
-                        "azure_subscription_region": "<azure_tts_region>",
-                        "azure_synthesis_voice_name": "en-US-JaneNeural"
+                        "region": "us-east-1",
+                        "access_key": "<aws_access_key_id>",
+                        "secret_key": "<aws_secret_access_key>",
+                        "engine": "generative",
+                        "voice": "Ruth",
+                        "sample_rate": "16000",
+                        "lang_code": "en-US"
                     }
                 },
                 {
@@ -136,7 +140,7 @@
                             "dest": [
                                 {
                                     "extension_group": "tts",
-                                    "extension": "azure_tts"
+                                    "extension": "polly_tts"
                                 }
                             ]
                         }
@@ -147,7 +151,7 @@
                             "dest": [
                                 {
                                     "extension_group": "tts",
-                                    "extension": "azure_tts"
+                                    "extension": "polly_tts"
                                 }
                             ]
                         }
@@ -155,7 +159,7 @@
                 },
                 {
                     "extension_group": "tts",
-                    "extension": "azure_tts",
+                    "extension": "polly_tts",
                     "pcm_frame": [
                         {
                             "name": "pcm_frame",
