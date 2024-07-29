@@ -111,11 +111,6 @@ npm i && npm run dev
 首先需要改动 `manifest.json`:
 
 ```shell
-# rename manifest example
-cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.en.example ./agents/manifest.en.json
-cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
-
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
 
