@@ -46,10 +46,8 @@ func main() {
 	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
 		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
 
-	// processManifest(internal.ManifestJsonFile)
-	// processManifest(internal.ManifestJsonFileElevenlabs)
-	processManifest(internal.ManifestJsonFileEN)
-	processManifest(internal.ManifestJsonFileCN)
+	processManifest(internal.ManifestJsonFile)
+	processManifest(internal.ManifestJsonFileElevenlabs)
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }
