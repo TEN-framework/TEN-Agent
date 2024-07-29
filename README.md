@@ -37,62 +37,10 @@ We showcase an impressive voice agent powered by ASTRA, demonstrating its abilit
 
 [![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
-
-<!-- <h2>How to run voice agent locally</h2> -->
-
-
-<!-- #### Prerequisite
-
-- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/) -->
-
-<!-- #### 2. Start the `docker-compose`
-
-```bash
-# Copy the docker-compose.yml.example file to a new file named docker-compose.yml
-# remember to provide your api keys in your docker-compose.yml file
-cp ./docker-compose.yml.example ./docker-compose.yml
-
-# Execute docker compose up to start the services
-docker compose up
-```
-
-#### 3. Run the voice agent
-This should start the voice agent just like in the showcase. The frontend is running at localhost:3000 in your browser, and the backend is running on the Docker port 8080. -->
-
-<!-- #### 4. Mac with apple silicon
-
-> [!Note]
-> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
-
-<div align="center">
-
-![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
-
-</div> -->
-
 <br>
 <h2>How to build voice agent locally</h2>
 
-<!-- To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
-| Extension          | Feature        | Description                                                                                                                                                                                                          |
-| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
-| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
-| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
-| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
-| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
-| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
-| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
-
-<h3>Voice Agent Diagram</h3>
-
-![ASTRA voice agent diagram](./images/image-2.png) -->
-
-<!-- To customize the agent to your needs, modify the source code of the extensions and build the agent yourself. -->
 
 #### Prerequisite
 
@@ -202,7 +150,26 @@ npm install && npm run dev
 Open `localhost:3000` in your browser, you should be seeing a voice agent just like the showcase, yet with your own customizations.
 
 <br>
-<h2>How to build the agent in a headless way</h2>
+<h2>Voice agent architecture </h2>
+To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+
+| Extension          | Feature        | Description                                                                                                                                                                                                          |
+| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
+| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
+| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
+| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
+| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
+| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
+| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
+
+<h3>Voice Agent Diagram</h3>
+
+![ASTRA voice agent diagram](./images/image-2.png)
+
+
+<br>
+<h2>How to build the agent in headlessly</h2>
 
 #### 1. Build the agent within Docker image
 
@@ -228,7 +195,7 @@ cd ./agents && ./bin/start
 
 #### 2. Test agent
 
-Finally let's use [Agora Web Demo](https://webdemo.agora.io/) to test really quick.
+Go to [Agora Web Demo](https://webdemo.agora.io/) to test really quick.
 
 Note the `channel` and `remote_stream_id` needs to match with the one you use on `https://webdemo.agora.io/`
 
