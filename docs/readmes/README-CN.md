@@ -8,8 +8,9 @@
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
+[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/rte-design/ASTRA.ai/issues/125)
 
-[![](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
+[![Discord](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
@@ -21,29 +22,21 @@
 
 <div align="center">
 
-[超低延迟](./docs/astra-architecture.md)
+[低延迟](./docs/astra-architecture.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[超多模态](./docs/astra-architecture.md#astra-extension)
+[多模态](./docs/astra-architecture.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[超高可配](./docs/astra-architecture.md#-astra-extension-store)
-
-🎉 简单易用，丝滑体验，创建属于这个时代的 AI Agents 🎉
+[高可配](./docs/astra-architecture.md#-astra-extension-store)
 
 </div>
 
-## Voice Agent Showcase
+##  项目示例
 
-[ASTRA Voice Agent](https://theastra.ai)
+[Voice Agent Astra](https://theastra.ai)
 
-感谢 ASTRA 的多模态能力，这里搭建的 Voice Agent 速度流畅，体验丝滑。
+我们通过平台的能力搭建了一个语音助手，名字是 Astra,
 
 [![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
-
-<h3>点星收藏</h3>
-
-我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
-
-![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 ### 本地运行 Agent
 
@@ -96,11 +89,15 @@ npm i && npm run dev
 
 我们的语音代理是一个很好的起点，它使用了以下扩展：
 
-- _agora_rtc_ / [Agora](https://docs.agora.io/en) for RTC transport + VAD + Azure speech-to-text (STT)
-- _azure_tts_ / [Azure](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) for text-to-speech (TTS)
-- _openai_chatgpt_ / [OpenAI](https://openai.com/index/openai-api/) for LLM
-- _chat_transcriber_ / A utility ext to forward chat logs into channel
-- _interrupt_detector_ / A utility ext to help interrupt agent
+| Extension          | Feature        | Description                                                                                                                                                                                                          |
+| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
+| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
+| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
+| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
+| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
+| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
+| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                         
 
 ![](../../images/image-2.png)
 
@@ -157,75 +154,133 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-🎉 恭喜你！你已经创建了你的第一个个性化语音代理。我们对你的努力表示赞赏，并期待在 ASTRA 云商店中看到它。如果你能在社区中分享它，我们将不胜感激。
+🎉 到这里，您已经成功创建一个私人定制的语音助手。
+
+<h3>Customize Agent</h3>
+
+You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
+
+You need to prepare the proper `manifest.json` file first.
+
+```bash
+# Rename manifest example
+cp ./agents/manifest.json.example ./agents/manifest.json
+cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
+
+# pull the docker image with dev tools and mount your current folder as workspace
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# for windows git bash
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# Enter docker image
+docker exec -it astra_agents_dev bash
+
+# Build agent
+make build
+```
+
+The above code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`.
+
+<h3>Start Server</h3>
+
+Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent from the showcase.
+
+```bash
+# TODO: need to refactor the contents
+# Agora App ID and Agora App Certificate
+export AGORA_APP_ID=<your_agora_appid>
+export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
+
+# OpenAI API key
+export OPENAI_API_KEY=<your_openai_api_key>
+
+# Azure STT key and region
+export AZURE_STT_KEY=<your_azure_stt_key>
+export AZURE_STT_REGION=<your_azure_stt_region>
+
+# TTS
+# Here are three TTS options, either one will work
+# Make sure to comment out the one you don't use
+
+# 1. using Azure
+export TTS_VENDOR_CHINESE=azure
+export AZURE_TTS_KEY=<your_azure_tts_key>
+export AZURE_TTS_REGION=<your_azure_tts_region>
+
+# 2. using ElevenLabs
+export TTS_VENDOR_ENGLISH=elevenlabs
+export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
+
+# agent is ready to start on port 8080
+make run-server
+```
+
+🎉 Congratulations! You have created your first personalized voice agent.
+
+<h3>Quick Agent Customize Test</h3>
+The default agent control is managed via server gateway. For quick testing, you can also run the agent directly.
+
+```
+
+# rename manifest example
+cp ./agents/manifest.json.example ./agents/manifest.json
+cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
+
+# pull the docker image with dev tools and mount your current folder as workspace
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# for windows git bash
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# enter docker image
+docker exec -it astra_agents_dev bash
+
+make build
+
+cd ./agents
+# manipulate values in manifest.json to replace <agora_appid>, <qwen_api_key>, <stt_api_key>, <stt_region> with your keys
+./bin/start
+```
+
+use [https://webdemo.agora.io/](https://webdemo.agora.io/) to quickly test.
+
+Note the `channel` and `remote_stream_id` needs to match with the one you use on `https://webdemo.agora.io/`
+
+<br>
+<h2>ASTRA Service</h2>
+<h3>Discover More</h3>
+
+Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](./docs/astra-architecture.md).
+
+<br>
+<h2>Join Community</h2>
+
+- [Discord](https://discord.gg/VnPftUzAMJ):  加入我们的 Discord 频道
+- [WeChat Group](https://github.com/rte-design/ASTRA.ai/issues/125): 加入微信群聊
+- [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
+- [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
+- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
+
+ <br>
+ <h2>Code Contributors</h2>
+
+[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
+
 
 <br />
+<h2>点星收藏</h2>
 
-## ASTRA 服务
+我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
 
-现在让我们来深入了解一下。ASTRA 服务由多种不同编程语言开发的 ASTRA 扩展组成。这些扩展通过图谱相互连接，描述它们的关系并展示数据流动。此外，通过 ASTRA 云商店和 ASTRA 包管理器，扩展的分享和下载变得更加简便。
-
-![ASTRA Architecture](../../images/image.png)
-
-### ASTRA 扩展
-
-扩展是 ASTRA 框架中的基本组合单元。开发人员可以使用多种编程语言创建扩展，并将它们组合起来构建不同的场景和应用程序。ASTRA 强调跨语言协作，允许使用不同语言编写的扩展在同一应用程序或服务中无缝协同工作。
-
-例如，如果一个应用程序需要实时通信（RTC）功能和先进的人工智能能力，开发人员可以选择使用 C++ 编写与音频和视频数据处理性能优势相关的 RTC 相关扩展。同时，他们可以使用 Python 开发 AI 扩展，利用其丰富的库和框架进行数据分析和机器学习任务。
-
-### 语言支持
-
-截至 2024 年 6 月，我们支持以下语言编写的扩展：
-
-- C++
-- Golang
-- Python (7 月)
-
-开发人员可以灵活选择最适合他们需求的语言，并将其无缝集成到 ASTRA 框架中。
-
-这段内容详细描述了截至指定日期的 ASTRA 扩展支持的编程语言。
-
-## 图谱
-
-在 ASTRA 中，图谱描述了扩展之间的数据流，协调它们的交互。例如，语音转文本（STT）扩展的文本输出可以指向大型语言模型（LLM）扩展。简而言之，图谱定义了涉及的扩展以及它们之间数据流的方向。开发者可以定制这种流程，将一个扩展（如 STT）的输出引导到另一个（如 LLM）。
-
-在 ASTRA 中，有四种主要类型的扩展之间数据流：
-
-- Command
-- Data
-- Image frame
-- PCM frame
-
-通过在图谱中指定这些数据类型的方向，开发人员可以实现插件之间的相互调用和单向数据流。这对于 PCM 和图像数据类型尤其有用，简化了音频和视频处理。
-
-### ASTRA 代理应用
-
-ASTRA 代理应用是一个可运行的服务器端应用程序，根据图谱规则结合多个扩展来完成更复杂的操作。
-
-### ASTRA 云商店
-
-ASTRA 商店是一个集中的平台，开发人员可以在这里分享他们的扩展，并访问其他人创建的扩展。
-
-### ASTRA 包管理器
-
-ASTRA 包管理器简化了上传、分享、下载和安装 ASTRA 扩展的过程。扩展可以指定对其他扩展和环境的依赖关系，ASTRA 包管理器会自动管理这些依赖关系，使扩展的安装和发布变得非常方便和直观。
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 </br>
-
-</br>
-
-## 微信 ASTRA 中文群
-
-<div align="center">
- <img alt="ASTRA" width="300px" height="auto" src="../../images/wechat-qrcode.png">
-</div>
-
-## Contributing
+<h2>Contributing</h2>
 
 欢迎贡献！请先阅读 [贡献指南](../code-of-conduct/contributing.md)。
 
 </br>
-
-## License
+<h2>License</h2>
 
 本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](LICENSE)。
