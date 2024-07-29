@@ -34,8 +34,6 @@
 
 [Voice Agent Astra](https://theastra.ai)
 
-我们通过平台的能力搭建了一个语音助手，名字是 Astra,
-
 [![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
 ### 本地运行 Agent
@@ -253,11 +251,18 @@ Note the `channel` and `remote_stream_id` needs to match with the one you use on
 
 Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](./docs/astra-architecture.md).
 
+<br />
+<h2>点星收藏</h2>
+
+我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
+
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
+
+
 <br>
 <h2>Join Community</h2>
 
-- [Discord](https://discord.gg/VnPftUzAMJ):  加入我们的 Discord 频道
-- [WeChat Group](https://github.com/rte-design/ASTRA.ai/issues/125): 加入微信群聊
+- [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
@@ -268,19 +273,14 @@ Now that you’ve created your first AI agent, the creativity doesn’t stop her
 [![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 
 
-<br />
-<h2>点星收藏</h2>
-
-我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
-
-![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
-
 </br>
+
 <h2>Contributing</h2>
 
 欢迎贡献！请先阅读 [贡献指南](../code-of-conduct/contributing.md)。
 
 </br>
+
 <h2>License</h2>
 
 本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](LICENSE)。
