@@ -9,7 +9,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
-[![](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
+[![Discord ASTRA Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
@@ -29,59 +29,54 @@
 ASTRA is a highly customizable platform that simplifies the development of AI agents like never before. With ASTRA, you can easily create lightning-fast, multimodal AI agents, even without any coding knowledge.
 
 <br>
-<h2>Voice Agent Showcase</h2>
+<h2>Voice agent showcase</h2>
 
-[ASTRA Voice Agent](https://theastra.ai)
+[ASTRA voice agent](https://theastra.ai)
 
 We showcase an impressive voice agent powered by ASTRA, demonstrating its ability to create intuitive and seamless conversational interactions.
 
 [![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
-<h3>Stay Tuned</h3>
 
-Before we dive further, be sure to star our repository and get instant notifications for all new releases!
+<!-- <h2>How to run voice agent locally</h2> -->
 
-![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
-<h3>Run Voice Agent Locally</h3>
+<!-- #### Prerequisite
 
-Feel free to run the showcased voice agent locally. We provide a Docker image that you can easily build and run on both macOS and Windows.
-
-To start, make sure you have:
-
-- Agora App ID and App Certificate([Read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
+- [Docker](https://www.docker.com/) -->
+
+<!-- #### 2. Start the `docker-compose`
 
 ```bash
 # Copy the docker-compose.yml.example file to a new file named docker-compose.yml
 # remember to provide your api keys in your docker-compose.yml file
 cp ./docker-compose.yml.example ./docker-compose.yml
+
 # Execute docker compose up to start the services
 docker compose up
 ```
 
-This should start an playground running on port 3000 and agent server running on port 8080.
-<br>
-🎉 Congratulations! You now have a ASTRA powered voice agent running locally, access the DASTRA in your browser at http://localhost:3000
+#### 3. Run the voice agent
+This should start the voice agent just like in the showcase. The frontend is running at localhost:3000 in your browser, and the backend is running on the Docker port 8080. -->
 
+<!-- #### 4. Mac with apple silicon
 
-#### Mac with Apple Silicon
-
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon.
+> [!Note]
+> You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
 
 <div align="center">
 
 ![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
-</div>
+</div> -->
 
 <br>
-<h2>Agent Customization</h2>
+<h2>How to build voice agent locally</h2>
 
-To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+<!-- To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
 
 | Extension          | Feature        | Description                                                                                                                                                                                                          |
 | ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -95,23 +90,36 @@ To explore further, the ASTRA voice agent is an excellent starting point. It inc
 
 <h3>Voice Agent Diagram</h3>
 
-![ASTRA voice agent diagram](./images/image-2.png)
+![ASTRA voice agent diagram](./images/image-2.png) -->
 
-<h3>Customize Agent</h3>
+<!-- To customize the agent to your needs, modify the source code of the extensions and build the agent yourself. -->
 
-You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
+#### Prerequisite
 
-You need to prepare the proper `manifest.json` file first.
+- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
+- [OpenAI](https://openai.com/index/openai-api/) API key
+- [Docker](https://www.docker.com/)
+
+#### Docker setting on apple silicon
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
+
+<div align="center">
+
+![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
+
+</div>
+
+#### 1. Build the agent within Docker image
 
 ```bash
-# Rename manifest example
+# Create manifiest from example.
 cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
 
-# pull the docker image with dev tools and mount your current folder as workspace
+# Pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# for windows git bash
+# For windows git bash
 # docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
 # Enter docker image
@@ -121,14 +129,32 @@ docker exec -it astra_agents_dev bash
 make build
 ```
 
-The above code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`.
+#### 2. Modify prompts
+The above code generates an agent executable, to customize your prompts and OpenAI parameters, modify the following code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`:
+```
+func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
+	return openaiChatGPTConfig{
+		BaseUrl: "https://api.openai.com/v1",
+		ApiKey:  "",
+		Model:  openai.GPT4o,
+		Prompt: "You are a voice assistant who talks in a conversational way and can chat with me like my friends. i will speak to you in english or chinese, and you will answer in the corrected and improved version of my text with the language i use. Don't talk like a robot, instead i would like you to talk like real human with emotions. i will use your answer for text-to-speech, so don't return me any meaningless characters. I want you to be helpful, when i'm asking you for advices, give me precise, practical and useful advices instead of being vague. When giving me list of options, express the options in a narrative way instead of bullet points.",
+		FrequencyPenalty: 0.9,
+		PresencePenalty:  0.9,
+		TopP:             1.0,
+		Temperature:      0.1,
+		MaxTokens:        512,
+		Seed:             rand.Int(),
+		ProxyUrl: "",
+	}
+}
+```
 
-<h3>Start Server</h3>
 
-Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent from the showcase.
+#### 3. Start local server
+
+Start the server by running the following terminal commands:
 
 ```bash
-# TODO: need to refactor the contents
 # Agora App ID and Agora App Certificate
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
@@ -153,46 +179,73 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 export TTS_VENDOR_ENGLISH=elevenlabs
 export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
 
-# agent is ready to start on port 8080
+# Agent is ready to start on port 8080
 make run-server
 ```
 
-🎉 Congratulations! You have created your first personalized voice agent.
 
-<h3>Quick Agent Customize Test</h3>
-The default agent control is managed via server gateway. For quick testing, you can also run the agent directly.
+#### 4. Run the voice agent interface
 
+The voice agent interface is built on NextJS 14, hence it needs Node 18 or later.
+
+```bash
+# Create an env file from the example so the interface points to the right port
+cd playground
+cp .env.example .env
+
+# Install npm dependencies & start localhost:3000 in browser
+npm install && npm run dev
 ```
 
-# rename manifest example
-cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
+#### 5. Verify your customized voice agent 🎉
 
-# pull the docker image with dev tools and mount your current folder as workspace
+Open `localhost:3000` in your browser, you should be seeing a voice agent just like the showcase, yet with your own customizations.
+
+<br>
+<h2>How to build the agent in a headless way</h2>
+
+#### 1. Build the agent within Docker image
+
+```
+# Create manifest from the example file
+cp ./agents/manifest.json.example ./agents/manifest.json
+
+# Pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# for windows git bash
+# For windows git bash
 # docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# enter docker image
+# Enter docker image
 docker exec -it astra_agents_dev bash
 
+# Build agent
 make build
 
-cd ./agents
-# manipulate values in manifest.json to replace <agora_appid>, <qwern_api_key>, <stt_api_key>, <stt_region> with your keys
-./bin/start
+# Start agent
+cd ./agents && ./bin/start
 ```
 
-use [https://webdemo.agora.io/](https://webdemo.agora.io/) to quickly test.
+#### 2. Test agent
+
+Finally let's use [Agora Web Demo](https://webdemo.agora.io/) to test really quick.
 
 Note the `channel` and `remote_stream_id` needs to match with the one you use on `https://webdemo.agora.io/`
+
+After entering the corresponding RTC ID and channel name, you should be able to see the log and hear the audio output.
 
 <br>
 <h2>ASTRA Service</h2>
 <h3>Discover More</h3>
 
 Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the ASTRA works under the hood. Please refer to the [ ASTRA architecture documentation ](./docs/astra-architecture.md).
+
+<br>
+<h2>Stay Tuned</h2>
+
+Before we dive further, be sure to star our repository and get instant notifications for all new releases!
+
+![ASTRA star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
 
 <br>
 <h2>Join Community</h2>
