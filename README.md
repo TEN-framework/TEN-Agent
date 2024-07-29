@@ -156,6 +156,10 @@ export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
 # agent is ready to start on port 8080
 make run-server
 ```
+To accelerate downloading Go dependencies and building projects on Ubuntu servers, you can try using Go Module Mirror：
+```bash
+export GOPROXY=https://goproxy.cn,direct
+```
 
 🎉 Congratulations! You have created your first personalized voice agent.
 
