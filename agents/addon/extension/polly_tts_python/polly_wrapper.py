@@ -54,14 +54,14 @@ class PollyWrapper:
         self.config = config
 
         if config.access_key and config.secret_key:
-            logger.info(f"BedrockLLM initialized with access key: {config.access_key}")
+            logger.info(f"PollyTTS initialized with access key: {config.access_key}")
 
             self.client = boto3.client(service_name='polly', 
                                     region_name=config.region,
                                     aws_access_key_id=config.access_key,
                                     aws_secret_access_key=config.secret_key)
         else:
-            logger.info(f"BedrockLLM initialized without access key, using default credentials provider chain.")
+            logger.info(f"PollyTTS initialized without access key, using default credentials provider chain.")
             self.client = boto3.client(service_name='polly', region_name=config.region)
 
         self.voice_metadata = None
