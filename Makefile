@@ -30,7 +30,7 @@ clean-agents:
 
 docker-build-playground:
 	@echo ">> docker build playground"
-	cd playground && docker build -t $(REGISTRY)$(PROJECT_NAME)_playground:$(PROJECT_VERSION) -f Dockerfile .
+	cd playground && docker build -t $(REGISTRY)$(PROJECT_NAME)_playground:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
 	@echo ">> done"
 
 docker-build-server:
