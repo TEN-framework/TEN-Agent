@@ -150,7 +150,7 @@ npm install && npm run dev
 
 #### 5. 验证您定制的 voice agent 🎉
 
-在浏览器中打开 `localhost:3000`，您应该能够看到一个与展示相似的语音助手，但带有您自己的定制内容。
+在浏览器中打开 `localhost:3000`，您应该能够看到一个与示例项目一样的 voice angent，但是这次是带有定制的 voice agent。
 
 <br>
 <h2>Voice agent 架构</h2>
@@ -206,9 +206,8 @@ cd ./agents && ./bin/start
 
 <br>
 <h2>ASTRA 服务</h2>
-<h3>了解更多</h3>
 
-现在您已经创建了第一个 AI voice agent，创意并不会止步于此。要开发更多令人惊叹的语音助手，您需要深入了解 ASTRA 在幕后的工作原理。请参阅 [ ASTRA 架构文档 ](./docs/astra-architecture.md)。
+现在您已经创建了第一个 AI voice agent，创意并不会止步于此。 要开发更多的 AI agents， 您需要深入了解 ASTRA 的工作原理。请参阅 [ ASTRA 架构文档 ](./docs/astra-architecture.md)。
 
 <br />
 <h2>点星收藏</h2>
