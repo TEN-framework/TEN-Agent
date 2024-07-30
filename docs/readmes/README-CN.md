@@ -64,7 +64,7 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 ```
 
 #### 1.创建 manifest 配置文件
-从示例文件创建 manifest：
+从示例文件创建 `manifest.json`：
 
 ```bash
 cp ./agents/manifest.json.example ./agents/manifest.json
@@ -72,7 +72,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 
 #### 2. 基本配置
 
-在 manifest 里面找到下列属性替换：
+在 `manifest.json` 里面找到下列属性替换：
 ```json
 "app_id": "<agora_appid>"
 "api_key": "<openai_api_key>"
@@ -83,7 +83,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
 #### 3. 定制化
-在 manifest 可以直接改 propmt 和问候语：
+在 `manifest.json` 可以直接改 propmt 和问候语：
 ```json
 "property": {
     "base_url": "",
@@ -98,7 +98,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 }
 ```
 
-#### 4. 在 Docker 镜像中构建 agent
+#### 4. 在 Docker 容器中构建 agent
 
 打开 Terminal， 跑下列命令：
 
@@ -118,15 +118,17 @@ make build
 
 #### 5. 启动本地服务器
 
-
+在容器里启动本地服务器, 端口是 8080：
 ```bash
-# Agent is ready to start on port 8080
+# 端口 8080
 make run-server
 ```
 
 #### 6. 运行 voice agent 界面
 
-voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高版本。
+Voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高版本。
+
+同时，再打开一个 Terminal 窗口， 通过下列命令创建环境文件并跑起界面。
 
 ```bash
 # 创建一个本地的环境文件
