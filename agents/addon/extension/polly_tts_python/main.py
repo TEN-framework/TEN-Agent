@@ -33,15 +33,15 @@ PROPERTY_LANG_CODE = 'lang_code'    # Optional
 class PollyTTSExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
-        self.tts = None
-        self.callback = None
-        self.format = None
+
         self.outdateTs = datetime.now()
-        
         self.stopped = False
         self.thread = None
         self.queue = queue.Queue()
         self.frame_size = None
+
+        self.bytes_per_sample = 2
+        self.number_of_channels = 1
 
     def on_init(
         self, rte: Rte, manifest: MetadataInfo, property: MetadataInfo
@@ -65,8 +65,6 @@ class PollyTTSExtension(Extension):
                 logger.debug(f"GetProperty optional {optional_param} failed, err: {err}. Using default value: {polly_config.__getattribute__(optional_param)}")
 
         self.polly = PollyWrapper(polly_config)
-        self.bytes_per_sample = 2
-        self.number_of_channels = 1
         self.frame_size = int(int(polly_config.sample_rate) * self.number_of_channels * self.bytes_per_sample / 100)
 
         self.thread = threading.Thread(target=self.async_polly_handler, args=[rte])
