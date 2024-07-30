@@ -79,12 +79,6 @@ class OpenAIChatGPTExtension(Extension):
     outdate_ts = 0
     openai_chatgpt = None
 
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("OpenAIChatGPTExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("OpenAIChatGPTExtension on_start")
         # Prepare configuration
@@ -205,10 +199,6 @@ class OpenAIChatGPTExtension(Extension):
     def on_stop(self, rte: RteEnv) -> None:
         logger.info("OpenAIChatGPTExtension on_stop")
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("OpenAIChatGPTExtension on_deinit")
-        rte.on_deinit_done()
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("OpenAIChatGPTExtension on_cmd")

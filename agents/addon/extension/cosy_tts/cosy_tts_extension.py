@@ -116,10 +116,6 @@ class CosyTTSExtension(Extension):
         self.queue = queue.Queue()
         self.mutex = threading.Lock()
 
-    def on_init(self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo) -> None:
-        logger.info("CosyTTSExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("CosyTTSExtension on_start")
         self.api_key = rte.get_property_string("api_key")
@@ -159,10 +155,6 @@ class CosyTTSExtension(Extension):
         self.flush()
         self.thread.join()
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("CosyTTSExtension on_deinit")
-        rte.on_deinit_done()
 
     def need_interrupt(self, ts: datetime.time) -> bool:
         return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1

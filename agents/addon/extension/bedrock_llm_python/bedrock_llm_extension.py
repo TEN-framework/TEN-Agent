@@ -70,12 +70,6 @@ class BedrockLLMExtension(Extension):
     outdate_ts = 0
     bedrock_llm = None
 
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("BedrockLLMExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("BedrockLLMExtension on_start")
         # Prepare configuration
@@ -196,10 +190,6 @@ class BedrockLLMExtension(Extension):
     def on_stop(self, rte: RteEnv) -> None:
         logger.info("BedrockLLMExtension on_stop")
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("BedrockLLMExtension on_deinit")
-        rte.on_deinit_done()
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("BedrockLLMExtension on_cmd")
@@ -411,16 +401,6 @@ class BedrockLLMExtension(Extension):
 
 @register_addon_as_extension("bedrock_llm_python")
 class BedrockLLMExtensionAddon(Addon):
-    def on_init(self, rte: RteEnv, manifest, property) -> None:
-        logger.info("BedrockLLMExtensionAddon on_init")
-        rte.on_init_done(manifest, property)
-        return
-
     def on_create_instance(self, rte: RteEnv, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(BedrockLLMExtension(addon_name), context)
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("BedrockLLMExtensionAddon on_deinit")
-        rte.on_deinit_done()
-        return

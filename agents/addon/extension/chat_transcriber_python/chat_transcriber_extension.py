@@ -32,12 +32,6 @@ cached_text_map = {}
 
 
 class ChatTranscriberExtension(Extension):
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("on_start")
         rte.on_start_done()
@@ -45,10 +39,6 @@ class ChatTranscriberExtension(Extension):
     def on_stop(self, rte: RteEnv) -> None:
         logger.info("on_stop")
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("on_deinit")
-        rte.on_deinit_done()
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("on_cmd")
