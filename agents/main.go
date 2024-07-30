@@ -15,7 +15,7 @@ import (
 )
 
 type appConfig struct {
-	Manifest string
+	PropertyFilePath string
 }
 
 type defaultApp struct {
@@ -28,11 +28,10 @@ func (p *defaultApp) OnInit(
 	rteEnv rte.RteEnv,
 	property rte.MetadataInfo,
 ) {
-	// TODO: fix predefined graph
-	// Using the default manifest.json if not specified.
-	// if len(p.cfg.Manifest) > 0 {
-	// 	property.Set(rte.MetadataTypeJSONStr, p.cfg.Manifest)
-	// }
+	// Using the default property.json if not specified.
+	if len(p.cfg.PropertyFilePath) > 0 {
+		property.Set(rte.MetadataTypeJSONFileName, p.cfg.PropertyFilePath)
+	}
 
 	rteEnv.OnInitDone(property)
 }
@@ -62,7 +61,7 @@ func main() {
 
 	cfg := &appConfig{}
 
-	flag.StringVar(&cfg.Manifest, "manifest", "", "The absolute path of manifest.json")
+	flag.StringVar(&cfg.PropertyFilePath, "property", "", "The absolute path of property.json")
 	flag.Parse()
 
 	startAppBlocking(cfg)

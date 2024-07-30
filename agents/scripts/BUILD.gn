@@ -31,7 +31,6 @@ rte_package("default_app_cpp") {
   package_kind = "app"
 
   manifest = "manifest.json"
-  property = "property.json"
 
   if (package_type == "develop") {
     # It's 'develop' package, therefore, need to build the result.

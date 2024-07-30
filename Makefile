@@ -25,7 +25,7 @@ clean: clean-agents
 
 clean-agents:
 	@echo ">> clean agents"
-	rm -rf agents/manifest.json agents/bin agents/out agents/interface agents/include agents/lib agents/lib64 agents/addon/system agents/addon/extension_group agents/.release
+	rm -rf agents/bin agents/out agents/interface agents/include agents/lib agents/lib64 agents/addon/system agents/addon/extension_group agents/.release
 	@echo ">> done"
 
 docker-build-playground:
