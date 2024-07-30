@@ -34,158 +34,74 @@
 
 [Voice Agent Astra](https://theastra.ai)
 
-[![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
+我们展示了一个由ASTRA驱动的令人印象深刻的语音助手，展示了它创建直观无缝对话交互的能力。$PLACEHOLDER$
 
-### 本地运行 Agent
+[![展示ASTRA语音助手](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
-当然，我们更欢迎您在本地试玩我们的 Voice Agent， 这里有一个 Docker 镜像，您可以在 macOS 和 Windows 上构建并运行该代理。
+<br>
+<h2>如何在本地构建语音助手</h2>
 
-开始之前，请确保您拥有：
+#### 先决条件
 
-- Agora App ID and App 证书([详细指南](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API key
+- Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
+- Azure 的 [语音转文本](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [文本转语音](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
+- [OpenAI](https://openai.com/index/openai-api/) API 密钥
 - [Docker](https://www.docker.com/)
 
-```shell
-# run the pre-built agent image
-docker run --restart=always -itd -p 8080:8080 \
-        -v /tmp:/tmp \
-        -e AGORA_APP_ID=<your_agora_appid> \
-        -e AGORA_APP_CERTIFICATE=<your_agora_app_certificate> \
-        -e AZURE_STT_KEY=<your_azure_stt_key> \
-        -e AZURE_STT_REGION=<your_azure_stt_region> \
-        -e OPENAI_API_KEY=<your_openai_api_key> \
-        -e AZURE_TTS_KEY=<your_azure_tts_key> \
-        -e AZURE_TTS_REGION=<your_azure_tts_region> \
-        --name astra_agents_server \
-        agoraio/astra_agents_server:latest
-```
+#### Apple Silicon 上的 Docker 设置
+如果您使用的是 Apple Silicon，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
 
-这条命令将启动一个运行在 8080 端口的代理服务器。
+<div align="center">
 
-### 用 playground 链接您自己的 agent
+![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
-您可以使用 Playground 项目来测试刚刚启动的服务器。
+</div>
 
-Playground 项目是基于 NextJS 14 构建的，因此需要 Node 18+ 版本。
-
-```shell
-# set up an .env file
-cp ./playground/.env.example ./playground/.env
-cd playground
-
-# install npm dependencies & start
-npm i && npm run dev
-```
-
-🎉 恭喜！您现在已经成功在本地运行了我们的 ASTRA Voice Agent.
-
-</br>
-
-## Agent 定制化
-
-我们的语音代理是一个很好的起点，它使用了以下扩展：
-
-| Extension          | Feature        | Description                                                                                                                                                                                                          |
-| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
-| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
-| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
-| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
-| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
-| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
-| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                         
-
-![](../../images/image-2.png)
-
-### 定制个性化 Agent
-
-您可能希望添加更多的功能，以使代理更适合您的需求。为此，您需要修改扩展的源代码并自行构建代理。
-
-首先需要改动 `manifest.json`:
-
-```shell
-# rename manifest example
-cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.en.example ./agents/manifest.en.json
-cp ./agents/manifest.json.cn.example ./agents/manifest.cn.json
-
-# pull the docker image with dev tools and mount your current folder as workspace
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
-
-# for windows git bash
-# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build:0.3.2
-
-# enter docker image
-docker exec -it astra_agents_dev bash
-
-# build agent
-make build
-```
-
-该代码生成一个代理可执行文件。要自定义提示和 OpenAI 参数，请修改 agents/addon/extension/openai_chatgpt/openai_chatgpt.go 源代码。
-
-完成修改后，您可以使用以下命令启动服务器。然后，您可以像之前的步骤一样，使用 ASTRA Voice Agent 在 Playground 进行测试。
-
-```shell
-
-export AGORA_APP_ID=<your_agora_appid>
-export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
-export AZURE_STT_KEY=<your_azure_stt_key>
-export AZURE_STT_REGION=<your_azure_stt_region>
-
-# LLM
-export OPENAI_API_KEY=<your_openai_api_key>
-export QWEN_API_KEY=<your_qwern_api_key>
-
-# TTS
-# cosy
-export COSY_TTS_KEY=<your_cosy_tts_key>
-# if you use AZURE_TTS
-export AZURE_TTS_KEY=<your_azure_tts_key>
-export AZURE_TTS_REGION=<your_azure_tts_region>
-
-
-# agent is ready to start on port 8080
-
-make run-server
-```
-
-🎉 到这里，您已经成功创建一个私人定制的语音助手。
-
-<h3>Customize Agent</h3>
-
-You might want to add more flavors to make the agent better suited to your needs. To achieve this, you need to change the source code of extensions and build the agent yourselves.
-
-You need to prepare the proper `manifest.json` file first.
+#### 1. 在 Docker 镜像中构建 agent
 
 ```bash
-# Rename manifest example
+# 从示例文件创建 manifest
 cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
 
-# pull the docker image with dev tools and mount your current folder as workspace
+# 拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# for windows git bash
+# 对于 Windows Git Bash
 # docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# Enter docker image
+# 进入 Docker 镜像
 docker exec -it astra_agents_dev bash
 
-# Build agent
+# 构建 agent
 make build
 ```
 
-The above code generates an agent executable. To customize your prompts and OpenAI parameters, modify the source code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`.
+#### 2. 改动 prompts
+The above code generates an agent executable. To customize your prompts and OpenAI parameters, modify the following code in `agents/addon/extension/openai_chatgpt/openai_chatgpt.go`:
+```
+func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
+	return openaiChatGPTConfig{
+		BaseUrl: "https://api.openai.com/v1",
+		ApiKey:  "",
+		Model:  openai.GPT4o,
+		Prompt: "You are a voice assistant who talks in a conversational way and can chat with me like my friends. i will speak to you in english or chinese, and you will answer in the corrected and improved version of my text with the language i use. Don't talk like a robot, instead i would like you to talk like real human with emotions. i will use your answer for text-to-speech, so don't return me any meaningless characters. I want you to be helpful, when i'm asking you for advices, give me precise, practical and useful advices instead of being vague. When giving me list of options, express the options in a narrative way instead of bullet points.",
+		FrequencyPenalty: 0.9,
+		PresencePenalty:  0.9,
+		TopP:             1.0,
+		Temperature:      0.1,
+		MaxTokens:        512,
+		Seed:             rand.Int(),
+		ProxyUrl: "",
+	}
+}
+```
 
-<h3>Start Server</h3>
 
-Once you have made the necessary changes, you can use the following commands to start a server. You can then test it out using the ASTRA voice agent from the showcase.
+#### 3. Start local server
+
+Start the server by running the following terminal commands:
 
 ```bash
-# TODO: need to refactor the contents
 # Agora App ID and Agora App Certificate
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
@@ -210,40 +126,79 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 export TTS_VENDOR_ENGLISH=elevenlabs
 export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
 
-# agent is ready to start on port 8080
+# Agent is ready to start on port 8080
 make run-server
 ```
 
-🎉 Congratulations! You have created your first personalized voice agent.
 
-<h3>Quick Agent Customize Test</h3>
-The default agent control is managed via server gateway. For quick testing, you can also run the agent directly.
+#### 4. Run the voice agent interface
 
+The voice agent interface is built on NextJS 14, hence it needs Node 18 or later.
+
+```bash
+# Create an env file from the example so the interface points to the right port
+cd playground
+cp .env.example .env
+
+# Install npm dependencies & start localhost:3000 in browser
+npm install && npm run dev
 ```
 
-# rename manifest example
-cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
+#### 5. Verify your customized voice agent 🎉
 
-# pull the docker image with dev tools and mount your current folder as workspace
+Open `localhost:3000` in your browser, you should be seeing a voice agent just like the showcase, yet with your own customizations.
+
+<br>
+<h2>Voice agent architecture </h2>
+To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+
+| Extension          | Feature        | Description                                                                                                                                                                                                          |
+| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
+| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
+| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
+| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
+| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
+| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
+| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
+
+<h3>Voice Agent Diagram</h3>
+
+![ASTRA voice agent diagram](./images/image-2.png)
+
+
+<br>
+<h2>How to build the agent in headlessly</h2>
+
+#### 1. Build the agent within Docker image
+
+```
+# Create manifest from the example file
+cp ./agents/manifest.json.example ./agents/manifest.json
+
+# Pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# for windows git bash
+# For windows git bash
 # docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# enter docker image
+# Enter docker image
 docker exec -it astra_agents_dev bash
 
+# Build agent
 make build
 
-cd ./agents
-# manipulate values in manifest.json to replace <agora_appid>, <qwen_api_key>, <stt_api_key>, <stt_region> with your keys
-./bin/start
+# Start agent
+cd ./agents && ./bin/start
 ```
 
-use [https://webdemo.agora.io/](https://webdemo.agora.io/) to quickly test.
+#### 2. Test agent
+
+Go to [Agora Web Demo](https://webdemo.agora.io/) to test really quick.
 
 Note the `channel` and `remote_stream_id` needs to match with the one you use on `https://webdemo.agora.io/`
+
+After entering the corresponding RTC ID and channel name, you should be able to see the log and hear the audio output.
 
 <br>
 <h2>ASTRA Service</h2>
