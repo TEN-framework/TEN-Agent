@@ -106,7 +106,7 @@ You need to prepare the proper `manifest.json` file first.
 ```bash
 # Rename manifest example
 cp ./agents/manifest.json.example ./agents/manifest.json
-cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.json.elevenlabs.example
+cp ./agents/manifest.json.elevenlabs.example ./agents/manifest.elevenlabs.json
 
 # pull the docker image with dev tools and mount your current folder as workspace
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
