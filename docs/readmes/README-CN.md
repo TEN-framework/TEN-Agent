@@ -135,7 +135,7 @@ Voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高
 cd playground
 cp .env.example .env
 
-# 安装依赖
+# 安装依赖并开启界面
 npm install && npm run dev
 ```
 
