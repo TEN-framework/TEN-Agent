@@ -32,7 +32,7 @@
 
 ## 项目示例 - The voice agent
 
-[示例项目](https://theastra.ai) 是通过 ASTRA 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
+[示例项目](https://theastra.ai)是通过 ASTRA 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
 [![展示ASTRA语音助手](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
@@ -42,7 +42,7 @@
 #### 先决条件
 
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
-- Azure 的 [语音转文本](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [文本转语音](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
+- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
 - [OpenAI](https://openai.com/index/openai-api/) API 密钥
 - [Docker](https://www.docker.com/)
 
@@ -56,7 +56,7 @@
 </div>
 
 #### 设置 Go 国内代理
-如果在国内，我们建议跑下列命令来全局设定国内代理以便快速安装依赖([了解详情](https://goproxy.cn/))。
+如果在国内，我们建议跑下列命令来全局设定国内代理以便快速下载依赖([了解详情](https://goproxy.cn/))。
 
 ```
 $ go env -w GO111MODULE=on
@@ -84,7 +84,8 @@ make build
 
 #### 2. 改动 prompts
 上述代码生成了一个代理可执行文件。要自定义提示和 OpenAI 参数，请修改 `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` 中的以下代码：
-```
+
+```go
 func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
 	return openaiChatGPTConfig{
 		BaseUrl: "https://api.openai.com/v1",
