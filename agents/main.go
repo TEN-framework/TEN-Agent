@@ -26,15 +26,15 @@ type defaultApp struct {
 
 func (p *defaultApp) OnInit(
 	rteEnv rte.RteEnv,
-	manifest rte.MetadataInfo,
 	property rte.MetadataInfo,
 ) {
+	// TODO: fix predefined graph
 	// Using the default manifest.json if not specified.
-	if len(p.cfg.Manifest) > 0 {
-		manifest.Set(rte.MetadataTypeJSONFileName, p.cfg.Manifest)
-	}
+	// if len(p.cfg.Manifest) > 0 {
+	// 	property.Set(rte.MetadataTypeJSONStr, p.cfg.Manifest)
+	// }
 
-	rteEnv.OnInitDone(manifest, property)
+	rteEnv.OnInitDone(property)
 }
 
 func startAppBlocking(cfg *appConfig) {

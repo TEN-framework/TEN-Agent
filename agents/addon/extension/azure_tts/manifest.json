@@ -1,19 +1,19 @@
 {
     "type": "extension",
     "name": "azure_tts",
-    "version": "0.2.0",
+    "version": "0.4.0",
     "language": "cpp",
     "dependencies": [
         {
             "type": "system",
             "name": "rte_runtime",
-            "version": "0.3.1"
+            "version": "0.4.0"
         },
         {
             "type": "system",
             "name": "azure_speech_sdk",
             "version": "1.38.0"
-        }      
+        }
     ],
     "api": {
         "property": {
