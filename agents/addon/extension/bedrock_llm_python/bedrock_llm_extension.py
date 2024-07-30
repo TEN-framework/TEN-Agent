@@ -75,67 +75,23 @@ class BedrockLLMExtension(Extension):
         # Prepare configuration
         bedrock_llm_config = BedrockLLMConfig.default_config()
 
-        try:
-            region = rte.get_property_string(PROPERTY_REGION)
-            if region:
-                bedrock_llm_config.region = region
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_REGION} failed, err: {err}. Using default value: {bedrock_llm_config.region}"
-            )
-            return
+        for optional_str_param in [
+            PROPERTY_REGION, PROPERTY_ACCESS_KEY, PROPERTY_SECRET_KEY,
+            PROPERTY_MODEL, PROPERTY_PROMPT]:
+            try:
+                value = rte.get_property_string(optional_str_param).strip()
+                if value:
+                    bedrock_llm_config.__setattr__(optional_str_param, value)
+            except Exception as err:
+                logger.debug(f"GetProperty optional {optional_str_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_str_param)}")
 
-        try:
-            access_key = rte.get_property_string(PROPERTY_ACCESS_KEY)
-            bedrock_llm_config.access_key = access_key
-        except Exception as err:
-            logger.error(
-                f"GetProperty optional {PROPERTY_ACCESS_KEY} failed, err: {err}. Using default value: {bedrock_llm_config.access_key}"
-            )
-            return
-
-        try:
-            secret_key = rte.get_property_string(PROPERTY_SECRET_KEY)
-            bedrock_llm_config.secret_key = secret_key
-        except Exception as err:
-            logger.error(
-                f"GetProperty optional {PROPERTY_SECRET_KEY} failed, err: {err}. Using default value: {bedrock_llm_config.secret_key}"
-            )
-            return
-
-        try:
-            model = rte.get_property_string(PROPERTY_MODEL)
-            if model:
-                bedrock_llm_config.model = model
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_MODEL} error: {err}. Using default value: {bedrock_llm_config.model}"
-            )
-
-        try:
-            prompt = rte.get_property_string(PROPERTY_PROMPT)
-            if prompt:
-                bedrock_llm_config.prompt = prompt
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_PROMPT} error: {err}. Using default value: {bedrock_llm_config.prompt}"
-            )
-
-        try:
-            temperature = rte.get_property_float(PROPERTY_TEMPERATURE)
-            bedrock_llm_config.temperature = float(temperature)
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_TEMPERATURE} failed, err: {err}. Using default value: {bedrock_llm_config.temperature}"
-            )
-
-        try:
-            top_p = rte.get_property_float(PROPERTY_TOP_P)
-            bedrock_llm_config.top_p = float(top_p)
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_TOP_P} failed, err: {err}. Using default value: {bedrock_llm_config.top_p}"
-            )
+        for optional_float_param in [PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
+            try:
+                value = rte.get_property_float(optional_float_param)
+                if value:
+                    bedrock_llm_config.__setattr__(optional_float_param, value)
+            except Exception as err:
+                logger.debug(f"GetProperty optional {optional_float_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_float_param)}")
 
         try:
             max_tokens = rte.get_property_int(PROPERTY_MAX_TOKENS)
@@ -169,7 +125,7 @@ class BedrockLLMExtension(Extension):
                 f"newBedrockLLM succeed with max_tokens: {bedrock_llm_config.max_tokens}, model: {bedrock_llm_config.model}"
             )
         except Exception as err:
-            logger.info(f"newBedrockLLM failed, err: {err}")
+            logger.exception(f"newBedrockLLM failed, err: {err}")
 
         # Send greeting if available
         if greeting:
