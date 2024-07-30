@@ -47,6 +47,9 @@
       },
       "max_memory_length": {
         "type": "int64"
+      },
+      "enable_vision": {
+        "type": "bool"
       }
     },
     "data_in": [
