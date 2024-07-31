@@ -70,19 +70,7 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
-#### 2. 基本配置
-
-```json
-// 在 `manifest.json` 里面找到下列属性替换
-"app_id": "<agora_appid>"
-"api_key": "<openai_api_key>"
-"agora_asr_vendor_key": "<azure_stt_key>"
-"agora_asr_vendor_region": "<azure_stt_region>"
-"azure_subscription_key": "<azure_tts_key>"
-"azure_subscription_region": "<azure_tts_region>"
-```
-
-#### 3. 定制化
+#### 2. 定制化
 ```json
 // 在 `manifest.json` 可以直接改 propmt 和问候语
 "property": {
@@ -91,9 +79,9 @@ cp ./agents/manifest.json.example ./agents/manifest.json
     "frequency_penalty": 0.9,
     "model": "gpt-3.5-turbo",
     "max_tokens": 512,
-    "prompt": "",
+    "prompt": "", //这里修改 propmt
     "proxy_url": "",
-    "greeting": "ASTRA agent connected. How can i help you today?",
+    "greeting": "Astra agent connected. How can I help you today?", //这里修改问候语
     "max_memory_length": 10
 }
 ```
@@ -118,8 +106,21 @@ make build
 
 
 ```bash
-# 导出 Agora App id
+# Agora App ID and Agora App Certificate
 export AGORA_APP_ID=<your_agora_appid>
+export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
+
+# OpenAI API key
+export OPENAI_API_KEY=<your_openai_api_key>
+
+# Azure STT key and region
+export AZURE_STT_KEY=<your_azure_stt_key>
+export AZURE_STT_REGION=<your_azure_stt_region>
+
+# Azure TTS key and region
+export AZURE_TTS_KEY=<your_azure_tts_key>
+export AZURE_TTS_REGION=<your_azure_tts_region>
+
 # 端口 8080
 make run-server
 ```
@@ -142,6 +143,7 @@ npm install && npm run dev
 #### 7. 验证您定制的 voice agent 🎉
 
 在浏览器中打开 `localhost:3000`，您应该能够看到一个与示例项目一样的 voice angent，但是这次是带有定制的 voice agent。
+
 
 <br>
 <h2>Voice agent 架构</h2>
