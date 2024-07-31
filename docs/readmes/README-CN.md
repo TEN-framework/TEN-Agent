@@ -64,16 +64,16 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 ```
 
 #### 1.创建 manifest 配置文件
-从示例文件创建 `manifest.json`：
 
 ```bash
+# 在命令行从示例文件创建 `manifest.json`
 cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
 #### 2. 基本配置
 
-在 `manifest.json` 里面找到下列属性替换：
 ```json
+// 在 `manifest.json` 里面找到下列属性替换
 "app_id": "<agora_appid>"
 "api_key": "<openai_api_key>"
 "agora_asr_vendor_key": "<azure_stt_key>"
@@ -83,8 +83,8 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
 #### 3. 定制化
-在 `manifest.json` 可以直接改 propmt 和问候语：
 ```json
+// 在 `manifest.json` 可以直接改 propmt 和问候语
 "property": {
     "base_url": "",
     "api_key": "<openai_api_key>",
@@ -100,10 +100,8 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 
 #### 4. 在 Docker 容器中构建 agent
 
-打开 Terminal， 跑下列命令：
-
 ```bash
-# 拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
+# 命令行拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
 # 对于 Windows Git Bash
@@ -118,8 +116,10 @@ make build
 
 #### 5. 启动本地服务器
 
-在容器里启动本地服务器, 端口是 8080：
+
 ```bash
+# 导出 Agora App id
+export AGORA_APP_ID=<your_agora_appid>
 # 端口 8080
 make run-server
 ```
