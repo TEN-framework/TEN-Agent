@@ -74,14 +74,97 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 
 <div align="center">
 
-![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
+![Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
 </div>
+
+
+#### 1. Create manifest.json
+
+```bash
+# Create manifest.json from the example
+cp ./agents/manifest.json.example ./agents/manifest.json
+```
+
+#### 2. Modify prompts and greetings
+
+```js
+// Feel free to edit prompts and greetings in manifest.json
+"property": {
+    "base_url": "",
+    "api_key": "<openai_api_key>",
+    "frequency_penalty": 0.9,
+    "model": "gpt-3.5-turbo",
+    "max_tokens": 512,
+    "prompt": "", // prompts
+    "proxy_url": "Your name is Astra, you are a smart voice agent.",
+    "greeting": "My name is Astra, your voice agent, how can I help you?", // greetings
+    "max_memory_length": 10
+}
+```
+
+#### 4. Create agent in Docker container
+
+```bash
+# In CLI, pull Docker image and mount the target directory
+docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# Windows Git Bash
+# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
+
+# Enter container
+docker exec -it astra_agents_dev bash
+
+# Create agent
+make build
+```
+
+#### 5. Export ENV variables and start server
+
+
+```bash
+# In the same CLI window, set env variables
+export AGORA_APP_ID=<your_agora_appid>
+export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
+
+# OpenAI API key
+export OPENAI_API_KEY=<your_openai_api_key>
+
+# Azure STT key and region
+export AZURE_STT_KEY=<your_azure_stt_key>
+export AZURE_STT_REGION=<your_azure_stt_region>
+
+# Azure TTS key and region
+export AZURE_TTS_KEY=<your_azure_tts_key>
+export AZURE_TTS_REGION=<your_azure_tts_region>
+
+# Run server on port 8080
+make run-server
+```
+
+#### 6. Connect voice agent UI to server
+
+The UI of voice agent is build on Next.js 14, so it needs Node 18 or later.
+
+Open a separate Terminal tab and run the commands:
+
+```bash
+# Create a .env file from example
+cd playground
+cp .env.example .env
+
+# Install dependencies and start dev environment in localhost:3000
+npm install && npm run dev
+```
+
+#### 7. Verify your customized voice agent 🎉
+
+Open `localhost:3000` in your browser, you should be seeing a voice agent just like the Astra, yet with your own customizations.
 
 <br>
 <h2>Agent Customization</h2>
 
-To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+To explore further, the voice agent is an excellent starting point. It incorporates various extensions, some of which are interchangeable. Feel free to select the ones that best suit your needs and maximize its capabilities.
 
 | Extension          | Feature        | Description                                                                                                                                                                                                          |
 | ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -95,7 +178,7 @@ To explore further, the ASTRA voice agent is an excellent starting point. It inc
 
 <h3>Voice Agent Diagram</h3>
 
-![ASTRA voice agent diagram](./images/image-2.png)
+![voice agent diagram](./images/image-2.png)
 
 <h3>Customize Agent</h3>
 
