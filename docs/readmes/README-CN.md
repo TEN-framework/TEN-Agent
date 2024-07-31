@@ -71,7 +71,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
 #### 2. 定制化
-```json
+```js
 // 在 `manifest.json` 可以直接改 propmt 和问候语
 "property": {
     "base_url": "",
@@ -86,7 +86,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 }
 ```
 
-#### 4. 在 Docker 容器中构建 agent
+#### 3. 在 Docker 容器中构建 agent
 
 ```bash
 # 命令行拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
@@ -102,7 +102,7 @@ docker exec -it astra_agents_dev bash
 make build
 ```
 
-#### 5. 启动本地服务器
+#### 4. 启动本地服务器
 
 
 ```bash
@@ -125,7 +125,7 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-#### 6. 运行 voice agent 界面
+#### 5. 运行 voice agent 界面
 
 Voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高版本。
 
@@ -140,7 +140,7 @@ cp .env.example .env
 npm install && npm run dev
 ```
 
-#### 7. 验证您定制的 voice agent 🎉
+#### 6. 验证您定制的 voice agent 🎉
 
 在浏览器中打开 `localhost:3000`，您应该能够看到一个与示例项目一样的 voice angent，但是这次是带有定制的 voice agent。
 
