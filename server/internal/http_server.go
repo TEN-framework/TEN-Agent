@@ -258,7 +258,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 
 	graph := fmt.Sprintf(`rte.predefined_graphs.#(name=="%s")`, graphName)
 	// Automatically start on launch
-	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), "true")
+	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 
 	// Set parameters from the request to property.json
 	for key, props := range startPropMap {

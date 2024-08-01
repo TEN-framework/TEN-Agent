@@ -70,7 +70,7 @@ func processProperty(propertyJsonFile string) (err error) {
 	for i := range gjson.Get(propertyJson, "rte.predefined_graphs").Array() {
 		graph := fmt.Sprintf("rte.predefined_graphs.%d", i)
 		// Shut down all auto-starting Graphs
-		propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), "false")
+		propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), false)
 
 		// Set environment variable values to property.json
 		for envKey, envProps := range internal.EnvPropMap {
