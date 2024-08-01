@@ -3,29 +3,21 @@
 {
     "name": "astra",
     "image": "ghcr.io/rte-design/astra_agents_build",
-
     "customizations": {
         "vscode": {
-            "extensions": ["golang.go"]
+            "extensions": [
+                "golang.go"
+            ]
         }
     },
-    
-    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind", 
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
     "workspaceFolder": "/app",
-
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    "forwardPorts": [8080],
-
+    "forwardPorts": [
+        8080
+    ],
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers/features/git:1": {}
     }
-
-    // Uncomment the next line to run commands after the container is created.
-    // "postCreateCommand": ""
-
-    // Configure tool-specific properties.
-    // "customizations": {},
-    // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-    // "remoteUser": "devcontainer"
 }

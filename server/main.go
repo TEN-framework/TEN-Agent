@@ -1,146 +1,86 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
 
+	"github.com/joho/godotenv"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 
 	"app/internal"
 )
 
 func main() {
-	httpServerConfig := &internal.HttpServerConfig{}
-
-	ttsVendorChinese := os.Getenv("TTS_VENDOR_CHINESE")
-	if len(ttsVendorChinese) == 0 {
-		ttsVendorChinese = internal.TTSVendorAzure
+	// Load .env
+	err := godotenv.Load()
+	if err != nil {
+		slog.Warn("load .env file failed", "err", err)
 	}
 
-	ttsVendorEnglish := os.Getenv("TTS_VENDOR_ENGLISH")
-	if len(ttsVendorEnglish) == 0 {
-		ttsVendorEnglish = internal.TTSVendorAzure
+	// Check environment
+	agoraAppId := os.Getenv("AGORA_APP_ID")
+	if len(agoraAppId) != 32 {
+		slog.Error("environment AGORA_APP_ID invalid")
+		os.Exit(1)
 	}
 
 	workersMax, err := strconv.Atoi(os.Getenv("WORKERS_MAX"))
 	if err != nil || workersMax <= 0 {
-		workersMax = 2
+		slog.Error("environment WORKERS_MAX invalid")
+		os.Exit(1)
 	}
 
 	workerQuitTimeoutSeconds, err := strconv.Atoi(os.Getenv("WORKER_QUIT_TIMEOUT_SECONDES"))
 	if err != nil || workerQuitTimeoutSeconds <= 0 {
-		workerQuitTimeoutSeconds = 60
+		slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDES invalid")
+		os.Exit(1)
 	}
 
-	flag.StringVar(&httpServerConfig.AppId, "appId", os.Getenv("AGORA_APP_ID"), "agora appid")
-	flag.StringVar(&httpServerConfig.AppCertificate, "appCertificate", os.Getenv("AGORA_APP_CERTIFICATE"), "agora certificate")
-	flag.StringVar(&httpServerConfig.Port, "port", ":8080", "http server port")
-	flag.StringVar(&httpServerConfig.TTSVendorChinese, "ttsVendorChinese", ttsVendorChinese, "tts vendor for chinese")
-	flag.StringVar(&httpServerConfig.TTSVendorEnglish, "ttsVendorEnglish", ttsVendorEnglish, "tts vendor for english")
-	flag.IntVar(&httpServerConfig.WorkersMax, "workersMax", workersMax, "workers max")
-	flag.IntVar(&httpServerConfig.WorkerQuitTimeoutSeconds, "workerQuitTimeoutSeconds", workerQuitTimeoutSeconds, "worker quit timeout seconds")
-	flag.Parse()
+	// Process property.json
+	if err = processProperty(internal.PropertyJsonFile); err != nil {
+		slog.Error("process property.json failed", "err", err)
+		os.Exit(1)
+	}
 
-	slog.Info("server config", "ttsVendorChinese", httpServerConfig.TTSVendorChinese, "ttsVendorEnglish", httpServerConfig.TTSVendorEnglish,
-		"workersMax", httpServerConfig.WorkersMax, "workerQuitTimeoutSeconds", httpServerConfig.WorkerQuitTimeoutSeconds)
-
-	processManifest(internal.ManifestJsonFile)
-	processManifest(internal.ManifestJsonFileElevenlabs)
+	// Start server
+	httpServerConfig := &internal.HttpServerConfig{
+		AppId:                    agoraAppId,
+		AppCertificate:           os.Getenv("AGORA_APP_CERTIFICATE"),
+		LogPath:                  os.Getenv("LOG_PATH"),
+		Port:                     os.Getenv("SERVER_PORT"),
+		WorkersMax:               workersMax,
+		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
+	}
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }
 
-func processManifest(manifestJsonFile string) (err error) {
-	content, err := os.ReadFile(manifestJsonFile)
+func processProperty(propertyJsonFile string) (err error) {
+	content, err := os.ReadFile(propertyJsonFile)
 	if err != nil {
-		slog.Error("read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile)
+		slog.Error("read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile)
 		return
 	}
 
-	manifestJson := string(content)
+	propertyJson := string(content)
+	for i := range gjson.Get(propertyJson, "rte.predefined_graphs").Array() {
+		graph := fmt.Sprintf("rte.predefined_graphs.%d", i)
+		// Shut down all auto-starting Graphs
+		propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), false)
 
-	appId := os.Getenv("AGORA_APP_ID")
-	if appId != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, appId)
+		// Set environment variable values to property.json
+		for envKey, envProps := range internal.EnvPropMap {
+			if envVal := os.Getenv(envKey); envVal != "" {
+				for _, envProp := range envProps {
+					propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
+				}
+			}
+		}
 	}
 
-	azureSttKey := os.Getenv("AZURE_STT_KEY")
-	if azureSttKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_key`, azureSttKey)
-	}
-
-	azureSttRegion := os.Getenv("AZURE_STT_REGION")
-	if azureSttRegion != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_vendor_region`, azureSttRegion)
-	}
-
-	openaiBaseUrl := os.Getenv("OPENAI_BASE_URL")
-	if openaiBaseUrl != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.base_url`, openaiBaseUrl)
-	}
-
-	openaiApiKey := os.Getenv("OPENAI_API_KEY")
-	if openaiApiKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.api_key`, openaiApiKey)
-	}
-
-	openaiModel := os.Getenv("OPENAI_MODEL")
-	if openaiModel != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.model`, openaiModel)
-	}
-
-	proxyUrl := os.Getenv("PROXY_URL")
-	if proxyUrl != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="openai_chatgpt").property.proxy_url`, proxyUrl)
-	}
-
-	azureTtsKey := os.Getenv("AZURE_TTS_KEY")
-	if azureTtsKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_key`, azureTtsKey)
-	}
-
-	azureTtsRegion := os.Getenv("AZURE_TTS_REGION")
-	if azureTtsRegion != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_subscription_region`, azureTtsRegion)
-	}
-
-	awsRegion := os.Getenv("AWS_REGION")
-	if awsRegion != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.region`, awsRegion)
-	}
-
-	awsAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
-	if awsAccessKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.access_key`, awsAccessKey)
-	}
-
-	awsSecretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if awsSecretKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.secret_key`, awsSecretKey)
-	}
-
-	bedrockModel := os.Getenv("AWS_BEDROCK_MODEL")
-	if bedrockModel != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="bedrock_llm").property.model`, bedrockModel)
-	}
-
-	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
-	if elevenlabsTtsKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
-	}
-
-	cosyTtsKey := os.Getenv("COSY_TTS_KEY")
-	if cosyTtsKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="cosy_tts").property.api_key`, cosyTtsKey)
-	}
-
-	qwenApiKey := os.Getenv("QWEN_API_KEY")
-	if qwenApiKey != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="qwen_llm").property.api_key`, qwenApiKey)
-	}
-
-	err = os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
+	err = os.WriteFile(propertyJsonFile, []byte(propertyJson), 0644)
 	return
 }

@@ -13,7 +13,6 @@ bin/
 core
 crash_context_v1
 .deps/
-docker-compose.yml
 .DS_Store
 .env
 /.gn
@@ -22,9 +21,6 @@ include/
 interface/
 lib/
 lib64
-agents/manifest.elevenlabs.json
-agents/manifest.cn.json
-agents/manifest.en.json
 node_modules/
 /out/
 *.pcm
