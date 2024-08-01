@@ -33,7 +33,7 @@
 
 We showcase an impressive voice agent called Astra, powered by TEN, demonstrating its ability to create intuitive and seamless conversational interactions.
 
-[![Showcase ASTRA Voice Agent](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
+[![Showcase Astra](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
 <br>
 <h2>How to build voice agent locally</h2>
@@ -46,13 +46,14 @@ We showcase an impressive voice agent called Astra, powered by TEN, demonstratin
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
+- [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Docker setting on apple silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
 
 <div align="center">
 
-![ASTRA Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
+![Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
 
 </div>
 
@@ -60,31 +61,31 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 #### 1. Create manifest.json
 
 ```bash
-# Crate manifest.json from the example
+# Create manifest.json from the example
 cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
-#### 2. Modify prompts and greetings
+#### 2. Modify prompt and greeting
 
-```json
-// Feel free to edit prompts and greetings in manifest.json
+```js
+// Feel free to edit prompt and greeting in manifest.json
 "property": {
     "base_url": "",
     "api_key": "<openai_api_key>",
     "frequency_penalty": 0.9,
     "model": "gpt-3.5-turbo",
     "max_tokens": 512,
-    "prompt": "", // prompts
+    "prompt": "", // prompt
     "proxy_url": "",
-    "greeting": "Astra agent connected. How can I help you today?", // greetings
+    "greeting": "Astra agent connected. How can I help you today?", // greeting
     "max_memory_length": 10
 }
 ```
 
-#### 4. Create agent in Docker container
+#### 3. Create agent in Docker container
 
 ```bash
-# Pull Docker image and mount the directory in command line
+# In CLI, pull Docker image and mount the target directory
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
 # Windows Git Bash
@@ -97,11 +98,11 @@ docker exec -it astra_agents_dev bash
 make build
 ```
 
-#### 5. Start server
+#### 4. Export env variables and start server
 
 
 ```bash
-# Agora App ID and Agora App Certificate
+# In the same CLI window, set env variables
 export AGORA_APP_ID=<your_agora_appid>
 export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
 
@@ -120,9 +121,7 @@ export AZURE_TTS_REGION=<your_azure_tts_region>
 make run-server
 ```
 
-#### 6. Connect voice agent UI to server
-
-The UI of voice agent is build on Next.js 14, so it needs Node 18 or later.
+#### 5. Connect voice agent UI to server
 
 Open a separate Terminal tab and run the commands:
 
@@ -135,14 +134,14 @@ cp .env.example .env
 npm install && npm run dev
 ```
 
-#### 7. Verify your customized voice agent 🎉
+#### 6. Verify your customized voice agent 🎉
 
 Open `localhost:3000` in your browser, you should be seeing a voice agent just like the Astra, yet with your own customizations.
 
 <br>
 <h2>Voice agent architecture </h2>
 
-To explore further, the ASTRA voice agent is an excellent starting point. It incorporates the following extensions, some of which will be interchangeable in the near future. Feel free to choose the ones that best suit your needs and maximize ASTRA’s capabilities.
+To explore further, the voice agent is an excellent starting point. It incorporates various extensions, some of which are interchangeable. Feel free to select the ones that best suit your needs and maximize its capabilities.
 
 
 | Extension          | Feature        | Description                                                                                                                                                                                                          |
@@ -157,7 +156,7 @@ To explore further, the ASTRA voice agent is an excellent starting point. It inc
 
 <h3>Voice Agent Diagram</h3>
 
-![ASTRA voice agent diagram](./images/image-2.png)
+![voice agent diagram](./images/image-2.png)
 
 <br>
 <h2>TEN Service</h2>
