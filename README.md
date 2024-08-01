@@ -46,6 +46,7 @@ We showcase an impressive voice agent called Astra, powered by TEN, demonstratin
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
+- [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Docker setting on apple silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
@@ -121,8 +122,6 @@ make run-server
 ```
 
 #### 5. Connect voice agent UI to server
-
-The UI of voice agent is build on Next.js 14, so it needs Node 18 or later.
 
 Open a separate Terminal tab and run the commands:
 

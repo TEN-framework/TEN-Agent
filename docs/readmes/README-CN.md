@@ -45,6 +45,7 @@
 - Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
 - [OpenAI](https://openai.com/index/openai-api/) API 密钥
 - [Docker](https://www.docker.com/)
+- [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Apple Silicon 上的 Docker 设置
 如果您使用的是 Apple Silicon，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
@@ -126,8 +127,6 @@ make run-server
 ```
 
 #### 5. 运行 voice agent 界面
-
-Voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高版本。
 
 同时，再打开一个 Terminal 窗口， 通过下列命令创建环境文件并跑起界面。
 
