@@ -15,7 +15,8 @@ on:
     branches: [ "main" ]
 
 env:
-  IMAGE_NAME: astra_agents_server
+  SERVER_IMAGE_NAME: astra_agents_server
+  PLAYGROUND_IMAGE_NAME: astra_playground
 
 jobs:
   build:
@@ -29,13 +30,23 @@ jobs:
     - id: pre-step
       shell: bash
       run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
-    - name: Build & Publish to Github Container Registry
+    - name: Build & Publish Docker Image for Agents Server 
       uses: elgohr/Publish-Docker-Github-Action@v5
       with:
-        name: ${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+        name: ${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
+        tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+        no_push: ${{ github.event_name == 'pull_request' }}
+    - name: Build & Publish Docker Image for Playground
+      uses: elgohr/Publish-Docker-Github-Action@v5
+      with:
+        name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        registry: ghcr.io
+        workdir: playground
         tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
         no_push: ${{ github.event_name == 'pull_request' }}
 
