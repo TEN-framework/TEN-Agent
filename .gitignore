@@ -21,9 +21,6 @@ include/
 interface/
 lib/
 lib64
-agents/manifest.elevenlabs.json
-agents/manifest.cn.json
-agents/manifest.en.json
 node_modules/
 /out/
 *.pcm

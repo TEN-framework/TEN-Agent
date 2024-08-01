@@ -17,8 +17,7 @@ func main() {
 	// Load .env
 	err := godotenv.Load()
 	if err != nil {
-		slog.Error("load .env file failed", "err", err)
-		os.Exit(1)
+		slog.Warn("load .env file failed", "err", err)
 	}
 
 	// Check environment

@@ -1,14 +1,19 @@
 version: "3.8"
 
 services:
-    astra_agents_server:
-        image: agoraio/astra_agents_server:latest
-        container_name: astra_agents_server
+    astra_agents_dev:
+        image: ghcr.io/rte-design/astra_agents_build:latest
+        container_name: astra_agents_dev
+        platform: linux/amd64
+        tty: true
+        stdin_open: true
         restart: always
         ports:
             - "${SERVER_PORT}:${SERVER_PORT}"
         volumes:
+            - ./:/app
             - ${LOG_PATH}:${LOG_PATH}
+        working_dir: /app
         environment:
             AGORA_APP_ID: ${AGORA_APP_ID}
             AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
@@ -27,16 +32,9 @@ services:
             OPENAI_MODEL: ${OPENAI_MODEL}
             PROXY_URL: ${PROXY_URL}
             QWEN_API_KEY: ${QWEN_API_KEY}
-        build:
-            context: .
-            dockerfile: Dockerfile
-        platform: linux/amd64
     astra_playground:
         image: agoraio/astra_playground:latest
         container_name: astra_playground
         restart: always
         ports:
             - "3000:3000"
-        build:
-            context: ./playground
-            dockerfile: Dockerfile

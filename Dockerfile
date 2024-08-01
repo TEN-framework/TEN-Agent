@@ -8,7 +8,7 @@ COPY . .
 COPY agents/property.json.example agents/property.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN make build && \
+RUN make clean && make build && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
