@@ -30,7 +30,7 @@ services:
             OPENAI_API_KEY: ${OPENAI_API_KEY}
             OPENAI_BASE_URL: ${OPENAI_BASE_URL}
             OPENAI_MODEL: ${OPENAI_MODEL}
-            PROXY_URL: ${PROXY_URL}
+            OPENAI_PROXY_URL: ${OPENAI_PROXY_URL}
             QWEN_API_KEY: ${QWEN_API_KEY}
     astra_playground:
         image: agoraio/astra_playground:latest

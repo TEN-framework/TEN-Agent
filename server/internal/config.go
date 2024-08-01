@@ -77,7 +77,7 @@ var (
 		"OPENAI_MODEL": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "model"},
 		},
-		"PROXY_URL": {
+		"OPENAI_PROXY_URL": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "proxy_url"},
 		},
 		"QWEN_API_KEY": {
