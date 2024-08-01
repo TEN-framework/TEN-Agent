@@ -5,9 +5,6 @@
  * Copyright (c) 2024 Agora IO. All rights reserved.
  *
  */
-// Note that this is just an example extension written in the GO programming
-// language, so the package name does not equal to the containing directory
-// name. However, it is not common in Go.
 package internal
 
 import (
@@ -22,7 +19,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gogf/gf/crypto/gmd5"
-	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
@@ -33,7 +29,8 @@ type HttpServer struct {
 type HttpServerConfig struct {
 	AppId                    string
 	AppCertificate           string
-	ManifestJsonFile         string
+	LogPath                  string
+	PropertyJsonFile         string
 	Port                     string
 	TTSVendorChinese         string
 	TTSVendorEnglish         string
@@ -42,96 +39,35 @@ type HttpServerConfig struct {
 }
 
 type PingReq struct {
-	RequestId   string `form:"request_id,omitempty" json:"request_id,omitempty"`
-	ChannelName string `form:"channel_name,omitempty" json:"channel_name,omitempty"`
+	RequestId   string `json:"request_id,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
 }
 
 type StartReq struct {
-	RequestId        string `form:"request_id,omitempty" json:"request_id,omitempty"`
-	AgoraAsrLanguage string `form:"agora_asr_language,omitempty" json:"agora_asr_language,omitempty"`
-	ChannelName      string `form:"channel_name,omitempty" json:"channel_name,omitempty"`
-	RemoteStreamId   uint32 `form:"remote_stream_id,omitempty" json:"remote_stream_id,omitempty"`
-	VoiceType        string `form:"voice_type,omitempty" json:"voice_type,omitempty"`
+	RequestId        string `json:"request_id,omitempty"`
+	AgoraAsrLanguage string `json:"agora_asr_language,omitempty"`
+	ChannelName      string `json:"channel_name,omitempty"`
+	GraphName        string `json:"graph_name,omitempty"`
+	RemoteStreamId   uint32 `json:"remote_stream_id,omitempty"`
+	Token            string `json:"token,omitempty"`
+	VoiceType        string `json:"voice_type,omitempty"`
 }
 
 type StopReq struct {
-	RequestId   string `form:"request_id,omitempty" json:"request_id,omitempty"`
-	ChannelName string `form:"channel_name,omitempty" json:"channel_name,omitempty"`
+	RequestId   string `json:"request_id,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
 }
 
 type GenerateTokenReq struct {
-	RequestId   string `form:"request_id,omitempty" json:"request_id,omitempty"`
-	ChannelName string `form:"channel_name,omitempty" json:"channel_name,omitempty"`
-	Uid         uint32 `form:"uid,omitempty" json:"uid,omitempty"`
+	RequestId   string `json:"request_id,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
+	Uid         uint32 `json:"uid,omitempty"`
 }
-
-const (
-	privilegeExpirationInSeconds = uint32(86400)
-	tokenExpirationInSeconds     = uint32(86400)
-
-	languageChinese = "zh-CN"
-	languageEnglish = "en-US"
-
-	ManifestJsonFile           = "./agents/manifest.json"
-	ManifestJsonFileElevenlabs = "./agents/manifest.elevenlabs.json"
-
-	TTSVendorAzure      = "azure"
-	TTSVendorElevenlabs = "elevenlabs"
-
-	voiceTypeMale   = "male"
-	voiceTypeFemale = "female"
-)
-
-var (
-	voiceNameMap = map[string]map[string]map[string]string{
-		languageChinese: {
-			TTSVendorAzure: {
-				voiceTypeMale:   "zh-CN-YunxiNeural",
-				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
-			},
-			TTSVendorElevenlabs: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-		},
-		languageEnglish: {
-			TTSVendorAzure: {
-				voiceTypeMale:   "en-US-BrianNeural",
-				voiceTypeFemale: "en-US-JaneNeural",
-			},
-			TTSVendorElevenlabs: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-		},
-	}
-
-	logTag = slog.String("service", "HTTP_SERVER")
-)
 
 func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
 	return &HttpServer{
 		config: httpServerConfig,
 	}
-}
-
-func (s *HttpServer) getManifestJsonFile(language string) (manifestJsonFile string) {
-	ttsVendor := s.getTtsVendor(language)
-	manifestJsonFile = ManifestJsonFile
-
-	if ttsVendor == TTSVendorElevenlabs {
-		manifestJsonFile = ManifestJsonFileElevenlabs
-	}
-
-	return
-}
-
-func (s *HttpServer) getTtsVendor(language string) string {
-	if language == languageChinese {
-		return s.config.TTSVendorChinese
-	}
-
-	return s.config.TTSVendorEnglish
 }
 
 func (s *HttpServer) handlerHealth(c *gin.Context) {
@@ -200,14 +136,14 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 		return
 	}
 
-	manifestJsonFile, logFile, err := s.processManifest(&req)
+	propertyJsonFile, logFile, err := s.processProperty(&req)
 	if err != nil {
-		slog.Error("handlerStart process manifest", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrProcessManifestFailed, http.StatusInternalServerError)
+		slog.Error("handlerStart process property", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrProcessPropertyFailed, http.StatusInternalServerError)
 		return
 	}
 
-	worker := newWorker(req.ChannelName, logFile, manifestJsonFile)
+	worker := newWorker(req.ChannelName, logFile, propertyJsonFile)
 	worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
 	if err := worker.start(&req); err != nil {
 		slog.Error("handlerStart start worker failed", "err", err, "requestId", req.RequestId, logTag)
@@ -276,7 +212,7 @@ func (s *HttpServer) handlerGenerateToken(c *gin.Context) {
 		return
 	}
 
-	token, err := rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, privilegeExpirationInSeconds)
+	token, err := rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, tokenExpirationInSeconds)
 	if err != nil {
 		slog.Error("handlerGenerateToken generate token failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrGenerateTokenFailed, http.StatusBadRequest)
@@ -295,59 +231,52 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
-func (s *HttpServer) processManifest(req *StartReq) (manifestJsonFile string, logFile string, err error) {
-	manifestJsonFile = s.getManifestJsonFile(req.AgoraAsrLanguage)
-	content, err := os.ReadFile(manifestJsonFile)
+func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
+	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
-		slog.Error("handlerStart read manifest.json failed", "err", err, "manifestJsonFile", manifestJsonFile, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
 		return
 	}
 
-	manifestJson := string(content)
+	propertyJson := string(content)
 
-	if s.config.AppId != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`, s.config.AppId)
+	// Get graph name
+	graphName := req.GraphName
+	if graphName == "" {
+		graphName = graphNameDefault
 	}
-	appId := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.app_id`).String()
 
 	// Generate token
-	token := appId
+	req.Token = s.config.AppId
 	if s.config.AppCertificate != "" {
-		token, err = rtctokenbuilder.BuildTokenWithUid(appId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, privilegeExpirationInSeconds)
+		req.Token, err = rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, tokenExpirationInSeconds)
 		if err != nil {
 			slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
 			return
 		}
 	}
 
-	manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.token`, token)
-	if req.AgoraAsrLanguage != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`, req.AgoraAsrLanguage)
-	}
-	if req.ChannelName != "" {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.channel`, req.ChannelName)
-	}
-	if req.RemoteStreamId != 0 {
-		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.remote_stream_id`, req.RemoteStreamId)
-	}
+	graph := fmt.Sprintf(`rte.predefined_graphs.#(name=="%s")`, graphName)
+	// Automatically start on launch
+	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), "true")
 
-	language := gjson.Get(manifestJson, `predefined_graphs.0.nodes.#(name=="agora_rtc").property.agora_asr_language`).String()
-
-	ttsVendor := s.getTtsVendor(language)
-	voiceName := voiceNameMap[language][ttsVendor][req.VoiceType]
-	if voiceName != "" {
-		if ttsVendor == TTSVendorAzure {
-			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="azure_tts").property.azure_synthesis_voice_name`, voiceName)
-		} else if ttsVendor == TTSVendorElevenlabs {
-			manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.voice_id`, voiceName)
+	// Set parameters from the request to property.json
+	for key, props := range startPropMap {
+		if val := getFieldValue(req, key); val != "" {
+			for _, prop := range props {
+				if key == "VoiceType" {
+					val = voiceNameMap[req.AgoraAsrLanguage][prop.ExtensionName][req.VoiceType]
+				}
+				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, prop.ExtensionName, prop.Property), val)
+			}
 		}
 	}
 
 	channelNameMd5 := gmd5.MustEncryptString(req.ChannelName)
 	ts := time.Now().UnixNano()
-	manifestJsonFile = fmt.Sprintf("/tmp/manifest-%s-%d.json", channelNameMd5, ts)
-	logFile = fmt.Sprintf("/tmp/app-%s-%d.log", channelNameMd5, ts)
-	os.WriteFile(manifestJsonFile, []byte(manifestJson), 0644)
+	propertyJsonFile = fmt.Sprintf("%s/property-%s-%d.json", s.config.LogPath, channelNameMd5, ts)
+	logFile = fmt.Sprintf("%s/app-%s-%d.log", s.config.LogPath, channelNameMd5, ts)
+	os.WriteFile(propertyJsonFile, []byte(propertyJson), 0644)
 
 	return
 }
@@ -366,5 +295,5 @@ func (s *HttpServer) Start() {
 	slog.Info("server start", "port", s.config.Port, logTag)
 
 	go cleanWorker()
-	r.Run(s.config.Port)
+	r.Run(fmt.Sprintf(":%s", s.config.Port))
 }

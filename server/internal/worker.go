@@ -16,7 +16,7 @@ import (
 type Worker struct {
 	ChannelName        string
 	LogFile            string
-	ManifestJsonFile   string
+	PropertyJsonFile   string
 	Pid                int
 	QuitTimeoutSeconds int
 	CreateTs           int64
@@ -32,11 +32,11 @@ var (
 	workers = gmap.New(true)
 )
 
-func newWorker(channelName string, logFile string, manifestJsonFile string) *Worker {
+func newWorker(channelName string, logFile string, propertyJsonFile string) *Worker {
 	return &Worker{
 		ChannelName:        channelName,
 		LogFile:            logFile,
-		ManifestJsonFile:   manifestJsonFile,
+		PropertyJsonFile:   propertyJsonFile,
 		QuitTimeoutSeconds: 60,
 		CreateTs:           time.Now().Unix(),
 		UpdateTs:           time.Now().Unix(),
@@ -44,14 +44,14 @@ func newWorker(channelName string, logFile string, manifestJsonFile string) *Wor
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("cd /app/agents && nohup %s --manifest %s > %s 2>&1 &", workerExec, w.ManifestJsonFile, w.LogFile)
+	shell := fmt.Sprintf("cd /app/agents && nohup %s --property %s > %s 2>&1 &", workerExec, w.PropertyJsonFile, w.LogFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
 	if _, err = exec.Command("sh", "-c", shell).CombinedOutput(); err != nil {
 		slog.Error("Worker start failed", "err", err, "requestId", req.RequestId, logTag)
 		return
 	}
 
-	shell = fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", w.ManifestJsonFile)
+	shell = fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", w.PropertyJsonFile)
 	slog.Info("Worker get pid", "requestId", req.RequestId, "shell", shell, logTag)
 	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
 	if err != nil {
