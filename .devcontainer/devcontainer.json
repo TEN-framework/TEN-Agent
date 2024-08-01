@@ -6,23 +6,8 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "ms-vscode.cpptools-extension-pack",
-                "xaver.clang-format",
-                "doggy8088.go-extension-pack",
-                "donjayamanne.python-extension-pack",
-                "ms-python.autopep8"
-            ],
-            "settings": {
-                "python.defaultInterpreterPath": "/usr/bin/python3",
-                "[python]": {
-                    "editor.defaultFormatter": "ms-python.autopep8",
-                    "editor.formatOnSave": true
-                },
-                "autopep8.args": [
-                    "--max-line-length=120",
-                    "--ignore=E402"
-                ]
-            }
+                "golang.go"
+            ]
         }
     },
     "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
@@ -34,9 +19,5 @@
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers/features/git:1": {}
-    },
-    "postCreateCommand": {
-        "install dependencies": "apt-get update && apt-get install -y clang-format",
-        "install autopep8": "pip install autopep8"
     }
 }
