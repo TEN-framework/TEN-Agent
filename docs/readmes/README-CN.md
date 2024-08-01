@@ -30,25 +30,25 @@
 
 </div>
 
-## 项目示例 - The voice agent
+## Astra
 
-[示例项目](https://theastra.ai)是通过 ASTRA 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
+[Astra](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
 [![展示ASTRA语音助手](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
 <br>
-<h2>如何在本地搭建 voice agent</h2>
+<h2>如何在本地搭建 Astra</h2>
 
 #### 先决条件
 
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
-- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
-- [OpenAI](https://openai.com/index/openai-api/) API 密钥
+- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API key
+- [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
 - [Node.js(LTS) v18](https://nodejs.org/en)
 
-#### Apple Silicon 上的 Docker 设置
-如果您使用的是 Apple Silicon，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
+#### Apple Silicon 上 Docker 设置
+如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
 
 <div align="center">
 
@@ -66,17 +66,22 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 
 #### 1.创建 manifest 配置文件
 
+Clone 代码后在根目录通过下面的命令创建配置文件。
+
 ```bash
-# 在命令行从示例文件创建 `manifest.json`
+# 在命令行从示例文件创建 manifest.json
 cp ./agents/manifest.json.example ./agents/manifest.json
 ```
 
 #### 2. 定制化
+
+`cd` 到 `/agents` 后可以看到 `manifest.json`，这里可以自定义 `prompt` 和 `greeting`。
+
 ```js
-// 在 `manifest.json` 可以直接改 propmt 和问候语
+// 在 manifest.json 可以直接改 prompt 和问候语
 "property": {
     "base_url": "",
-    "api_key": "<openai_api_key>",
+    "api_key": "<openai_api_key>", 
     "frequency_penalty": 0.9,
     "model": "gpt-3.5-turbo",
     "max_tokens": 512,
@@ -89,6 +94,7 @@ cp ./agents/manifest.json.example ./agents/manifest.json
 
 #### 3. 在 Docker 容器中构建 agent
 
+在命令行，逐一跑下面的命令。
 ```bash
 # 命令行拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
