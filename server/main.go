@@ -50,7 +50,7 @@ func main() {
 		AppId:                    agoraAppId,
 		AppCertificate:           os.Getenv("AGORA_APP_CERTIFICATE"),
 		LogPath:                  os.Getenv("LOG_PATH"),
-		Port:                     os.Getenv("SERVER_PORT"),
+		Port:                     os.Getenv("PLAYGROUND_SERVER_PORT"),
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
 	}
