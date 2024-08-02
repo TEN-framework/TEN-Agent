@@ -10,7 +10,7 @@ services:
         restart: always
         ports:
             - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
-            - "${PLAYGROUND_SERVER_PORT}:${PLAYGROUND_SERVER_PORT}"
+            - "${SERVER_PORT}:${SERVER_PORT}"
         volumes:
             - ./:/app
             - ${LOG_PATH}:${LOG_PATH}
