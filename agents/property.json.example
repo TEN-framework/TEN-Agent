@@ -110,17 +110,6 @@
                                     }
                                 ]
                             }
-                        ],
-                        "pcm_frame": [
-                            {
-                                "name": "pcm_frame",
-                                "dest": [
-                                    {
-                                        "extension_group": "default",
-                                        "extension": "interrupt_detector"
-                                    }
-                                ]
-                            }
                         ]
                     },
                     {
@@ -549,17 +538,6 @@
                                     }
                                 ]
                             }
-                        ],
-                        "pcm_frame": [
-                            {
-                                "name": "pcm_frame",
-                                "dest": [
-                                    {
-                                        "extension_group": "bedrock",
-                                        "extension": "bedrock_llm"
-                                    }
-                                ]
-                            }
                         ]
                     },
                     {
@@ -720,17 +698,6 @@
                                         "extension_group": "default",
                                         "extension": "interrupt_detector"
                                     },
-                                    {
-                                        "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
-                                    }
-                                ]
-                            }
-                        ],
-                        "pcm_frame": [
-                            {
-                                "name": "pcm_frame",
-                                "dest": [
                                     {
                                         "extension_group": "chatgpt",
                                         "extension": "openai_chatgpt"
@@ -907,17 +874,6 @@
                                     {
                                         "extension_group": "chat_transcriber",
                                         "extension": "chat_transcriber"
-                                    }
-                                ]
-                            }
-                        ],
-                        "pcm_frame": [
-                            {
-                                "name": "pcm_frame",
-                                "dest": [
-                                    {
-                                        "extension_group": "llm",
-                                        "extension": "qwen_llm"
                                     }
                                 ]
                             }
