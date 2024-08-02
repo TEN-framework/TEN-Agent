@@ -45,8 +45,7 @@ We showcase an impressive voice agent called Astra, powered by TEN, demonstratin
 - Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
+- [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
 - [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Docker setting on apple silicon
@@ -59,19 +58,37 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 </div>
 
 
-#### 1. Create .env file
-
-```bash
-# Create .env from the example
-# remember to provide your api keys in your .env file
-cp ./.env.example ./.env
-```
-
-#### 2. Create property.json
+#### 1. Prepare config files
 
 ```bash
 # Create property.json from the example
 cp ./agents/property.json.example ./agents/property.json
+
+# Create .env from the example
+cp ./.env.example ./.env
+```
+
+#### 2. Setup API keys & Environment varialbes in .env file
+```
+...
+# Agora App ID and Agora App Certificate
+# required: this variable must be set
+AGORA_APP_ID=
+AGORA_APP_CERTIFICATE=
+...
+# Extension: agora_rtc
+# Azure STT key and region
+AZURE_STT_KEY=
+AZURE_STT_REGION=
+
+# Extension: azure_tts
+# Azure TTS key and region
+AZURE_TTS_KEY=
+AZURE_TTS_REGION=
+...
+# Extension: openai_chatgpt
+# OpenAI API key
+OPENAI_API_KEY=
 ```
 
 #### 3. Create agent in Docker container
