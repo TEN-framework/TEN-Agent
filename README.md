@@ -95,13 +95,14 @@ OPENAI_API_KEY=
 
 ```bash
 # Execute docker compose up to start the services
-# This should start an playground running on port 3000, graph designer running on port 30001 and agent development container
+# This should start
+# 1. the playground running on port 3000
+# 2. the graph designer running on port 30001
+# 3. agent build tools container
 docker compose up -d
 
-# Enter container
+# Enter container to build agent
 docker exec -it astra_agents_dev bash
-
-# Create agent
 make build
 ```
 
@@ -110,15 +111,11 @@ make build
 ```bash
 # Run server on port 8080
 make run-server
-
-# Run graph designer server on port 49483
-make run-gd-server
 ```
 
-#### 5. Verify your customized voice agent 🎉
+#### 5. Verify your voice agent 🎉
 
-Open `localhost:3000` in your browser, you should be seeing a voice agent just like the Astra, yet with your own customizations.
-Open `localhost:3001` in your browser, you can orchestrate property.json through the Graph Designer.
+You can open `localhost:3000` in your browser to test your own agent, or open `localhost:3001` in your browser to build your workflow by Graph Designer.
 
 <br>
 <h2>Voice agent architecture </h2>
