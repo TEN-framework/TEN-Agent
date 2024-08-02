@@ -154,10 +154,6 @@ To explore further, the voice agent is an excellent starting point. It incorpora
 | agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
 | interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
 
-<h3>Voice Agent Diagram</h3>
-
-![voice agent diagram](./images/image-2.png)
-
 <br>
 <h2>TEN Service</h2>
 <h3>Discover More</h3>
