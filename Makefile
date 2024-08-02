@@ -2,7 +2,7 @@ PROJECT_NAME := astra
 PROJECT_VERSION ?= "0.1."$(shell date -u +'%Y%m%d%H')
 REGISTRY ?= agoraio/
 
-.PHONY: build build-agents build-playground build-server clean clean-agents docker-build-playground docker-build-server run-server
+.PHONY: build build-agents build-playground build-server clean clean-agents docker-build-playground docker-build-server run-gd-server run-server
 
 build: build-agents build-server
 
@@ -36,6 +36,11 @@ docker-build-playground:
 docker-build-server:
 	@echo ">> docker build server"
 	docker build -t $(REGISTRY)$(PROJECT_NAME)_agents_server:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
+	@echo ">> done"
+
+run-gd-server:
+	@echo ">> run graph designer server"
+	cd agents && arpm dev-server
 	@echo ">> done"
 
 run-server:

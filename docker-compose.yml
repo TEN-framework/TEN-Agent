@@ -9,6 +9,7 @@ services:
         stdin_open: true
         restart: always
         ports:
+            - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
             - "${SERVER_PORT}:${SERVER_PORT}"
         volumes:
             - ./:/app
@@ -38,3 +39,9 @@ services:
         restart: always
         ports:
             - "3000:3000"
+    astra_graph_designer:
+        image: agoraio/astra_graph_designer:latest
+        container_name: astra_graph_designer
+        restart: always
+        ports:
+            - "3001:3000"
