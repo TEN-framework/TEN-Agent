@@ -21,7 +21,7 @@ const (
 	languageChinese = "zh-CN"
 	languageEnglish = "en-US"
 	// Default graph name
-	graphNameDefault = "astra_agents_cn"
+	graphNameDefault = "va.openai.azure"
 	// Property json
 	PropertyJsonFile = "./agents/property.json"
 	// Token expire time

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
     astra_agents_dev:
         image: ghcr.io/rte-design/astra_agents_build:latest
