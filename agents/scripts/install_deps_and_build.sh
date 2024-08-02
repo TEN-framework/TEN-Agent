@@ -65,6 +65,10 @@ build_go_app() {
   cd $app_dir
 
   go run scripts/build/main.go --verbose
+  if [[ $? -ne 0 ]]; then
+    echo "FATAL: failed to build go app, see logs for detail."
+    exit 1
+  fi
 }
 
 clean() {
