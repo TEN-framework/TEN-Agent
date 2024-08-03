@@ -1,11 +1,12 @@
 services:
     astra_agents_dev:
-        image: ghcr.io/rte-design/astra_agents_build:latest
+        image: ghcr.io/rte-design/astra_agents_build:0.3.4
         container_name: astra_agents_dev
         platform: linux/amd64
         tty: true
         stdin_open: true
         restart: always
+        command: "make run-gd-server"
         ports:
             - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
             - "${SERVER_PORT}:${SERVER_PORT}"
