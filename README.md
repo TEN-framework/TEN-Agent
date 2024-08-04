@@ -90,24 +90,20 @@ AZURE_TTS_REGION=
 OPENAI_API_KEY=
 ```
 
-#### 3. Create agent in Docker container
+#### 3. Start agent builder toolkit containers
 
 ```bash
 # Execute docker compose up to start the services
-# This should start
-# 1. the playground running on port 3000
-# 2. the graph designer running on port 30001
-# 3. agent build tools container
-docker compose up -d
+docker compose up
+```
 
+#### 4. Build your agent and start server
+
+```bash
 # Enter container to build agent
 docker exec -it astra_agents_dev bash
 make build
-```
 
-#### 4. Start server
-
-```bash
 # Run server on port 8080
 make run-server
 ```
