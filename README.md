@@ -63,7 +63,6 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 ```bash
 # Create property.json from the example
 cp ./agents/property.json.example ./agents/property.json
-
 # Create .env from the example
 cp ./.env.example ./.env
 ```
