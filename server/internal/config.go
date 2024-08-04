@@ -15,6 +15,7 @@ const (
 	extensionNameCosyTTS       = "cosy_tts"
 	extensionNameElevenlabsTTS = "elevenlabs_tts"
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
+	extensionNamePollyTTS      = "polly_tts"
 	extensionNameQwenLLM       = "qwen_llm"
 
 	// Language
@@ -41,9 +42,11 @@ var (
 		},
 		"AWS_ACCESS_KEY_ID": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "access_key"},
+			{ExtensionName: extensionNamePollyTTS, Property: "access_key"},
 		},
 		"AWS_SECRET_ACCESS_KEY": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "secret_key"},
+			{ExtensionName: extensionNamePollyTTS, Property: "secret_key"},
 		},
 		"AWS_BEDROCK_MODEL": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "model"},
@@ -116,6 +119,10 @@ var (
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
 				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
 			},
+			extensionNamePollyTTS: {
+				voiceTypeMale:   "Zhiyu",
+				voiceTypeFemale: "Zhiyu",
+			},
 		},
 		languageEnglish: {
 			extensionNameAzureTTS: {
@@ -125,6 +132,10 @@ var (
 			extensionNameElevenlabsTTS: {
 				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
 				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+			},
+			extensionNamePollyTTS: {
+				voiceTypeMale:   "Matthew",
+				voiceTypeFemale: "Ruth",
 			},
 		},
 	}
