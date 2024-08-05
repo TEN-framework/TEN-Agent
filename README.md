@@ -42,11 +42,13 @@ We showcase an impressive voice agent called Astra, powered by TEN, demonstratin
 
 #### Prerequisites
 
-- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
-- [Node.js(LTS) v18](https://nodejs.org/en)
+- **Keys**
+    - Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+    - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
+    - [OpenAI](https://openai.com/index/openai-api/) API key
+- **Downloads**
+    - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
+    - [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Docker setting on apple silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
@@ -59,22 +61,23 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 
 
 #### 1. Prepare config files
-
+In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
 ```bash
 # Create property.json from the example
 cp ./agents/property.json.example ./agents/property.json
+
 # Create .env from the example
 cp ./.env.example ./.env
 ```
 
-#### 2. Setup API keys & Environment varialbes in .env file
+#### 2. Setup API keys & Environment variables in .env file
+Open the `.env` file and fill in the keys and regions. This is also where you can choose to use any different extensions:
 ```
-...
 # Agora App ID and Agora App Certificate
 # required: this variable must be set
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
-...
+
 # Extension: agora_rtc
 # Azure STT key and region
 AZURE_STT_KEY=
@@ -84,21 +87,21 @@ AZURE_STT_REGION=
 # Azure TTS key and region
 AZURE_TTS_KEY=
 AZURE_TTS_REGION=
-...
+
 # Extension: openai_chatgpt
 # OpenAI API key
 OPENAI_API_KEY=
 ```
 
 #### 3. Start agent builder toolkit containers
-
+In the same directory, run the `docker` command to compose containers:
 ```bash
 # Execute docker compose up to start the services
 docker compose up
 ```
 
 #### 4. Build your agent and start server
-
+Open up a separate terminal window, build the agent and start the server:
 ```bash
 # Enter container to build agent
 docker exec -it astra_agents_dev bash
@@ -111,26 +114,6 @@ make run-server
 #### 5. Verify your voice agent 🎉
 
 You can open `localhost:3000` in your browser to test your own agent, or open `localhost:3001` in your browser to build your workflow by Graph Designer.
-
-<br>
-<h2>Voice agent architecture </h2>
-
-To explore further, the voice agent is an excellent starting point. It incorporates various extensions, some of which are interchangeable. Feel free to select the ones that best suit your needs and maximize its capabilities.
-
-
-| Extension          | Feature        | Description                                                                                                                                                                                                          |
-| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| openai_chatgpt     | LLM            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
-| elevenlabs_tts     | Text-to-speech | [ElevanLabs text to speech](https://elevenlabs.io/) converts text to audio                                                                                                                                           |
-| azure_tts          | Text-to-speech | [Azure text to speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) converts text to audio                                                                                                 |
-| azure_stt          | Speech-to-text | [Azure speech to text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) converts audio to text                                                                                                 |
-| chat_transcriber   | Transcriber    | A utility ext to forward chat logs into channel                                                                                                                                                                      |
-| agora_rtc          | Transporter    | A low latency transporter powered by agora_rtc                                                                                                                                                                       |
-| interrupt_detector | Interrupter    | A utility ext to help interrupt agent                                                                                                                                                                                |
-
-<h3>Voice Agent Diagram</h3>
-
-![voice agent diagram](./images/image-2.png)
 
 <br>
 <h2>TEN Service</h2>
