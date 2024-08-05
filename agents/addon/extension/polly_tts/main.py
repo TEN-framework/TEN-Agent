@@ -54,8 +54,8 @@ class PollyTTSExtension(Extension):
 
         polly_config = PollyConfig.default_config()
 
-        for optional_param in [PROPERTY_REGION, PROPERTY_ENGINE, PROPERTY_VOICE, 
-                PROPERTY_SAMPLE_RATE, PROPERTY_LANG_CODE, 
+        for optional_param in [PROPERTY_REGION, PROPERTY_ENGINE, PROPERTY_VOICE,
+                PROPERTY_SAMPLE_RATE, PROPERTY_LANG_CODE,
                 PROPERTY_ACCESS_KEY, PROPERTY_SECRET_KEY ]:
             try:
                 value = rte.get_property_string(optional_param).strip()
@@ -80,14 +80,10 @@ class PollyTTSExtension(Extension):
         self.thread.join()
         rte.on_stop_done()
 
-    def on_deinit(self, rte: Rte) -> None:
-        logger.info("PollyTTSExtension on_deinit")
-        rte.on_deinit_done()
-
     def need_interrupt(self, ts: datetime.time) -> bool:
         return (self.outdateTs - ts).total_seconds() > 1
 
-    
+
     def __get_frame(self, data: bytes) -> PcmFrame:
         sample_rate = int(self.polly.config.sample_rate)
 
@@ -95,7 +91,7 @@ class PollyTTSExtension(Extension):
         f.set_sample_rate(sample_rate)
         f.set_bytes_per_sample(2)
         f.set_number_of_channels(1)
-        
+
         f.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_INTERLEAVE)
         f.set_samples_per_channel(sample_rate // 100)
         f.alloc_buf(self.frame_size)
@@ -142,7 +138,7 @@ class PollyTTSExtension(Extension):
         if len(inputText) == 0:
             logger.info("ignore empty text")
             return
-        
+
         is_end = data.get_property_bool("end_of_segment")
 
         logger.info("on data %s %d", inputText, is_end)
@@ -168,16 +164,6 @@ class PollyTTSExtension(Extension):
 
 @register_addon_as_extension("polly_tts")
 class PollyTTSExtensionAddon(Addon):
-    def on_init(self, rte: Rte, manifest, property) -> None:
-        logger.info("PollyTTSExtensionAddon on_init")
-        rte.on_init_done(manifest, property)
-        return
-
     def on_create_instance(self, rte: Rte, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(PollyTTSExtension(addon_name), context)
-
-    def on_deinit(self, rte: Rte) -> None:
-        logger.info("PollyTTSExtensionAddon on_deinit")
-        rte.on_deinit_done()
-        return
