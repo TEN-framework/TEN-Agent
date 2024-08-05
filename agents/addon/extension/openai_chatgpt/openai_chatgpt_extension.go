@@ -208,7 +208,7 @@ func (p *openaiChatGPTExtension) OnCmd(
 	cmdName, err := cmd.GetName()
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
-		cmdResult, _ := rte.NewCmdResult(rte.Error)
+		cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
 		rteEnv.ReturnResult(cmdResult, cmd)
 		return
 	}
@@ -224,20 +224,20 @@ func (p *openaiChatGPTExtension) OnCmd(
 		outCmd, err := rte.NewCmd(cmdOutFlush)
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
 			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		}
 		if err := rteEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			cmdResult, _ := rte.NewCmdResult(rte.Error)
+			cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
 			rteEnv.ReturnResult(cmdResult, cmd)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
 		}
 	}
-	cmdResult, _ := rte.NewCmdResult(rte.Ok)
+	cmdResult, _ := rte.NewCmdResult(rte.StatusCodeOk)
 	rteEnv.ReturnResult(cmdResult, cmd)
 }
 

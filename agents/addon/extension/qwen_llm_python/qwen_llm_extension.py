@@ -161,12 +161,6 @@ class QWenLLMExtension(Extension):
         self.on_msg("assistant", total)
         logger.info("on response %s", total)
 
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("QWenLLMExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("QWenLLMExtension on_start")
         self.api_key = rte.get_property_string("api_key")
@@ -186,11 +180,7 @@ class QWenLLMExtension(Extension):
         self.flush()
         self.thread.join()
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("QWenLLMExtension on_deinit")
-        rte.on_deinit_done()
-
+        
     def flush(self):
         logger.info("QWenLLMExtension flush")
         while not self.queue.empty():

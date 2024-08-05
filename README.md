@@ -45,7 +45,7 @@ We showcase an impressive voice agent called Astra, powered by TEN, demonstratin
 - Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
 - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/)
+- [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
 - [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Docker setting on apple silicon
@@ -58,85 +58,59 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silico
 </div>
 
 
-#### 1. Create manifest.json
+#### 1. Prepare config files
 
 ```bash
-# Create manifest.json from the example
-cp ./agents/manifest.json.example ./agents/manifest.json
+# Create property.json from the example
+cp ./agents/property.json.example ./agents/property.json
+# Create .env from the example
+cp ./.env.example ./.env
 ```
 
-#### 2. Modify prompt and greeting
-
-```js
-// Feel free to edit prompt and greeting in manifest.json
-"property": {
-    "base_url": "",
-    "api_key": "<openai_api_key>",
-    "frequency_penalty": 0.9,
-    "model": "gpt-3.5-turbo",
-    "max_tokens": 512,
-    "prompt": "", // prompt
-    "proxy_url": "",
-    "greeting": "Astra agent connected. How can I help you today?", // greeting
-    "max_memory_length": 10
-}
+#### 2. Setup API keys & Environment varialbes in .env file
 ```
-
-#### 3. Create agent in Docker container
-
-```bash
-# In CLI, pull Docker image and mount the target directory
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# Windows Git Bash
-# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# Enter container
-docker exec -it astra_agents_dev bash
-
-# Create agent
-make build
-```
-
-#### 4. Export env variables and start server
-
-
-```bash
-# In the same CLI window, set env variables
-export AGORA_APP_ID=<your_agora_appid>
-export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
-
-# OpenAI API key
-export OPENAI_API_KEY=<your_openai_api_key>
-
+...
+# Agora App ID and Agora App Certificate
+# required: this variable must be set
+AGORA_APP_ID=
+AGORA_APP_CERTIFICATE=
+...
+# Extension: agora_rtc
 # Azure STT key and region
-export AZURE_STT_KEY=<your_azure_stt_key>
-export AZURE_STT_REGION=<your_azure_stt_region>
+AZURE_STT_KEY=
+AZURE_STT_REGION=
 
+# Extension: azure_tts
 # Azure TTS key and region
-export AZURE_TTS_KEY=<your_azure_tts_key>
-export AZURE_TTS_REGION=<your_azure_tts_region>
+AZURE_TTS_KEY=
+AZURE_TTS_REGION=
+...
+# Extension: openai_chatgpt
+# OpenAI API key
+OPENAI_API_KEY=
+```
+
+#### 3. Start agent builder toolkit containers
+
+```bash
+# Execute docker compose up to start the services
+docker compose up
+```
+
+#### 4. Build your agent and start server
+
+```bash
+# Enter container to build agent
+docker exec -it astra_agents_dev bash
+make build
 
 # Run server on port 8080
 make run-server
 ```
 
-#### 5. Connect voice agent UI to server
+#### 5. Verify your voice agent 🎉
 
-Open a separate Terminal tab and run the commands:
-
-```bash
-# Create a .env file from example
-cd playground
-cp .env.example .env
-
-# Install dependencies and start dev environment in localhost:3000
-npm install && npm run dev
-```
-
-#### 6. Verify your customized voice agent 🎉
-
-Open `localhost:3000` in your browser, you should be seeing a voice agent just like the Astra, yet with your own customizations.
+You can open `localhost:3000` in your browser to test your own agent, or open `localhost:3001` in your browser to build your workflow by Graph Designer.
 
 <br>
 <h2>Voice agent architecture </h2>

@@ -11,7 +11,7 @@ from rte import (
     RteEnv,
     Cmd,
     PcmFrame,
-    RTE_PCM_FRAME_DATA_FMT,
+    PcmFrameDataFmt,
     Data,
     StatusCode,
     CmdResult,
@@ -61,7 +61,7 @@ class CosyTTSCallback(ResultCallback):
         f.set_bytes_per_sample(2)
         f.set_number_of_channels(1)
         # f.set_timestamp = 0
-        f.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_INTERLEAVE)
+        f.set_data_fmt(PcmFrameDataFmt.INTERLEAVE)
         f.set_samples_per_channel(self.sample_rate // 100)
         f.alloc_buf(self.frame_size)
         buff = f.lock_buf()
@@ -116,10 +116,6 @@ class CosyTTSExtension(Extension):
         self.queue = queue.Queue()
         self.mutex = threading.Lock()
 
-    def on_init(self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo) -> None:
-        logger.info("CosyTTSExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("CosyTTSExtension on_start")
         self.api_key = rte.get_property_string("api_key")
@@ -159,10 +155,6 @@ class CosyTTSExtension(Extension):
         self.flush()
         self.thread.join()
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("CosyTTSExtension on_deinit")
-        rte.on_deinit_done()
 
     def need_interrupt(self, ts: datetime.time) -> bool:
         return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
