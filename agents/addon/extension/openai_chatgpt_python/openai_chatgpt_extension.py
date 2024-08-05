@@ -369,28 +369,9 @@ class OpenAIChatGPTExtension(Extension):
         )
         thread.start()
         logger.info(f"OpenAIChatGPTExtension on_data end")
-        # try:
-        #     rte_data = Data.create("text_data")
-        #     rte_data.set_property_string("text", "hello, world, who are you!")
-        # except Exception as e:
-        #     logger.info(f"on_data new_data error, ", e)
-        #     return
-
-        # rte.send_data(rte_data)
-
 
 @register_addon_as_extension("openai_chatgpt_python")
 class OpenAIChatGPTExtensionAddon(Addon):
-    def on_init(self, rte: RteEnv, manifest, property) -> None:
-        logger.info("OpenAIChatGPTExtensionAddon on_init")
-        rte.on_init_done(manifest, property)
-        return
-
     def on_create_instance(self, rte: RteEnv, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(OpenAIChatGPTExtension(addon_name), context)
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("OpenAIChatGPTExtensionAddon on_deinit")
-        rte.on_deinit_done()
-        return
