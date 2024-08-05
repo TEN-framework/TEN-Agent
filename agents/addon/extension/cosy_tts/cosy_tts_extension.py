@@ -198,8 +198,9 @@ class CosyTTSExtension(Extension):
                             callback=callback,
                         )
 
-                    logger.info("on message %s", inputText)
+                    logger.info("on message [%s]", inputText)
                     tts.streaming_call(inputText)
+                    tts.streaming_complete()
                 except Exception as e:
                     logger.exception(e)
                     logger.exception(traceback.format_exc())

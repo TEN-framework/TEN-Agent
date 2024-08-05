@@ -16,8 +16,8 @@
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
 [![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
-<a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="../../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="../readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 </div>
 
 <div align="center">
@@ -30,24 +30,25 @@
 
 </div>
 
-## 项目示例 - The voice agent
+## Astra
 
-[示例项目](https://theastra.ai)是通过 ASTRA 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
+[Astra](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
 [![展示ASTRA语音助手](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
 
 <br>
-<h2>如何在本地搭建 voice agent</h2>
+<h2>如何在本地搭建 Astra</h2>
 
 #### 先决条件
 
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
-- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
-- [OpenAI](https://openai.com/index/openai-api/) API 密钥
+- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API key
+- [OpenAI](https://openai.com/index/openai-api/) API key
 - [Docker](https://www.docker.com/)
+- [Node.js(LTS) v18](https://nodejs.org/en)
 
-#### Apple Silicon 上的 Docker 设置
-如果您使用的是 Apple Silicon，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
+#### Apple Silicon 上 Docker 设置
+如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
 
 <div align="center">
 
@@ -63,49 +64,53 @@ $ go env -w GO111MODULE=on
 $ go env -w GOPROXY=https://goproxy.cn,direct
 ```
 
-#### 1. 在 Docker 镜像中构建 agent
+#### 1.创建 manifest 配置文件
+
+Clone 代码后在根目录通过下面的命令创建配置文件。
 
 ```bash
-# 从示例文件创建 manifest
+# 在命令行从示例文件创建 manifest.json
 cp ./agents/manifest.json.example ./agents/manifest.json
+```
 
-# 拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
+#### 2. 定制化
+
+`cd` 到 `/agents` 后可以看到 `manifest.json`，这里可以自定义 `prompt` 和 `greeting`。
+
+```js
+// 在 manifest.json 可以直接改 prompt 和问候语
+"property": {
+    "base_url": "",
+    "api_key": "<openai_api_key>", 
+    "frequency_penalty": 0.9,
+    "model": "gpt-3.5-turbo",
+    "max_tokens": 512,
+    "prompt": "", //这里修改 propmt
+    "proxy_url": "",
+    "greeting": "Astra agent connected. How can I help you today?", //这里修改问候语
+    "max_memory_length": 10
+}
+```
+
+#### 3. 在 Docker 容器中构建 agent
+
+在命令行，逐一跑下面的命令。
+```bash
+# 命令行拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
 docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
 # 对于 Windows Git Bash
 # docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
 
-# 进入 Docker 镜像
+# 进入 Docker 容器
 docker exec -it astra_agents_dev bash
 
-# 构建 agent
+# 在容器里构建 agent
 make build
 ```
 
-#### 2. 改动 prompts
-上述代码生成了一个代理可执行文件。要自定义提示和 OpenAI 参数，请修改 `agents/addon/extension/openai_chatgpt/openai_chatgpt.go` 中的以下代码：
+#### 4. 启动本地服务器
 
-```go
-func defaultOpenaiChatGPTConfig() openaiChatGPTConfig {
-	return openaiChatGPTConfig{
-		BaseUrl: "https://api.openai.com/v1",
-		ApiKey:  "",
-		Model:  openai.GPT4o,
-		Prompt: "You are a voice assistant who talks in a conversational way and can chat with me like my friends. i will speak to you in english or chinese, and you will answer in the corrected and improved version of my text with the language i use. Don't talk like a robot, instead i would like you to talk like real human with emotions. i will use your answer for text-to-speech, so don't return me any meaningless characters. I want you to be helpful, when i'm asking you for advices, give me precise, practical and useful advices instead of being vague. When giving me list of options, express the options in a narrative way instead of bullet points.",
-		FrequencyPenalty: 0.9,
-		PresencePenalty:  0.9,
-		TopP:             1.0,
-		Temperature:      0.1,
-		MaxTokens:        512,
-		Seed:             rand.Int(),
-		ProxyUrl: "",
-	}
-}
-```
-
-#### 3. 启动本地服务器
-
-通过运行以下终端命令启动服务器：
 
 ```bash
 # Agora App ID and Agora App Certificate
@@ -119,39 +124,31 @@ export OPENAI_API_KEY=<your_openai_api_key>
 export AZURE_STT_KEY=<your_azure_stt_key>
 export AZURE_STT_REGION=<your_azure_stt_region>
 
-# TTS
-# Here are three TTS options, either one will work
-# Make sure to comment out the one you don't use
-
-# 1. using Azure
-export TTS_VENDOR_CHINESE=azure
+# Azure TTS key and region
 export AZURE_TTS_KEY=<your_azure_tts_key>
 export AZURE_TTS_REGION=<your_azure_tts_region>
 
-# 2. using ElevenLabs
-export TTS_VENDOR_ENGLISH=elevenlabs
-export ELEVENLABS_TTS_KEY=<your_elevanlabs_tts_key>
-
-# Agent is ready to start on port 8080
+# 端口 8080
 make run-server
 ```
 
-#### 4. 运行 voice agent 界面
+#### 5. 运行 voice agent 界面
 
-voice agent 界面是基于 NextJS 14 构建的，因此需要 Node 18 或更高版本。
+同时，再打开一个 Terminal 窗口， 通过下列命令创建环境文件并跑起界面。
 
 ```bash
 # 创建一个本地的环境文件
 cd playground
 cp .env.example .env
 
-# 安装依赖
+# 安装依赖并开启界面
 npm install && npm run dev
 ```
 
-#### 5. 验证您定制的 voice agent 🎉
+#### 6. 验证您定制的 voice agent 🎉
 
 在浏览器中打开 `localhost:3000`，您应该能够看到一个与示例项目一样的 voice angent，但是这次是带有定制的 voice agent。
+
 
 <br>
 <h2>Voice agent 架构</h2>
@@ -171,39 +168,6 @@ npm install && npm run dev
 
 ![ASTRAvoice agent架构图](../../images/image-2.png)
 
-
-<br>
-<h2>搭建无界面的 voice agent</h2>
-
-#### 1. 在 Docker 镜像中搭建 voice agent
-
-```
-# 从示例文件创建 manifest
-cp ./agents/manifest.json.example ./agents/manifest.json
-
-# 拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# 对于 Windows Git Bash
-# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# 进入 Docker 镜像
-docker exec -it astra_agents_dev bash
-
-# 构建 agent
-make build
-
-# 启动 agent
-cd ./agents && ./bin/start
-```
-
-#### 2. 测试 voice agent
-
-前往 [Agora Web Demo](https://webdemo.agora.io/) 进行快速测试。
-
-请注意，`channel` 和 `remote_stream_id` 需要与您在 `https://webdemo.agora.io/` 上使用的一致。
-
-输入相应的 RTC ID 和频道名称后，您应该能够看到日志并听到音频输出。
 
 <br>
 <h2>ASTRA 服务</h2>

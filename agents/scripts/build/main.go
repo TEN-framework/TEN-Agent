@@ -1060,6 +1060,10 @@ func (ab *AppBuilder) autoDetectExtensions() error {
 		return err
 	}
 
+	// Ensure that all extension modules are unique, otherwise the modules with
+	// same name will be overwritten.
+	uniqueModules := make(map[string]string)
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -1076,6 +1080,16 @@ func (ab *AppBuilder) autoDetectExtensions() error {
 			continue
 		}
 
+		if location, ok := uniqueModules[ext.module]; ok {
+			return fmt.Errorf(
+				"the extensions [%s] and [%s] have duplicated module name [%s]",
+				path.Base(location),
+				path.Base(ext.location),
+				ext.module,
+			)
+		}
+
+		uniqueModules[ext.module] = ext.location
 		ab.extensions = append(ab.extensions, ext)
 	}
 
