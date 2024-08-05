@@ -40,11 +40,10 @@
 <h2>如何在本地搭建 Astra</h2>
 
 #### 先决条件
-
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
-- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API key
-- [OpenAI](https://openai.com/index/openai-api/) API key
-- [Docker](https://www.docker.com/)
+- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 密钥
+- [OpenAI](https://openai.com/index/openai-api/) API 密钥	
+- [Docker](https://www.docker.com/)	
 - [Node.js(LTS) v18](https://nodejs.org/en)
 
 #### Apple Silicon 上 Docker 设置
@@ -64,115 +63,59 @@ $ go env -w GO111MODULE=on
 $ go env -w GOPROXY=https://goproxy.cn,direct
 ```
 
-#### 1.创建 manifest 配置文件
-
-Clone 代码后在根目录通过下面的命令创建配置文件。
-
+#### 1.  准备设置文件
+Clone 项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
 ```bash
-# 在命令行从示例文件创建 manifest.json
-cp ./agents/manifest.json.example ./agents/manifest.json
+# 创建 property.json 文件
+cp ./agents/property.json.example ./agents/property.json
+
+# 创建 .env 文件
+cp ./.env.example ./.env
 ```
 
-#### 2. 定制化
-
-`cd` 到 `/agents` 后可以看到 `manifest.json`，这里可以自定义 `prompt` 和 `greeting`。
-
-```js
-// 在 manifest.json 可以直接改 prompt 和问候语
-"property": {
-    "base_url": "",
-    "api_key": "<openai_api_key>", 
-    "frequency_penalty": 0.9,
-    "model": "gpt-3.5-turbo",
-    "max_tokens": 512,
-    "prompt": "", //这里修改 propmt
-    "proxy_url": "",
-    "greeting": "Astra agent connected. How can I help you today?", //这里修改问候语
-    "max_memory_length": 10
-}
+#### 2. 绑定积木的 keys 
+打开 `.env` 文件，绑定对应的积木 keys，这里可以通过配置不同的 keys 选用不用的积木：
 ```
-
-#### 3. 在 Docker 容器中构建 agent
-
-在命令行，逐一跑下面的命令。
-```bash
-# 命令行拉取带有开发工具的 Docker 镜像，并将当前文件夹挂载为工作区
-docker run -itd -v $(pwd):/app -w /app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# 对于 Windows Git Bash
-# docker run -itd -v //$(pwd):/app -w //app -p 8080:8080 --name astra_agents_dev ghcr.io/rte-design/astra_agents_build
-
-# 进入 Docker 容器
-docker exec -it astra_agents_dev bash
-
-# 在容器里构建 agent
-make build
-```
-
-#### 4. 启动本地服务器
-
-
-```bash
 # Agora App ID and Agora App Certificate
-export AGORA_APP_ID=<your_agora_appid>
-export AGORA_APP_CERTIFICATE=<your_agora_app_certificate>
+AGORA_APP_ID=
+AGORA_APP_CERTIFICATE=
 
-# OpenAI API key
-export OPENAI_API_KEY=<your_openai_api_key>
-
+# Extension: agora_rtc
 # Azure STT key and region
-export AZURE_STT_KEY=<your_azure_stt_key>
-export AZURE_STT_REGION=<your_azure_stt_region>
+AZURE_STT_KEY=
+AZURE_STT_REGION=
 
+# Extension: azure_tts
 # Azure TTS key and region
-export AZURE_TTS_KEY=<your_azure_tts_key>
-export AZURE_TTS_REGION=<your_azure_tts_region>
+AZURE_TTS_KEY=
+AZURE_TTS_REGION=
 
-# 端口 8080
+# Extension: openai_chatgpt
+# OpenAI API key
+OPENAI_API_KEY=
+```
+
+#### 3. 开启 Docker 容器
+在同一个目录下，通过 Docker 镜像构建 Docker 容器：
+```bash
+# 开启 Docker 容器：
+docker compose up
+```
+
+#### 4. 构建 Agent 并开启服务
+再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建并开启服务：
+```bash
+#  进入容器创建 Agent
+docker exec -it astra_agents_dev bash
+make build
+
+# 端口 8080 开启服务
 make run-server
 ```
 
-#### 5. 运行 voice agent 界面
+#### 5. 创建成功并体验 Agent 🎉
 
-同时，再打开一个 Terminal 窗口， 通过下列命令创建环境文件并跑起界面。
-
-```bash
-# 创建一个本地的环境文件
-cd playground
-cp .env.example .env
-
-# 安装依赖并开启界面
-npm install && npm run dev
-```
-
-#### 6. 验证您定制的 voice agent 🎉
-
-在浏览器中打开 `localhost:3000`，您应该能够看到一个与示例项目一样的 voice angent，但是这次是带有定制的 voice agent。
-
-
-<br>
-<h2>Voice agent 架构</h2>
-要进一步探索， voice agent 是一个绝佳的起点。它包含以下扩展功能，其中一些将在不久的将来可以互换使用。请随意选择最适合您需求并最大化 ASTRA 功能的扩展。
-
-| 扩展功能            | 特点           | 描述                                                                                                                                                                                                             |
-| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| openai_chatgpt     | 语言模型            | [ GPT-4o ](https://platform.openai.com/docs/models/gpt-4o), [ GPT-4 Turbo ](https://platform.openai.com/docs/models/gpt-4-turbo-and-gpt-4), [ GPT-3.5 Turbo ](https://platform.openai.com/docs/models/gpt-3-5-turbo) |
-| elevenlabs_tts     | 文本转语音 | [ElevanLabs 文本转语音](https://elevenlabs.io/) 将文本转换为音频                                                                                                                                              |
-| azure_tts          | 文本转语音 | [Azure 文本转语音](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) 将文本转换为音频                                                                                                 |
-| azure_stt          | 语音转文本 | [Azure 语音转文本](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 将音频转换为文本                                                                                                 |
-| chat_transcriber   | 转录工具    | 将聊天记录转发到频道的实用工具                                                                                                                                                                      |
-| agora_rtc          | 传输工具    | 由 agora_rtc 提供支持的低延迟传输工具                                                                                                                                                                       |
-| interrupt_detector | 中断工具    | 帮助中断语音助手的实用工具                                                                                                                                                                                |
-
-<h3>Voice agent 架构图</h3>
-
-![ASTRAvoice agent架构图](../../images/image-2.png)
-
-
-<br>
-<h2>ASTRA 服务</h2>
-
-现在您已经创建了第一个 AI voice agent，创意并不会止步于此。 要开发更多的 AI agents， 您需要深入了解 ASTRA 的工作原理。请参阅 [ ASTRA 架构文档 ](./docs/astra-architecture.md)。
+现在可以打开浏览器 `localhost:3000` 体验 Astra 语音助手，同时可以打开 `localhost：3001` 体验 Graph Designer。
 
 <br />
 <h2>点星收藏</h2>
