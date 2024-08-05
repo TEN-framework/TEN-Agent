@@ -33,13 +33,13 @@ services:
             OPENAI_PROXY_URL: ${OPENAI_PROXY_URL}
             QWEN_API_KEY: ${QWEN_API_KEY}
     astra_playground:
-        image: agoraio/astra_playground:latest
+        image: agoraio/astra_playground:0.1.1
         container_name: astra_playground
         restart: always
         ports:
             - "3000:3000"
     astra_graph_designer:
-        image: agoraio/astra_graph_designer:latest
+        image: agoraio/astra_graph_designer:0.1.0
         container_name: astra_graph_designer
         restart: always
         ports:
