@@ -2,7 +2,7 @@
 
 Now let's discuss what's under the hood. The ASTRA architecture is composed of various ASTRA extensions, developed in different programming languages. These extensions are interconnected using Graph, which describes their relationships and illustrates the flow of data. Furthermore, sharing and downloading extensions are simplified through the ASTRA Extension Store and the ASTRA Package Manager.
 
-![ASTRA](../images/image.png)
+![ASTRA](https://github.com/rte-design/docs/blob/main/assets/imgs/image.png)
 
 <br>
 <h2>ASTRA Extension</h2>
