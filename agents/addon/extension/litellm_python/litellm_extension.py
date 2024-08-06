@@ -51,14 +51,7 @@ class LiteLLMExtension(Extension):
         # Prepare configuration
         litellm_config = LiteLLMConfig.default_config()
 
-        try:
-            api_key = rte.get_property_string(PROPERTY_API_KEY)
-            litellm_config.api_key = api_key
-        except Exception as e:
-            logger.error(f"get_property_string required {PROPERTY_API_KEY} failed, err: {e}")
-            return
-
-        for key in [PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
+        for key in [PROPERTY_API_KEY, PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
             try:
                 val = rte.get_property_string(key)
                 if val:
