@@ -35,7 +35,7 @@ Astra is a voice agent, powered by TEN, demonstrating its ability to create intu
 
 [![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 <br>
-<h2>How to build graph designer to customize Astra
+<h2>How to build voice agent locally
 
 ### Prerequisites
 
@@ -52,8 +52,8 @@ Astra is a voice agent, powered by TEN, demonstrating its ability to create intu
   - CPU >= 2 Core
   - RAM >= 4 GB
 
-#### Docker setting on apple silicon
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
+#### Docker setting on Apple Silicon
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
 ![Docker Setting](https://github.com/rte-design/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
 
@@ -125,7 +125,7 @@ TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes 
 <br>
 <h2>TEN Service</h2>
 
-Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
+Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
 
 <br>
 <h2>Stay Tuned</h2>
@@ -138,7 +138,7 @@ Before we dive further, be sure to star our repository and get instant notificat
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
-- [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
+- [GitHub Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
 

@@ -54,7 +54,7 @@
 - RAM >= 4 GB
 
 #### Apple Silicon 上 Docker 设置
-如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
+如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" 选项，否则服务器将无法正常工作。
 
 <div align="center">
 
