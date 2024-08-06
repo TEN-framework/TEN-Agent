@@ -66,12 +66,11 @@ $ go env -w GOPROXY=https://goproxy.cn,direct
 #### 1.  准备设置文件
 Clone 项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
 ```bash
-# 创建 .env 文件
-cp ./.env.example ./.env
-
 # 创建 property.json 文件
 cp ./agents/property.json.example ./agents/property.json
 
+# 创建 .env 文件
+cp ./.env.example ./.env
 ```
 
 #### 2. 绑定积木的 keys 
