@@ -47,21 +47,14 @@ class Message:
 
 
 class ElevenlabsTTSExtension(Extension):
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("on_init")
+    def on_start(self, rte: RteEnv) -> None:
+        logger.info("on_start")
 
         self.elevenlabs_tts = None
         self.outdate_ts = 0
         self.pcm = None
         self.pcm_frame_size = 0
         self.text_queue = queue.Queue(maxsize=1024)
-
-        rte.on_init_done(manifest, property)
-
-    def on_start(self, rte: RteEnv) -> None:
-        logger.info("on_start")
 
         # prepare configuration
         elevenlabs_tts_config = default_elevenlabs_tts_config()
@@ -155,10 +148,6 @@ class ElevenlabsTTSExtension(Extension):
     def on_stop(self, rte: RteEnv) -> None:
         logger.info("on_stop")
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("on_deinit")
-        rte.on_deinit_done()
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         """
@@ -283,16 +272,6 @@ class ElevenlabsTTSExtension(Extension):
 
 @register_addon_as_extension("elevenlabs_tts_python")
 class ElevenlabsTTSExtensionAddon(Addon):
-    def on_init(self, rte: RteEnv, manifest, property) -> None:
-        logger.info("on_init")
-        rte.on_init_done(manifest, property)
-        return
-
     def on_create_instance(self, rte: RteEnv, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(ElevenlabsTTSExtension(addon_name), context)
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("on_deinit")
-        rte.on_deinit_done()
-        return

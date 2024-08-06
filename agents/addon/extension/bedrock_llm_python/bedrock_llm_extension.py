@@ -70,78 +70,28 @@ class BedrockLLMExtension(Extension):
     outdate_ts = 0
     bedrock_llm = None
 
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("BedrockLLMExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("BedrockLLMExtension on_start")
         # Prepare configuration
         bedrock_llm_config = BedrockLLMConfig.default_config()
 
-        try:
-            region = rte.get_property_string(PROPERTY_REGION)
-            if region:
-                bedrock_llm_config.region = region
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_REGION} failed, err: {err}. Using default value: {bedrock_llm_config.region}"
-            )
-            return
+        for optional_str_param in [
+            PROPERTY_REGION, PROPERTY_ACCESS_KEY, PROPERTY_SECRET_KEY,
+            PROPERTY_MODEL, PROPERTY_PROMPT]:
+            try:
+                value = rte.get_property_string(optional_str_param).strip()
+                if value:
+                    bedrock_llm_config.__setattr__(optional_str_param, value)
+            except Exception as err:
+                logger.debug(f"GetProperty optional {optional_str_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_str_param)}")
 
-        try:
-            access_key = rte.get_property_string(PROPERTY_ACCESS_KEY)
-            bedrock_llm_config.access_key = access_key
-        except Exception as err:
-            logger.error(
-                f"GetProperty optional {PROPERTY_ACCESS_KEY} failed, err: {err}. Using default value: {bedrock_llm_config.access_key}"
-            )
-            return
-
-        try:
-            secret_key = rte.get_property_string(PROPERTY_SECRET_KEY)
-            bedrock_llm_config.secret_key = secret_key
-        except Exception as err:
-            logger.error(
-                f"GetProperty optional {PROPERTY_SECRET_KEY} failed, err: {err}. Using default value: {bedrock_llm_config.secret_key}"
-            )
-            return
-
-        try:
-            model = rte.get_property_string(PROPERTY_MODEL)
-            if model:
-                bedrock_llm_config.model = model
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_MODEL} error: {err}. Using default value: {bedrock_llm_config.model}"
-            )
-
-        try:
-            prompt = rte.get_property_string(PROPERTY_PROMPT)
-            if prompt:
-                bedrock_llm_config.prompt = prompt
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_PROMPT} error: {err}. Using default value: {bedrock_llm_config.prompt}"
-            )
-
-        try:
-            temperature = rte.get_property_float(PROPERTY_TEMPERATURE)
-            bedrock_llm_config.temperature = float(temperature)
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_TEMPERATURE} failed, err: {err}. Using default value: {bedrock_llm_config.temperature}"
-            )
-
-        try:
-            top_p = rte.get_property_float(PROPERTY_TOP_P)
-            bedrock_llm_config.top_p = float(top_p)
-        except Exception as err:
-            logger.debug(
-                f"GetProperty optional {PROPERTY_TOP_P} failed, err: {err}. Using default value: {bedrock_llm_config.top_p}"
-            )
+        for optional_float_param in [PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
+            try:
+                value = rte.get_property_float(optional_float_param)
+                if value:
+                    bedrock_llm_config.__setattr__(optional_float_param, value)
+            except Exception as err:
+                logger.debug(f"GetProperty optional {optional_float_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_float_param)}")
 
         try:
             max_tokens = rte.get_property_int(PROPERTY_MAX_TOKENS)
@@ -175,7 +125,7 @@ class BedrockLLMExtension(Extension):
                 f"newBedrockLLM succeed with max_tokens: {bedrock_llm_config.max_tokens}, model: {bedrock_llm_config.model}"
             )
         except Exception as err:
-            logger.info(f"newBedrockLLM failed, err: {err}")
+            logger.exception(f"newBedrockLLM failed, err: {err}")
 
         # Send greeting if available
         if greeting:
@@ -196,10 +146,6 @@ class BedrockLLMExtension(Extension):
     def on_stop(self, rte: RteEnv) -> None:
         logger.info("BedrockLLMExtension on_stop")
         rte.on_stop_done()
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("BedrockLLMExtension on_deinit")
-        rte.on_deinit_done()
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("BedrockLLMExtension on_cmd")
@@ -411,16 +357,6 @@ class BedrockLLMExtension(Extension):
 
 @register_addon_as_extension("bedrock_llm_python")
 class BedrockLLMExtensionAddon(Addon):
-    def on_init(self, rte: RteEnv, manifest, property) -> None:
-        logger.info("BedrockLLMExtensionAddon on_init")
-        rte.on_init_done(manifest, property)
-        return
-
     def on_create_instance(self, rte: RteEnv, addon_name: str, context) -> None:
         logger.info("on_create_instance")
         rte.on_create_instance_done(BedrockLLMExtension(addon_name), context)
-
-    def on_deinit(self, rte: RteEnv) -> None:
-        logger.info("BedrockLLMExtensionAddon on_deinit")
-        rte.on_deinit_done()
-        return

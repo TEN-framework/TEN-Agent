@@ -8,7 +8,7 @@
 
 import logging
 from typing import Iterator
-from rte import PcmFrame, RteEnv, RTE_PCM_FRAME_DATA_FMT
+from rte import PcmFrame, RteEnv, PcmFrameDataFmt
 
 
 class Pcm:
@@ -21,7 +21,7 @@ class Pcm:
         frame.set_sample_rate(self.config.sample_rate)
         frame.set_number_of_channels(self.config.num_channels)
         frame.set_timestamp(self.config.timestamp)
-        frame.set_data_fmt(RTE_PCM_FRAME_DATA_FMT.RTE_PCM_FRAME_DATA_FMT_NON_INTERLEAVE)
+        frame.set_data_fmt(PcmFrameDataFmt.INTERLEAVE)
         frame.set_samples_per_channel(
             self.config.samples_per_channel // self.config.channel
         )

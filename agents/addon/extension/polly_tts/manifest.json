@@ -1,6 +1,6 @@
 {
     "type": "extension",
-    "name": "elevenlabs_tts_python",
+    "name": "polly_tts",
     "version": "0.1.0",
     "language": "python",
     "dependencies": [
@@ -12,31 +12,25 @@
     ],
     "api": {
         "property": {
-            "api_key": {
+            "region": {
                 "type": "string"
             },
-            "model_id": {
+            "access_key": {
                 "type": "string"
             },
-            "request_timeout_seconds": {
+            "secret_key": {
+                "type": "string"
+            },
+            "engine": {
+                "type": "string"
+            },
+            "voice": {
+                "type": "string"
+            },
+            "sample_rate": {
                 "type": "int64"
             },
-            "similarity_boost": {
-                "type": "float64"
-            },
-            "speaker_boost": {
-                "type": "bool"
-            },
-            "stability": {
-                "type": "float64"
-            },
-            "style": {
-                "type": "float64"
-            },
-            "optimize_streaming_latency": {
-                "type": "int64"
-            },
-            "voice_id": {
+            "lang_code": {
                 "type": "string"
             }
         },

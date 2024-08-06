@@ -1,15 +1,14 @@
-FROM ghcr.io/rte-design/astra_agents_build:0.3.3 AS builder
+FROM ghcr.io/rte-design/astra_agents_build:0.3.5 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
 WORKDIR /app
 
 COPY . .
-COPY agents/manifest.json.example agents/manifest.json
-COPY agents/manifest.json.elevenlabs.example agents/manifest.elevenlabs.json
+COPY agents/property.json.example agents/property.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN make build && \
+RUN make clean && make build && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
