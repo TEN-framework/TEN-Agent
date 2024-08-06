@@ -143,6 +143,21 @@ func processManifest(manifestJsonFile string) (err error) {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="polly_tts").property.secret_key`, awsSecretKey)
 	}
 
+	awsRegion = os.Getenv("AWS_ASR_REGION")
+	if awsRegion != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="transcribe_asr").property.region`, awsRegion)
+	}
+
+	awsAccessKey = os.Getenv("AWS_ASR_ACCESS_KEY_ID")
+	if awsAccessKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="transcribe_asr").property.access_key`, awsAccessKey)
+	}
+
+	awsSecretKey = os.Getenv("AWS_ASR_SECRET_ACCESS_KEY")
+	if awsSecretKey != "" {
+		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="transcribe_asr").property.secret_key`, awsSecretKey)
+	}
+
 	elevenlabsTtsKey := os.Getenv("ELEVENLABS_TTS_KEY")
 	if elevenlabsTtsKey != "" {
 		manifestJson, _ = sjson.Set(manifestJson, `predefined_graphs.0.nodes.#(name=="elevenlabs_tts").property.api_key`, elevenlabsTtsKey)
