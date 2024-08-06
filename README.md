@@ -62,11 +62,11 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 #### 1. Prepare config files
 In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
 ```bash
-# Create property.json from the example
-cp ./agents/property.json.example ./agents/property.json
-
 # Create .env from the example
 cp ./.env.example ./.env
+
+# Create property.json from the example
+cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. Setup API keys & Environment variables in .env file
