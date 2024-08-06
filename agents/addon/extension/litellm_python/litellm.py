@@ -75,4 +75,4 @@ class LiteLLM:
 
             return response
         except Exception as e:
-            raise Exception(f"CreateChatCompletionStream failed, err: {e}")
+            raise Exception(f"get_chat_completions_stream failed, err: {e}")
