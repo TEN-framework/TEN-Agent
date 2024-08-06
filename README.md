@@ -27,13 +27,6 @@
 </div>
 
 <br>
-<h2>Graph designer</h2>
-
-TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
-
-![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
-
-<br>
 <h2>Voice agent: Astra</h2>
 
 [Voice agent: Astra](https://theastra.ai)
@@ -122,6 +115,13 @@ make run-server
 You can open https://localhost:3001 in browser to use your graph designer. Simultaneously, open another tab at https://localhost:3000 to see the customized voice agent up and running.
 
 Now you have the power of the Graph Designer at your fingertips to perform the magic of agent customization yourself. 🎉
+
+<br>
+<h2>Graph designer</h2>
+
+TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
+
+![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
 <h2>TEN Service</h2>

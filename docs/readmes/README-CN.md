@@ -31,13 +31,6 @@
 </div>
 
 <br>
-<h2>Graph designer</h2>
-
-TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现多模型配置。
-
-![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
-
-<br>
 
 ## Astra
 
@@ -48,19 +41,19 @@ TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现�
 <br>
 <h2>如何用搭建的 graph designer 配置 voice agent</h2>
 
-### 先决条件
-#### Keys 
+### 1. 先决条件
+#### 1.1 Keys 
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
 - Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API Keys
 - [OpenAI](https://openai.com/index/openai-api/) API Key
-#### 下载安装
+#### 1.2 下载安装
 - [Docker](https://www.docker.com/)	和 [Docker Compose](https://docs.docker.com/compose/install/)
 - [Node.js(LTS) v18](https://nodejs.org/en)
-#### 机器配置
+#### 1.3 机器配置
 - CPU >= 2 Core
 - RAM >= 4 GB
 
-#### Apple Silicon 上 Docker 设置
+#### 1.4 Apple Silicon 上 Docker 设置
 如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on apple silicon" 选项，否则服务器将无法正常工作。
 
 <div align="center">
@@ -69,16 +62,15 @@ TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现�
 
 </div>
 
-#### 设置 Go 国内代理
+#### 1.5 设置 Go 国内代理
 如果在国内，我们建议跑下列命令来全局设定国内代理以便快速下载依赖([了解详情](https://goproxy.cn/))。
 
-```
-$ go env -w GO111MODULE=on
-$ go env -w GOPROXY=https://goproxy.cn,direct
+```bash
+ export GOPROXY=https://goproxy.cn 
 ```
 
-### 下一步
-#### 1.  准备设置文件
+### 2 下一步
+#### 2.1  准备设置文件
 Clone 项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
 ```bash
 # 创建 property.json 文件
@@ -88,7 +80,7 @@ cp ./agents/property.json.example ./agents/property.json
 cp ./.env.example ./.env
 ```
 
-#### 2. 绑定积木的 keys 
+#### 2.2 绑定积木的 keys 
 打开 `.env` 文件，绑定对应的积木 keys，这里可以通过配置不同的 keys 选用不用的积木：
 ```
 # Agora App ID and Agora App Certificate
@@ -110,14 +102,14 @@ AZURE_TTS_REGION=
 OPENAI_API_KEY=
 ```
 
-#### 3. 开启 Docker 容器
+#### 2.3 开启 Docker 容器
 在同一个目录下，通过 Docker 镜像构建 Docker 容器：
 ```bash
 # 开启 Docker 容器：
 docker compose up
 ```
 
-#### 4. 构建 Agent 并开启服务
+#### 2.4 构建 Agent 并开启服务
 再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建并开启服务：
 ```bash
 #  进入容器创建 Agent
@@ -128,9 +120,16 @@ make build
 make run-server
 ```
 
-#### 5. 体验 Graph Designer 🎉
+#### 2.5 体验 Graph Designer 🎉
 
 现在可以打开浏览器 `http://localhost:3001` 体验 Graph Designer 同时再开浏览器的一个 tab `http://localhost:3000` 定制 voice agent。
+
+<br>
+<h2>Graph designer</h2>
+
+TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现多模型配置。
+
+![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
 <h2>点星收藏</h2>
