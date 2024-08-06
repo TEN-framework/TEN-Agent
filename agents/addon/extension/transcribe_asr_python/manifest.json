@@ -1,0 +1,76 @@
+{
+    "type": "extension",
+    "name": "transcribe_asr_python",
+    "version": "0.1.0",
+    "language": "python",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "rte_runtime_python",
+            "version": "0.2.0"
+        }
+    ],
+    "api": {
+        "property": {
+            "region": {
+                "type": "string"
+            },
+            "access_key": {
+                "type": "string"
+            },
+            "secret_key": {
+                "type": "string"
+            },
+            "sample_rate": {
+                "type": "string"
+            },
+            "lang_code": {
+                "type": "string"
+            }
+        },
+        "pcm_frame_in": [
+            {
+                "name": "pcm_frame"
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "on_user_joined"
+            },
+            {
+                "name": "on_user_left"
+            },
+            {
+                "name": "on_connection_failure"
+            }
+        ],
+        "data_out": [
+            {
+                "name": "text_data",
+                "property": {
+                    "time": {
+                        "type": "int64"
+                    },
+                    "duration_ms": {
+                        "type": "int64"
+                    },
+                    "language": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "is_final": {
+                        "type": "bool"
+                    },
+                    "stream_id": {
+                        "type": "uint32"
+                    },
+                    "end_of_segment": {
+                        "type": "bool"
+                    }
+                }
+            }
+        ]
+    }
+}
