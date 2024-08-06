@@ -31,34 +31,33 @@
 
 [Voice agent: Astra](https://theastra.ai)
 
-We showcase an impressive voice agent called Astra, powered by TEN, demonstrating its ability to create intuitive and seamless conversational interactions.
+Astra is a voice agent, powered by TEN, demonstrating its ability to create intuitive and seamless conversational interactions.
 
-[![Showcase Astra](https://github.com/rte-design/ASTRA.ai/raw/main/images/astra-voice-agent.gif)](https://theastra.ai)
-
+[![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 <br>
-<h2>How to build voice agent locally</h2>
+<h2>How to build voice agent locally
 
+### Prerequisites
 
+#### Keys
+- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
+- [OpenAI](https://openai.com/index/openai-api/) API key
 
-#### Prerequisites
+#### Installation
+  - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
+  - [Node.js(LTS) v18](https://nodejs.org/en)
 
-- **Keys**
-    - Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-    - Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-    - [OpenAI](https://openai.com/index/openai-api/) API key
-- **Downloads**
-    - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
-    - [Node.js(LTS) v18](https://nodejs.org/en)
+#### Minimum system requirements
+  - CPU >= 2 Core
+  - RAM >= 4 GB
 
-#### Docker setting on apple silicon
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on apple silicon" option for Docker if you are on Apple Silicon, otherwise the server is not gonna work.
+#### Docker setting on Apple Silicon
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
-<div align="center">
+![Docker Setting](https://github.com/rte-design/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
 
-![Docker Setting](https://github.com/rte-design/ASTRA.ai/raw/main/images/docker-setting.gif)
-
-</div>
-
+### Next step
 
 #### 1. Prepare config files
 In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
@@ -111,28 +110,35 @@ make build
 make run-server
 ```
 
-#### 5. Verify your voice agent 🎉
+#### 5. Use graph designer to customize voice agent
 
-You can open `localhost:3000` in your browser to test your own agent, or open `localhost:3001` in your browser to build your workflow by Graph Designer.
+You can open https://localhost:3001 in browser to use your graph designer. Simultaneously, open another tab at https://localhost:3000 to see the customized voice agent up and running.
+
+Now you have the power of the Graph Designer at your fingertips to perform the magic of agent customization yourself. 🎉
+
+#### Graph designer
+
+TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
+
+![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
 <h2>TEN Service</h2>
-<h3>Discover More</h3>
 
-Now that you’ve created your first AI agent, the creativity doesn’t stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
+Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
 
 <br>
 <h2>Stay Tuned</h2>
 
 Before we dive further, be sure to star our repository and get instant notifications for all new releases!
 
-![TEN star us gif](https://github.com/rte-design/ASTRA.ai/raw/main/images/star-the-repo-confetti-higher-quality.gif)
+![TEN star us gif](https://github.com/rte-design/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
 
 <br>
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
-- [Github Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
+- [GitHub Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
 
