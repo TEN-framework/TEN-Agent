@@ -116,8 +116,7 @@ You can open https://localhost:3001 in browser to use your graph designer. Simul
 
 Now you have the power of the Graph Designer at your fingertips to perform the magic of agent customization yourself. 🎉
 
-<br>
-<h2>Graph designer</h2>
+#### Graph designer
 
 TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
 
