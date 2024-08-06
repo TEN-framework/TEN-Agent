@@ -1,5 +1,6 @@
 from . import elevenlabs_tts_addon
+from .extension import EXTENSION_NAME
 from .log import logger
 
 
-logger.info("elevenlabs_tts_python extension loaded")
+logger.info(f"{EXTENSION_NAME} extension loaded")
