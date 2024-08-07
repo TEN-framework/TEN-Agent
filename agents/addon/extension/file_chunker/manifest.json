@@ -36,15 +36,12 @@
             }
           }
         },
+        "required": [
+          "inputs"
+        ],
         "result": {
           "property": {
-            "output": {
-              "type": "string"
-            },
-            "code": {
-              "type": "string"
-            },
-            "message": {
+            "embeddings": {
               "type": "string"
             }
           }
@@ -62,7 +59,12 @@
           "content": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "collection_name",
+          "file_name",
+          "content"
+        ]
       },
       {
         "name": "file_chunked",
@@ -73,7 +75,11 @@
           "collection_name": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "path",
+          "collection_name"
+        ]
       }
     ]
   }
