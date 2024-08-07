@@ -14,6 +14,7 @@ const (
 	extensionNameAzureTTS      = "azure_tts"
 	extensionNameCosyTTS       = "cosy_tts"
 	extensionNameElevenlabsTTS = "elevenlabs_tts"
+	extensionNameLiteLLM       = "litellm"
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
 	extensionNamePollyTTS      = "polly_tts"
 	extensionNameQwenLLM       = "qwen_llm"
@@ -73,6 +74,15 @@ var (
 		},
 		"OPENAI_API_KEY": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "api_key"},
+		},
+		"LITELLM_API_KEY": {
+			{ExtensionName: extensionNameLiteLLM, Property: "api_key"},
+		},
+		"LITELLM_MODEL": {
+			{ExtensionName: extensionNameLiteLLM, Property: "model"},
+		},
+		"LITELLM_PROVIDER": {
+			{ExtensionName: extensionNameLiteLLM, Property: "provider"},
 		},
 		"OPENAI_BASE_URL": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "base_url"},

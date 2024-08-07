@@ -22,9 +22,7 @@ class Pcm:
         frame.set_number_of_channels(self.config.num_channels)
         frame.set_timestamp(self.config.timestamp)
         frame.set_data_fmt(PcmFrameDataFmt.INTERLEAVE)
-        frame.set_samples_per_channel(
-            self.config.samples_per_channel // self.config.channel
-        )
+        frame.set_samples_per_channel(self.config.samples_per_channel // self.config.channel)
 
         frame.alloc_buf(self.get_pcm_frame_size())
         frame_buf = frame.lock_buf()
@@ -35,24 +33,19 @@ class Pcm:
         return frame
 
     def get_pcm_frame_size(self) -> int:
-        return (
-            self.config.samples_per_channel
-            * self.config.channel
-            * self.config.bytes_per_sample
-        )
+        return (self.config.samples_per_channel * self.config.channel * self.config.bytes_per_sample)
 
     def new_buf(self) -> bytearray:
         return bytearray(self.get_pcm_frame_size())
 
-    def read_pcm_stream(
-        self, stream: Iterator[bytes], chunk_size: int
-    ) -> Iterator[bytes]:
+    def read_pcm_stream(self, stream: Iterator[bytes], chunk_size: int) -> Iterator[bytes]:
         chunk = b""
         for data in stream:
             chunk += data
             while len(chunk) >= chunk_size:
                 yield chunk[:chunk_size]
                 chunk = chunk[chunk_size:]
+
         if chunk:
             yield chunk
 
