@@ -1,0 +1,30 @@
+{
+  "type": "extension",
+  "name": "http_server_python",
+  "version": "0.4.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.4"
+    }
+  ],
+  "publish": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py"
+    ]
+  },
+  "api": {
+    "property": {
+      "listen_addr": {
+        "type": "string"
+      },
+      "listen_port": {
+        "type": "int32"
+      }
+    }
+  }
+}
