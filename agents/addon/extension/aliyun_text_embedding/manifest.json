@@ -63,21 +63,7 @@
                 "result": {
                     "property": {
                         "embeddings": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "embedding": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "float64"
-                                        }
-                                    },
-                                    "text_index": {
-                                        "type": "int32"
-                                    }
-                                }
-                            }
+                            "type": "string"
                         },
                         "code": {
                             "type": "string"
@@ -88,7 +74,6 @@
                     }
                 }
             }
-        ],
-        "cmd_out": []
+        ]
     }
 }

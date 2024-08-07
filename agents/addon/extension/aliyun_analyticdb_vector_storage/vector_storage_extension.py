@@ -18,6 +18,7 @@ from rte import (
 from typing import List
 from .log import logger
 import threading
+from datetime import datetime
 
 from alibabacloud_gpdb20160503.client import Client as gpdb20160503Client
 from alibabacloud_tea_openapi import models as open_api_models
@@ -161,6 +162,7 @@ class AliPGDBExtension(Extension):
             rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def async_upsert_vector(self, rte: RteEnv, cmd: Cmd):
+        start_time = datetime.now()
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         file = cmd.get_property_string("file_name")
@@ -173,6 +175,15 @@ class AliPGDBExtension(Extension):
         )
         err = await m.upsert_collection_data_async(
             collection, self.namespace, self.namespace_password, rows
+        )
+        logger.info(
+            "upsert_vector finished for file {}, collection {}, rows len {}, err {}, cost {}ms".format(
+                file,
+                collection,
+                len(rows),
+                err,
+                int((datetime.now() - start_time).total_seconds() * 1000),
+            )
         )
         if err is None:
             rte.return_result(CmdResult.create(StatusCode.OK), cmd)

@@ -63,6 +63,7 @@ class EmbeddingExtension(Extension):
                 break
 
             cmd_name = cmd.get_name()
+            start_time = datetime.now()
             logger.info(
                     "async_handler {} processing cmd {}".format(index, cmd_name))
             
@@ -76,12 +77,15 @@ class EmbeddingExtension(Extension):
             else:
                 logger.warning("unknown cmd {}".format(cmd_name))
             
+            logger.info(
+                    "async_handler {} finished processing cmd {}, cost {}ms".format(index, cmd_name, int((datetime.now() - start_time).total_seconds() * 1000)))
+
         logger.info("async_handler {} stopped".format(index))
 
     def call_with_str(self, message: str) -> CmdResult:
         start_time = datetime.now()
         response = dashscope.TextEmbedding.call(model=self.model, input=message)
-        logger.info("embedding call finished for input [{}], status_code {}, cost {}ms".format(message, response.status_code, (datetime.now() - start_time).microseconds / 1000))
+        logger.info("embedding call finished for input [{}], status_code {}, cost {}ms".format(message, response.status_code, int((datetime.now() - start_time).total_seconds() * 1000)))
 
         if response.status_code == HTTPStatus.OK:
             cmd_result = CmdResult.create(StatusCode.OK)
@@ -117,14 +121,15 @@ class EmbeddingExtension(Extension):
                 logger.error("call %s failed, errmsg: %s", batch, response)
             batch_counter += len(batch)
 
-        logger.info("embedding call finished for inputs len {}, batch_counter {}, results len {}, cost {}ms ".format(len(messages), batch_counter, len(result["embeddings"]), (datetime.now() - start_time).microseconds / 1000))
+        logger.info("embedding call finished for inputs len {}, batch_counter {}, results len {}, cost {}ms ".format(len(messages), batch_counter, len(result["embeddings"]), int((datetime.now() - start_time).total_seconds() * 1000)))
         if result is not None:
             cmd_result = CmdResult.create(StatusCode.OK)
-            cmd_result.set_property_from_json(FIELD_KEY_EMBEDDINGS, result["embeddings"])
+            cmd_result.set_property_string(FIELD_KEY_EMBEDDINGS, json.dumps(result["embeddings"]))
             return cmd_result
         else:
             cmd_result = CmdResult.create(StatusCode.ERROR)
             cmd_result.set_property_string(FIELD_KEY_MESSAGE, "All batch failed")
+            logger.error("All batch failed")
             return cmd_result
 
     def on_stop(self, rte: RteEnv) -> None:

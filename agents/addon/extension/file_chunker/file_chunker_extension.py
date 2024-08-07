@@ -24,6 +24,8 @@ import queue, threading
 CMD_FILE_DOWNLOADED = "file_downloaded"
 UPSERT_VECTOR_CMD = "upsert_vector"
 FILE_CHUNKED_CMD = "file_chunked"
+
+# TODO: configable
 CHUNK_SIZE = 200
 CHUNK_OVERLAP = 20
 BATCH_SIZE = 5
@@ -73,7 +75,11 @@ class FileChunkerExtension(Extension):
             chunk_overlap=CHUNK_OVERLAP,
         )
         nodes = splitter.get_nodes_from_documents(documents)
-        logger.info("pages in pdf: {}, chunking count: {}", len(documents), len(nodes))
+        logger.info(
+            "file {} pages count {}, chunking count {}".format(
+                path, len(documents), len(nodes)
+            )
+        )
         return nodes
 
     def embedding(self, rte: RteEnv, path: str, texts: List[str]):
@@ -86,22 +92,26 @@ class FileChunkerExtension(Extension):
         cmd_out = Cmd.create("embed_batch")
         cmd_out.set_property_from_json("inputs", json.dumps(texts))
         rte.send_cmd(
-            cmd_out, lambda rte, result: self.vector_store(rte, path, texts, result)
+            cmd_out,
+            lambda rte, result: self.vector_store(
+                rte, path, texts, result
+            ),  # TODO: deal with error
         )
 
     def vector_store(self, rte: RteEnv, path: str, texts: List[str], result: CmdResult):
-        logger.info("vector store start for file {}".format(path))
+        logger.info("vector store start for one splitting of the file {}".format(path))
         file_name = path.split("/")[-1]
-        embedOutputJson = result.get_property_string("output")
-        embedOutput = json.loads(embedOutputJson)
+        embed_output_json = result.get_property_string("embeddings")
+        embed_output = json.loads(embed_output_json)
         cmd_out = Cmd.create(UPSERT_VECTOR_CMD)
         cmd_out.set_property_string("collection_name", self.new_collection_name)
         cmd_out.set_property_string("file_name", file_name)
-        embeddings = [record["embedding"] for record in embedOutput["embeddings"]]
+        embeddings = [record["embedding"] for record in embed_output]
         content = []
         for text, embedding in zip(texts, embeddings):
             content.append({"text": text, "embedding": embedding})
         cmd_out.set_property_string("content", json.dumps(content))
+        # logger.info(json.dumps(content))
         rte.send_cmd(cmd_out, lambda rte, result: self.file_chunked(rte, path))
 
     def file_chunked(self, rte: RteEnv, path: str):
@@ -118,10 +128,9 @@ class FileChunkerExtension(Extension):
                 del self.counters[path]
                 del self.expected[path]
                 logger.info(
-                    "complete chunk for the file: {}, chunks_count {}, latency {}ms ".format(
+                    "complete chunk for the file: {}, chunks_count {}".format(
                         path,
                         chunks_count,
-                        int((datetime.now() - self.start_time).total_seconds() * 1000),
                     )
                 )
                 cmd_out = Cmd.create(FILE_CHUNKED_CMD)
@@ -180,7 +189,7 @@ class FileChunkerExtension(Extension):
                 "finished processing {}, collection_name {}, cost {}ms".format(
                     path,
                     collection_name,
-                    (datetime.now() - start_time).microseconds / 1000,
+                    int((datetime.now() - start_time).total_seconds() * 1000),
                 )
             )
 

@@ -37,7 +37,7 @@ class Model:
             response = self.get_client().init_vector_database_with_options(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"init_vector_database response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -58,7 +58,7 @@ class Model:
             response = await self.get_client().init_vector_database_with_options_async(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"init_vector_database response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -81,7 +81,7 @@ class Model:
                 read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
             )
             response = self.get_client().create_namespace_with_options(request, runtime)
-            logger.info(
+            logger.debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -106,7 +106,7 @@ class Model:
             response = await self.get_client().create_namespace_with_options_async(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -149,7 +149,7 @@ class Model:
             response = self.get_client().create_collection_with_options(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"create_document_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -192,7 +192,7 @@ class Model:
             response = await self.get_client().create_collection_with_options_async(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"create_document_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -214,7 +214,7 @@ class Model:
             response = self.get_client().delete_collection_with_options(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"delete_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -283,7 +283,7 @@ class Model:
             response = self.get_client().upsert_collection_data_with_options(
                 upsert_collection_data_request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"upsert_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -330,7 +330,7 @@ class Model:
                     upsert_collection_data_request, runtime
                 )
             )
-            logger.info(
+            logger.debug(
                 f"upsert_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -378,7 +378,7 @@ class Model:
                 query_collection_data_request, runtime
             )
             # logger.info(f"query_collection response code: {response.status_code}, body:{response.body}")
-            logger.info(f"query_collection response code: {response.status_code}")
+            logger.debug(f"query_collection response code: {response.status_code}")
             return response, None
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -424,7 +424,7 @@ class Model:
             response = await self.get_client().query_collection_data_with_options_async(
                 query_collection_data_request, runtime
             )
-            logger.info(f"query_collection response code: {response.status_code}")
+            logger.debug(f"query_collection response code: {response.status_code}")
             return response, None
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -458,7 +458,7 @@ class Model:
                 read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
             )
             response = self.get_client().list_collections_with_options(request, runtime)
-            logger.info(
+            logger.debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
             )
             collections = response.body.to_map()["Collections"]["collection"]
@@ -483,7 +483,7 @@ class Model:
             response = await self.get_client().list_collections_with_options_async(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
             )
             collections = response.body.to_map()["Collections"]["collection"]
@@ -512,7 +512,7 @@ class Model:
             response = self.get_client().create_vector_index_with_options(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"create_vector_index response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
@@ -539,7 +539,7 @@ class Model:
             response = await self.get_client().create_vector_index_with_options_async(
                 request, runtime
             )
-            logger.info(
+            logger.debug(
                 f"create_vector_index response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
