@@ -1204,7 +1204,7 @@
                         "addon": "litellm_python",
                         "name": "litellm",
                         "property": {
-                            "api_key": "<litellm_api_key>",
+                            "api_key": "",
                             "base_url": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "frequency_penalty": 0.9,
