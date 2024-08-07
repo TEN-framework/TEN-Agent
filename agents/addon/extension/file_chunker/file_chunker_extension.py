@@ -82,6 +82,18 @@ class FileChunkerExtension(Extension):
         )
         return nodes
 
+    def create_collection(self, rte: RteEnv, collection_name: str, wait: bool):
+        cmd_out = Cmd.create("create_collection")
+        cmd_out.set_property_string("collection_name", collection_name)
+
+        wait_event = threading.Event()
+        rte.send_cmd(
+            cmd_out,
+            lambda rte, result: wait_event.set(),
+        )
+        if wait:
+            wait_event.wait()
+
     def embedding(self, rte: RteEnv, path: str, texts: List[str]):
         logger.info(
             "generate embeddings for the file: {}, with batch size: {}".format(
@@ -168,6 +180,10 @@ class FileChunkerExtension(Extension):
             logger.info(
                 "start processing {}, collection_name {}".format(path, collection_name)
             )
+
+            # create collection
+            self.create_collection(rte, collection_name, True)
+            logger.info("collection_name {} created".format(collection_name))
 
             # split
             nodes = self.split(path)

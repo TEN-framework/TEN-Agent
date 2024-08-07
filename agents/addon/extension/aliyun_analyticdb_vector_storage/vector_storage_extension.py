@@ -143,9 +143,12 @@ class AliPGDBExtension(Extension):
     async def async_create_collection(self, rte: RteEnv, cmd: Cmd):
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
-        dimension = cmd.get_property_int("dimension")
-        if not dimension:
-            dimension = 1024
+        dimension = 1024
+        try:
+            dimension = cmd.get_property_int("dimension")
+        except Exception as e:
+            logger.warning(f"Error: {e}")
+
         err = await m.create_collection_async(
             self.account, self.account_password, self.namespace, collection
         )
@@ -169,10 +172,7 @@ class AliPGDBExtension(Extension):
         content = cmd.get_property_string("content")
         obj = json.loads(content)
         rows = [(file, item["text"], item["embedding"]) for item in obj]
-        # TODO remove the following line when create_collection is implemented
-        await m.create_collection_async(
-            self.account, self.account_password, self.namespace, collection
-        )
+
         err = await m.upsert_collection_data_async(
             collection, self.namespace, self.namespace_password, rows
         )

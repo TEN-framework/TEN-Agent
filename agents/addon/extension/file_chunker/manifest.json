@@ -67,6 +67,20 @@
         ]
       },
       {
+        "name": "create_collection",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "dimension": {
+            "type": "int32"
+          }
+        },
+        "required": [
+          "collection_name"
+        ]
+      },
+      {
         "name": "file_chunked",
         "property": {
           "path": {
