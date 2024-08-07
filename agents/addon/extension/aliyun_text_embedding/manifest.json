@@ -1,0 +1,94 @@
+{
+    "type": "extension",
+    "name": "aliyun_text_embedding",
+    "version": "0.4.0",
+    "language": "python",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "rte_runtime_python",
+            "version": "0.4"
+        }
+    ],
+    "api": {
+        "property": {
+            "api_key": {
+                "type": "string"
+            },
+            "model": {
+                "type": "string"
+            }
+        },
+        "cmd_in": [
+            {
+                "name": "embed",
+                "property": {
+                    "input": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "input"
+                ],
+                "result": {
+                    "property": {
+                        "embedding": {
+                            "type": "array",
+                            "items": {
+                                "type": "float64"
+                            }
+                        },
+                        "code": {
+                            "type": "string"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "embed_batch",
+                "property": {
+                    "inputs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "inputs"
+                ],
+                "result": {
+                    "property": {
+                        "embeddings": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "embedding": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "float64"
+                                        }
+                                    },
+                                    "text_index": {
+                                        "type": "int32"
+                                    }
+                                }
+                            }
+                        },
+                        "code": {
+                            "type": "string"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        ],
+        "cmd_out": []
+    }
+}
