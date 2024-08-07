@@ -35,7 +35,7 @@ class EmbeddingExtension(Extension):
         self.queue = queue.Queue()
         self.threads = []
 
-        # TODO: workaround to speech up the embedding process,
+        # TODO: workaround to speed up the embedding process,
         # should be replace by https://help.aliyun.com/zh/model-studio/developer-reference/text-embedding-batch-api?spm=a2c4g.11186623.0.0.24cb7453KSjdhC
         # once v3 models supported
         self.parallel = 10
