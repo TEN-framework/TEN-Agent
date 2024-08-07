@@ -1,0 +1,80 @@
+{
+  "type": "extension",
+  "name": "file_chunker",
+  "version": "0.4.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.4"
+    }
+  ],
+  "api": {
+    "property": {},
+    "cmd_in": [
+      {
+        "name": "file_downloaded",
+        "property": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "embed_batch",
+        "property": {
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "output": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "upsert_vector",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "file_chunked",
+        "property": {
+          "path": {
+            "type": "string"
+          },
+          "collection_name": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  }
+}
