@@ -20,7 +20,7 @@
 
 [Lightning Fast](./docs/astra-architecture.md)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interactive](./docs/astra-architecture.md#astra-extension)
+[Multimodel Interactive](./docs/astra-architecture.md#astra-extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Highly Customizable](./docs/astra-architecture.md#-astra-extension-store)
 
