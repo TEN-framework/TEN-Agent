@@ -1,3 +1,4 @@
 from . import qwen_llm_addon
+from .log import logger
 
-print("qwen_llm_python extension loaded")
+logger.info("qwen_llm_python extension loaded")
