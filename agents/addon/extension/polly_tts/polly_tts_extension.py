@@ -41,12 +41,6 @@ class PollyTTSExtension(Extension):
         self.bytes_per_sample = 2
         self.number_of_channels = 1
 
-    def on_init(
-        self, rte: RteEnv, manifest: MetadataInfo, property: MetadataInfo
-    ) -> None:
-        logger.info("PollyTTSExtension on_init")
-        rte.on_init_done(manifest, property)
-
     def on_start(self, rte: RteEnv) -> None:
         logger.info("PollyTTSExtension on_start")
 
