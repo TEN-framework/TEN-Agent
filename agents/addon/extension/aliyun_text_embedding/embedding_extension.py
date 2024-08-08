@@ -89,7 +89,7 @@ class EmbeddingExtension(Extension):
 
         if response.status_code == HTTPStatus.OK:
             cmd_result = CmdResult.create(StatusCode.OK)
-            cmd_result.set_property_from_json(FIELD_KEY_EMBEDDING, response.output["embeddings"][0]["embedding"])
+            cmd_result.set_property_from_json(FIELD_KEY_EMBEDDING, json.dumps(response.output["embeddings"][0]["embedding"]))
             return cmd_result
         else:
             cmd_result = CmdResult.create(StatusCode.ERROR)
@@ -124,6 +124,9 @@ class EmbeddingExtension(Extension):
         logger.info("embedding call finished for inputs len {}, batch_counter {}, results len {}, cost {}ms ".format(len(messages), batch_counter, len(result["embeddings"]), int((datetime.now() - start_time).total_seconds() * 1000)))
         if result is not None:
             cmd_result = CmdResult.create(StatusCode.OK)
+
+            # TODO: too slow `set_property_to_json`, so use `set_property_string` at the moment as workaround
+            # will be replaced once `set_property_to_json` improved
             cmd_result.set_property_string(FIELD_KEY_EMBEDDINGS, json.dumps(result["embeddings"]))
             return cmd_result
         else:

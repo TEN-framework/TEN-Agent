@@ -91,6 +91,67 @@
             "text"
           ]
         }
+      },
+      {
+        "name": "embed",
+        "property": {
+          "input": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "result": {
+          "property": {
+            "embedding": {
+              "type": "array",
+              "items": {
+                "type": "float64"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "query_vector",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "int64"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "float64"
+            }
+          }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ],
+        "result": {
+          "property": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     ]
   }
