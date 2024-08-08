@@ -1,0 +1,1 @@
+EXTENSION_NAME = "transcribe_asr"
