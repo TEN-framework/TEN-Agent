@@ -67,6 +67,29 @@
               "type": "float64"
             }
           }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ],
+        "result": {
+          "property": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       {
