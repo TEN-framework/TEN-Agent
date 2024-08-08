@@ -18,11 +18,11 @@
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-[Lightning Fast](./docs/astra-architecture.md)
+[Documentation](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodel Interactive](./docs/astra-architecture.md#astra-extension)
+[Getting Started](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Highly Customizable](./docs/astra-architecture.md#-astra-extension-store)
+[Tutorials](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
 
 </div>
 
@@ -59,7 +59,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 
 ### Next step
 
-#### 1. Prepare config files
+#### 1. Modify config files
 In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
 ```bash
 # Create .env from the example
@@ -69,7 +69,7 @@ cp ./.env.example ./.env
 cp ./agents/property.json.example ./agents/property.json
 ```
 
-#### 2. Setup API keys & Environment variables in .env file
+#### 2. Setup API keys
 Open the `.env` file and fill in the keys and regions. This is also where you can choose to use any different extensions:
 ```
 # Agora App ID and Agora App Certificate
@@ -92,40 +92,39 @@ AZURE_TTS_REGION=
 OPENAI_API_KEY=
 ```
 
-#### 3. Start agent builder toolkit containers
+#### 3. Start agent development containers
 In the same directory, run the `docker` command to compose containers:
 ```bash
 # Execute docker compose up to start the services
 docker compose up
 ```
 
-#### 4. Build your agent and start server
+#### 4. Build agent and start server
 Open up a separate terminal window, build the agent and start the server:
 ```bash
 # Enter container to build agent
 docker exec -it astra_agents_dev bash
 make build
 
-# Run server on port 8080
+# Once the build is done, run server on port 8080
 make run-server
 ```
 
-#### 5. Use graph designer to customize voice agent
+### Finish and verify 🎉
 
-You can open https://localhost:3001 in browser to use your graph designer. Simultaneously, open another tab at https://localhost:3000 to see the customized voice agent up and running.
-
-Now you have the power of the Graph Designer at your fingertips to perform the magic of agent customization yourself. 🎉
+#### Astra voice agent
+Open up localhost:3000 in browser to test Astra voice agent.
 
 #### Graph designer
 
-TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
+Open up another tab go to localhost:3001, and use graph designer to edit the flow and properties of any extensions.
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>TEN Service</h2>
+<h2>TEN Platform</h2>
 
-Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
+Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://astra-9.gitbook.io/ten-platform).
 
 <br>
 <h2>Stay Tuned</h2>

@@ -22,17 +22,18 @@
 
 <div align="center">
 
-[低延迟](./docs/astra-architecture.md)
+[文档](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[多模态](./docs/astra-architecture.md#astra-extension)
+[快速开始](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[高可配](./docs/astra-architecture.md#-astra-extension-store)
+[教程](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
+
 
 </div>
 
 <br>
 
-## Astra
+## Astra 语音助手
 
 [Astra](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
@@ -120,13 +121,17 @@ make build
 make run-server
 ```
 
-#### 5. 验证 voice agent 和 graph designer 🎉
+### 构建完成 🎉
 
-现在可以打开浏览器 `http://localhost:3000` 体验 voice agent，同时可以再开浏览器的一个窗口 `http://localhost:3001` 用 graph designer 定制 voice agent。
+走到这里就本地构建完成了，简单 4 步，上手体验拉满！
 
-#### Graph designer
+#### 验证 Astra voice agent 
 
-TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现多模型配置。
+现在可以打开浏览器 `localhost:3000` 体验 voice agent。
+
+#### 验证 Graph designer
+
+同时可以再开一个 tab 在 `localhost:3001` 体验 TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra voice agent。
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
