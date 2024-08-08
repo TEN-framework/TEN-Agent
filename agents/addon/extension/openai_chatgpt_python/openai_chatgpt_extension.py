@@ -305,234 +305,228 @@ class OpenAIChatGPTExtension(Extension):
             self.memory.pop(0)
         self.memory.append(message)
 
-    def chat_completion_with_vision(self, rte: RteEnv, start_time, input_text, memory):
-        try:
-            logger.info(
-                f"for input text: [{input_text}] memory: {memory}"
-            )
+    # def chat_completion_with_vision(self, rte: RteEnv, start_time, input_text, memory):
+    #     try:
+    #         logger.info(
+    #             f"for input text: [{input_text}] memory: {memory}"
+    #         )
 
-            message = {"role": "user", "content": input_text}
+    #         message = {"role": "user", "content": input_text}
 
-            if self.image_data is not None:
-                url = yuv2base64png(self.image_data, self.image_width, self.image_height)
-                # logger.info(f"image url: {url}")
-                message = {"role": "user", "content": [
-                    {"type": "text", "text": input_text},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": url,
-                        }
-                    }
-                ]}
+    #         if self.image_data is not None:
+    #             url = yuv2base64png(self.image_data, self.image_width, self.image_height)
+    #             # logger.info(f"image url: {url}")
+    #             message = {"role": "user", "content": [
+    #                 {"type": "text", "text": input_text},
+    #                 {
+    #                     "type": "image_url",
+    #                     "image_url": {
+    #                         "url": url,
+    #                     }
+    #                 }
+    #             ]}
                 
 
-            # Get result from AI
-            resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message])
-            self.append_memory({"role": "user", "content": input_text})
-            if resp is None:
-                logger.info(
-                    f"for input text: [{input_text}] failed"
-                )
-                return
+    #         # Get result from AI
+    #         resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message])
+    #         self.append_memory({"role": "user", "content": input_text})
+    #         if resp is None:
+    #             logger.info(
+    #                 f"for input text: [{input_text}] failed"
+    #             )
+    #             return
 
-            sentence = ""
-            full_content = ""
-            first_sentence_sent = False
+    #         sentence = ""
+    #         full_content = ""
+    #         first_sentence_sent = False
 
-            for chat_completions in resp:
-                if start_time < self.outdate_ts:
-                    logger.info(
-                        f"recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
-                    )
-                    break
+    #         for chat_completions in resp:
+    #             if start_time < self.outdate_ts:
+    #                 logger.info(
+    #                     f"recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
+    #                 )
+    #                 break
 
-                if (
-                    len(chat_completions.choices) > 0
-                ):
-                    if chat_completions.choices[0].delta.tool_calls is not None:
-                        for tool_call in chat_completions.choices[0].delta.tool_calls:
-                            logger.info(f"tool_call: {tool_call}")
-                            if tool_call.function.name == "get_camera_image":
-                                self.chat_completion(rte, start_time, input_text, memory, True)
-                                return
-                    elif chat_completions.choices[0].delta.content is not None:
-                        content = chat_completions.choices[0].delta.content
-                else:
-                    content = ""
+    #             if (
+    #                 len(chat_completions.choices) > 0
+    #             ):
+    #                 if chat_completions.choices[0].delta.content is not None:
+    #                     content = chat_completions.choices[0].delta.content
+    #             else:
+    #                 content = ""
 
-                full_content += content
+    #             full_content += content
 
-                while True:
-                    sentence, content, sentence_is_final = parse_sentence(
-                        sentence, content
-                    )
-                    if len(sentence) == 0 or not sentence_is_final:
-                        logger.info(f"sentence {sentence} is empty or not final")
-                        break
-                    logger.info(
-                        f"recv for input text: [{input_text}] got sentence: [{sentence}]"
-                    )
+    #             while True:
+    #                 sentence, content, sentence_is_final = parse_sentence(
+    #                     sentence, content
+    #                 )
+    #                 if len(sentence) == 0 or not sentence_is_final:
+    #                     logger.info(f"sentence {sentence} is empty or not final")
+    #                     break
+    #                 logger.info(
+    #                     f"recv for input text: [{input_text}] got sentence: [{sentence}]"
+    #                 )
 
-                    # send sentence
-                    try:
-                        output_data = Data.create("text_data")
-                        output_data.set_property_string(
-                            DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
-                        )
-                        output_data.set_property_bool(
-                            DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
-                        )
-                        rte.send_data(output_data)
-                        logger.info(
-                            f"recv for input text: [{input_text}] sent sentence [{sentence}]"
-                        )
-                    except Exception as err:
-                        logger.info(
-                            f"recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
-                        )
-                        break
+    #                 # send sentence
+    #                 try:
+    #                     output_data = Data.create("text_data")
+    #                     output_data.set_property_string(
+    #                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+    #                     )
+    #                     output_data.set_property_bool(
+    #                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
+    #                     )
+    #                     rte.send_data(output_data)
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] sent sentence [{sentence}]"
+    #                     )
+    #                 except Exception as err:
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
+    #                     )
+    #                     break
 
-                    sentence = ""
-                    if not first_sentence_sent:
-                        first_sentence_sent = True
-                        logger.info(
-                            f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms"
-                        )
+    #                 sentence = ""
+    #                 if not first_sentence_sent:
+    #                     first_sentence_sent = True
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms"
+    #                     )
 
-            # remember response as assistant content in memory
-            self.append_memory({"role": "assistant", "content": full_content})
+    #         # remember response as assistant content in memory
+    #         self.append_memory({"role": "assistant", "content": full_content})
 
-            # send end of segment
-            try:
-                output_data = Data.create("text_data")
-                output_data.set_property_string(
-                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
-                )
-                output_data.set_property_bool(
-                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
-                )
-                rte.send_data(output_data)
-                logger.info(
-                    f"for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
-                )
-            except Exception as err:
-                logger.info(
-                    f"for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {err}"
-                )
+    #         # send end of segment
+    #         try:
+    #             output_data = Data.create("text_data")
+    #             output_data.set_property_string(
+    #                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+    #             )
+    #             output_data.set_property_bool(
+    #                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
+    #             )
+    #             rte.send_data(output_data)
+    #             logger.info(
+    #                 f"for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
+    #             )
+    #         except Exception as err:
+    #             logger.info(
+    #                 f"for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {err}"
+    #             )
 
-        except Exception as e:
-            logger.info(
-                f"for input text: [{input_text}] failed, err: {e}"
-            )
+    #     except Exception as e:
+    #         logger.info(
+    #             f"for input text: [{input_text}] failed, err: {e}"
+    #         )
 
-    def chat_completion(self, rte: RteEnv, start_time, input_text, memory):
-        try:
-            logger.info(
-                f"for input text: [{input_text}] memory: {memory}"
-            )
+    # def chat_completion(self, rte: RteEnv, start_time, input_text, memory):
+    #     try:
+    #         logger.info(
+    #             f"for input text: [{input_text}] memory: {memory}"
+    #         )
 
-            message = {"role": "user", "content": input_text}
+    #         message = {"role": "user", "content": input_text}
                 
 
-            # Get result from AI
-            resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message], self.available_tools)
-            self.append_memory({"role": "user", "content": input_text})
-            if resp is None:
-                logger.info(
-                    f"for input text: [{input_text}] failed"
-                )
-                return
+    #         # Get result from AI
+    #         resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message], self.available_tools)
+    #         self.append_memory({"role": "user", "content": input_text})
+    #         if resp is None:
+    #             logger.info(
+    #                 f"for input text: [{input_text}] failed"
+    #             )
+    #             return
 
-            sentence = ""
-            full_content = ""
-            first_sentence_sent = False
+    #         sentence = ""
+    #         full_content = ""
+    #         first_sentence_sent = False
 
-            for chat_completions in resp:
-                if start_time < self.outdate_ts:
-                    logger.info(
-                        f"recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
-                    )
-                    break
+    #         for chat_completions in resp:
+    #             if start_time < self.outdate_ts:
+    #                 logger.info(
+    #                     f"recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
+    #                 )
+    #                 break
 
-                if (
-                    len(chat_completions.choices) > 0
-                ):
-                    if chat_completions.choices[0].delta.tool_calls is not None:
-                        for tool_call in chat_completions.choices[0].delta.tool_calls:
-                            logger.info(f"tool_call: {tool_call}")
-                            if tool_call.function.name == "get_camera_image":
-                                self.chat_completion_with_vision(rte, start_time, "tell me about this image using language in previous context", memory)
-                                return
-                    elif chat_completions.choices[0].delta.content is not None:
-                        content = chat_completions.choices[0].delta.content
-                else:
-                    content = ""
+    #             if (
+    #                 len(chat_completions.choices) > 0
+    #             ):
+    #                 if chat_completions.choices[0].delta.tool_calls is not None:
+    #                     for tool_call in chat_completions.choices[0].delta.tool_calls:
+    #                         logger.info(f"tool_call: {tool_call}")
+    #                         if tool_call.function.name == "get_camera_image":
+    #                             self.chat_completion_with_vision(rte, start_time, "tell me about this image using language in previous context", memory)
+    #                             return
+    #                 elif chat_completions.choices[0].delta.content is not None:
+    #                     content = chat_completions.choices[0].delta.content
+    #             else:
+    #                 content = ""
 
-                full_content += content
+    #             full_content += content
 
-                while True:
-                    sentence, content, sentence_is_final = parse_sentence(
-                        sentence, content
-                    )
-                    if len(sentence) == 0 or not sentence_is_final:
-                        logger.info(f"sentence {sentence} is empty or not final")
-                        break
-                    logger.info(
-                        f"recv for input text: [{input_text}] got sentence: [{sentence}]"
-                    )
+    #             while True:
+    #                 sentence, content, sentence_is_final = parse_sentence(
+    #                     sentence, content
+    #                 )
+    #                 if len(sentence) == 0 or not sentence_is_final:
+    #                     logger.info(f"sentence {sentence} is empty or not final")
+    #                     break
+    #                 logger.info(
+    #                     f"recv for input text: [{input_text}] got sentence: [{sentence}]"
+    #                 )
 
-                    # send sentence
-                    try:
-                        output_data = Data.create("text_data")
-                        output_data.set_property_string(
-                            DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
-                        )
-                        output_data.set_property_bool(
-                            DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
-                        )
-                        rte.send_data(output_data)
-                        logger.info(
-                            f"recv for input text: [{input_text}] sent sentence [{sentence}]"
-                        )
-                    except Exception as err:
-                        logger.info(
-                            f"recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
-                        )
-                        break
+    #                 # send sentence
+    #                 try:
+    #                     output_data = Data.create("text_data")
+    #                     output_data.set_property_string(
+    #                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+    #                     )
+    #                     output_data.set_property_bool(
+    #                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
+    #                     )
+    #                     rte.send_data(output_data)
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] sent sentence [{sentence}]"
+    #                     )
+    #                 except Exception as err:
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
+    #                     )
+    #                     break
 
-                    sentence = ""
-                    if not first_sentence_sent:
-                        first_sentence_sent = True
-                        logger.info(
-                            f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms"
-                        )
+    #                 sentence = ""
+    #                 if not first_sentence_sent:
+    #                     first_sentence_sent = True
+    #                     logger.info(
+    #                         f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms"
+    #                     )
 
-            # remember response as assistant content in memory
-            self.append_memory({"role": "assistant", "content": full_content})
+    #         # remember response as assistant content in memory
+    #         self.append_memory({"role": "assistant", "content": full_content})
 
-            # send end of segment
-            try:
-                output_data = Data.create("text_data")
-                output_data.set_property_string(
-                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
-                )
-                output_data.set_property_bool(
-                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
-                )
-                rte.send_data(output_data)
-                logger.info(
-                    f"for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
-                )
-            except Exception as err:
-                logger.info(
-                    f"for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {err}"
-                )
+    #         # send end of segment
+    #         try:
+    #             output_data = Data.create("text_data")
+    #             output_data.set_property_string(
+    #                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+    #             )
+    #             output_data.set_property_bool(
+    #                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
+    #             )
+    #             rte.send_data(output_data)
+    #             logger.info(
+    #                 f"for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
+    #             )
+    #         except Exception as err:
+    #             logger.info(
+    #                 f"for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {err}"
+    #             )
 
-        except Exception as e:
-            logger.info(
-                f"for input text: [{input_text}] failed, err: {e}"
-            )
+    #     except Exception as e:
+    #         logger.info(
+    #             f"for input text: [{input_text}] failed, err: {e}"
+    #         )
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         logger.info("OpenAIChatGPTExtension on_cmd")
@@ -599,26 +593,6 @@ class OpenAIChatGPTExtension(Extension):
             )
             return
 
-        # Prepare memory
-        # if len(self.memory) > self.max_memory_length:
-        #     self.memory.pop(0)
-        # if self.image_data is not None and self.enable_vision is True:
-        #     url = yuv2base64png(self.image_data, self.image_width, self.image_height)
-        #     # logger.info(f"image url: {url}")
-        #     self.memory.append({"role": "user", "content": [
-        #         {"type": "text", "text": input_text},
-        #         {
-        #             "type": "image_url",
-        #             "image_url": {
-        #                 "url": url,
-        #             }
-        #         }
-        #     ]})
-        #     # clear image after use
-        #     self.image_data = None
-        # else:
-        # self.memory.append({"role": "user", "content": input_text})
-
         def chat_completions_stream_worker(start_time, input_text, memory):
             self.chat_completion(rte, start_time, input_text, memory)
 
@@ -630,6 +604,85 @@ class OpenAIChatGPTExtension(Extension):
         )
         thread.start()
         logger.info(f"OpenAIChatGPTExtension on_data end")
+
+    def send_data(rte, sentence, end_of_segment, input_text, logger):
+        try:
+            output_data = Data.create("text_data")
+            output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
+            output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, end_of_segment)
+            rte.send_data(output_data)
+            logger.info(f"for input text: [{input_text}] {'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]")
+        except Exception as err:
+            logger.info(f"for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}")
+
+    def process_completions(self, chat_completions, rte, start_time, input_text, memory, logger):
+        sentence = ""
+        full_content = ""
+        first_sentence_sent = False
+
+        for chat_completion in chat_completions:
+            if start_time < self.outdate_ts:
+                logger.info(f"recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}")
+                break
+
+            content = chat_completion.choices[0].delta.content if len(chat_completion.choices) > 0 and chat_completion.choices[0].delta.content is not None else ""
+
+            full_content += content
+
+            while True:
+                sentence, content, sentence_is_final = parse_sentence(sentence, content)
+                if len(sentence) == 0 or not sentence_is_final:
+                    logger.info(f"sentence {sentence} is empty or not final")
+                    break
+                logger.info(f"recv for input text: [{input_text}] got sentence: [{sentence}]")
+                send_data(rte, sentence, False, input_text, logger)
+                sentence = ""
+
+                if not first_sentence_sent:
+                    first_sentence_sent = True
+                    logger.info(f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms")
+
+        self.append_memory({"role": "assistant", "content": full_content})
+        send_data(rte, sentence, True, input_text, logger)
+
+    def chat_completion_with_vision(self, rte: RteEnv, start_time, input_text, memory):
+        try:
+            logger.info(f"for input text: [{input_text}] memory: {memory}")
+            message = {"role": "user", "content": input_text}
+
+            if self.image_data is not None:
+                url = yuv2base64png(self.image_data, self.image_width, self.image_height)
+                message = {"role": "user", "content": [
+                    {"type": "text", "text": input_text},
+                    {"type": "image_url", "image_url": {"url": url}}
+                ]}
+
+            resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message])
+            self.append_memory({"role": "user", "content": input_text})
+            if resp is None:
+                log_and_return(logger, input_text, "Response is None")
+                return
+
+            process_completions(resp, rte, start_time, input_text, memory, logger)
+
+        except Exception as e:
+            log_and_return(logger, input_text, str(e))
+
+    def chat_completion(self, rte: RteEnv, start_time, input_text, memory):
+        try:
+            logger.info(f"for input text: [{input_text}] memory: {memory}")
+            message = {"role": "user", "content": input_text}
+
+            resp = self.openai_chatgpt.get_chat_completions_stream(memory + [message], self.available_tools)
+            self.append_memory({"role": "user", "content": input_text})
+            if resp is None:
+                log_and_return(logger, input_text, "Response is None")
+                return
+
+            process_completions(resp, rte, start_time, input_text, memory, logger)
+
+        except Exception as e:
+            log_and_return(logger, input_text, str(e))
 
 @register_addon_as_extension("openai_chatgpt_python")
 class OpenAIChatGPTExtensionAddon(Addon):
