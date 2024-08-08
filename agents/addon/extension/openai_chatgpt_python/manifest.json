@@ -81,6 +81,11 @@
       {
         "name": "flush"
       }
+    ],
+    "image_frame_in": [
+      {
+        "name": "image_frame"
+      }
     ]
   }
 }
