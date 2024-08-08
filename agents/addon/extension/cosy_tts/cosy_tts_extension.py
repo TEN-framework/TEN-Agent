@@ -15,7 +15,6 @@ from rte import (
     Data,
     StatusCode,
     CmdResult,
-    MetadataInfo,
 )
 from typing import List, Any
 import dashscope
@@ -27,16 +26,20 @@ from .log import logger
 
 
 class CosyTTSCallback(ResultCallback):
-    _player = None
-    _stream = None
-
-    def __init__(self, rte: RteEnv, sample_rate: int):
+    def __init__(self, rte: RteEnv, sample_rate: int, need_interrupt_callback):
         super().__init__()
         self.rte = rte
         self.sample_rate = sample_rate
         self.frame_size = int(self.sample_rate * 1 * 2 / 100)
-        self.canceled = False
+        self.ts = datetime.now()
+        self.need_interrupt_callback = need_interrupt_callback
         self.closed = False
+
+    def need_interrupt(self) -> bool:
+        return self.need_interrupt_callback(self.ts)
+
+    def set_input_ts(self, ts: datetime):
+        self.ts = ts
 
     def on_open(self):
         logger.info("websocket is open.")
@@ -71,11 +74,8 @@ class CosyTTSCallback(ResultCallback):
         f.unlock_buf(buff)
         return f
 
-    def cancel(self) -> None:
-        self.canceled = True
-
     def on_data(self, data: bytes) -> None:
-        if self.canceled:
+        if self.need_interrupt():
             return
 
         # logger.info("audio result length: %d, %d", len(data), self.frame_size)
@@ -83,13 +83,13 @@ class CosyTTSCallback(ResultCallback):
             chunk = int(len(data) / self.frame_size)
             offset = 0
             for i in range(0, chunk):
-                if self.canceled:
+                if self.need_interrupt():
                     return
                 f = self.get_frame(data[offset : offset + self.frame_size])
                 self.rte.send_pcm_frame(f)
                 offset += self.frame_size
 
-            if self.canceled:
+            if self.need_interrupt():
                 return
             if offset < len(data):
                 size = len(data) - offset
@@ -109,15 +109,15 @@ class CosyTTSExtension(Extension):
         self.tts = None
         self.callback = None
         self.format = None
-        self.outdateTs = datetime.now()
+
+        self.outdate_ts = datetime.now()
 
         self.stopped = False
         self.thread = None
         self.queue = queue.Queue()
-        self.mutex = threading.Lock()
 
     def on_start(self, rte: RteEnv) -> None:
-        logger.info("CosyTTSExtension on_start")
+        logger.info("on_start")
         self.api_key = rte.get_property_string("api_key")
         self.voice = rte.get_property_string("voice")
         self.model = rte.get_property_string("model")
@@ -138,7 +138,7 @@ class CosyTTSExtension(Extension):
         elif self.sample_rate == 48000:
             f = AudioFormat.PCM_48000HZ_MONO_16BIT
         else:
-            logger.info("unknown sample rate %d", self.sample_rate)
+            logger.error("unknown sample rate %d", self.sample_rate)
             exit()
 
         self.format = f
@@ -148,16 +148,18 @@ class CosyTTSExtension(Extension):
         rte.on_start_done()
 
     def on_stop(self, rte: RteEnv) -> None:
-        logger.info("CosyTTSExtension on_stop")
+        logger.info("on_stop")
 
         self.stopped = True
-        self.queue.put(None)
         self.flush()
-        self.thread.join()
+        self.queue.put(None)
+        if self.thread is not None:
+            self.thread.join()
+            self.thread = None
         rte.on_stop_done()
 
     def need_interrupt(self, ts: datetime.time) -> bool:
-        return self.outdateTs > ts and (self.outdateTs - ts).total_seconds() > 1
+        return self.outdate_ts > ts
 
     def async_handle(self, rte: RteEnv):
         try:
@@ -168,29 +170,33 @@ class CosyTTSExtension(Extension):
                     value = self.queue.get()
                     if value is None:
                         break
-                    inputText, ts = value
-                    if len(inputText) == 0:
-                        logger.warning("empty input for interrupt")
-                        if tts is not None:
-                            try:
-                                tts.streaming_cancel()
-                            except Exception as e:
-                                logger.exception(e)
-                        if callback is not None:
-                            callback.cancel()
-                        tts = None
-                        callback = None
-                        continue
+                    input_text, ts, end_of_segment = value
 
-                    if self.need_interrupt(ts):
-                        continue
-
+                    # clear tts if old one is closed already
                     if callback is not None and callback.closed is True:
                         tts = None
+                        callback = None
 
-                    if tts is None:
+                    # cancel last streaming call to avoid unprocessed audio coming back
+                    if (
+                        callback is not None
+                        and tts is not None
+                        and callback.need_interrupt()
+                    ):
+                        tts.streaming_cancel()
+                        tts = None
+                        callback = None
+
+                    if self.need_interrupt(ts):
+                        logger.info("drop outdated input")
+                        continue
+
+                    # create new tts if needed
+                    if tts is None or callback is None:
                         logger.info("creating tts")
-                        callback = CosyTTSCallback(rte, self.sample_rate)
+                        callback = CosyTTSCallback(
+                            rte, self.sample_rate, self.need_interrupt
+                        )
                         tts = SpeechSynthesizer(
                             model=self.model,
                             voice=self.voice,
@@ -198,49 +204,57 @@ class CosyTTSExtension(Extension):
                             callback=callback,
                         )
 
-                    logger.info("on message [%s]", inputText)
-                    tts.streaming_call(inputText)
-                    tts.streaming_complete()
+                    logger.info(
+                        "on message [{}] ts [{}] end_of_segment [{}]".format(
+                            input_text, ts, end_of_segment
+                        )
+                    )
+
+                    # make sure new data won't be marked as outdated
+                    callback.set_input_ts(ts)
+
+                    if len(input_text) > 0:
+                        # last segment may have empty text but is_end is true
+                        tts.streaming_call(input_text)
+
+                    # complete the streaming call to drain remained audio if end_of_segment is true
+                    if end_of_segment:
+                        try:
+                            tts.streaming_complete()
+                        except Exception as e:
+                            logger.warning(e)
+                        tts = None
+                        callback = None
                 except Exception as e:
                     logger.exception(e)
                     logger.exception(traceback.format_exc())
         finally:
             if tts is not None:
-                tts.streaming_complete()
+                tts.streaming_cancel()
+                tts = None
+                callback = None
 
     def flush(self):
-        logger.info("CosyTTSExtension flush")
         while not self.queue.empty():
             self.queue.get()
-        self.queue.put(("", datetime.now()))
 
     def on_data(self, rte: RteEnv, data: Data) -> None:
-        logger.info("CosyTTSExtension on_data")
         inputText = data.get_property_string("text")
-        if len(inputText) == 0:
-            logger.info("ignore empty text")
-            return
+        end_of_segment = data.get_property_bool("end_of_segment")
 
-        is_end = data.get_property_bool("end_of_segment")
-
-        logger.info("on data %s %d", inputText, is_end)
-        self.queue.put((inputText, datetime.now()))
+        logger.info("on data {} {}".format(inputText, end_of_segment))
+        self.queue.put((inputText, datetime.now(), end_of_segment))
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
-        logger.info("CosyTTSExtension on_cmd")
-        cmd_json = cmd.to_json()
-        logger.info("CosyTTSExtension on_cmd json: %s" + cmd_json)
-
-        cmdName = cmd.get_name()
-        if cmdName == "flush":
-            self.outdateTs = datetime.now()
+        cmd_name = cmd.get_name()
+        logger.info("on_cmd {}".format(cmd_name))
+        if cmd_name == "flush":
+            self.outdate_ts = datetime.now()
             self.flush()
             cmd_out = Cmd.create("flush")
-            rte.send_cmd(
-                cmd_out, lambda rte, result: print("DefaultExtension send_cmd done")
-            )
+            rte.send_cmd(cmd_out, lambda rte, result: print("send_cmd flush done"))
         else:
-            logger.info("unknown cmd %s", cmdName)
+            logger.info("unknown cmd {}".format(cmd_name))
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
