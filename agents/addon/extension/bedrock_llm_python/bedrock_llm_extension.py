@@ -249,10 +249,9 @@ class BedrockLLMExtension(Extension):
                 first_sentence_sent = False
 
                 for event in stream:
-                    if start_time < self.outdate_ts:
-                        logger.info(
-                            f"GetConverseStream recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
-                        )
+                    # allow 100ms buffer time, in case interruptor's flush cmd comes just after on_data event
+                    if (start_time + 100_000) < self.outdate_ts:
+                        logger.info(f"GetConverseStream recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}, delta > 100ms")
                         break
 
                     if "contentBlockDelta" in event:
@@ -278,8 +277,8 @@ class BedrockLLMExtension(Extension):
                         sentence, content, sentence_is_final = parse_sentence(
                             sentence, content
                         )
-                        if len(sentence) == 0 or not sentence_is_final:
-                            logger.info(f"sentence {sentence} is empty or not final")
+                        if not sentence or not sentence_is_final:
+                            logger.info(f"sentence [{sentence}] is empty or not final")
                             break
                         logger.info(
                             f"GetConverseStream recv for input text: [{input_text}] got sentence: [{sentence}]"
@@ -313,7 +312,10 @@ class BedrockLLMExtension(Extension):
 
                 if len(full_content.strip()):
                     # remember response as assistant content in memory
-                    memory.append(
+                    if memory and memory[-1]['role'] == 'assistant':
+                        memory[-1]['content'].append({"text": full_content})
+                    else:
+                        memory.append(
                         {"role": "assistant", "content": [{"text": full_content}]}
                     )
                 else:
