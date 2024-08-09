@@ -1,8 +1,7 @@
-![Astra Banner Image](https://github.com/rte-design/docs/blob/main/assets/imgs/banner-image-without-tagline.png)
 
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
 [![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
@@ -35,9 +34,9 @@
 
 ## Astra 语音助手
 
-[Astra](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
+[Astra voice agent](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
-[![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra voice agent](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 
 <br>
 <h2>如何用搭建的 graph designer 配置 voice agent</h2>
@@ -151,7 +150,7 @@ make run-server
 - [WeChat Group](https://github.com/rte-design/ASTRA.ai/discussions/170): 如果喜欢用微信群的社区，欢迎加入。
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions)：非常适合提供反馈和提问。
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues)：最适合报告错误和提出新功能。有关更多详细信息，请参阅我们的[贡献指南](./docs/code-of-conduct/contributing.md)。
-- [X（以前的Twitter）](https://twitter.com/intent/follow?screen_name=AstraFramework)：非常适合分享您的代理并与社区互动。
+- [X（以前的Twitter）](https://twitter.com/intent/follow?screen_name=ten_platform)：非常适合分享您的代理并与社区互动。
 
 <br>
  <h2>代码贡献者</h2>
