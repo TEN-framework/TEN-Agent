@@ -40,7 +40,7 @@ services:
         ports:
             - "3000:3000"
     astra_graph_designer:
-        image: agoraio/astra_graph_designer:0.1.0
+        image: agoraio/astra_graph_designer:0.2.0
         container_name: astra_graph_designer
         restart: always
         ports:
