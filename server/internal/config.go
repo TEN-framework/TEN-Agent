@@ -18,6 +18,7 @@ const (
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
 	extensionNamePollyTTS      = "polly_tts"
 	extensionNameQwenLLM       = "qwen_llm"
+	extensionNameTranscribeAsr = "transcribe_asr"
 
 	// Language
 	languageChinese = "zh-CN"
@@ -44,16 +45,20 @@ var (
 		"AWS_ACCESS_KEY_ID": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "access_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "access_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "access_key"},
 		},
 		"AWS_SECRET_ACCESS_KEY": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "secret_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "secret_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "secret_key"},
 		},
 		"AWS_BEDROCK_MODEL": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "model"},
 		},
 		"AWS_REGION": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "region"},
+			{ExtensionName: extensionNamePollyTTS, Property: "region"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "region"},
 		},
 		"AZURE_STT_KEY": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "agora_asr_vendor_key"},
