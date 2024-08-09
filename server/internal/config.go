@@ -10,10 +10,11 @@ type Prop struct {
 const (
 	// Extension name
 	extensionNameAgoraRTC      = "agora_rtc"
-	extensionNameBedrockLLM    = "bedrock_llm"
 	extensionNameAzureTTS      = "azure_tts"
+	extensionNameBedrockLLM    = "bedrock_llm"
 	extensionNameCosyTTS       = "cosy_tts"
 	extensionNameElevenlabsTTS = "elevenlabs_tts"
+	extensionNameHttpServer    = "http_server"
 	extensionNameLiteLLM       = "litellm"
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
 	extensionNamePollyTTS      = "polly_tts"
@@ -115,6 +116,9 @@ var (
 		"VoiceType": {
 			{ExtensionName: extensionNameAzureTTS, Property: "azure_synthesis_voice_name"},
 			{ExtensionName: extensionNameElevenlabsTTS, Property: "voice_id"},
+		},
+		"WorkerHttpServerPort": {
+			{ExtensionName: extensionNameHttpServer, Property: "listen_port"},
 		},
 	}
 
