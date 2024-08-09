@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
     "name": "astra",
-    "image": "ghcr.io/rte-design/astra_agents_build:0.3.5",
+    "image": "ghcr.io/rte-design/astra_agents_build:0.3.6",
     "customizations": {
         "vscode": {
             "extensions": [
