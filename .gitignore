@@ -32,3 +32,4 @@ speechsdk/
 SpeechSDK-Linux.tar.gz
 pyvenv.cfg
 xdump_config
+.idea
