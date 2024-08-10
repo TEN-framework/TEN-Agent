@@ -1,3 +1,5 @@
-from . import main
+from . import polly_tts_addon
+from .extension import EXTENSION_NAME
+from .log import logger
 
-print("polly_tts_python extension loaded")
+logger.info(f"{EXTENSION_NAME} extension loaded")

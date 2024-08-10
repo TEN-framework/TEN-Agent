@@ -14,9 +14,11 @@ const (
 	extensionNameAzureTTS      = "azure_tts"
 	extensionNameCosyTTS       = "cosy_tts"
 	extensionNameElevenlabsTTS = "elevenlabs_tts"
+	extensionNameLiteLLM       = "litellm"
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
 	extensionNamePollyTTS      = "polly_tts"
 	extensionNameQwenLLM       = "qwen_llm"
+	extensionNameTranscribeAsr = "transcribe_asr"
 
 	// Language
 	languageChinese = "zh-CN"
@@ -43,16 +45,20 @@ var (
 		"AWS_ACCESS_KEY_ID": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "access_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "access_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "access_key"},
 		},
 		"AWS_SECRET_ACCESS_KEY": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "secret_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "secret_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "secret_key"},
 		},
 		"AWS_BEDROCK_MODEL": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "model"},
 		},
 		"AWS_REGION": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "region"},
+			{ExtensionName: extensionNamePollyTTS, Property: "region"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "region"},
 		},
 		"AZURE_STT_KEY": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "agora_asr_vendor_key"},
@@ -73,6 +79,15 @@ var (
 		},
 		"OPENAI_API_KEY": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "api_key"},
+		},
+		"LITELLM_API_KEY": {
+			{ExtensionName: extensionNameLiteLLM, Property: "api_key"},
+		},
+		"LITELLM_MODEL": {
+			{ExtensionName: extensionNameLiteLLM, Property: "model"},
+		},
+		"LITELLM_PROVIDER": {
+			{ExtensionName: extensionNameLiteLLM, Property: "provider"},
 		},
 		"OPENAI_BASE_URL": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "base_url"},

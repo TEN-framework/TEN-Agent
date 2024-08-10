@@ -1,46 +1,47 @@
 services:
-    astra_agents_dev:
-        image: ghcr.io/rte-design/astra_agents_build:0.3.5
-        container_name: astra_agents_dev
-        platform: linux/amd64
-        tty: true
-        stdin_open: true
-        restart: always
-        command: "make run-gd-server"
-        ports:
-            - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
-            - "${SERVER_PORT}:${SERVER_PORT}"
-        volumes:
-            - ./:/app
-            - ${LOG_PATH}:${LOG_PATH}
-        working_dir: /app
-        environment:
-            AGORA_APP_ID: ${AGORA_APP_ID}
-            AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
-            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-            AWS_BEDROCK_MODEL: ${AWS_BEDROCK_MODEL}
-            AWS_REGION: ${AWS_REGION}
-            AZURE_STT_KEY: ${AZURE_STT_KEY}
-            AZURE_STT_REGION: ${AZURE_STT_REGION}
-            AZURE_TTS_KEY: ${AZURE_TTS_KEY}
-            AZURE_TTS_REGION: ${AZURE_TTS_REGION}
-            COSY_TTS_KEY: ${COSY_TTS_KEY}
-            ELEVENLABS_TTS_KEY: ${ELEVENLABS_TTS_KEY}
-            OPENAI_API_KEY: ${OPENAI_API_KEY}
-            OPENAI_BASE_URL: ${OPENAI_BASE_URL}
-            OPENAI_MODEL: ${OPENAI_MODEL}
-            OPENAI_PROXY_URL: ${OPENAI_PROXY_URL}
-            QWEN_API_KEY: ${QWEN_API_KEY}
-    astra_playground:
-        image: ghcr.io/rte-design/astra_playground:v0.2.0-15-g38e1738
-        container_name: astra_playground
-        restart: always
-        ports:
-            - "3000:3000"
-    astra_graph_designer:
-        image: agoraio/astra_graph_designer:0.1.0
-        container_name: astra_graph_designer
-        restart: always
-        ports:
-            - "3001:3000"
+  astra_agents_dev:
+    image: ghcr.io/rte-design/astra_agents_build:0.3.6
+    container_name: astra_agents_dev
+    platform: linux/amd64
+    tty: true
+    stdin_open: true
+    restart: always
+    command: "make run-gd-server"
+    ports:
+      - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    volumes:
+      - ./:/app
+      - ${LOG_PATH}:${LOG_PATH}
+    working_dir: /app
+    environment:
+      AGORA_APP_ID: ${AGORA_APP_ID}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_BEDROCK_MODEL: ${AWS_BEDROCK_MODEL}
+      AWS_REGION: ${AWS_REGION}
+      AZURE_STT_KEY: ${AZURE_STT_KEY}
+      AZURE_STT_REGION: ${AZURE_STT_REGION}
+      AZURE_TTS_KEY: ${AZURE_TTS_KEY}
+      AZURE_TTS_REGION: ${AZURE_TTS_REGION}
+      COSY_TTS_KEY: ${COSY_TTS_KEY}
+      ELEVENLABS_TTS_KEY: ${ELEVENLABS_TTS_KEY}
+      LITELLM_MODEL: ${LITELLM_MODEL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      OPENAI_PROXY_URL: ${OPENAI_PROXY_URL}
+      QWEN_API_KEY: ${QWEN_API_KEY}
+  astra_playground:
+    image: ghcr.io/rte-design/astra_playground:v0.2.0-15-g38e1738
+    container_name: astra_playground
+    restart: always
+    ports:
+      - "3000:3000"
+  astra_graph_designer:
+    image: agoraio/astra_graph_designer:0.2.0
+    container_name: astra_graph_designer
+    restart: always
+    ports:
+      - "3001:3000"

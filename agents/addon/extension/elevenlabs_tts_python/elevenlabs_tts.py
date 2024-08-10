@@ -42,9 +42,7 @@ def default_elevenlabs_tts_config() -> ElevenlabsTTSConfig:
 class ElevenlabsTTS:
     def __init__(self, config: ElevenlabsTTSConfig) -> None:
         self.config = config
-        self.client = ElevenLabs(
-            api_key=config.api_key, timeout=config.request_timeout_seconds
-        )
+        self.client = ElevenLabs(api_key=config.api_key, timeout=config.request_timeout_seconds)
 
     def text_to_speech_stream(self, text: str) -> Iterator[bytes]:
         audio_stream = self.client.generate(
