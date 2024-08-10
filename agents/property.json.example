@@ -1443,7 +1443,8 @@
                             "prompt": "",
                             "proxy_url": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
-                            "max_memory_length": 10
+                            "max_memory_length": 10,
+                            "enable_tools": true
                         }
                     },
                     {

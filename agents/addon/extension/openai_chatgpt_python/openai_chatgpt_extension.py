@@ -148,6 +148,7 @@ class OpenAIChatGPTExtension(Extension):
     available_tools = [{
         "type": "function",
         "function": {
+            # ensure you use gpt-4o or later model if you need image recognition, gpt-4o-mini does not work quite well in this case
             "name": "get_vision_image",
             "description": "Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
         },
