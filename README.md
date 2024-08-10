@@ -1,15 +1,13 @@
-![Astra Banner Image](https://github.com/rte-design/docs/blob/main/assets/imgs/banner-image-without-tagline.png)
-
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
 [![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
 
-[![Discord ASTRA Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
+[![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
@@ -18,11 +16,11 @@
 <a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
 
-[Lightning Fast](./docs/astra-architecture.md)
+[Documentation](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Multimodal Interactive](./docs/astra-architecture.md#astra-extension)
+[Getting Started](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Highly Customizable](./docs/astra-architecture.md#-astra-extension-store)
+[Tutorials](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
 
 </div>
 
@@ -59,7 +57,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 
 ### Next step
 
-#### 1. Prepare config files
+#### 1. Modify config files
 In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
 ```bash
 # Create .env from the example
@@ -69,7 +67,7 @@ cp ./.env.example ./.env
 cp ./agents/property.json.example ./agents/property.json
 ```
 
-#### 2. Setup API keys & Environment variables in .env file
+#### 2. Setup API keys
 Open the `.env` file and fill in the keys and regions. This is also where you can choose to use any different extensions:
 ```
 # Agora App ID and Agora App Certificate
@@ -92,40 +90,39 @@ AZURE_TTS_REGION=
 OPENAI_API_KEY=
 ```
 
-#### 3. Start agent builder toolkit containers
+#### 3. Start agent development containers
 In the same directory, run the `docker` command to compose containers:
 ```bash
 # Execute docker compose up to start the services
 docker compose up
 ```
 
-#### 4. Build your agent and start server
+#### 4. Build agent and start server
 Open up a separate terminal window, build the agent and start the server:
 ```bash
 # Enter container to build agent
 docker exec -it astra_agents_dev bash
 make build
 
-# Run server on port 8080
+# Once the build is done, run server on port 8080
 make run-server
 ```
 
-#### 5. Use graph designer to customize voice agent
+### Finish and verify 🎉
 
-You can open https://localhost:3001 in browser to use your graph designer. Simultaneously, open another tab at https://localhost:3000 to see the customized voice agent up and running.
-
-Now you have the power of the Graph Designer at your fingertips to perform the magic of agent customization yourself. 🎉
+#### Astra voice agent
+Open up localhost:3000 in browser to test Astra voice agent.
 
 #### Graph designer
 
-TEN Graph Designer (beta), a tool that requires zero coding knowledge and makes the experience of creating agentic applications smoother.
+Open up another tab go to localhost:3001, and use graph designer to edit the flow and properties of any extensions.
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>TEN Service</h2>
+<h2>TEN Platform</h2>
 
-Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN works under the hood. Please refer to the [ TEN service documentation ](./docs/astra-architecture.md).
+Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://astra-9.gitbook.io/ten-platform).
 
 <br>
 <h2>Stay Tuned</h2>
@@ -140,7 +137,7 @@ Before we dive further, be sure to star our repository and get instant notificat
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [GitHub Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
-- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=AstraFramework): Great for sharing your agents and interacting with the community.
+- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=ten_platform): Great for sharing your agents and interacting with the community.
 
  <br>
  <h2>Code Contributors</h2>
