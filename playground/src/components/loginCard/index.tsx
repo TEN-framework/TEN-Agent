@@ -53,7 +53,7 @@ const LoginCard = () => {
     <section className={styles.content}>
       <div className={styles.title}>
         <LogoIcon transform="scale(1.5 1.5)"></LogoIcon>
-        <span className={styles.text}>ASTRA.ai Agents Playground</span>
+        <span className={styles.text}>Astra a multimodel voice agent</span>
       </div>
       <div className={styles.section}>
         <input placeholder="User Name" value={userName} onChange={onUserNameChange} ></input>
