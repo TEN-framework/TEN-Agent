@@ -90,7 +90,7 @@ def rgb2base64jpeg(rgb_data, width, height):
     # Save the image to a BytesIO object in JPEG format
     buffered = BytesIO()
     pil_image.save(buffered, format="JPEG")
-    pil_image.save("test.jpg", format="JPEG")
+    # pil_image.save("test.jpg", format="JPEG")
 
     # Get the byte data of the JPEG image
     jpeg_image_data = buffered.getvalue()
@@ -392,6 +392,9 @@ class OpenAIChatGPTExtension(Extension):
                     for tool_call in chat_completion.choices[0].delta.tool_calls:
                         logger.info(f"tool_call: {tool_call}")
                         if tool_call.function.name == "get_vision_image":
+                            if full_content is "":
+                                # if no text content, send a message to ask user to wait
+                                self.send_data(rte, "Let me take a look...", True, input_text)
                             self.chat_completion_with_vision(rte, start_time, input_text, memory)
                             return
                 elif chat_completion.choices[0].delta.content is not None:

@@ -1420,7 +1420,8 @@
                             "agora_asr_language": "en-US",
                             "agora_asr_vendor_key": "<azure_stt_key>",
                             "agora_asr_vendor_region": "<azure_stt_region>",
-                            "agora_asr_session_control_file_path": "session_control.conf"
+                            "agora_asr_session_control_file_path": "session_control.conf",
+                            "subscribe_video_pix_fmt": 4
                         }
                     },
                     {
