@@ -12,7 +12,6 @@ import StyleSelect from "./themeSelect"
 import { useEffect, useState } from "react"
 import { LoadingOutlined } from "@ant-design/icons"
 import styles from "./index.module.scss"
-import { useSearchParams } from "next/navigation"
 
 
 
@@ -26,7 +25,6 @@ const Setting = () => {
   const [lang, setLang] = useState("en-US")
   const [voice, setVoice] = useState("male")
   const [loading, setLoading] = useState(false)
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     if (channel) {
@@ -53,7 +51,8 @@ const Setting = () => {
       message.success("Agent disconnected")
       stopPing()
     } else {
-      const graph_name = searchParams.get("graph_name");
+      let params = new URLSearchParams(document.location.search);
+      let graph_name = params.get("graph_name");
       const res = await apiStartService({
         channel,
         userId,
