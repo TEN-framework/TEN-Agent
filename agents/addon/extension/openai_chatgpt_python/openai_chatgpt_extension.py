@@ -395,6 +395,7 @@ class OpenAIChatGPTExtension(Extension):
                             if full_content is "":
                                 # if no text content, send a message to ask user to wait
                                 self.send_data(rte, "Let me take a look...", True, input_text)
+                            # for get_vision_image, re-run the completion with vision, memory should not be affected
                             self.chat_completion_with_vision(rte, start_time, input_text, memory)
                             return
                 elif chat_completion.choices[0].delta.content is not None:
@@ -418,7 +419,7 @@ class OpenAIChatGPTExtension(Extension):
                     logger.info(f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms")
 
 
-        # memory is only confirmed when tool is confirmed
+        # memory is recorded only when completion is completely done, with single pair of user and assistant message
         self.append_memory({"role": "user", "content": input_text})
         self.append_memory({"role": "assistant", "content": full_content})
         self.send_data(rte, sentence, True, input_text)
