@@ -1,129 +1,161 @@
-"use client"
+"use client";
 
-import { setAgentConnected } from "@/store/reducers/global"
+import { setAgentConnected } from "@/store/reducers/global";
 import {
-  DESCRIPTION, useAppDispatch, useAppSelector, apiPing,
-  LANG_OPTIONS, VOICE_OPTIONS, apiStartService, apiStopService
-} from "@/common"
-import Info from "./Info"
-import Status from "./status"
-import { Select, Button, message } from "antd"
-import StyleSelect from "./themeSelect"
-import { useEffect, useState } from "react"
-import { LoadingOutlined } from "@ant-design/icons"
-import styles from "./index.module.scss"
+  DESCRIPTION,
+  useAppDispatch,
+  useAppSelector,
+  apiPing,
+  LANG_OPTIONS,
+  VOICE_OPTIONS,
+  apiStartService,
+  apiStopService,
+} from "@/common";
+import Info from "./Info";
+import Status from "./status";
+import { Select, Button, message } from "antd";
+import StyleSelect from "./themeSelect";
+import { useEffect, useState } from "react";
+import { LoadingOutlined } from "@ant-design/icons";
+import styles from "./index.module.scss";
+import { useSearchParams } from "next/navigation";
 
-
-
-let intervalId: any
+let intervalId: any;
 
 const Setting = () => {
-  const dispatch = useAppDispatch()
-  const agentConnected = useAppSelector(state => state.global.agentConnected)
-  const channel = useAppSelector(state => state.global.options.channel)
-  const userId = useAppSelector(state => state.global.options.userId)
-  const [lang, setLang] = useState("en-US")
-  const [voice, setVoice] = useState("male")
-  const [loading, setLoading] = useState(false)
+  const dispatch = useAppDispatch();
+  const agentConnected = useAppSelector((state) => state.global.agentConnected);
+  const channel = useAppSelector((state) => state.global.options.channel);
+  const userId = useAppSelector((state) => state.global.options.userId);
+  const [lang, setLang] = useState("en-US");
+  const [voice, setVoice] = useState("male");
+  const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (channel) {
-      checkAgentConnected()
+      checkAgentConnected();
     }
-  }, [channel])
-
+  }, [channel]);
 
   const checkAgentConnected = async () => {
-    const res: any = await apiPing(channel)
+    const res: any = await apiPing(channel);
     if (res?.code == 0) {
-      dispatch(setAgentConnected(true))
+      dispatch(setAgentConnected(true));
     }
-  }
+  };
 
   const onClickConnect = async () => {
     if (loading) {
-      return
+      return;
     }
-    setLoading(true)
+    setLoading(true);
     if (agentConnected) {
-      await apiStopService(channel)
-      dispatch(setAgentConnected(false))
-      message.success("Agent disconnected")
-      stopPing()
+      await apiStopService(channel);
+      dispatch(setAgentConnected(false));
+      message.success("Agent disconnected");
+      stopPing();
     } else {
+      const graph_name = searchParams.get("graph_name");
       const res = await apiStartService({
         channel,
         userId,
         language: lang,
-        voiceType: voice
-      })
-      const { code, msg } = res || {}
+        voiceType: voice,
+        graphName: graph_name,
+      });
+      const { code, msg } = res || {};
       if (code != 0) {
         if (code == "10001") {
-          message.error("The number of users experiencing the program simultaneously has exceeded the limit. Please try again later.")
+          message.error(
+            "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later."
+          );
         } else {
-          message.error(`code:${code},msg:${msg}`)
+          message.error(`code:${code},msg:${msg}`);
         }
-        setLoading(false)
-        throw new Error(msg)
+        setLoading(false);
+        throw new Error(msg);
       }
-      dispatch(setAgentConnected(true))
-      message.success("Agent connected")
-      startPing()
+      dispatch(setAgentConnected(true));
+      message.success("Agent connected");
+      startPing();
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const startPing = () => {
     if (intervalId) {
-      stopPing()
+      stopPing();
     }
     intervalId = setInterval(() => {
-      apiPing(channel)
-    }, 3000)
-  }
+      apiPing(channel);
+    }, 3000);
+  };
 
   const stopPing = () => {
     if (intervalId) {
-      clearInterval(intervalId)
-      intervalId = null
+      clearInterval(intervalId);
+      intervalId = null;
     }
-  }
+  };
 
-
-  return <section className={styles.setting} >
-    {/* description */}
-    <section className={styles.description}>
-      <div className={styles.title}>DESCRIPTION</div>
-      <div className={styles.text}>{DESCRIPTION}</div>
-      <div className={`${styles.btnConnect} ${agentConnected ? styles.disconnect : ''}`} onClick={onClickConnect}>
-        <span className={`${styles.btnText} ${agentConnected ? styles.disconnect : ''}`}>
-          {!agentConnected ? "Connect" : "Disconnect"}
-          {loading ? <LoadingOutlined className={styles.loading}></LoadingOutlined> : null}
-        </span>
-      </div>
+  return (
+    <section className={styles.setting}>
+      {/* description */}
+      <section className={styles.description}>
+        <div className={styles.title}>DESCRIPTION</div>
+        <div className={styles.text}>{DESCRIPTION}</div>
+        <div
+          className={`${styles.btnConnect} ${
+            agentConnected ? styles.disconnect : ""
+          }`}
+          onClick={onClickConnect}
+        >
+          <span
+            className={`${styles.btnText} ${
+              agentConnected ? styles.disconnect : ""
+            }`}
+          >
+            {!agentConnected ? "Connect" : "Disconnect"}
+            {loading ? (
+              <LoadingOutlined className={styles.loading}></LoadingOutlined>
+            ) : null}
+          </span>
+        </div>
+      </section>
+      {/* info */}
+      <Info />
+      {/* status */}
+      <Status></Status>
+      {/* select */}
+      <section className={styles.selectWrapper}>
+        <div className={styles.title}>LANGUAGE</div>
+        <Select
+          disabled={agentConnected}
+          className={`${styles.select} dark`}
+          value={lang}
+          options={LANG_OPTIONS}
+          onChange={(v) => {
+            setLang(v);
+          }}
+        ></Select>
+      </section>
+      <section className={styles.selectWrapper}>
+        <div className={styles.title}>Voice</div>
+        <Select
+          disabled={agentConnected}
+          value={voice}
+          className={`${styles.select} dark`}
+          options={VOICE_OPTIONS}
+          onChange={(v) => {
+            setVoice(v);
+          }}
+        ></Select>
+      </section>
+      {/* style */}
+      <StyleSelect></StyleSelect>
     </section>
-    {/* info */}
-    <Info />
-    {/* status */}
-    <Status></Status>
-    {/* select */}
-    <section className={styles.selectWrapper}>
-      <div className={styles.title}>LANGUAGE</div>
-      <Select disabled={agentConnected} className={`${styles.select} dark`} value={lang} options={LANG_OPTIONS} onChange={v => {
-        setLang(v)
-      }}></Select>
-    </section>
-    <section className={styles.selectWrapper}>
-      <div className={styles.title}>Voice</div>
-      <Select disabled={agentConnected} value={voice} className={`${styles.select} dark`} options={VOICE_OPTIONS} onChange={v => {
-        setVoice(v)
-      }}></Select>
-    </section>
-    {/* style */}
-    <StyleSelect></StyleSelect>
-  </section>
-}
+  );
+};
 
-
-export default Setting
+export default Setting;
