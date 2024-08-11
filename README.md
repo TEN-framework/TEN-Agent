@@ -1,6 +1,7 @@
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
+![Free](https://img.shields.io/badge/free-pricing?logo=free&color=0F9DF4&label=pricing&labelColor=%blue&")
 [![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
@@ -25,11 +26,11 @@
 </div>
 
 <br>
-<h2>Voice agent: Astra</h2>
+<h2>Astra - a voice agent with vision</h2>
 
-[Voice agent: Astra](https://theastra.ai)
+[Try Astra live](https://theastra.ai)
 
-Astra is a voice agent, powered by TEN, demonstrating its ability to create intuitive and seamless conversational interactions.
+Introducing Astra, a voice agent powered by T.E.N., equipped with vision capabilities that enable intuitive and seamless conversational interactions.
 
 [![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 <br>
@@ -70,22 +71,18 @@ cp ./agents/property.json.example ./agents/property.json
 #### 2. Setup API keys
 Open the `.env` file and fill in the keys and regions. This is also where you can choose to use any different extensions:
 ```
-# Agora App ID and Agora App Certificate
-# required: this variable must be set
+# Agora App ID and App Certificate
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
-# Extension: agora_rtc
 # Azure STT key and region
 AZURE_STT_KEY=
 AZURE_STT_REGION=
 
-# Extension: azure_tts
 # Azure TTS key and region
 AZURE_TTS_KEY=
 AZURE_TTS_REGION=
 
-# Extension: openai_chatgpt
 # OpenAI API key
 OPENAI_API_KEY=
 ```
@@ -111,18 +108,18 @@ make run-server
 ### Finish and verify 🎉
 
 #### Astra voice agent
-Open up localhost:3000 in browser to test Astra voice agent.
+Open up http://localhost:3000 in browser to test Astra voice agent.
 
 #### Graph designer
 
-Open up another tab go to localhost:3001, and use graph designer to edit the flow and properties of any extensions.
+Open up another tab go to http://localhost:3001, and use graph designer to edit the flow and properties of any extensions.
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>TEN Platform</h2>
+<h2>T.E.N. Platform</h2>
 
-Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://astra-9.gitbook.io/ten-platform).
+Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the T.E.N. service works under the hood. Please refer to the [ T.E.N. platform documentation ](https://astra-9.gitbook.io/ten-platform).
 
 <br>
 <h2>Stay Tuned</h2>
