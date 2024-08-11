@@ -402,9 +402,6 @@ class OpenAIChatGPTExtension(Extension):
             else:
                 content = ""
 
-            # memory is only confirmed when tool is confirmed
-            self.append_memory({"role": "user", "content": input_text})
-
             full_content += content
 
             while True:
@@ -420,6 +417,9 @@ class OpenAIChatGPTExtension(Extension):
                     first_sentence_sent = True
                     logger.info(f"recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms")
 
+
+        # memory is only confirmed when tool is confirmed
+        self.append_memory({"role": "user", "content": input_text})
         self.append_memory({"role": "assistant", "content": full_content})
         self.send_data(rte, sentence, True, input_text)
 
