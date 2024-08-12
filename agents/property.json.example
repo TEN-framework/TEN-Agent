@@ -1465,7 +1465,7 @@
                         "type": "extension",
                         "extension_group": "embedding",
                         "addon": "aliyun_text_embedding",
-                        "name": "embedding",
+                        "name": "aliyun_text_embedding",
                         "property": {
                             "api_key": "<aliyun_text_embedding_api_key>",
                             "model": "text-embedding-v3"
@@ -1475,7 +1475,7 @@
                         "type": "extension",
                         "extension_group": "vector_storage",
                         "addon": "aliyun_analyticdb_vector_storage",
-                        "name": "vector_storage",
+                        "name": "aliyun_analyticdb_vector_storage",
                         "property": {
                             "alibaba_cloud_access_key_id": "<alibaba_cloud_access_key_id>",
                             "alibaba_cloud_access_key_secret": "<alibaba_cloud_access_key_secret>",
@@ -1617,7 +1617,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "embedding",
-                                        "extension": "embedding"
+                                        "extension": "aliyun_text_embedding"
                                     }
                                 ]
                             },
@@ -1626,7 +1626,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "vector_storage",
-                                        "extension": "vector_storage"
+                                        "extension": "aliyun_analyticdb_vector_storage"
                                     }
                                 ]
                             }
@@ -1701,7 +1701,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "embedding",
-                                        "extension": "embedding"
+                                        "extension": "aliyun_text_embedding"
                                     }
                                 ]
                             },
@@ -1710,7 +1710,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "vector_storage",
-                                        "extension": "vector_storage"
+                                        "extension": "aliyun_analyticdb_vector_storage"
                                     }
                                 ]
                             },
@@ -1719,7 +1719,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "vector_storage",
-                                        "extension": "vector_storage"
+                                        "extension": "aliyun_analyticdb_vector_storage"
                                     }
                                 ]
                             },
