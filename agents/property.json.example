@@ -1678,12 +1678,21 @@
                         "extension": "http_server",
                         "cmd": [
                             {
-                                "name": "file_downloaded",
+                                "name": "file_chunk",
                                 "dest": [
                                     {
                                         "extension_group": "file_chunker",
                                         "extension": "file_chunker"
                                     },
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update_querying_collection",
+                                "dest": [
                                     {
                                         "extension_group": "llama_index",
                                         "extension": "llama_index"

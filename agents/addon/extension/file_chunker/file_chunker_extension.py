@@ -21,7 +21,7 @@ from datetime import datetime
 import uuid, math
 import queue, threading
 
-CMD_FILE_DOWNLOADED = "file_downloaded"
+CMD_FILE_CHUNK = "file_chunk"
 UPSERT_VECTOR_CMD = "upsert_vector"
 FILE_CHUNKED_CMD = "file_chunked"
 
@@ -147,7 +147,7 @@ class FileChunkerExtension(Extension):
                 )
                 cmd_out = Cmd.create(FILE_CHUNKED_CMD)
                 cmd_out.set_property_string("path", path)
-                cmd_out.set_property_string("collection_name", self.new_collection_name)
+                cmd_out.set_property_string("collection", self.new_collection_name)
                 rte.send_cmd(
                     cmd_out,
                     lambda rte, result: logger.info("send_cmd done"),
@@ -158,9 +158,16 @@ class FileChunkerExtension(Extension):
 
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        if cmd_name == CMD_FILE_DOWNLOADED:
+        if cmd_name == CMD_FILE_CHUNK:
             path = cmd.get_property_string("path")
-            self.queue.put(path)  # make sure files are processed in order
+
+            collection = None
+            try:
+                collection = cmd.get_property_string("collection")
+            except Exception as e:
+                logger.warning("missing collection property in cmd {}".format(cmd_name))
+
+            self.queue.put((path, collection))  # make sure files are processed in order
         else:
             logger.info("unknown cmd {}".format(cmd_name))
 
@@ -170,26 +177,27 @@ class FileChunkerExtension(Extension):
 
     def async_handler(self, rte: RteEnv) -> None:
         while not self.stop:
-            path = self.queue.get()
-            if path is None:
+            value = self.queue.get()
+            if value is None:
                 break
+            path, collection = value
 
             # start processing the file
             start_time = datetime.now()
-            collection_name = self.generate_collection_name()
-            logger.info(
-                "start processing {}, collection_name {}".format(path, collection_name)
-            )
+            if collection is None:
+                collection = self.generate_collection_name()
+                logger.info("collection {} generated".format(collection))
+            logger.info("start processing {}, collection {}".format(path, collection))
 
             # create collection
-            self.create_collection(rte, collection_name, True)
-            logger.info("collection_name {} created".format(collection_name))
+            self.create_collection(rte, collection, True)
+            logger.info("collection {} created".format(collection))
 
             # split
             nodes = self.split(path)
 
             # reset counters and events
-            self.new_collection_name = collection_name
+            self.new_collection_name = collection
             self.expected[path] = math.ceil(len(nodes) / BATCH_SIZE)
             self.counters[path] = 0
             self.file_chunked_event.clear()
@@ -202,9 +210,9 @@ class FileChunkerExtension(Extension):
             self.file_chunked_event.wait()
 
             logger.info(
-                "finished processing {}, collection_name {}, cost {}ms".format(
+                "finished processing {}, collection {}, cost {}ms".format(
                     path,
-                    collection_name,
+                    collection,
                     int((datetime.now() - start_time).total_seconds() * 1000),
                 )
             )

@@ -103,14 +103,49 @@ class LlamaIndexExtension(Extension):
         cmd_name = cmd.get_name()
         logger.info("on_cmd {}".format(cmd_name))
         if cmd_name == "file_chunked":
-            coll = cmd.get_property_string("collection_name")
+            coll = cmd.get_property_string("collection")
+
+            # only update selected collection if empty
+            if len(self.collection_name) == 0:
+                logger.info(
+                    "collection for querying has been updated from {} to {}".format(
+                        self.collection_name, coll
+                    )
+                )
+                self.collection_name = coll
+            else:
+                logger.info(
+                    "new collection {} incoming but won't change current collection_name {}".format(
+                        coll, self.collection_name
+                    )
+                )
+
+            # notify user
+            file_chunked_text = "Your document has been processed. You can now start asking questions about your document. "
+            self._send_text_data(rte, file_chunked_text, True)
+        elif cmd_name == "file_chunk":
+            self.collection_name = ""  # clear current collection
+
+            # notify user
+            file_chunk_text = "Your document has been received. Please wait a moment while we process it for you.  "
+            self._send_text_data(rte, file_chunk_text, True)
+        elif cmd_name == "update_querying_collection":
+            coll = cmd.get_property_string("collection")
+            logger.info(
+                "collection for querying has been updated from {} to {}".format(
+                    self.collection_name, coll
+                )
+            )
             self.collection_name = coll
 
-            file_chunked_text = "Your document has been processed. Please wait a moment while we process your document for you. "
-            self._send_text_data(rte, file_chunked_text, True)
-        elif cmd_name == "file_downloaded":
-            file_downloaded_text = "Your document has been received. Please wait a moment while we process it for you.  "
-            self._send_text_data(rte, file_downloaded_text, True)
+            # notify user
+            update_querying_collection_text = "Your document has been updated. "
+            if len(self.collection_name) > 0:
+                update_querying_collection_text += (
+                    "You can now start asking questions about your document. "
+                )
+            self._send_text_data(rte, update_querying_collection_text, True)
+
         elif cmd_name == "flush":
             self.flush()
             rte.send_cmd(Cmd.create("flush"), None)

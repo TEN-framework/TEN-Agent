@@ -14,9 +14,15 @@
     "property": {},
     "cmd_in": [
       {
-        "name": "file_downloaded",
+        "name": "file_chunk",
         "property": {
+          "filename": {
+            "type": "string"
+          },
           "path": {
+            "type": "string"
+          },
+          "collection": {
             "type": "string"
           }
         },
@@ -86,13 +92,13 @@
           "path": {
             "type": "string"
           },
-          "collection_name": {
+          "collection": {
             "type": "string"
           }
         },
         "required": [
           "path",
-          "collection_name"
+          "collection"
         ]
       }
     ]

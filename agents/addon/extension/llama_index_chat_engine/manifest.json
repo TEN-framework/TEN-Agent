@@ -50,17 +50,32 @@
         "name": "flush"
       },
       {
-        "name": "file_downloaded"
+        "name": "file_chunk"
       },
       {
         "name": "file_chunked",
         "property": {
-          "collection_name": {
+          "collection": {
             "type": "string"
           }
         },
         "required": [
-          "collection_name"
+          "collection"
+        ]
+      },
+      {
+        "name": "update_querying_collection",
+        "property": {
+          "filename": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "collection"
         ]
       }
     ],
