@@ -1,4 +1,4 @@
-from . import polly_tts_addon
+from . import transcribe_asr_addon
 from .extension import EXTENSION_NAME
 from .log import logger
 

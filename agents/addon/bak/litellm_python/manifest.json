@@ -1,6 +1,6 @@
 {
     "type": "extension",
-    "name": "polly_tts",
+    "name": "litellm_python",
     "version": "0.1.0",
     "language": "python",
     "dependencies": [
@@ -12,29 +12,54 @@
     ],
     "api": {
         "property": {
-            "region": {
+            "api_key": {
                 "type": "string"
             },
-            "access_key": {
+            "base_url": {
                 "type": "string"
             },
-            "secret_key": {
+            "frequency_penalty": {
+                "type": "float64"
+            },
+            "greeting": {
                 "type": "string"
             },
-            "engine": {
+            "max_memory_length": {
+                "type": "int64"
+            },
+            "max_tokens": {
+                "type": "int64"
+            },
+            "model": {
                 "type": "string"
             },
-            "voice": {
+            "presence_penalty": {
+                "type": "float64"
+            },
+            "prompt": {
                 "type": "string"
             },
-            "sample_rate": {
+            "provider": {
                 "type": "string"
             },
-            "lang_code": {
-                "type": "string"
+            "temperature": {
+                "type": "float64"
+            },
+            "top_p": {
+                "type": "float64"
             }
         },
         "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "data_out": [
             {
                 "name": "text_data",
                 "property": {
@@ -52,11 +77,6 @@
         "cmd_out": [
             {
                 "name": "flush"
-            }
-        ],
-        "pcm_frame_out": [
-            {
-                "name": "pcm_frame"
             }
         ]
     }
