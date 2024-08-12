@@ -48,6 +48,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set graph name map
+	internal.SetGraphNameMap()
+
 	// Process property.json
 	if err = processProperty(internal.PropertyJsonFile); err != nil {
 		slog.Error("process property.json failed", "err", err)
