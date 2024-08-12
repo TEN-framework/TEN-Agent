@@ -20,6 +20,15 @@ func main() {
 		slog.Warn("load .env file failed", "err", err)
 	}
 
+	// Check if the directory exists
+	logPath := os.Getenv("LOG_PATH")
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(logPath, os.ModePerm); err != nil {
+			slog.Error("create log directory failed", "err", err)
+			os.Exit(1)
+		}
+	}
+
 	// Check environment
 	agoraAppId := os.Getenv("AGORA_APP_ID")
 	if len(agoraAppId) != 32 {
@@ -49,7 +58,7 @@ func main() {
 	httpServerConfig := &internal.HttpServerConfig{
 		AppId:                    agoraAppId,
 		AppCertificate:           os.Getenv("AGORA_APP_CERTIFICATE"),
-		LogPath:                  os.Getenv("LOG_PATH"),
+		LogPath:                  logPath,
 		Port:                     os.Getenv("SERVER_PORT"),
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,

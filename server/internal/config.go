@@ -1,6 +1,9 @@
 package internal
 
-import "log/slog"
+import (
+	"log/slog"
+	"os"
+)
 
 type Prop struct {
 	ExtensionName string
@@ -9,22 +12,22 @@ type Prop struct {
 
 const (
 	// Extension name
-	extensionNameAgoraRTC      = "agora_rtc"
-	extensionNameAzureTTS      = "azure_tts"
-	extensionNameBedrockLLM    = "bedrock_llm"
-	extensionNameCosyTTS       = "cosy_tts"
-	extensionNameElevenlabsTTS = "elevenlabs_tts"
-	extensionNameHttpServer    = "http_server"
-	extensionNameLiteLLM       = "litellm"
-	extensionNameOpenaiChatgpt = "openai_chatgpt"
-	extensionNamePollyTTS      = "polly_tts"
-	extensionNameQwenLLM       = "qwen_llm"
+	extensionNameAgoraRTC                      = "agora_rtc"
+	extensionNameAliyunAnalyticdbVectorStorage = "aliyun_analyticdb_vector_storage"
+	extensionNameAliyunTextEmbedding           = "aliyun_text_embedding"
+	extensionNameAzureTTS                      = "azure_tts"
+	extensionNameBedrockLLM                    = "bedrock_llm"
+	extensionNameCosyTTS                       = "cosy_tts"
+	extensionNameElevenlabsTTS                 = "elevenlabs_tts"
+	extensionNameHttpServer                    = "http_server"
+	extensionNameLiteLLM                       = "litellm"
+	extensionNameOpenaiChatgpt                 = "openai_chatgpt"
+	extensionNamePollyTTS                      = "polly_tts"
+	extensionNameQwenLLM                       = "qwen_llm"
 
 	// Language
 	languageChinese = "zh-CN"
 	languageEnglish = "en-US"
-	// Default graph name
-	graphNameDefault = "va.openai.azure"
 	// Property json
 	PropertyJsonFile = "./agents/property.json"
 	// Token expire time
@@ -41,6 +44,33 @@ var (
 	EnvPropMap = map[string][]Prop{
 		"AGORA_APP_ID": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "app_id"},
+		},
+		"ALIBABA_CLOUD_ACCESS_KEY_SECRET": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "alibaba_cloud_access_key_secret"},
+		},
+		"ALIBABA_CLOUD_ACCESS_KEY_ID": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_account"},
+		},
+		"ALIYUN_ANALYTICDB_ACCOUNT": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "alibaba_cloud_access_key_id"},
+		},
+		"ALIYUN_ANALYTICDB_ACCOUNT_PASSWORD": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_account_password"},
+		},
+		"ALIYUN_ANALYTICDB_INSTANCE_ID": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_instance_id"},
+		},
+		"ALIYUN_ANALYTICDB_INSTANCE_REGION": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_instance_region"},
+		},
+		"ALIYUN_ANALYTICDB_NAMESPACE": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_namespace"},
+		},
+		"ALIYUN_ANALYTICDB_NAMESPACE_PASSWORD": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_namespace_password"},
+		},
+		"ALIYUN_TEXT_EMBEDDING_API_KEY": {
+			{ExtensionName: extensionNameAliyunTextEmbedding, Property: "api_key"},
 		},
 		"AWS_ACCESS_KEY_ID": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "access_key"},
@@ -97,6 +127,12 @@ var (
 		"QWEN_API_KEY": {
 			{ExtensionName: extensionNameQwenLLM, Property: "api_key"},
 		},
+	}
+
+	// The corresponding graph name based on the language
+	graphNameMap = map[string]string{
+		languageChinese: os.Getenv("GRAPH_NAME_ZH"),
+		languageEnglish: os.Getenv("GRAPH_NAME_EN"),
 	}
 
 	// Retrieve parameters from the request and map them to the property.json file

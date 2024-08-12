@@ -16,6 +16,7 @@ var (
 	codeErrChannelEmpty        = NewCode("10004", "channel empty")
 	codeErrGenerateTokenFailed = NewCode("10005", "generate token failed")
 	codeErrSaveFileFailed      = NewCode("10006", "save file failed")
+	codeErrParseJsonFailed     = NewCode("10007", "parse json failed")
 
 	codeErrProcessPropertyFailed = NewCode("10100", "process property json failed")
 	codeErrStartWorkerFailed     = NewCode("10101", "start worker failed")

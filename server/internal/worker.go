@@ -30,6 +30,8 @@ type Worker struct {
 type WorkerUpdateReq struct {
 	RequestId   string              `form:"request_id,omitempty" json:"request_id,omitempty"`
 	ChannelName string              `form:"channel_name,omitempty" json:"channel_name,omitempty"`
+	Collection  string              `form:"collection,omitempty" json:"collection,omitempty"`
+	FileName    string              `form:"filename,omitempty" json:"filename,omitempty"`
 	Path        string              `form:"path,omitempty" json:"path,omitempty"`
 	Rte         *WorkerUpdateReqRte `form:"rte,omitempty" json:"rte,omitempty"`
 }
