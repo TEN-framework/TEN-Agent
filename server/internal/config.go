@@ -131,8 +131,8 @@ var (
 
 	// The corresponding graph name based on the language
 	graphNameMap = map[string]string{
-		languageChinese: os.Getenv("GRAPH_NAME_ZH"),
-		languageEnglish: os.Getenv("GRAPH_NAME_EN"),
+		languageChinese: "va.openai.azure",
+		languageEnglish: "va.openai.azure",
 	}
 
 	// Retrieve parameters from the request and map them to the property.json file
@@ -190,3 +190,13 @@ var (
 		},
 	}
 )
+
+func SetGraphNameMap() {
+	if graphNameZH := os.Getenv("GRAPH_NAME_ZH"); graphNameZH != "" {
+		graphNameMap[languageChinese] = graphNameZH
+	}
+
+	if graphNameEN := os.Getenv("GRAPH_NAME_EN"); graphNameEN != "" {
+		graphNameMap[languageEnglish] = graphNameEN
+	}
+}
