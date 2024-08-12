@@ -45,14 +45,14 @@ var (
 		"AGORA_APP_ID": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "app_id"},
 		},
+		"ALIBABA_CLOUD_ACCESS_KEY_ID": {
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "alibaba_cloud_access_key_id"},
+		},
 		"ALIBABA_CLOUD_ACCESS_KEY_SECRET": {
 			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "alibaba_cloud_access_key_secret"},
 		},
-		"ALIBABA_CLOUD_ACCESS_KEY_ID": {
-			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_account"},
-		},
 		"ALIYUN_ANALYTICDB_ACCOUNT": {
-			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "alibaba_cloud_access_key_id"},
+			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_account"},
 		},
 		"ALIYUN_ANALYTICDB_ACCOUNT_PASSWORD": {
 			{ExtensionName: extensionNameAliyunAnalyticdbVectorStorage, Property: "adbpg_account_password"},
