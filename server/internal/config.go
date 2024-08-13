@@ -10,10 +10,11 @@ type Prop struct {
 const (
 	// Extension name
 	extensionNameAgoraRTC      = "agora_rtc"
-	extensionNameBedrockLLM    = "bedrock_llm"
 	extensionNameAzureTTS      = "azure_tts"
+	extensionNameBedrockLLM    = "bedrock_llm"
 	extensionNameCosyTTS       = "cosy_tts"
 	extensionNameElevenlabsTTS = "elevenlabs_tts"
+	extensionNameGeminiLLM     = "gemini_llm"
 	extensionNameLiteLLM       = "litellm"
 	extensionNameOpenaiChatgpt = "openai_chatgpt"
 	extensionNamePollyTTS      = "polly_tts"
@@ -76,6 +77,9 @@ var (
 		},
 		"ELEVENLABS_TTS_KEY": {
 			{ExtensionName: extensionNameElevenlabsTTS, Property: "api_key"},
+		},
+		"GEMINI_API_KEY": {
+			{ExtensionName: extensionNameGeminiLLM, Property: "api_key"},
 		},
 		"OPENAI_API_KEY": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "api_key"},
