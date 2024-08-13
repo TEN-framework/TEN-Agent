@@ -1,4 +1,4 @@
-import { IOptions, IChatItem } from "@/types"
+import { IOptions, IChatItem, Language, VoiceType } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList } from "@/common"
 
@@ -6,7 +6,9 @@ export interface InitialState {
   options: IOptions
   roomConnected: boolean,
   agentConnected: boolean,
-  themeColor: string
+  themeColor: string,
+  language: Language
+  voiceType: VoiceType
   chatItems: IChatItem[]
 }
 
@@ -16,6 +18,8 @@ const getInitialState = (): InitialState => {
     themeColor: COLOR_LIST[0].active,
     roomConnected: false,
     agentConnected: false,
+    language: "en-US",
+    voiceType: "female",
     chatItems: []
   }
 }
@@ -75,6 +79,12 @@ export const globalSlice = createSlice({
     setAgentConnected: (state, action: PayloadAction<boolean>) => {
       state.agentConnected = action.payload
     },
+    setLanguage: (state, action: PayloadAction<Language>) => {
+      state.language = action.payload
+    },
+    setVoiceType: (state, action: PayloadAction<VoiceType>) => {
+      state.voiceType = action.payload
+    },
     reset: (state) => {
       Object.assign(state, getInitialState())
       document.documentElement.style.setProperty('--theme-color', COLOR_LIST[0].active);
@@ -82,7 +92,9 @@ export const globalSlice = createSlice({
   },
 })
 
-export const { reset, setOptions, setRoomConnected, setAgentConnected, addChatItem, setThemeColor } =
+export const { reset, setOptions,
+  setRoomConnected, setAgentConnected, setVoiceType,
+  addChatItem, setThemeColor, setLanguage } =
   globalSlice.actions
 
 export default globalSlice.reducer

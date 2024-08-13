@@ -52,3 +52,8 @@ export const genUUID = () => {
     return v.toString(16)
   })
 }
+
+
+export const isMobile = () => {
+  return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
+}
