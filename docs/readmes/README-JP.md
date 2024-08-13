@@ -62,13 +62,6 @@ Apple Silicon Mac を使用している場合は、Docker の "Use Rosetta for x
 
 </div>
 
-#### Go 国内プロキシの設定
-国内で使用する場合、依存関係を迅速にダウンロードするために、以下のコマンドを実行してグローバルに国内プロキシを設定することをお勧めします（[詳細はこちら](https://goproxy.cn/)）。
-
-```bash
- export GOPROXY=https://goproxy.cn 
-```
-
 ### 次のステップ
 #### 1. 設定ファイルの準備
 プロジェクトをクローンした後、ルートディレクトリで以下のコマンドを実行して `property.json` と `.env` を作成します：
