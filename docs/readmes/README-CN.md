@@ -32,14 +32,14 @@
 
 <br>
 
-## Astra 语音助手
+## Astra voice agent
 
 [Astra voice agent](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
 [![Showcase Astra voice agent](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 
 <br>
-<h2>如何用搭建的 graph designer 配置 voice agent</h2>
+<h2>如何本地搭建 Astra voice agent</h2>
 
 ### 先决条件
 #### Keys 
@@ -81,7 +81,7 @@ cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. 绑定积木的 keys 
-打开 `.env` 文件，绑定对应的积木 keys，这里可以通过配置不同的 keys 选用不用的积木：
+打开 `.env` 文件，绑定对应的积木 keys，这里也可以通过配置不同的 keys 选用不用的积木：
 ```
 # Agora App ID and Agora App Certificate
 AGORA_APP_ID=
