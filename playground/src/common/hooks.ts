@@ -69,10 +69,9 @@ export const useMultibandTrackVolume = (
   return frequencyBands;
 };
 
-export const useAutoScroll = (ref: React.RefObject<HTMLDivElement>) => {
+export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
 
   const callback: MutationCallback = (mutationList, observer) => {
-    // console.log("[test] callback", mutationList, observer)
     mutationList.forEach((mutation) => {
       switch (mutation.type) {
         case "childList":
@@ -99,10 +98,6 @@ export const useAutoScroll = (ref: React.RefObject<HTMLDivElement>) => {
       observer.disconnect();
     };
   }, [ref]);
-
-
-
-
 }
 
 export const useSmallScreen = () => {

@@ -1,7 +1,8 @@
 import { ConfigProvider } from "antd"
 import { StoreProvider } from "@/store";
-import "@/css/globals.css";
 import type { Metadata, Viewport } from "next";
+
+import './global.css'
 
 
 export const metadata: Metadata = {
