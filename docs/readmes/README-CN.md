@@ -70,7 +70,7 @@
 ```
 
 ### 下一步
-#### 1. 准备设置文件
+#### 1. 创建配置文件
 Clone 项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
 ```bash
 # 创建 .env 文件
@@ -87,50 +87,51 @@ cp ./agents/property.json.example ./agents/property.json
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
-# Extension: agora_rtc
 # Azure STT key and region
 AZURE_STT_KEY=
 AZURE_STT_REGION=
 
-# Extension: azure_tts
 # Azure TTS key and region
 AZURE_TTS_KEY=
 AZURE_TTS_REGION=
 
-# Extension: openai_chatgpt
 # OpenAI API key
 OPENAI_API_KEY=
 ```
 
-#### 3. 开启 Docker 容器
-在同一个目录下，通过 Docker 镜像构建 Docker 容器：
+#### 3. 创建 Docker 容器
+在根目录下，通过 `docker compose up` 创建 docker 容器：
 ```bash
 # 开启 Docker 容器：
 docker compose up
 ```
 
-#### 4. 构建 Agent 并开启服务
-再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建并开启服务：
+#### 4. 在容器内创建 agent 服务
+再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建 agent 服务：
 ```bash
-#  进入容器创建 Agent
+#  进入容器创建 agent
 docker exec -it astra_agents_dev bash
-make build
 
+make build
+```
+
+#### 5.开启服务
+```bash
 # 端口 8080 开启服务
-make run-server
+make run-sever
 ```
 
 ### 构建完成 🎉
 
-走到这里就本地构建完成了，简单 4 步，上手体验拉满！
+走到这里就本地构建完成了，简单 5 步，上手体验拉满！
 
 #### 验证 Astra voice agent 
 
-现在可以打开浏览器 `localhost:3000` 体验 voice agent。
+现在可以打开浏览器 http://localhost:3000 体验 Astra voice agent。
 
 #### 验证 Graph designer
 
-同时可以再开一个 tab 在 `localhost:3001` 体验 TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra voice agent。
+同时可以再开一个 tab 在 http://localhost:3001 体验 Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra voice agent。
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
