@@ -1,4 +1,3 @@
-
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
@@ -17,6 +16,7 @@
 
 <a href="../../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="../readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="../readmes/README-JP.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-lightgrey"></a>
 </div>
 
 <div align="center">
