@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -90,7 +91,13 @@ func (w *Worker) start(req *StartReq) (err error) {
 		return
 	}
 
-	pid, err := strconv.Atoi(strings.TrimSpace(string(output)))
+	outputStr := strings.TrimSpace(string(output))
+	if outputStr == "" {
+		slog.Error("Worker pid empty", "err", err, "requestId", req.RequestId, logTag)
+		return errors.New("worker pid empty")
+	}
+
+	pid, err := strconv.Atoi(outputStr)
 	if err != nil || pid <= 0 {
 		slog.Error("Worker convert pid failed", "err", err, "pid", pid, "requestId", req.RequestId, logTag)
 		return
