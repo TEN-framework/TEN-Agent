@@ -88,7 +88,19 @@ class QWenLLMExtension(Extension):
         The incoming 'messages' will contains all the system prompt, chat history and question.
         """
 
+        start_time = datetime.now()
+        curr_ttfs = None  # time to first sentence
+
         def callback(text: str, end_of_segment: bool):
+            nonlocal curr_ttfs
+            if curr_ttfs is None:
+                curr_ttfs = datetime.now() - start_time
+                logger.info(
+                    "TTFS {}ms, sentence {} end_of_segment {}".format(
+                        int(curr_ttfs.total_seconds() * 1000), text, end_of_segment
+                    )
+                )
+
             cmd_result = CmdResult.create(StatusCode.OK)
             cmd_result.set_property_string("text", text)
             if end_of_segment:
@@ -100,7 +112,6 @@ class QWenLLMExtension(Extension):
 
         messages_str = cmd.get_property_string("messages")
         messages = json.loads(messages_str)
-        # messages = [{"role": "user", "content": messages_str}]
         stream = False
         try:
             stream = cmd.get_property_bool("stream")

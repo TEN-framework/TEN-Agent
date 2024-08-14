@@ -191,6 +191,7 @@ class AliPGDBExtension(Extension):
             rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def async_query_vector(self, rte: RteEnv, cmd: Cmd):
+        start_time = datetime.now()
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         embedding = cmd.get_property_to_json("embedding")
@@ -199,6 +200,15 @@ class AliPGDBExtension(Extension):
         response, error = await m.query_collection_data_async(
             collection, self.namespace, self.namespace_password, vector, top_k=top_k
         )
+        logger.info(
+            "query_vector finished for collection {}, embedding len {}, err {}, cost {}ms".format(
+                collection,
+                len(embedding),
+                error,
+                int((datetime.now() - start_time).total_seconds() * 1000),
+            )
+        )
+
         if error:
             return rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         else:
