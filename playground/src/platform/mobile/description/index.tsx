@@ -17,6 +17,7 @@ const Description = () => {
   const userId = useAppSelector(state => state.global.options.userId)
   const language = useAppSelector(state => state.global.language)
   const voiceType = useAppSelector(state => state.global.voiceType)
+  const graphName = useAppSelector(state => state.global.graphName)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -44,14 +45,12 @@ const Description = () => {
       message.success("Agent disconnected")
       stopPing()
     } else {
-      let params = new URLSearchParams(document.location.search);
-      let graph_name = params.get("graph_name");
       const res = await apiStartService({
         channel,
         userId,
-        language: lang,
-        voiceType: voice,
-        graphName: graph_name,
+        language,
+        voiceType,
+        graphName,
       })
       const { code, msg } = res || {}
       if (code != 0) {

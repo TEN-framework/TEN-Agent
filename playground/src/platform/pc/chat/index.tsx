@@ -6,6 +6,7 @@ import {
   genRandomChatList, useAppDispatch, useAutoScroll,
   LANGUAGE_OPTIONS, useAppSelector,
   GRAPH_OPTIONS,
+  isRagGraph,
 } from "@/common"
 import { setGraphName, setLanguage } from "@/store/reducers/global"
 import { Select, } from 'antd';
@@ -50,7 +51,7 @@ const Chat = () => {
         <Select className={styles.languageSelect}
           disabled={agentConnected} options={LANGUAGE_OPTIONS}
           value={language} onChange={onLanguageChange}></Select>
-        <PdfSelect></PdfSelect>
+        {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
       </span>
     </div>
     <div className={`${styles.content}`} ref={chatRef}>
