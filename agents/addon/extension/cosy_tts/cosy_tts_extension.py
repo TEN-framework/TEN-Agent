@@ -32,6 +32,7 @@ class CosyTTSCallback(ResultCallback):
         self.sample_rate = sample_rate
         self.frame_size = int(self.sample_rate * 1 * 2 / 100)
         self.ts = datetime.now()
+        self.ttfb = None  # time to first byte
         self.need_interrupt_callback = need_interrupt_callback
         self.closed = False
 
@@ -40,6 +41,7 @@ class CosyTTSCallback(ResultCallback):
 
     def set_input_ts(self, ts: datetime):
         self.ts = ts
+        self.ttfb = None  # clear to calculate again
 
     def on_open(self):
         logger.info("websocket is open.")
@@ -65,36 +67,24 @@ class CosyTTSCallback(ResultCallback):
         f.set_number_of_channels(1)
         # f.set_timestamp = 0
         f.set_data_fmt(PcmFrameDataFmt.INTERLEAVE)
-        f.set_samples_per_channel(self.sample_rate // 100)
-        f.alloc_buf(self.frame_size)
+        f.set_samples_per_channel(len(data) // 2)
+        f.alloc_buf(len(data))
         buff = f.lock_buf()
-        if len(data) < self.frame_size:
-            buff[:] = bytes(self.frame_size)  # fill with 0
-        buff[: len(data)] = data
+        buff[:] = data
         f.unlock_buf(buff)
         return f
 
     def on_data(self, data: bytes) -> None:
         if self.need_interrupt():
             return
+        if self.ttfb is None:
+            self.ttfb = datetime.now() - self.ts
+            logger.info("TTS TTFB {}ms".format(int(self.ttfb.total_seconds() * 1000)))
 
         # logger.info("audio result length: %d, %d", len(data), self.frame_size)
         try:
-            chunk = int(len(data) / self.frame_size)
-            offset = 0
-            for i in range(0, chunk):
-                if self.need_interrupt():
-                    return
-                f = self.get_frame(data[offset : offset + self.frame_size])
-                self.rte.send_pcm_frame(f)
-                offset += self.frame_size
-
-            if self.need_interrupt():
-                return
-            if offset < len(data):
-                size = len(data) - offset
-                f = self.get_frame(data[offset : offset + size])
-                self.rte.send_pcm_frame(f)
+            f = self.get_frame(data)
+            self.rte.send_pcm_frame(f)
         except Exception as e:
             logger.exception(e)
 
