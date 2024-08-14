@@ -1,4 +1,4 @@
-import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem } from "@/types"
+import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphNameOptionItem, GraphOptionItem } from "@/types"
 
 export const REQUEST_URL = process.env.NEXT_PUBLIC_REQUEST_URL ?? ""
 export const GITHUB_URL = "https://github.com/rte-design/ASTRA.ai"
@@ -18,6 +18,20 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
     label: "Chinese",
     value: "zh-CN"
   }
+]
+export const GRAPH_OPTIONS: GraphOptionItem[] = [
+  {
+    label: "Voice Agent - OpenAI LLM + Azure TTS",
+    value: "va.openai.azure"
+  },
+  {
+    label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
+    value: "camera.va.openai.azure"
+  },
+  {
+    label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
+    value: "va.qwen.rag"
+  },
 ]
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {

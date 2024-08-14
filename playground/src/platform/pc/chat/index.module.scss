@@ -20,6 +20,9 @@
 
     .left {
       flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      gap: 5px;
 
       .text {
         margin-left: 4px;
@@ -32,14 +35,17 @@
       }
 
       .languageSelect {
-        margin-left: 12px;
         width: 100px;
       }
     }
 
 
     .right {
+      display: flex;
+      align-items: center;
+      gap: 5px;
       flex: 0 0 230px;
+      justify-content: right;
     }
 
   }

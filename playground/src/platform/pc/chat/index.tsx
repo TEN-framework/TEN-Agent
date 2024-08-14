@@ -5,8 +5,9 @@ import ChatItem from "./chatItem"
 import {
   genRandomChatList, useAppDispatch, useAutoScroll,
   LANGUAGE_OPTIONS, useAppSelector,
+  GRAPH_OPTIONS,
 } from "@/common"
-import { setLanguage } from "@/store/reducers/global"
+import { setGraphName, setLanguage } from "@/store/reducers/global"
 import { Select, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
@@ -19,6 +20,7 @@ const Chat = () => {
   const dispatch = useAppDispatch()
   const chatItems = useAppSelector(state => state.global.chatItems)
   const language = useAppSelector(state => state.global.language)
+  const graphName = useAppSelector(state => state.global.graphName)
   const agentConnected = useAppSelector(state => state.global.agentConnected)
 
   // const chatItems = genRandomChatList(10)
@@ -32,13 +34,19 @@ const Chat = () => {
     dispatch(setLanguage(val))
   }
 
-
+  const onGraphNameChange = (val: any) => {
+    dispatch(setGraphName(val))
+  }
 
 
   return <section className={styles.chat}>
     <div className={styles.header}>
       <span className={styles.left}>
-        <span className={styles.text}>Chat</span>
+        <span className={styles.text}>Agent Graph</span>
+        <Select className={styles.graphName}
+          disabled={agentConnected} options={GRAPH_OPTIONS}
+          value={graphName} onChange={onGraphNameChange}></Select>
+        <span className={styles.text}>Lang</span>
         <Select className={styles.languageSelect}
           disabled={agentConnected} options={LANGUAGE_OPTIONS}
           value={language} onChange={onLanguageChange}></Select>

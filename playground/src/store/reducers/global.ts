@@ -9,7 +9,8 @@ export interface InitialState {
   themeColor: string,
   language: Language
   voiceType: VoiceType
-  chatItems: IChatItem[]
+  chatItems: IChatItem[],
+  graphName: string
 }
 
 const getInitialState = (): InitialState => {
@@ -20,7 +21,8 @@ const getInitialState = (): InitialState => {
     agentConnected: false,
     language: "en-US",
     voiceType: "female",
-    chatItems: []
+    chatItems: [],
+    graphName: "va.openai.azure"
   }
 }
 
@@ -82,6 +84,9 @@ export const globalSlice = createSlice({
     setLanguage: (state, action: PayloadAction<Language>) => {
       state.language = action.payload
     },
+    setGraphName: (state, action: PayloadAction<string>) => {
+      state.graphName = action.payload
+    },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
     },
@@ -94,7 +99,7 @@ export const globalSlice = createSlice({
 
 export const { reset, setOptions,
   setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage } =
+  addChatItem, setThemeColor, setLanguage, setGraphName } =
   globalSlice.actions
 
 export default globalSlice.reducer

@@ -33,6 +33,10 @@ export interface ITextItem {
   isFinal: boolean
 }
 
+export interface GraphOptionItem {
+  label: string
+  value: string
+}
 
 export interface LanguageOptionItem {
   label: string
