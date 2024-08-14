@@ -31,7 +31,8 @@ class CosyTTSCallback(ResultCallback):
         self.rte = rte
         self.sample_rate = sample_rate
         self.frame_size = int(self.sample_rate * 1 * 2 / 100)
-        self.ts = datetime.now()
+        self.ts = datetime.now()  # current task ts
+        self.init_ts = datetime.now()
         self.ttfb = None  # time to first byte
         self.need_interrupt_callback = need_interrupt_callback
         self.closed = False
@@ -41,7 +42,6 @@ class CosyTTSCallback(ResultCallback):
 
     def set_input_ts(self, ts: datetime):
         self.ts = ts
-        self.ttfb = None  # clear to calculate again
 
     def on_open(self):
         logger.info("websocket is open.")
@@ -78,7 +78,7 @@ class CosyTTSCallback(ResultCallback):
         if self.need_interrupt():
             return
         if self.ttfb is None:
-            self.ttfb = datetime.now() - self.ts
+            self.ttfb = datetime.now() - self.init_ts
             logger.info("TTS TTFB {}ms".format(int(self.ttfb.total_seconds() * 1000)))
 
         # logger.info("audio result length: %d, %d", len(data), self.frame_size)
@@ -207,8 +207,8 @@ class CosyTTSExtension(Extension):
                         # last segment may have empty text but is_end is true
                         tts.streaming_call(input_text)
 
-                    # complete the streaming call to drain remained audio if end_of_segment is true
-                    if end_of_segment:
+                    # complete the streaming call to drain remained audio
+                    if True:  # end_of_segment:
                         try:
                             tts.streaming_complete()
                         except Exception as e:
