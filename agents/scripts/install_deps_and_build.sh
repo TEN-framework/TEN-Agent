@@ -95,7 +95,7 @@ main() {
   OS=$1
   CPU=$2
 
-  echo -e "#include <stdio.h>\n#include <immintrin.h>\nint main() { __m256d a = _mm256_set_pd(1.0, 2.0, 3.0, 4.0); return 0; }" > /tmp/test.c
+  echo -e "#include <stdio.h>\n#include <immintrin.h>\nint main() { __m256 a = _mm256_setzero_ps(); return 0; }" > /tmp/test.c
   if gcc -mavx2 /tmp/test.c -o /tmp/test && ! /tmp/test; then
     echo "FATAL: unsupported platform."
     echo "       Please UNCHECK the 'Use Rosetta for x86_64/amd64 emulation on Apple Silicon' Docker Desktop setting if you're running on mac."

@@ -12,18 +12,17 @@ type Prop struct {
 
 const (
 	// Extension name
-	extensionNameAgoraRTC                      = "agora_rtc"
-	extensionNameAliyunAnalyticdbVectorStorage = "aliyun_analyticdb_vector_storage"
-	extensionNameAliyunTextEmbedding           = "aliyun_text_embedding"
-	extensionNameAzureTTS                      = "azure_tts"
-	extensionNameBedrockLLM                    = "bedrock_llm"
-	extensionNameCosyTTS                       = "cosy_tts"
-	extensionNameElevenlabsTTS                 = "elevenlabs_tts"
-	extensionNameHttpServer                    = "http_server"
-	extensionNameLiteLLM                       = "litellm"
-	extensionNameOpenaiChatgpt                 = "openai_chatgpt"
-	extensionNamePollyTTS                      = "polly_tts"
-	extensionNameQwenLLM                       = "qwen_llm"
+	extensionNameAgoraRTC      = "agora_rtc"
+	extensionNameAzureTTS      = "azure_tts"
+	extensionNameBedrockLLM    = "bedrock_llm"
+	extensionNameCosyTTS       = "cosy_tts"
+	extensionNameElevenlabsTTS = "elevenlabs_tts"
+	extensionNameGeminiLLM     = "gemini_llm"
+	extensionNameLiteLLM       = "litellm"
+	extensionNameOpenaiChatgpt = "openai_chatgpt"
+	extensionNamePollyTTS      = "polly_tts"
+	extensionNameQwenLLM       = "qwen_llm"
+	extensionNameTranscribeAsr = "transcribe_asr"
 
 	// Language
 	languageChinese = "zh-CN"
@@ -75,16 +74,20 @@ var (
 		"AWS_ACCESS_KEY_ID": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "access_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "access_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "access_key"},
 		},
 		"AWS_SECRET_ACCESS_KEY": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "secret_key"},
 			{ExtensionName: extensionNamePollyTTS, Property: "secret_key"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "secret_key"},
 		},
 		"AWS_BEDROCK_MODEL": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "model"},
 		},
 		"AWS_REGION": {
 			{ExtensionName: extensionNameBedrockLLM, Property: "region"},
+			{ExtensionName: extensionNamePollyTTS, Property: "region"},
+			{ExtensionName: extensionNameTranscribeAsr, Property: "region"},
 		},
 		"AZURE_STT_KEY": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "agora_asr_vendor_key"},
@@ -102,6 +105,9 @@ var (
 		},
 		"ELEVENLABS_TTS_KEY": {
 			{ExtensionName: extensionNameElevenlabsTTS, Property: "api_key"},
+		},
+		"GEMINI_API_KEY": {
+			{ExtensionName: extensionNameGeminiLLM, Property: "api_key"},
 		},
 		"OPENAI_API_KEY": {
 			{ExtensionName: extensionNameOpenaiChatgpt, Property: "api_key"},

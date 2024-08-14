@@ -1,14 +1,12 @@
-![Astra Banner Image](https://github.com/rte-design/docs/blob/main/assets/imgs/banner-image-without-tagline.png)
-
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/AstraFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraFramework)
+[![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
 [![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
-[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/rte-design/ASTRA.ai/issues/125)
+[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/rte-design/ASTRA.ai/discussions/170)
 
 [![Discord](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
@@ -18,25 +16,27 @@
 
 <a href="../../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="../readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="../readmes/README-JP.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-lightgrey"></a>
 </div>
 
 <div align="center">
 
-[低延迟](./docs/astra-architecture.md)
+[文档](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[多模态](./docs/astra-architecture.md#astra-extension)
+[快速开始](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[高可配](./docs/astra-architecture.md#-astra-extension-store)
+[教程](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
+
 
 </div>
 
 <br>
 
-## Astra
+## Astra 语音助手
 
-[Astra](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
+[Astra voice agent](https://theastra.ai) 是通过 TEN 搭建出来的 voice agent, 展示了多模态，低延迟的能力。
 
-[![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra voice agent](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 
 <br>
 <h2>如何用搭建的 graph designer 配置 voice agent</h2>
@@ -120,13 +120,17 @@ make build
 make run-server
 ```
 
-#### 5. 验证 voice agent 和 graph designer 🎉
+### 构建完成 🎉
 
-现在可以打开浏览器 `http://localhost:3000` 体验 voice agent，同时可以再开浏览器的一个窗口 `http://localhost:3001` 用 graph designer 定制 voice agent。
+走到这里就本地构建完成了，简单 4 步，上手体验拉满！
 
-#### Graph designer
+#### 验证 Astra voice agent 
 
-TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现多模型配置。
+现在可以打开浏览器 `localhost:3000` 体验 voice agent。
+
+#### 验证 Graph designer
+
+同时可以再开一个 tab 在 `localhost:3001` 体验 TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra voice agent。
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
@@ -143,10 +147,10 @@ TEN Graph Designer (beta)，通过简单拖拽和动态节点连接轻松实现�
 <h2>加入社区</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ)：非常适合分享您的应用程序并与社区互动。
-- [WeChat Group](https://github.com/rte-design/ASTRA.ai/issues/125): 如果喜欢用微信群的社区，欢迎加入。
+- [WeChat Group](https://github.com/rte-design/ASTRA.ai/discussions/170): 如果喜欢用微信群的社区，欢迎加入。
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions)：非常适合提供反馈和提问。
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues)：最适合报告错误和提出新功能。有关更多详细信息，请参阅我们的[贡献指南](./docs/code-of-conduct/contributing.md)。
-- [X（以前的Twitter）](https://twitter.com/intent/follow?screen_name=AstraFramework)：非常适合分享您的代理并与社区互动。
+- [X（以前的Twitter）](https://twitter.com/intent/follow?screen_name=ten_platform)：非常适合分享您的代理并与社区互动。
 
 <br>
  <h2>代码贡献者</h2>

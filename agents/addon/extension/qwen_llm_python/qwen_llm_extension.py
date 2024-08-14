@@ -34,8 +34,10 @@ class QWenLLMExtension(Extension):
         self.max_history = 10
         self.stopped = False
         self.thread = None
-        self.outdate_ts = datetime.now()
         self.sentence_expr = re.compile(r".+?[,，.。!！?？:：]", re.DOTALL)
+
+        self.outdate_ts = datetime.now()
+        self.outdate_ts_lock = threading.Lock()
 
         self.queue = queue.Queue()
         self.mutex = threading.Lock()
@@ -62,7 +64,12 @@ class QWenLLMExtension(Extension):
         return messages
 
     def need_interrupt(self, ts: datetime.time) -> bool:
-        return self.outdate_ts > ts and (self.outdate_ts - ts).total_seconds() > 1
+        with self.outdate_ts_lock:
+            return self.outdate_ts > ts
+
+    def get_outdate_ts(self) -> datetime:
+        with self.outdate_ts_lock:
+            return self.outdate_ts
 
     def complete_with_history(self, rte: RteEnv, ts: datetime.time, input_text: str):
         """
@@ -88,7 +95,19 @@ class QWenLLMExtension(Extension):
         The incoming 'messages' will contains all the system prompt, chat history and question.
         """
 
+        start_time = datetime.now()
+        curr_ttfs = None  # time to first sentence
+
         def callback(text: str, end_of_segment: bool):
+            nonlocal curr_ttfs
+            if curr_ttfs is None:
+                curr_ttfs = datetime.now() - start_time
+                logger.info(
+                    "TTFS {}ms, sentence {} end_of_segment {}".format(
+                        int(curr_ttfs.total_seconds() * 1000), text, end_of_segment
+                    )
+                )
+
             cmd_result = CmdResult.create(StatusCode.OK)
             cmd_result.set_property_string("text", text)
             if end_of_segment:
@@ -100,7 +119,6 @@ class QWenLLMExtension(Extension):
 
         messages_str = cmd.get_property_string("messages")
         messages = json.loads(messages_str)
-        # messages = [{"role": "user", "content": messages_str}]
         stream = False
         try:
             stream = cmd.get_property_bool("stream")
@@ -117,7 +135,7 @@ class QWenLLMExtension(Extension):
         logger.info("before stream_chat call {} {}".format(messages, ts))
 
         if self.need_interrupt(ts):
-            logger.warning("out of date, %s, %s", self.outdate_ts, ts)
+            logger.warning("out of date, %s, %s", self.get_outdate_ts(), ts)
             return
 
         responses = dashscope.Generation.call(
@@ -132,7 +150,7 @@ class QWenLLMExtension(Extension):
         partial = ""
         for response in responses:
             if self.need_interrupt(ts):
-                logger.warning("out of date, %s, %s", self.outdate_ts, ts)
+                logger.warning("out of date, %s, %s", self.get_outdate_ts(), ts)
                 partial = ""  # discard not sent
                 break
             if response.status_code == HTTPStatus.OK:
@@ -189,7 +207,9 @@ class QWenLLMExtension(Extension):
         rte.on_stop_done()
 
     def flush(self):
-        self.outdate_ts = datetime.now()
+        with self.outdate_ts_lock:
+            self.outdate_ts = datetime.now()
+
         while not self.queue.empty():
             self.queue.get()
 

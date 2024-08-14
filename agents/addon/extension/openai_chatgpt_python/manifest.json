@@ -47,6 +47,9 @@
       },
       "max_memory_length": {
         "type": "int64"
+      },
+      "enable_tools": {
+        "type": "bool"
       }
     },
     "data_in": [
@@ -77,6 +80,11 @@
     "cmd_out": [
       {
         "name": "flush"
+      }
+    ],
+    "image_frame_in": [
+      {
+        "name": "image_frame"
       }
     ]
   }
