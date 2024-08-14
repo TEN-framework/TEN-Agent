@@ -19,22 +19,9 @@ import queue
 import json
 from datetime import datetime
 import threading
+import re
 from http import HTTPStatus
 from .log import logger
-
-
-def isEnd(content: str) -> bool:
-    last = content[len(content) - 1]
-    return (
-        last == ","
-        or last == "，"
-        or last == "."
-        or last == "。"
-        or last == "?"
-        or last == "？"
-        or last == "!"
-        or last == "！"
-    )
 
 
 class QWenLLMExtension(Extension):
@@ -48,6 +35,7 @@ class QWenLLMExtension(Extension):
         self.stopped = False
         self.thread = None
         self.outdate_ts = datetime.now()
+        self.sentence_expr = re.compile(r".+?[,，.。!！?？:：]", re.DOTALL)
 
         self.queue = queue.Queue()
         self.mutex = threading.Lock()
@@ -145,7 +133,6 @@ class QWenLLMExtension(Extension):
         for response in responses:
             if self.need_interrupt(ts):
                 logger.warning("out of date, %s, %s", self.outdate_ts, ts)
-                total += partial
                 partial = ""  # discard not sent
                 break
             if response.status_code == HTTPStatus.OK:
@@ -153,11 +140,15 @@ class QWenLLMExtension(Extension):
                 if len(temp) == 0:
                     continue
                 partial += temp
-                if (isEnd(temp) and len(partial) > 10) or len(partial) > 50:
+                total += temp
+
+                m = self.sentence_expr.match(partial)
+                if m is not None:
+                    sentence = m.group(0)
+                    partial = partial[m.end(0) :]
                     if callback is not None:
-                        callback(partial, False)
-                    total += partial
-                    partial = ""
+                        callback(sentence, False)
+
             else:
                 logger.warning(
                     "request_id: {}, status_code: {}, error code: {}, error message: {}".format(
@@ -169,12 +160,9 @@ class QWenLLMExtension(Extension):
                 )
                 break
 
-        if len(total) > 0 or len(partial) > 0:  # make sure no empty answer
-            if callback is not None:
-                callback(partial, True)
-        if len(partial) > 0:
-            total += partial
-            partial = ""
+        # always send end_of_segment
+        if callback is not None:
+            callback(partial, True)
         logger.info("stream_chat full_answer {}".format(total))
         return total
 
