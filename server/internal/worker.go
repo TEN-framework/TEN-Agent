@@ -84,17 +84,24 @@ func (w *Worker) start(req *StartReq) (err error) {
 
 	shell = fmt.Sprintf("ps aux | grep %s | grep -v grep | awk '{print $2}'", w.PropertyJsonFile)
 	slog.Info("Worker get pid", "requestId", req.RequestId, "shell", shell, logTag)
-	output, err := exec.Command("sh", "-c", shell).CombinedOutput()
-	if err != nil {
-		slog.Error("Worker get pid failed", "err", err, "requestId", req.RequestId, logTag)
-		return
-	}
 
-	pid, err := strconv.Atoi(strings.TrimSpace(string(output)))
-	if err != nil || pid <= 0 {
-		slog.Error("Worker convert pid failed", "err", err, "pid", pid, "requestId", req.RequestId, logTag)
-		return
-	}
+	var pid int
+    for i := 0; i < 3; i++ {  // retry for 3 times
+        output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+        if err == nil {
+            pid, err = strconv.Atoi(strings.TrimSpace(string(output)))
+            if err == nil && pid > 0 {
+                break  // if pid is successfully obtained, exit loop
+            }
+        }
+        slog.Warn("Worker get pid failed, retrying...", "attempt", i+1, "requestId", req.RequestId, logTag)
+        time.Sleep(500 * time.Millisecond)  // wait for 500ms
+    }
+
+    if pid <= 0 {
+        slog.Error("Worker failed to obtain valid PID after 3 attempts", "requestId", req.RequestId, logTag)
+        return fmt.Errorf("failed to obtain valid PID")
+    }
 
 	w.Pid = pid
 	return
