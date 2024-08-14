@@ -3,18 +3,22 @@ package internal
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/gogf/gf/container/gmap"
 	"github.com/google/uuid"
 )
 
 type Worker struct {
 	ChannelName        string
+	HttpServerPort     int32
 	LogFile            string
 	PropertyJsonFile   string
 	Pid                int
@@ -23,13 +27,31 @@ type Worker struct {
 	UpdateTs           int64
 }
 
+type WorkerUpdateReq struct {
+	RequestId   string              `form:"request_id,omitempty" json:"request_id,omitempty"`
+	ChannelName string              `form:"channel_name,omitempty" json:"channel_name,omitempty"`
+	Collection  string              `form:"collection,omitempty" json:"collection"`
+	FileName    string              `form:"filename,omitempty" json:"filename"`
+	Path        string              `form:"path,omitempty" json:"path,omitempty"`
+	Rte         *WorkerUpdateReqRte `form:"rte,omitempty" json:"rte,omitempty"`
+}
+
+type WorkerUpdateReqRte struct {
+	Name string `form:"name,omitempty" json:"name,omitempty"`
+	Type string `form:"type,omitempty" json:"type,omitempty"`
+}
+
 const (
 	workerCleanSleepSeconds = 5
 	workerExec              = "/app/agents/bin/worker"
+	workerHttpServerUrl     = "http://127.0.0.1"
 )
 
 var (
-	workers = gmap.New(true)
+	workers           = gmap.New(true)
+	httpServerPort    = httpServerPortMin
+	httpServerPortMin = int32(10000)
+	httpServerPortMax = int32(30000)
 )
 
 func newWorker(channelName string, logFile string, propertyJsonFile string) *Worker {
@@ -41,6 +63,15 @@ func newWorker(channelName string, logFile string, propertyJsonFile string) *Wor
 		CreateTs:           time.Now().Unix(),
 		UpdateTs:           time.Now().Unix(),
 	}
+}
+
+func getHttpServerPort() int32 {
+	if atomic.LoadInt32(&httpServerPort) > httpServerPortMax {
+		atomic.StoreInt32(&httpServerPort, httpServerPortMin)
+	}
+
+	atomic.AddInt32(&httpServerPort, 1)
+	return httpServerPort
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
@@ -81,6 +112,34 @@ func (w *Worker) stop(requestId string, channelName string) (err error) {
 	workers.Remove(channelName)
 
 	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+	return
+}
+
+func (w *Worker) update(req *WorkerUpdateReq) (err error) {
+	slog.Info("Worker update start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+
+	var res *resty.Response
+
+	defer func() {
+		if err != nil {
+			slog.Error("Worker update error", "err", err, "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+		}
+	}()
+
+	workerUpdateUrl := fmt.Sprintf("%s:%d/cmd", workerHttpServerUrl, w.HttpServerPort)
+	res, err = HttpClient.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(req).
+		Post(workerUpdateUrl)
+	if err != nil {
+		return
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("%s, status: %d", codeErrHttpStatusNotOk.msg, res.StatusCode())
+	}
+
+	slog.Info("Worker update end", "channelName", req.ChannelName, "worker", w, "requestId", req.RequestId, logTag)
 	return
 }
 

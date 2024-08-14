@@ -1,0 +1,106 @@
+{
+  "type": "extension",
+  "name": "file_chunker",
+  "version": "0.4.0",
+  "language": "python",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "rte_runtime_python",
+      "version": "0.4"
+    }
+  ],
+  "api": {
+    "property": {},
+    "cmd_in": [
+      {
+        "name": "file_chunk",
+        "property": {
+          "filename": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "embed_batch",
+        "property": {
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "result": {
+          "property": {
+            "embeddings": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "upsert_vector",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection_name",
+          "file_name",
+          "content"
+        ]
+      },
+      {
+        "name": "create_collection",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "dimension": {
+            "type": "int32"
+          }
+        },
+        "required": [
+          "collection_name"
+        ]
+      },
+      {
+        "name": "file_chunked",
+        "property": {
+          "path": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "collection"
+        ]
+      }
+    ]
+  }
+}

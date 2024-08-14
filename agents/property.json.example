@@ -1901,6 +1901,401 @@
                         ]
                     }
                 ]
+            },
+            {
+                "name": "va.qwen.rag",
+                "auto_start": true,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "rtc",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "<agora_appid>",
+                            "token": "<agora_token>",
+                            "channel": "astra_agents_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "enable_agora_asr": true,
+                            "agora_asr_vendor_name": "microsoft",
+                            "agora_asr_language": "en-US",
+                            "agora_asr_vendor_key": "<azure_stt_key>",
+                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_session_control_file_path": "session_control.conf"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "llm",
+                        "addon": "qwen_llm_python",
+                        "name": "qwen_llm",
+                        "property": {
+                            "api_key": "<qwen_key>",
+                            "model": "qwen-max",
+                            "max_tokens": 512,
+                            "prompt": "",
+                            "max_memory_length": 10
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tts",
+                        "addon": "cosy_tts",
+                        "name": "cosy_tts",
+                        "property": {
+                            "api_key": "<cosy_api_key>",
+                            "model": "cosyvoice-v1",
+                            "voice": "longxiaochun",
+                            "sample_rate": 16000
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tts",
+                        "addon": "azure_tts",
+                        "name": "azure_tts",
+                        "property": {
+                            "azure_subscription_key": "<azure_tts_key>",
+                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "chat_transcriber",
+                        "addon": "chat_transcriber_python",
+                        "name": "chat_transcriber"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "interrupt_detector",
+                        "addon": "interrupt_detector_python",
+                        "name": "interrupt_detector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "http_server",
+                        "addon": "http_server_python",
+                        "name": "http_server",
+                        "property": {
+                            "listen_addr": "127.0.0.1",
+                            "listen_port": 8080
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "embedding",
+                        "addon": "aliyun_text_embedding",
+                        "name": "aliyun_text_embedding",
+                        "property": {
+                            "api_key": "<aliyun_text_embedding_api_key>",
+                            "model": "text-embedding-v3"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "vector_storage",
+                        "addon": "aliyun_analyticdb_vector_storage",
+                        "name": "aliyun_analyticdb_vector_storage",
+                        "property": {
+                            "alibaba_cloud_access_key_id": "<alibaba_cloud_access_key_id>",
+                            "alibaba_cloud_access_key_secret": "<alibaba_cloud_access_key_secret>",
+                            "adbpg_instance_id": "<aliyun_analyticdb_instance_id>",
+                            "adbpg_instance_region": "cn-shanghai",
+                            "adbpg_account": "<aliyun_analyticdb_account>",
+                            "adbpg_account_password": "<aliyun_analyticdb_account_password>",
+                            "adbpg_namespace": "<aliyun_analyticdb_namespace>",
+                            "adbpg_namespace_password": "<aliyun_analyticdb_namespace_password>"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "file_chunker",
+                        "addon": "file_chunker",
+                        "name": "file_chunker",
+                        "property": {}
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "llama_index",
+                        "addon": "llama_index_chat_engine",
+                        "name": "llama_index",
+                        "property": {
+                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "chat_memory_token_limit": 3000
+                        }
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "rtc",
+                        "extension": "agora_rtc",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "interrupt_detector",
+                                        "extension": "interrupt_detector"
+                                    },
+                                    {
+                                        "extension_group": "chat_transcriber",
+                                        "extension": "chat_transcriber"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "interrupt_detector",
+                        "extension": "interrupt_detector",
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "file_chunk",
+                                "dest": [
+                                    {
+                                        "extension_group": "file_chunker",
+                                        "extension": "file_chunker"
+                                    },
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "file_chunked",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update_querying_collection",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "llama_index",
+                        "extension": "llama_index",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "azure_tts"
+                                    },
+                                    {
+                                        "extension_group": "chat_transcriber",
+                                        "extension": "chat_transcriber",
+                                        "cmd_conversions": [
+                                            {
+                                                "cmd": {
+                                                    "type": "per_property",
+                                                    "keep_original": true,
+                                                    "rules": [
+                                                        {
+                                                            "path": "is_final",
+                                                            "type": "fixed_value",
+                                                            "value": "bool(true)"
+                                                        },
+                                                        {
+                                                            "path": "stream_id",
+                                                            "type": "fixed_value",
+                                                            "value": "uint32(999)"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "qwen_llm"
+                                    },
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "azure_tts"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "call_chat",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "qwen_llm"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "embed",
+                                "dest": [
+                                    {
+                                        "extension_group": "embedding",
+                                        "extension": "aliyun_text_embedding"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "query_vector",
+                                "dest": [
+                                    {
+                                        "extension_group": "vector_storage",
+                                        "extension": "aliyun_analyticdb_vector_storage"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tts",
+                        "extension": "azure_tts",
+                        "pcm_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "chat_transcriber",
+                        "extension": "chat_transcriber",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "http_server",
+                        "extension": "http_server",
+                        "cmd": [
+                            {
+                                "name": "file_chunk",
+                                "dest": [
+                                    {
+                                        "extension_group": "interrupt_detector",
+                                        "extension": "interrupt_detector"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update_querying_collection",
+                                "dest": [
+                                    {
+                                        "extension_group": "interrupt_detector",
+                                        "extension": "interrupt_detector"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "file_chunker",
+                        "extension": "file_chunker",
+                        "cmd": [
+                            {
+                                "name": "embed_batch",
+                                "dest": [
+                                    {
+                                        "extension_group": "embedding",
+                                        "extension": "aliyun_text_embedding"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "create_collection",
+                                "dest": [
+                                    {
+                                        "extension_group": "vector_storage",
+                                        "extension": "aliyun_analyticdb_vector_storage"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "upsert_vector",
+                                "dest": [
+                                    {
+                                        "extension_group": "vector_storage",
+                                        "extension": "aliyun_analyticdb_vector_storage"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "file_chunked",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }

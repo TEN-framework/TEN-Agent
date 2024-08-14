@@ -15,10 +15,14 @@ var (
 	codeErrChannelExisted      = NewCode("10003", "channel existed")
 	codeErrChannelEmpty        = NewCode("10004", "channel empty")
 	codeErrGenerateTokenFailed = NewCode("10005", "generate token failed")
+	codeErrSaveFileFailed      = NewCode("10006", "save file failed")
+	codeErrParseJsonFailed     = NewCode("10007", "parse json failed")
 
 	codeErrProcessPropertyFailed = NewCode("10100", "process property json failed")
 	codeErrStartWorkerFailed     = NewCode("10101", "start worker failed")
 	codeErrStopWorkerFailed      = NewCode("10102", "stop worker failed")
+	codeErrHttpStatusNotOk       = NewCode("10103", "http status not 200")
+	codeErrUpdateWorkerFailed    = NewCode("10104", "update worker failed")
 )
 
 func NewCode(code string, msg string) *Code {

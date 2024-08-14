@@ -33,13 +33,31 @@ class InterruptDetectorExtension(Extension):
         logger.info("on_stop")
         rte.on_stop_done()
 
+    def send_flush_cmd(self, rte: RteEnv) -> None:
+        flush_cmd = Cmd.create(CMD_NAME_FLUSH)
+        rte.send_cmd(
+            flush_cmd,
+            lambda rte, result: logger.info("send_cmd done"),
+        )
+
+        logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
+
     def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
-        logger.info("on_cmd")
+        cmd_name = cmd.get_name()
+        logger.info("on_cmd name {}".format(cmd_name))
+
+        # flush whatever cmd incoming at the moment
+        self.send_flush_cmd(rte)
+
+        # then forward the cmd to downstream
         cmd_json = cmd.to_json()
-        logger.info("on_cmd json: " % cmd_json)
+        new_cmd = Cmd.create_from_json(cmd_json)
+        rte.send_cmd(
+            new_cmd,
+            lambda rte, result: logger.info("send_cmd done"),
+        )
 
         cmd_result = CmdResult.create(StatusCode.OK)
-        cmd_result.set_property_string("detail", "success")
         rte.return_result(cmd_result, cmd)
 
     def on_data(self, rte: RteEnv, data: Data) -> None:
@@ -73,15 +91,7 @@ class InterruptDetectorExtension(Extension):
         )
 
         if final or len(text) >= 2:
-            flush_cmd = Cmd.create(CMD_NAME_FLUSH)
-            rte.send_cmd(
-                flush_cmd,
-                lambda rte, result: print(
-                    "InterruptDetectorExtensionAddon send_cmd done"
-                ),
-            )
-
-            logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
+            self.send_flush_cmd(rte)
 
         d = Data.create("text_data")
         d.set_property_bool(TEXT_DATA_FINAL_FIELD, final)
