@@ -1,8 +1,8 @@
 import { ReactElement, useEffect, useContext, useState } from "react"
 import ChatItem from "./chatItem"
 import { IChatItem } from "@/types"
-import { useAppDispatch, useAutoScroll, LANGUAGE_OPTIONS, useAppSelector } from "@/common"
-import { setLanguage } from "@/store/reducers/global"
+import { useAppDispatch, useAutoScroll, LANGUAGE_OPTIONS, useAppSelector, GRAPH_OPTIONS, isRagGraph } from "@/common"
+import { setGraphName, setLanguage } from "@/store/reducers/global"
 import { Select, } from 'antd';
 import { MenuContext } from "../menu/context"
 import PdfSelect from "@/components/pdfSelect"
@@ -14,6 +14,7 @@ const Chat = () => {
   const chatItems = useAppSelector(state => state.global.chatItems)
   const language = useAppSelector(state => state.global.language)
   const agentConnected = useAppSelector(state => state.global.agentConnected)
+  const graphName = useAppSelector(state => state.global.graphName)
   const dispatch = useAppDispatch()
   // genRandomChatList
   // const [chatItems, setChatItems] = useState<IChatItem[]>([])
@@ -36,21 +37,21 @@ const Chat = () => {
     dispatch(setLanguage(val))
   }
 
+  const onGraphNameChange = (val: any) => {
+    dispatch(setGraphName(val))
+  }
 
 
   return <section className={styles.chat}>
     <div className={styles.header}>
-      <div>
-        <Select className={styles.languageSelect}
-          options={LANGUAGE_OPTIONS}
-          disabled={agentConnected}
-          value={language} onChange={onLanguageChange}></Select>
-      </div>
-      <div style={{
-        marginTop: "12px"
-      }}>
-        <PdfSelect></PdfSelect>
-      </div>
+      <Select className={styles.graphName}
+        disabled={agentConnected} options={GRAPH_OPTIONS}
+        value={graphName} onChange={onGraphNameChange}></Select>
+      <Select className={styles.languageSelect}
+        options={LANGUAGE_OPTIONS}
+        disabled={agentConnected}
+        value={language} onChange={onLanguageChange}></Select>
+      {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
     </div>
     <div className={`${styles.content}`} >
       {chatItems.map((item, index) => {
