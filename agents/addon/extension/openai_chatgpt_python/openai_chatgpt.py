@@ -65,7 +65,7 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
-    def get_chat_completions_stream(self, messages):
+    def get_chat_completions_stream(self, messages, tools = None):
         req = {
             "model": self.config.model,
             "messages": [
@@ -75,6 +75,7 @@ class OpenAIChatGPT:
                 },
                 *messages,
             ],
+            "tools": tools,
             "temperature": self.config.temperature,
             "top_p": self.config.top_p,
             "presence_penalty": self.config.presence_penalty,

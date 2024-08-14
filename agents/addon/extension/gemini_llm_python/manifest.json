@@ -1,6 +1,6 @@
 {
     "type": "extension",
-    "name": "polly_tts",
+    "name": "gemini_llm_python",
     "version": "0.1.0",
     "language": "python",
     "dependencies": [
@@ -12,29 +12,45 @@
     ],
     "api": {
         "property": {
-            "region": {
+            "api_key": {
                 "type": "string"
             },
-            "access_key": {
+            "greeting": {
                 "type": "string"
             },
-            "secret_key": {
+            "max_memory_length": {
+                "type": "int64"
+            },
+            "max_output_tokens": {
+                "type": "int64"
+            },
+            "model": {
                 "type": "string"
             },
-            "engine": {
+            "prompt": {
                 "type": "string"
             },
-            "voice": {
-                "type": "string"
+            "temperature": {
+                "type": "float64"
             },
-            "sample_rate": {
-                "type": "string"
+            "top_k": {
+                "type": "int64"
             },
-            "lang_code": {
-                "type": "string"
+            "top_p": {
+                "type": "float64"
             }
         },
         "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "data_out": [
             {
                 "name": "text_data",
                 "property": {
@@ -52,11 +68,6 @@
         "cmd_out": [
             {
                 "name": "flush"
-            }
-        ],
-        "pcm_frame_out": [
-            {
-                "name": "pcm_frame"
             }
         ]
     }

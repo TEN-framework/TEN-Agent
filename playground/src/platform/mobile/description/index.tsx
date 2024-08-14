@@ -17,6 +17,7 @@ const Description = () => {
   const userId = useAppSelector(state => state.global.options.userId)
   const language = useAppSelector(state => state.global.language)
   const voiceType = useAppSelector(state => state.global.voiceType)
+  const graphName = useAppSelector(state => state.global.graphName)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -48,7 +49,8 @@ const Description = () => {
         channel,
         userId,
         language,
-        voiceType
+        voiceType,
+        graphName,
       })
       const { code, msg } = res || {}
       if (code != 0) {

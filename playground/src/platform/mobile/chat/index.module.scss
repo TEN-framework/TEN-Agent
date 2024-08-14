@@ -8,8 +8,10 @@
   overflow: hidden;
 
   .header {
-    align-items: center;
-    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    row-gap: 10px;
     border-bottom: 1px solid #272A2F;
 
 

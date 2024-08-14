@@ -1,4 +1,4 @@
-import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphNameOptionItem, GraphOptionItem } from "@/types"
+import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphOptionItem } from "@/types"
 
 export const REQUEST_URL = process.env.NEXT_PUBLIC_REQUEST_URL ?? ""
 export const GITHUB_URL = "https://github.com/rte-design/ASTRA.ai"
@@ -33,6 +33,11 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va.qwen.rag"
   },
 ]
+
+export const isRagGraph = (graphName: string) => {
+  return graphName === "va.qwen.rag"
+}
+
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {
     label: "Male",
