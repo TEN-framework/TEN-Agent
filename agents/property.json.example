@@ -1166,7 +1166,7 @@
                     }
                 ]
             },
-            {
+                        {
                 "name": "va.litellm.azure",
                 "auto_start": true,
                 "nodes": [
@@ -1537,6 +1537,37 @@
                                         "extension": "llama_index"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "file_chunk",
+                                "dest": [
+                                    {
+                                        "extension_group": "file_chunker",
+                                        "extension": "file_chunker"
+                                    },
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "file_chunked",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "update_querying_collection",
+                                "dest": [
+                                    {
+                                        "extension_group": "llama_index",
+                                        "extension": "llama_index"
+                                    }
+                                ]
                             }
                         ],
                         "data": [
@@ -1681,12 +1712,8 @@
                                 "name": "file_chunk",
                                 "dest": [
                                     {
-                                        "extension_group": "file_chunker",
-                                        "extension": "file_chunker"
-                                    },
-                                    {
-                                        "extension_group": "llama_index",
-                                        "extension": "llama_index"
+                                        "extension_group": "interrupt_detector",
+                                        "extension": "interrupt_detector"
                                     }
                                 ]
                             },
@@ -1694,8 +1721,8 @@
                                 "name": "update_querying_collection",
                                 "dest": [
                                     {
-                                        "extension_group": "llama_index",
-                                        "extension": "llama_index"
+                                        "extension_group": "interrupt_detector",
+                                        "extension": "interrupt_detector"
                                     }
                                 ]
                             }

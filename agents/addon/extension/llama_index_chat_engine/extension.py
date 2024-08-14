@@ -25,6 +25,9 @@ from llama_index.core.memory import ChatMemoryBuffer
 PROPERTY_CHAT_MEMORY_TOKEN_LIMIT = "chat_memory_token_limit"
 PROPERTY_GREETING = "greeting"
 
+TASK_TYPE_CHAT_REQUEST = "chat_request"
+TASK_TYPE_GREETING = "greeting"
+
 
 class LlamaIndexExtension(Extension):
     def __init__(self, name: str):
@@ -33,8 +36,10 @@ class LlamaIndexExtension(Extension):
         self.thread = None
         self.stop = False
 
-        self.collection_name = ""
         self.outdate_ts = datetime.now()
+        self.outdate_ts_lock = threading.Lock()
+
+        self.collection_name = ""
         self.chat_memory_token_limit = 3000
         self.chat_memory = None
 
@@ -122,13 +127,15 @@ class LlamaIndexExtension(Extension):
 
             # notify user
             file_chunked_text = "Your document has been processed. You can now start asking questions about your document. "
-            self._send_text_data(rte, file_chunked_text, True)
+            # self._send_text_data(rte, file_chunked_text, True)
+            self.queue.put((file_chunked_text, datetime.now(), TASK_TYPE_GREETING))
         elif cmd_name == "file_chunk":
             self.collection_name = ""  # clear current collection
 
             # notify user
             file_chunk_text = "Your document has been received. Please wait a moment while we process it for you.  "
-            self._send_text_data(rte, file_chunk_text, True)
+            # self._send_text_data(rte, file_chunk_text, True)
+            self.queue.put((file_chunk_text, datetime.now(), TASK_TYPE_GREETING))
         elif cmd_name == "update_querying_collection":
             coll = cmd.get_property_string("collection")
             logger.info(
@@ -144,7 +151,10 @@ class LlamaIndexExtension(Extension):
                 update_querying_collection_text += (
                     "You can now start asking questions about your document. "
                 )
-            self._send_text_data(rte, update_querying_collection_text, True)
+            # self._send_text_data(rte, update_querying_collection_text, True)
+            self.queue.put(
+                (update_querying_collection_text, datetime.now(), TASK_TYPE_GREETING)
+            )
 
         elif cmd_name == "flush":
             self.flush()
@@ -168,7 +178,7 @@ class LlamaIndexExtension(Extension):
         ts = datetime.now()
 
         logger.info("on_data text [%s], ts [%s]", inputText, ts)
-        self.queue.put((inputText, ts))
+        self.queue.put((inputText, ts, TASK_TYPE_CHAT_REQUEST))
 
     def async_handle(self, rte: RteEnv):
         logger.info("async_handle started")
@@ -177,12 +187,21 @@ class LlamaIndexExtension(Extension):
                 value = self.queue.get()
                 if value is None:
                     break
-                input_text, ts = value
-                if ts < self.outdate_ts:
+                input_text, ts, task_type = value
+
+                if ts < self.get_outdated_ts():
                     logger.info(
-                        "text [%s] ts [%s] dropped due to outdated", input_text, ts
+                        "text [{}] ts [{}] task_type [{}] dropped due to outdated".format(
+                            input_text, ts, task_type
+                        )
                     )
                     continue
+
+                if task_type == TASK_TYPE_GREETING:
+                    # send greeting text directly
+                    self._send_text_data(rte, input_text, True)
+                    continue
+
                 logger.info("process input text [%s] ts [%s]", input_text, ts)
 
                 # prepare chat engine
@@ -227,7 +246,7 @@ class LlamaIndexExtension(Extension):
                 for cur_token in resp.response_gen:
                     if self.stop:
                         break
-                    if ts < self.outdate_ts:
+                    if ts < self.get_outdated_ts():
                         logger.info(
                             "stream_chat coming responses dropped due to outdated for input text [%s] ts [%s] ",
                             input_text,
@@ -246,6 +265,12 @@ class LlamaIndexExtension(Extension):
         logger.info("async_handle stoped")
 
     def flush(self):
-        self.outdate_ts = datetime.now()
+        with self.outdate_ts_lock:
+            self.outdate_ts = datetime.now()
+
         while not self.queue.empty():
             self.queue.get()
+
+    def get_outdated_ts(self):
+        with self.outdate_ts_lock:
+            return self.outdate_ts
