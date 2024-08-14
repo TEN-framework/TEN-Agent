@@ -26,4 +26,4 @@ session_control.conf.agora
 xdump_config
 .vscode
 *.pyc
-property.json
+/property.json

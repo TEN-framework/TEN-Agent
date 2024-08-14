@@ -44,11 +44,14 @@ const Description = () => {
       message.success("Agent disconnected")
       stopPing()
     } else {
+      let params = new URLSearchParams(document.location.search);
+      let graph_name = params.get("graph_name");
       const res = await apiStartService({
         channel,
         userId,
-        language,
-        voiceType
+        language: lang,
+        voiceType: voice,
+        graphName: graph_name,
       })
       const { code, msg } = res || {}
       if (code != 0) {
