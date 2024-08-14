@@ -1,0 +1,77 @@
+.chat {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  background: #181A1D;
+  overflow: hidden;
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    row-gap: 10px;
+    border-bottom: 1px solid #272A2F;
+
+
+    .text {
+      margin-left: 4px;
+      color: var(--Grey-300, #EAECF0);
+      font-size: 14px;
+      font-weight: 600;
+      height: 40px;
+      line-height: 40px;
+      letter-spacing: 0.449px;
+    }
+
+    .languageSelect {
+      width: 100%;
+    }
+
+
+
+
+  }
+
+  .content {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    align-self: stretch;
+    overflow-y: auto;
+
+
+    &::-webkit-scrollbar {
+      width: 6px
+    }
+
+    &::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #6B6B6B;
+      border-radius: 4px;
+    }
+  }
+
+
+}
+
+
+.dropdownRender {
+  display: flex;
+  justify-content: flex-end;
+
+
+  .btn {
+    color: var(--theme-color, #EAECF0);
+
+    &:hover {
+      color: var(--theme-color, #EAECF0) !important;
+    }
+  }
+}

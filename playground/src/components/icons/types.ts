@@ -3,6 +3,8 @@ export interface IconProps {
   height?: number
   color?: string
   viewBox?: string
+  size?: "small" | "default"
   // style?: React.CSSProperties
   transform?: string
+  onClick?: () => void
 }

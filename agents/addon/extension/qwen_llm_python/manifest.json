@@ -1,13 +1,13 @@
 {
   "type": "extension",
   "name": "qwen_llm_python",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "language": "python",
   "dependencies": [
     {
       "type": "system",
       "name": "rte_runtime_python",
-      "version": "0.4.0"
+      "version": "0.4"
     }
   ],
   "api": {
@@ -60,6 +60,30 @@
     "cmd_in": [
       {
         "name": "flush"
+      },
+      {
+        "name": "call_chat",
+        "property": {
+          "messages": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "bool"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "result": {
+          "property": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
       }
     ],
     "cmd_out": [
