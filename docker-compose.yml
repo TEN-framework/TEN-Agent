@@ -16,12 +16,6 @@ services:
         working_dir: /app
         env_file:
             - .env
-    astra_playground:
-        image: ghcr.io/rte-design/astra_playground:v0.2.0-15-g38e1738
-        container_name: astra_playground
-        restart: always
-        ports:
-            - "3000:3000"
 
     astra_playground_dev:
         image: node:20-alpine
@@ -29,7 +23,7 @@ services:
         restart: always
         command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
         ports:
-        - "3002:3000"
+        - "3000:3000"
         volumes:
         - ./:/app
     astra_graph_designer:

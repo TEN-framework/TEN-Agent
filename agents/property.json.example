@@ -1441,6 +1441,17 @@
                     },
                     {
                         "type": "extension",
+                        "extension_group": "tts",
+                        "addon": "azure_tts",
+                        "name": "azure_tts",
+                        "property": {
+                            "azure_subscription_key": "<azure_tts_key>",
+                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                        }
+                    },
+                    {
+                        "type": "extension",
                         "extension_group": "chat_transcriber",
                         "addon": "chat_transcriber_python",
                         "name": "chat_transcriber"
@@ -1591,7 +1602,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "tts",
-                                        "extension": "cosy_tts"
+                                        "extension": "azure_tts"
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
@@ -1630,7 +1641,7 @@
                                     },
                                     {
                                         "extension_group": "tts",
-                                        "extension": "cosy_tts"
+                                        "extension": "azure_tts"
                                     }
                                 ]
                             },
@@ -1665,7 +1676,7 @@
                     },
                     {
                         "extension_group": "tts",
-                        "extension": "cosy_tts",
+                        "extension": "azure_tts",
                         "pcm_frame": [
                             {
                                 "name": "pcm_frame",
