@@ -12,17 +12,20 @@ type Prop struct {
 
 const (
 	// Extension name
-	extensionNameAgoraRTC      = "agora_rtc"
-	extensionNameAzureTTS      = "azure_tts"
-	extensionNameBedrockLLM    = "bedrock_llm"
-	extensionNameCosyTTS       = "cosy_tts"
-	extensionNameElevenlabsTTS = "elevenlabs_tts"
-	extensionNameGeminiLLM     = "gemini_llm"
-	extensionNameLiteLLM       = "litellm"
-	extensionNameOpenaiChatgpt = "openai_chatgpt"
-	extensionNamePollyTTS      = "polly_tts"
-	extensionNameQwenLLM       = "qwen_llm"
-	extensionNameTranscribeAsr = "transcribe_asr"
+	extensionNameAgoraRTC                      = "agora_rtc"
+	extensionNameAzureTTS                      = "azure_tts"
+	extensionNameBedrockLLM                    = "bedrock_llm"
+	extensionNameCosyTTS                       = "cosy_tts"
+	extensionNameElevenlabsTTS                 = "elevenlabs_tts"
+	extensionNameGeminiLLM                     = "gemini_llm"
+	extensionNameLiteLLM                       = "litellm"
+	extensionNameOpenaiChatgpt                 = "openai_chatgpt"
+	extensionNamePollyTTS                      = "polly_tts"
+	extensionNameQwenLLM                       = "qwen_llm"
+	extensionNameTranscribeAsr                 = "transcribe_asr"
+	extensionNameHttpServer                    = "http_server"
+	extensionNameAliyunAnalyticdbVectorStorage = "aliyun_analyticdb_vector_storage"
+	extensionNameAliyunTextEmbedding           = "aliyun_text_embedding"
 
 	// Language
 	languageChinese = "zh-CN"
