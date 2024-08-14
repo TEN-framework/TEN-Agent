@@ -17,7 +17,7 @@ services:
         env_file:
             - .env
     astra_playground:
-        image: ghcr.io/rte-design/astra_playground:v0.3.0-rc1-1-g7b39348
+        image: ghcr.io/rte-design/astra_playground:v0.3.0-rc1-2-g2385dfe
         container_name: astra_playground
         restart: always
         ports:
