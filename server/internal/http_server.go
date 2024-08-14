@@ -323,7 +323,7 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 	}
 
 	// Generate collection
-	collection := fmt.Sprintf("%s_%d", gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano())
+	collection := fmt.Sprintf("a%s_%d", gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano())
 	fileName := filepath.Base(file.Filename)
 
 	// update worker
