@@ -85,7 +85,7 @@ const Description = () => {
 
   return <div className={styles.description}>
     <span className={styles.title}>Description</span>
-    <span className={styles.text}>RTT is an AI voice assistant powered by Shengwang Agents, Deepgram, Eleven Labs, and ChatGPT. It is running on Shengwang Playground.</span>
+    <span className={styles.text}>Astra is an AI voice assistant powered by T.E.N framework, Deepgram, Eleven Labs, and ChatGPT.</span>
     <span className={`${styles.btnConnect} ${agentConnected ? styles.disconnect : ''}`} onClick={onClickConnect}>
       <span className={`${styles.btnText} ${agentConnected ? styles.disconnect : ''}`}>
         {!agentConnected ? "Connect" : "Disconnect"}

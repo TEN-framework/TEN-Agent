@@ -1,5 +1,3 @@
-// https://doc.shengwang.cn/api-ref/rtc/javascript/interfaces/networkquality
-
 import averageSvg from "@/assets/network/average.svg"
 import goodSvg from "@/assets/network/good.svg"
 import poorSvg from "@/assets/network/poor.svg"
