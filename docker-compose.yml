@@ -23,15 +23,16 @@ services:
         ports:
             - "3000:3000"
 
-    astra_playground_dev:
-        image: node:20-alpine
-        container_name: astra_playground_dev
-        restart: always
-        command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
-        ports:
-        - "3002:3000"
-        volumes:
-        - ./:/app
+    # use this when you want to run the playground in local development mode
+    # astra_playground_dev:
+    #     image: node:20-alpine
+    #     container_name: astra_playground_dev
+    #     restart: always
+    #     command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
+    #     ports:
+    #     - "3002:3000"
+    #     volumes:
+    #     - ./:/app
     astra_graph_designer:
         image: agoraio/astra_graph_designer:0.3.0
         container_name: astra_graph_designer

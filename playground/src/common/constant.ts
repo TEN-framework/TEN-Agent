@@ -33,6 +33,11 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va.qwen.rag"
   },
 ]
+
+export const isRagGraph = (graphName: string) => {
+  return graphName === "va.qwen.rag"
+}
+
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {
     label: "Male",
