@@ -13,7 +13,7 @@ const PdfSelect = () => {
   const options = useAppSelector(state => state.global.options)
   const { channel } = options
   const [pdfOptions, setPdfOptions] = useState<OptionType[]>([])
-  const [selectedPdf, setSelectedPdf] = useState<string>("")
+  const [selectedPdf, setSelectedPdf] = useState<string>('')
   const agentConnected = useAppSelector(state => state.global.agentConnected)
 
 
@@ -21,7 +21,10 @@ const PdfSelect = () => {
     if(agentConnected) {
       getPDFOptions()
     } else {
-      setPdfOptions([])
+      setPdfOptions([{
+        value: '',
+        label: 'Please select a PDF file'
+      }])
     }
   }, [agentConnected])
 

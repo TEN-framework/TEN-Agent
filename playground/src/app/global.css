@@ -31,7 +31,8 @@ a {
 }
 
 .ant-select-selector {
-  border: 1px solid #d9d9d9 !important;
+  border: 1px solid #272A2F !important;
+  background-color: #272A2F !important;
 }
 
 .ant-select-dropdown {
