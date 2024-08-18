@@ -7,9 +7,9 @@
 #
 
 import json
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     Data,
     StatusCode,
@@ -32,27 +32,27 @@ cached_text_map = {}
 
 
 class ChatTranscriberExtension(Extension):
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info("on_start")
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
-        rte.on_stop_done()
+        ten.on_stop_done()
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         logger.info("on_cmd")
         cmd_json = cmd.to_json()
         logger.info("on_cmd json: {}".format(cmd_json))
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
-        rte.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result, cmd)
 
-    def on_data(self, rte: RteEnv, data: Data) -> None:
+    def on_data(self, ten: TenEnv, data: Data) -> None:
         """
-        on_data receives data from rte graph.
-        current supported data:
+        on_data receives data from ten graph.
+        current suppotend data:
           - name: text_data
             example:
             {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
@@ -128,9 +128,9 @@ class ChatTranscriberExtension(Extension):
 
         try:
             # convert the origin text data to the protobuf data and send it to the graph.
-            rte_data = Data.create("data")
-            rte_data.set_property_buf("data", pb_serialized_text)
-            rte.send_data(rte_data)
+            ten_data = Data.create("data")
+            ten_data.set_property_buf("data", pb_serialized_text)
+            ten.send_data(ten_data)
             logger.info("data sent")
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")

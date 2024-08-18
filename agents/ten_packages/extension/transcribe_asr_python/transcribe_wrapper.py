@@ -1,8 +1,8 @@
 from typing import Union
 import asyncio
 
-from rte import (
-    RteEnv,
+from ten import (
+    TenEnv,
     Data
 )
 
@@ -17,17 +17,17 @@ from .transcribe_config import TranscribeConfig
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 
-def create_and_send_data(rte: RteEnv, text_result: str, is_final: bool):
+def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool):
     stable_data = Data.create("text_data")
     stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
     stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text_result)
-    rte.send_data(stable_data)
+    ten.send_data(stable_data)
 
 
 class AsyncTranscribeWrapper():
-    def __init__(self, config: TranscribeConfig, queue: asyncio.Queue, rte:RteEnv, loop: asyncio.BaseEventLoop):
+    def __init__(self, config: TranscribeConfig, queue: asyncio.Queue, ten:TenEnv, loop: asyncio.BaseEventLoop):
         self.queue = queue
-        self.rte = rte
+        self.ten = ten
         self.stopped = False
         self.config = config
         self.loop = loop
@@ -70,7 +70,7 @@ class AsyncTranscribeWrapper():
     async def create_stream(self) -> bool:
         try:
             self.stream = await self.get_transcribe_stream()
-            self.handler = TranscribeEventHandler(self.stream.output_stream, self.rte)
+            self.handler = TranscribeEventHandler(self.stream.output_stream, self.ten)
             self.event_handler_task = asyncio.create_task(self.handler.handle_events())
         except Exception as e:
             logger.exception(e)
@@ -139,9 +139,9 @@ class AsyncTranscribeWrapper():
 
 
 class TranscribeEventHandler(TranscriptResultStreamHandler):
-    def __init__(self, transcript_result_stream: TranscriptResultStream, rte: RteEnv):
+    def __init__(self, transcript_result_stream: TranscriptResultStream, ten: TenEnv):
         super().__init__(transcript_result_stream)
-        self.rte = rte
+        self.ten = ten
 
     async def handle_transcript_event(self, transcript_event: TranscriptEvent) -> None:
         results = transcript_event.transcript.results
@@ -162,4 +162,4 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
 
         logger.info(f"got transcript: [{text_result}], is_final: [{is_final}]")
 
-        create_and_send_data(rte=self.rte, text_result=text_result, is_final=is_final)
+        create_and_send_data(ten=self.ten, text_result=text_result, is_final=is_final)

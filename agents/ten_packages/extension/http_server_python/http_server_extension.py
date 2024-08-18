@@ -1,6 +1,6 @@
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
@@ -12,9 +12,9 @@ from functools import partial
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
-    def __init__(self, rte, *args, directory=None, **kwargs):
+    def __init__(self, ten, *args, directory=None, **kwargs):
         logger.info("new handler: %s %s %s", directory, args, kwargs)
-        self.rte = rte
+        self.ten = ten
         super().__init__(*args, **kwargs)
 
     def do_POST(self):
@@ -24,9 +24,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 content_length = int(self.headers["Content-Length"])
                 input = self.rfile.read(content_length).decode("utf-8")
                 logger.info("incoming request %s", input)
-                self.rte.send_cmd(
+                self.ten.send_cmd(
                     Cmd.create_from_json(input),
-                    lambda rte, result: logger.info(
+                    lambda ten, result: logger.info(
                         "finish send_cmd from http server %s %s", input, result
                     ),
                 )
@@ -51,11 +51,11 @@ class HTTPServerExtension(Extension):
         self.server = None
         self.thread = None
 
-    def on_start(self, rte: RteEnv):
-        self.listen_addr = rte.get_property_string("listen_addr")
-        self.listen_port = rte.get_property_int("listen_port")
+    def on_start(self, ten: TenEnv):
+        self.listen_addr = ten.get_property_string("listen_addr")
+        self.listen_port = ten.get_property_int("listen_port")
         """
-            white_list = rte.get_property_string("cmd_white_list")
+            white_list = ten.get_property_string("cmd_white_list")
             if len(white_list) > 0:
                 self.cmd_white_list = white_list.split(",")
         """
@@ -68,22 +68,22 @@ class HTTPServerExtension(Extension):
         )
 
         self.server = HTTPServer(
-            (self.listen_addr, self.listen_port), partial(HTTPHandler, rte)
+            (self.listen_addr, self.listen_port), partial(HTTPHandler, ten)
         )
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def on_stop(self, rte: RteEnv):
+    def on_stop(self, ten: TenEnv):
         logger.info("on_stop")
         self.server.shutdown()
         self.thread.join()
-        rte.on_stop_done()
+        ten.on_stop_done()
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd):
+    def on_cmd(self, ten: TenEnv, cmd: Cmd):
         cmd_json = cmd.to_json()
         logger.info("on_cmd json: " + cmd_json)
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "ok")
-        rte.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result, cmd)

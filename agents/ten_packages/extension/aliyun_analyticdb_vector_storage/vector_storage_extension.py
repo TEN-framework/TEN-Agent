@@ -6,9 +6,9 @@ import os
 import json
 from .client import AliGPDBClient
 from .model import Model
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     Data,
     StatusCode,
@@ -43,38 +43,38 @@ class AliPGDBExtension(Extension):
         self.namespace = os.environ.get("ADBPG_NAMESPACE")
         self.namespace_password = os.environ.get("ADBPG_NAMESPACE_PASSWORD")
 
-    async def __thread_routine(self, rte_env: RteEnv):
+    async def __thread_routine(self, ten_env: TenEnv):
         logger.info("__thread_routine start")
         self.loop = asyncio.get_running_loop()
-        rte_env.on_start_done()
+        ten_env.on_start_done()
         await self.stopEvent.wait()
 
     async def stop_thread(self):
         self.stopEvent.set()
 
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info(f"on_start")
         self.access_key_id = self.get_property_string(
-            rte, "ALIBABA_CLOUD_ACCESS_KEY_ID", self.access_key_id
+            ten, "ALIBABA_CLOUD_ACCESS_KEY_ID", self.access_key_id
         )
         self.access_key_secret = self.get_property_string(
-            rte, "ALIBABA_CLOUD_ACCESS_KEY_SECRET", self.access_key_secret
+            ten, "ALIBABA_CLOUD_ACCESS_KEY_SECRET", self.access_key_secret
         )
         self.region_id = self.get_property_string(
-            rte, "ADBPG_INSTANCE_REGION", self.region_id
+            ten, "ADBPG_INSTANCE_REGION", self.region_id
         )
         self.dbinstance_id = self.get_property_string(
-            rte, "ADBPG_INSTANCE_ID", self.dbinstance_id
+            ten, "ADBPG_INSTANCE_ID", self.dbinstance_id
         )
-        self.account = self.get_property_string(rte, "ADBPG_ACCOUNT", self.account)
+        self.account = self.get_property_string(ten, "ADBPG_ACCOUNT", self.account)
         self.account_password = self.get_property_string(
-            rte, "ADBPG_ACCOUNT_PASSWORD", self.account_password
+            ten, "ADBPG_ACCOUNT_PASSWORD", self.account_password
         )
         self.namespace = self.get_property_string(
-            rte, "ADBPG_NAMESPACE", self.namespace
+            ten, "ADBPG_NAMESPACE", self.namespace
         )
         self.namespace_password = self.get_property_string(
-            rte, "ADBPG_NAMESPACE_PASSWORD", self.namespace_password
+            ten, "ADBPG_NAMESPACE_PASSWORD", self.namespace_password
         )
 
         if self.region_id in (
@@ -96,51 +96,51 @@ class AliPGDBExtension(Extension):
             self.access_key_id, self.access_key_secret, self.endpoint
         )
         self.thread = threading.Thread(
-            target=asyncio.run, args=(self.__thread_routine(rte),)
+            target=asyncio.run, args=(self.__thread_routine(ten),)
         )
 
         # Then 'on_start_done' will be called in the thread
         self.thread.start()
         return
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
         if self.thread is not None and self.thread.is_alive():
             asyncio.run_coroutine_threadsafe(self.stop_thread(), self.loop)
             self.thread.join()
         self.thread = None
-        rte.on_stop_done()
+        ten.on_stop_done()
         return
 
-    def on_data(self, rte: RteEnv, data: Data) -> None:
+    def on_data(self, ten: TenEnv, data: Data) -> None:
         pass
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         try:
             cmd_name = cmd.get_name()
             logger.info(f"on_cmd [{cmd_name}]")
             if cmd_name == "create_collection":
                 asyncio.run_coroutine_threadsafe(
-                    self.async_create_collection(rte, cmd), self.loop
+                    self.async_create_collection(ten, cmd), self.loop
                 )
             elif cmd_name == "delete_collection":
                 asyncio.run_coroutine_threadsafe(
-                    self.async_delete_collection(rte, cmd), self.loop
+                    self.async_delete_collection(ten, cmd), self.loop
                 )
             elif cmd_name == "upsert_vector":
                 asyncio.run_coroutine_threadsafe(
-                    self.async_upsert_vector(rte, cmd), self.loop
+                    self.async_upsert_vector(ten, cmd), self.loop
                 )
             elif cmd_name == "query_vector":
                 asyncio.run_coroutine_threadsafe(
-                    self.async_query_vector(rte, cmd), self.loop
+                    self.async_query_vector(ten, cmd), self.loop
                 )
             else:
-                rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         except Exception as e:
-            rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
-    async def async_create_collection(self, rte: RteEnv, cmd: Cmd):
+    async def async_create_collection(self, ten: TenEnv, cmd: Cmd):
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         dimension = 1024
@@ -160,11 +160,11 @@ class AliPGDBExtension(Extension):
                 collection,
                 dimension,
             )
-            rte.return_result(CmdResult.create(StatusCode.OK), cmd)
+            ten.return_result(CmdResult.create(StatusCode.OK), cmd)
         else:
-            rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
-    async def async_upsert_vector(self, rte: RteEnv, cmd: Cmd):
+    async def async_upsert_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
@@ -186,11 +186,11 @@ class AliPGDBExtension(Extension):
             )
         )
         if err is None:
-            rte.return_result(CmdResult.create(StatusCode.OK), cmd)
+            ten.return_result(CmdResult.create(StatusCode.OK), cmd)
         else:
-            rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
-    async def async_query_vector(self, rte: RteEnv, cmd: Cmd):
+    async def async_query_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
@@ -210,27 +210,27 @@ class AliPGDBExtension(Extension):
         )
 
         if error:
-            return rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         else:
             body = m.parse_collection_data(response.body)
             ret = CmdResult.create(StatusCode.OK)
             ret.set_property_from_json("response", body)
-            rte.return_result(ret, cmd)
+            ten.return_result(ret, cmd)
 
-    async def async_delete_collection(self, rte: RteEnv, cmd: Cmd):
+    async def async_delete_collection(self, ten: TenEnv, cmd: Cmd):
         m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         err = await m.delete_collection_async(
             self.account, self.account_password, self.namespace, collection
         )
         if err is None:
-            return rte.return_result(CmdResult.create(StatusCode.OK), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.OK), cmd)
         else:
-            return rte.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            return ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
-    def get_property_string(self, rte: RteEnv, key: str, default: str) -> str:
+    def get_property_string(self, ten: TenEnv, key: str, default: str) -> str:
         try:
-            return rte.get_property_string(key.lower())
+            return ten.get_property_string(key.lower())
         except Exception as e:
             logger.error(f"Error: {e}")
             return default

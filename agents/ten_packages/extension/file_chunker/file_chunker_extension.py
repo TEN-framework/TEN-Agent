@@ -5,9 +5,9 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
@@ -82,19 +82,19 @@ class FileChunkerExtension(Extension):
         )
         return nodes
 
-    def create_collection(self, rte: RteEnv, collection_name: str, wait: bool):
+    def create_collection(self, ten: TenEnv, collection_name: str, wait: bool):
         cmd_out = Cmd.create("create_collection")
         cmd_out.set_property_string("collection_name", collection_name)
 
         wait_event = threading.Event()
-        rte.send_cmd(
+        ten.send_cmd(
             cmd_out,
-            lambda rte, result: wait_event.set(),
+            lambda ten, result: wait_event.set(),
         )
         if wait:
             wait_event.wait()
 
-    def embedding(self, rte: RteEnv, path: str, texts: List[str]):
+    def embedding(self, ten: TenEnv, path: str, texts: List[str]):
         logger.info(
             "generate embeddings for the file: {}, with batch size: {}".format(
                 path, len(texts)
@@ -103,14 +103,14 @@ class FileChunkerExtension(Extension):
 
         cmd_out = Cmd.create("embed_batch")
         cmd_out.set_property_from_json("inputs", json.dumps(texts))
-        rte.send_cmd(
+        ten.send_cmd(
             cmd_out,
-            lambda rte, result: self.vector_store(
-                rte, path, texts, result
+            lambda ten, result: self.vector_store(
+                ten, path, texts, result
             ),  # TODO: deal with error
         )
 
-    def vector_store(self, rte: RteEnv, path: str, texts: List[str], result: CmdResult):
+    def vector_store(self, ten: TenEnv, path: str, texts: List[str], result: CmdResult):
         logger.info("vector store start for one splitting of the file {}".format(path))
         file_name = path.split("/")[-1]
         embed_output_json = result.get_property_string("embeddings")
@@ -124,9 +124,9 @@ class FileChunkerExtension(Extension):
             content.append({"text": text, "embedding": embedding})
         cmd_out.set_property_string("content", json.dumps(content))
         # logger.info(json.dumps(content))
-        rte.send_cmd(cmd_out, lambda rte, result: self.file_chunked(rte, path))
+        ten.send_cmd(cmd_out, lambda ten, result: self.file_chunked(ten, path))
 
-    def file_chunked(self, rte: RteEnv, path: str):
+    def file_chunked(self, ten: TenEnv, path: str):
         if path in self.counters and path in self.expected:
             self.counters[path] += 1
             logger.info(
@@ -148,15 +148,15 @@ class FileChunkerExtension(Extension):
                 cmd_out = Cmd.create(FILE_CHUNKED_CMD)
                 cmd_out.set_property_string("path", path)
                 cmd_out.set_property_string("collection", self.new_collection_name)
-                rte.send_cmd(
+                ten.send_cmd(
                     cmd_out,
-                    lambda rte, result: logger.info("send_cmd done"),
+                    lambda ten, result: logger.info("send_cmd done"),
                 )
                 self.file_chunked_event.set()
         else:
             logger.error("missing counter for the file path: %s", path)
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         if cmd_name == CMD_FILE_CHUNK:
             path = cmd.get_property_string("path")
@@ -173,9 +173,9 @@ class FileChunkerExtension(Extension):
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "ok")
-        rte.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result, cmd)
 
-    def async_handler(self, rte: RteEnv) -> None:
+    def async_handler(self, ten: TenEnv) -> None:
         while not self.stop:
             value = self.queue.get()
             if value is None:
@@ -190,7 +190,7 @@ class FileChunkerExtension(Extension):
             logger.info("start processing {}, collection {}".format(path, collection))
 
             # create collection
-            self.create_collection(rte, collection, True)
+            self.create_collection(ten, collection, True)
             logger.info("collection {} created".format(collection))
 
             # split
@@ -204,7 +204,7 @@ class FileChunkerExtension(Extension):
 
             # trigger embedding and vector storing in parallel
             for texts in list(batch(nodes, BATCH_SIZE)):
-                self.embedding(rte, path, texts)
+                self.embedding(ten, path, texts)
 
             # wait for all chunks to be processed
             self.file_chunked_event.wait()
@@ -217,16 +217,16 @@ class FileChunkerExtension(Extension):
                 )
             )
 
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info("on_start")
 
         self.stop = False
-        self.thread = threading.Thread(target=self.async_handler, args=[rte])
+        self.thread = threading.Thread(target=self.async_handler, args=[ten])
         self.thread.start()
 
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
 
         self.stop = True
@@ -237,4 +237,4 @@ class FileChunkerExtension(Extension):
             self.thread.join()
             self.thread = None
 
-        rte.on_stop_done()
+        ten.on_stop_done()

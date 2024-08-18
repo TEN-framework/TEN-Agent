@@ -6,8 +6,8 @@ from llama_index.core.retrievers import BaseRetriever
 
 from .log import logger
 from .astra_embedding import ASTRAEmbedding
-from rte import (
-    RteEnv,
+from ten import (
+    TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
@@ -46,14 +46,14 @@ def format_node_result(cmd_result: CmdResult) -> List[NodeWithScore]:
 
 
 class ASTRARetriever(BaseRetriever):
-    rte: Any
+    ten: Any
     embed_model: ASTRAEmbedding
 
-    def __init__(self, rte: RteEnv, coll: str):
+    def __init__(self, ten: TenEnv, coll: str):
         super().__init__()
         try:
-            self.rte = rte
-            self.embed_model = ASTRAEmbedding(rte=rte)
+            self.ten = ten
+            self.embed_model = ASTRAEmbedding(ten=ten)
             self.collection_name = coll
         except Exception as e:
             logger.error(f"Failed to initialize ASTRARetriever: {e}")
@@ -82,7 +82,7 @@ class ASTRARetriever(BaseRetriever):
                 self.collection_name, len(embedding)
             )
         )
-        self.rte.send_cmd(query_cmd, cmd_callback)
+        self.ten.send_cmd(query_cmd, cmd_callback)
 
         wait_event.wait()
         return resp

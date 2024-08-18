@@ -3,7 +3,7 @@ import threading
 from llama_index.core.embeddings import BaseEmbedding
 from .log import logger
 import json
-from rte import (
+from ten import (
     Cmd,
     CmdResult,
 )
@@ -17,12 +17,12 @@ def embed_from_resp(cmd_result: CmdResult) -> List[float]:
 
 
 class ASTRAEmbedding(BaseEmbedding):
-    rte: Any
+    ten: Any
 
-    def __init__(self, rte):
+    def __init__(self, ten):
         """Creates a new ASTRA embedding interface."""
         super().__init__()
-        self.rte = rte
+        self.ten = ten
 
     @classmethod
     def class_name(cls) -> str:
@@ -52,7 +52,7 @@ class ASTRAEmbedding(BaseEmbedding):
         cmd_out = Cmd.create(EMBED_CMD)
         cmd_out.set_property_string("input", query)
 
-        self.rte.send_cmd(cmd_out, callback)
+        self.ten.send_cmd(cmd_out, callback)
         wait_event.wait()
         return resp
 

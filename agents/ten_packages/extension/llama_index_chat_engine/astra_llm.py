@@ -16,7 +16,7 @@ from llama_index.core.llms.callbacks import llm_chat_callback, llm_completion_ca
 
 from llama_index.core.llms.custom import CustomLLM
 from .log import logger
-from rte import Cmd, StatusCode, CmdResult, RteEnv
+from ten import Cmd, StatusCode, CmdResult
 
 
 def chat_from_astra_response(cmd_result: CmdResult) -> ChatResponse:
@@ -37,12 +37,12 @@ def _messages_str_from_chat_messages(messages: Sequence[ChatMessage]) -> str:
 
 
 class ASTRALLM(CustomLLM):
-    rte: Any
+    ten: Any
 
-    def __init__(self, rte):
+    def __init__(self, ten):
         """Creates a new ASTRA model interface."""
         super().__init__()
-        self.rte = rte
+        self.ten = ten
 
     @property
     def metadata(self) -> LLMMetadata:
@@ -79,7 +79,7 @@ class ASTRALLM(CustomLLM):
             )
         )
 
-        self.rte.send_cmd(cmd, callback)
+        self.ten.send_cmd(cmd, callback)
         wait_event.wait()
         return resp
 
@@ -135,7 +135,7 @@ class ASTRALLM(CustomLLM):
                 cmd.get_name(), messages_str
             )
         )
-        self.rte.send_cmd(cmd, callback)
+        self.ten.send_cmd(cmd, callback)
         return gen()
 
     def stream_complete(

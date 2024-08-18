@@ -10,9 +10,9 @@ import queue
 import threading
 import time
 
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     CmdResult,
     StatusCode,
@@ -44,7 +44,7 @@ class Message:
 
 
 class ElevenlabsTTSExtension(Extension):
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info("on_start")
 
         self.elevenlabs_tts = None
@@ -57,49 +57,49 @@ class ElevenlabsTTSExtension(Extension):
         elevenlabs_tts_config = default_elevenlabs_tts_config()
 
         try:
-            elevenlabs_tts_config.api_key = rte.get_property_string(PROPERTY_API_KEY)
+            elevenlabs_tts_config.api_key = ten.get_property_string(PROPERTY_API_KEY)
         except Exception as e:
             logger.warning(f"on_start get_property_string {PROPERTY_API_KEY} error: {e}")
             return
 
         try:
-            model_id = rte.get_property_string(PROPERTY_MODEL_ID)
+            model_id = ten.get_property_string(PROPERTY_MODEL_ID)
             if len(model_id) > 0:
                 elevenlabs_tts_config.model_id = model_id
         except Exception as e:
             logger.warning(f"on_start get_property_string {PROPERTY_MODEL_ID} error: {e}")
 
         try:
-            optimize_streaming_latency = rte.get_property_int(PROPERTY_OPTIMIZE_STREAMING_LATENCY)
+            optimize_streaming_latency = ten.get_property_int(PROPERTY_OPTIMIZE_STREAMING_LATENCY)
             if optimize_streaming_latency > 0:
                 elevenlabs_tts_config.optimize_streaming_latency = optimize_streaming_latency
         except Exception as e:
             logger.warning(f"on_start get_property_int {PROPERTY_OPTIMIZE_STREAMING_LATENCY} error: {e}")
 
         try:
-            request_timeout_seconds = rte.get_property_int(PROPERTY_REQUEST_TIMEOUT_SECONDS)
+            request_timeout_seconds = ten.get_property_int(PROPERTY_REQUEST_TIMEOUT_SECONDS)
             if request_timeout_seconds > 0:
                 elevenlabs_tts_config.request_timeout_seconds = request_timeout_seconds
         except Exception as e:
             logger.warning(f"on_start get_property_int {PROPERTY_REQUEST_TIMEOUT_SECONDS} error: {e}")
 
         try:
-            elevenlabs_tts_config.similarity_boost = rte.get_property_float(PROPERTY_SIMILARITY_BOOST)
+            elevenlabs_tts_config.similarity_boost = ten.get_property_float(PROPERTY_SIMILARITY_BOOST)
         except Exception as e:
             logger.warning(f"on_start get_property_float {PROPERTY_SIMILARITY_BOOST} error: {e}")
 
         try:
-            elevenlabs_tts_config.speaker_boost = rte.get_property_bool(PROPERTY_SPEAKER_BOOST)
+            elevenlabs_tts_config.speaker_boost = ten.get_property_bool(PROPERTY_SPEAKER_BOOST)
         except Exception as e:
             logger.warning(f"on_start get_property_bool {PROPERTY_SPEAKER_BOOST} error: {e}")
 
         try:
-            elevenlabs_tts_config.stability = rte.get_property_float(PROPERTY_STABILITY)
+            elevenlabs_tts_config.stability = ten.get_property_float(PROPERTY_STABILITY)
         except Exception as e:
             logger.warning(f"on_start get_property_float {PROPERTY_STABILITY} error: {e}")
 
         try:
-            elevenlabs_tts_config.style = rte.get_property_float(PROPERTY_STYLE)
+            elevenlabs_tts_config.style = ten.get_property_float(PROPERTY_STYLE)
         except Exception as e:
             logger.warning(f"on_start get_property_float {PROPERTY_STYLE} error: {e}")
 
@@ -112,17 +112,17 @@ class ElevenlabsTTSExtension(Extension):
         self.pcm = Pcm(PcmConfig())
         self.pcm_frame_size = self.pcm.get_pcm_frame_size()
 
-        threading.Thread(target=self.process_text_queue, args=(rte,)).start()
+        threading.Thread(target=self.process_text_queue, args=(ten,)).start()
 
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
-        rte.on_stop_done()
+        ten.on_stop_done()
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         """
-        on_cmd receives cmd from rte graph.
+        on_cmd receives cmd from ten graph.
         current supported cmd:
           - name: flush
             example:
@@ -138,15 +138,15 @@ class ElevenlabsTTSExtension(Extension):
 
             # send out
             out_cmd = Cmd.create(CMD_OUT_FLUSH)
-            rte.send_cmd(out_cmd)
+            ten.send_cmd(out_cmd)
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
-        rte.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result, cmd)
 
-    def on_data(self, rte: RteEnv, data: Data) -> None:
+    def on_data(self, ten: TenEnv, data: Data) -> None:
         """
-        on_data receives data from rte graph.
+        on_data receives data from ten graph.
         current supported data:
           - name: text_data
             example:
@@ -168,7 +168,7 @@ class ElevenlabsTTSExtension(Extension):
 
         self.text_queue.put(Message(text, int(time.time() * 1000000)))
 
-    def process_text_queue(self, rte: RteEnv):
+    def process_text_queue(self, ten: TenEnv):
         logger.info("process_text_queue")
 
         while True:
@@ -206,7 +206,7 @@ class ElevenlabsTTSExtension(Extension):
                     logger.debug(f"the number of bytes read is [{pcm_frame_read}] inconsistent with pcm frame size")
                     continue
 
-                self.pcm.send(rte, buf)
+                self.pcm.send(ten, buf)
                 buf = self.pcm.new_buf()
                 pcm_frame_read = 0
                 sent_frames += 1
@@ -218,7 +218,7 @@ class ElevenlabsTTSExtension(Extension):
                 logger.debug(f"sending pcm data, text: [{msg.text}]")
 
             if pcm_frame_read > 0:
-                self.pcm.send(rte, buf)
+                self.pcm.send(ten, buf)
                 sent_frames += 1
                 logger.info(f"sending pcm remain data, text: [{msg.text}], pcm_frame_read: {pcm_frame_read}")
 

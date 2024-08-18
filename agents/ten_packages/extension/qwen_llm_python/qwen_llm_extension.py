@@ -5,9 +5,9 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     Data,
     StatusCode,
@@ -71,7 +71,7 @@ class QWenLLMExtension(Extension):
         with self.outdate_ts_lock:
             return self.outdate_ts
 
-    def complete_with_history(self, rte: RteEnv, ts: datetime.time, input_text: str):
+    def complete_with_history(self, ten: TenEnv, ts: datetime.time, input_text: str):
         """
         Complete input_text querying with built-in chat history.
         """
@@ -80,7 +80,7 @@ class QWenLLMExtension(Extension):
             d = Data.create("text_data")
             d.set_property_string("text", text)
             d.set_property_bool("end_of_segment", end_of_segment)
-            rte.send_data(d)
+            ten.send_data(d)
 
         messages = self.get_messages()
         messages.append({"role": "user", "content": input_text})
@@ -89,7 +89,7 @@ class QWenLLMExtension(Extension):
         if len(total) > 0:
             self.on_msg("assistant", total)
 
-    def call_chat(self, rte: RteEnv, ts: datetime.time, cmd: Cmd):
+    def call_chat(self, ten: TenEnv, ts: datetime.time, cmd: Cmd):
         """
         Respond to call_chat cmd and return results in streaming.
         The incoming 'messages' will contains all the system prompt, chat history and question.
@@ -115,7 +115,7 @@ class QWenLLMExtension(Extension):
             else:
                 cmd_result.set_is_final(False)  # keep streaming return
             logger.info("call_chat cmd return_result {}".format(cmd_result.to_json()))
-            rte.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result, cmd)
 
         messages_str = cmd.get_property_string("messages")
         messages = json.loads(messages_str)
@@ -184,19 +184,19 @@ class QWenLLMExtension(Extension):
         logger.info("stream_chat full_answer {}".format(total))
         return total
 
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info("on_start")
-        self.api_key = rte.get_property_string("api_key")
-        self.model = rte.get_property_string("model")
-        self.prompt = rte.get_property_string("prompt")
-        self.max_history = rte.get_property_int("max_memory_length")
+        self.api_key = ten.get_property_string("api_key")
+        self.model = ten.get_property_string("model")
+        self.prompt = ten.get_property_string("prompt")
+        self.max_history = ten.get_property_int("max_memory_length")
 
         dashscope.api_key = self.api_key
-        self.thread = threading.Thread(target=self.async_handle, args=[rte])
+        self.thread = threading.Thread(target=self.async_handle, args=[ten])
         self.thread.start()
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
         self.stopped = True
         self.flush()
@@ -204,7 +204,7 @@ class QWenLLMExtension(Extension):
         if self.thread is not None:
             self.thread.join()
             self.thread = None
-        rte.on_stop_done()
+        ten.on_stop_done()
 
     def flush(self):
         with self.outdate_ts_lock:
@@ -213,7 +213,7 @@ class QWenLLMExtension(Extension):
         while not self.queue.empty():
             self.queue.get()
 
-    def on_data(self, rte: RteEnv, data: Data) -> None:
+    def on_data(self, ten: TenEnv, data: Data) -> None:
         logger.info("on_data")
         is_final = data.get_property_bool("is_final")
         if not is_final:
@@ -229,7 +229,7 @@ class QWenLLMExtension(Extension):
         logger.info("on data %s, %s", input_text, ts)
         self.queue.put((input_text, ts))
 
-    def async_handle(self, rte: RteEnv):
+    def async_handle(self, ten: TenEnv):
         while not self.stopped:
             try:
                 value = self.queue.get()
@@ -241,14 +241,14 @@ class QWenLLMExtension(Extension):
 
                 if isinstance(input, str):
                     logger.info("fetched from queue {}".format(input))
-                    self.complete_with_history(rte, ts, input)
+                    self.complete_with_history(ten, ts, input)
                 else:
                     logger.info("fetched from queue {}".format(input.get_name()))
-                    self.call_chat(rte, ts, input)
+                    self.call_chat(ten, ts, input)
             except Exception as e:
                 logger.exception(e)
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         ts = datetime.now()
         cmd_name = cmd.get_name()
         logger.info("on_cmd {}, {}".format(cmd_name, ts))
@@ -256,9 +256,9 @@ class QWenLLMExtension(Extension):
         if cmd_name == "flush":
             self.flush()
             cmd_out = Cmd.create("flush")
-            rte.send_cmd(
+            ten.send_cmd(
                 cmd_out,
-                lambda rte, result: logger.info("send_cmd flush done"),
+                lambda ten, result: logger.info("send_cmd flush done"),
             )
         elif cmd_name == "call_chat":
             self.queue.put((cmd, ts))
@@ -267,4 +267,4 @@ class QWenLLMExtension(Extension):
             logger.info("unknown cmd {}".format(cmd_name))
 
         cmd_result = CmdResult.create(StatusCode.OK)
-        rte.return_result(cmd_result, cmd)
+        ten.return_result(cmd_result, cmd)

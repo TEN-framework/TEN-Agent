@@ -1,6 +1,6 @@
-from rte import (
+from ten import (
     Extension,
-    RteEnv,
+    TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
@@ -40,22 +40,22 @@ class EmbeddingExtension(Extension):
         # once v3 models supported
         self.parallel = 10
 
-    def on_start(self, rte: RteEnv) -> None:
+    def on_start(self, ten: TenEnv) -> None:
         logger.info("on_start")
-        self.api_key = self.get_property_string(rte, "api_key", self.api_key)
-        self.model = self.get_property_string(rte, "model", self.api_key)
+        self.api_key = self.get_property_string(ten, "api_key", self.api_key)
+        self.model = self.get_property_string(ten, "model", self.api_key)
 
         dashscope.api_key = self.api_key
 
         for i in range(self.parallel):
-            thread = threading.Thread(target=self.async_handler, args=[i, rte])
+            thread = threading.Thread(target=self.async_handler, args=[i, ten])
             thread.start()
             self.threads.append(thread)
 
-        rte.on_start_done()
+        ten.on_start_done()
 
-    def async_handler(self, index: int, rte: RteEnv):
-        logger.info("async_handler {} started".format(index))
+    def async_handler(self, index: int, ten: TenEnv):
+        logger.info("async_handler {} statend".format(index))
 
         while not self.stop:
             cmd = self.queue.get()
@@ -69,11 +69,11 @@ class EmbeddingExtension(Extension):
             
             if cmd_name == CMD_EMBED:
                 cmd_result = self.call_with_str(cmd.get_property_string("input"))
-                rte.return_result(cmd_result, cmd)
+                ten.return_result(cmd_result, cmd)
             elif cmd_name == CMD_EMBED_BATCH:
                 list = json.loads(cmd.get_property_to_json("inputs"))
                 cmd_result = self.call_with_strs(list)
-                rte.return_result(cmd_result, cmd)
+                ten.return_result(cmd_result, cmd)
             else:
                 logger.warning("unknown cmd {}".format(cmd_name))
             
@@ -135,7 +135,7 @@ class EmbeddingExtension(Extension):
             logger.error("All batch failed")
             return cmd_result
 
-    def on_stop(self, rte: RteEnv) -> None:
+    def on_stop(self, ten: TenEnv) -> None:
         logger.info("on_stop")
         self.stop = True
         # clear queue
@@ -148,9 +148,9 @@ class EmbeddingExtension(Extension):
             thread.join()
         self.threads = []
 
-        rte.on_stop_done()
+        ten.on_stop_done()
 
-    def on_cmd(self, rte: RteEnv, cmd: Cmd) -> None:
+    def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
 
         if cmd_name in [CMD_EMBED, CMD_EMBED_BATCH]:
@@ -172,11 +172,11 @@ class EmbeddingExtension(Extension):
         else:
             logger.warning("unknown cmd {}".format(cmd_name))
             cmd_result = CmdResult.create(StatusCode.ERROR)
-            rte.return_result(cmd_result, cmd)
+            ten.return_result(cmd_result, cmd)
 
-    def get_property_string(self, rte: RteEnv, key, default):
+    def get_property_string(self, ten: TenEnv, key, default):
         try:
-            return rte.get_property_string(key)
+            return ten.get_property_string(key)
         except Exception as e:
             logger.warning(f"err: {e}")
             return default
