@@ -443,7 +443,7 @@ class Model:
             json_str = json.dumps(results)
             return json_str
         except Exception as e:
-            logger.error(f"Error: {e}")
+            logger.error(f"parse collection data failed, error: {e}, data: {body.to_map()}")
             return "[]"
 
     def list_collections(self, namespace, namespace_password) -> Tuple[List[str], Any]:
