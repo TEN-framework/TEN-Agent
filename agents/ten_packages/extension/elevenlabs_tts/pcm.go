@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"agora.io/rte/rte"
+	"ten_framework/ten"
 )
 
 type pcm struct {
@@ -49,8 +49,8 @@ func newPcm(config *pcmConfig) *pcm {
 	}
 }
 
-func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rte.PcmFrame, err error) {
-	pcmFrame, err = rte.NewPcmFrame(p.config.Name)
+func (p *pcm) getPcmFrame(buf []byte) (pcmFrame ten.AudioFrame, err error) {
+	pcmFrame, err = ten.NewAudioFrame(p.config.Name)
 	if err != nil {
 		slog.Error(fmt.Sprintf("NewPcmFrame failed, err: %v", err), logTag)
 		return
@@ -62,7 +62,7 @@ func (p *pcm) getPcmFrame(buf []byte) (pcmFrame rte.PcmFrame, err error) {
 	pcmFrame.SetChannelLayout(p.config.ChannelLayout)
 	pcmFrame.SetNumberOfChannels(p.config.Channel)
 	pcmFrame.SetTimestamp(p.config.Timestamp)
-	pcmFrame.SetDataFmt(rte.PcmFrameDataFmtInterleave)
+	pcmFrame.SetDataFmt(ten.AudioFrameDataFmtInterleave)
 	pcmFrame.SetSamplesPerChannel(p.config.SamplesPerChannel)
 	pcmFrame.AllocBuf(p.getPcmFrameSize())
 
@@ -87,7 +87,7 @@ func (p *pcm) newBuf() []byte {
 	return make([]byte, p.getPcmFrameSize())
 }
 
-func (p *pcm) send(rteEnv rte.RteEnv, buf []byte) (err error) {
+func (p *pcm) send(tenEnv ten.TenEnv, buf []byte) (err error) {
 	pcmFrame, err := p.getPcmFrame(buf)
 	if err != nil {
 		slog.Error(fmt.Sprintf("getPcmFrame failed, err: %v", err), logTag)
@@ -95,7 +95,7 @@ func (p *pcm) send(rteEnv rte.RteEnv, buf []byte) (err error) {
 	}
 
 	// send pcm
-	if err = rteEnv.SendPcmFrame(pcmFrame); err != nil {
+	if err = tenEnv.SendAudioFrame(pcmFrame); err != nil {
 		slog.Error(fmt.Sprintf("SendPcmFrame failed, err: %v", err), logTag)
 		return
 	}

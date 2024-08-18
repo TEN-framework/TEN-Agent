@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"agora.io/rte/rte"
+	"ten_framework/ten"
 )
 
 const (
@@ -50,7 +50,7 @@ var (
 )
 
 type elevenlabsTTSExtension struct {
-	rte.DefaultExtension
+	ten.DefaultExtension
 	elevenlabsTTS *elevenlabsTTS
 }
 
@@ -59,7 +59,7 @@ type message struct {
 	receivedTs int64
 }
 
-func newElevenlabsTTSExtension(name string) rte.Extension {
+func newElevenlabsTTSExtension(name string) ten.Extension {
 	return &elevenlabsTTSExtension{}
 }
 
@@ -75,20 +75,20 @@ func newElevenlabsTTSExtension(name string) rte.Extension {
 //   - stability
 //   - style
 //   - voice_id
-func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
+func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	slog.Info("OnStart", logTag)
 
 	// prepare configuration
 	elevenlabsTTSConfig := defaultElevenlabsTTSConfig()
 
-	if apiKey, err := rte.GetPropertyString(propertyApiKey); err != nil {
+	if apiKey, err := ten.GetPropertyString(propertyApiKey); err != nil {
 		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
 		return
 	} else {
 		elevenlabsTTSConfig.ApiKey = apiKey
 	}
 
-	if modelId, err := rte.GetPropertyString(propertyModelId); err != nil {
+	if modelId, err := ten.GetPropertyString(propertyModelId); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModelId, err), logTag)
 	} else {
 		if len(modelId) > 0 {
@@ -96,7 +96,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 		}
 	}
 
-	if optimizeStreamingLatency, err := rte.GetPropertyInt64(propertyOptimizeStreamingLatency); err != nil {
+	if optimizeStreamingLatency, err := ten.GetPropertyInt64(propertyOptimizeStreamingLatency); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyOptimizeStreamingLatency, err), logTag)
 	} else {
 		if optimizeStreamingLatency > 0 {
@@ -104,7 +104,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 		}
 	}
 
-	if requestTimeoutSeconds, err := rte.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
+	if requestTimeoutSeconds, err := ten.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err), logTag)
 	} else {
 		if requestTimeoutSeconds > 0 {
@@ -112,31 +112,31 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 		}
 	}
 
-	if similarityBoost, err := rte.GetPropertyFloat64(propertySimilarityBoost); err != nil {
+	if similarityBoost, err := ten.GetPropertyFloat64(propertySimilarityBoost); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySimilarityBoost, err), logTag)
 	} else {
 		elevenlabsTTSConfig.SimilarityBoost = float32(similarityBoost)
 	}
 
-	if speakerBoost, err := rte.GetPropertyBool(propertySpeakerBoost); err != nil {
+	if speakerBoost, err := ten.GetPropertyBool(propertySpeakerBoost); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySpeakerBoost, err), logTag)
 	} else {
 		elevenlabsTTSConfig.SpeakerBoost = speakerBoost
 	}
 
-	if stability, err := rte.GetPropertyFloat64(propertyStability); err != nil {
+	if stability, err := ten.GetPropertyFloat64(propertyStability); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStability, err), logTag)
 	} else {
 		elevenlabsTTSConfig.Stability = float32(stability)
 	}
 
-	if style, err := rte.GetPropertyFloat64(propertyStyle); err != nil {
+	if style, err := ten.GetPropertyFloat64(propertyStyle); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStyle, err), logTag)
 	} else {
 		elevenlabsTTSConfig.Style = float32(style)
 	}
 
-	if voiceId, err := rte.GetPropertyString(propertyVoiceId); err != nil {
+	if voiceId, err := ten.GetPropertyString(propertyVoiceId); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err), logTag)
 	} else {
 		if len(voiceId) > 0 {
@@ -231,7 +231,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 					continue
 				}
 
-				pcm.send(rte, buf)
+				pcm.send(ten, buf)
 				// clear buf
 				buf = pcm.newBuf()
 				pcmFrameRead = 0
@@ -246,7 +246,7 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 			}
 
 			if pcmFrameRead > 0 {
-				pcm.send(rte, buf)
+				pcm.send(ten, buf)
 				sentFrames++
 				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead), logTag)
 			}
@@ -257,23 +257,23 @@ func (e *elevenlabsTTSExtension) OnStart(rte rte.RteEnv) {
 		}
 	}()
 
-	rte.OnStartDone()
+	ten.OnStartDone()
 }
 
-// OnCmd receives cmd from rte graph.
+// OnCmd receives cmd from ten graph.
 // current supported cmd:
 //   - name: flush
 //     example:
 //     {"name": "flush"}
 func (e *elevenlabsTTSExtension) OnCmd(
-	rteEnv rte.RteEnv,
-	cmd rte.Cmd,
+	tenEnv ten.TenEnv,
+	cmd ten.Cmd,
 ) {
 	cmdName, err := cmd.GetName()
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
-		cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
-		rteEnv.ReturnResult(cmdResult, cmd)
+		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
+		tenEnv.ReturnResult(cmdResult, cmd)
 		return
 	}
 
@@ -284,36 +284,36 @@ func (e *elevenlabsTTSExtension) OnCmd(
 		outdateTs.Store(time.Now().UnixMicro())
 
 		// send out
-		outCmd, err := rte.NewCmd(cmdOutFlush)
+		outCmd, err := ten.NewCmd(cmdOutFlush)
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
-			rteEnv.ReturnResult(cmdResult, cmd)
+			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
+			tenEnv.ReturnResult(cmdResult, cmd)
 			return
 		}
 
-		if err := rteEnv.SendCmd(outCmd, nil); err != nil {
+		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
-			cmdResult, _ := rte.NewCmdResult(rte.StatusCodeError)
-			rteEnv.ReturnResult(cmdResult, cmd)
+			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
+			tenEnv.ReturnResult(cmdResult, cmd)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
 		}
 	}
 
-	cmdResult, _ := rte.NewCmdResult(rte.StatusCodeOk)
-	rteEnv.ReturnResult(cmdResult, cmd)
+	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
+	tenEnv.ReturnResult(cmdResult, cmd)
 }
 
-// OnData receives data from rte graph.
+// OnData receives data from ten graph.
 // current supported data:
 //   - name: text_data
 //     example:
 //     {name: text_data, properties: {text: "hello"}
 func (e *elevenlabsTTSExtension) OnData(
-	rteEnv rte.RteEnv,
-	data rte.Data,
+	tenEnv ten.TenEnv,
+	data ten.Data,
 ) {
 	text, err := data.GetPropertyString(dataInTextDataPropertyText)
 	if err != nil {
@@ -337,8 +337,8 @@ func init() {
 	slog.Info("elevenlabs_tts extension init", logTag)
 
 	// Register addon
-	rte.RegisterAddonAsExtension(
+	ten.RegisterAddonAsExtension(
 		"elevenlabs_tts",
-		rte.NewDefaultExtensionAddon(newElevenlabsTTSExtension),
+		ten.NewDefaultExtensionAddon(newElevenlabsTTSExtension),
 	)
 }

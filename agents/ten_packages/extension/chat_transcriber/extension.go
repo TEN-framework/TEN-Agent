@@ -13,7 +13,8 @@ import (
 	"log/slog"
 	"time"
 
-	"agora.io/rte/rte"
+	"ten_framework/ten"
+
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,25 +30,25 @@ var (
 )
 
 type chatTranscriberExtension struct {
-	rte.DefaultExtension
+	ten.DefaultExtension
 
 	cachedTextMap map[uint32]string // record the cached text data for each stream id
 }
 
-func newExtension(name string) rte.Extension {
+func newExtension(name string) ten.Extension {
 	return &chatTranscriberExtension{
 		cachedTextMap: make(map[uint32]string),
 	}
 }
 
-// OnData receives data from rte graph.
-// current supported data:
+// OnData receives data from ten graph.
+// current suppotend data:
 //   - name: text_data
 //     example:
 //     {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
 func (p *chatTranscriberExtension) OnData(
-	rteEnv rte.RteEnv,
-	data rte.Data,
+	tenEnv ten.TenEnv,
+	data ten.Data,
 ) {
 	// Get the text data from data.
 	text, err := data.GetPropertyString(textDataTextField)
@@ -126,22 +127,22 @@ func (p *chatTranscriberExtension) OnData(
 	}
 
 	// convert the origin text data to the protobuf data and send it to the graph.
-	rteData, err := rte.NewData("data")
-	rteData.SetPropertyBytes("data", pbData)
+	tenData, err := ten.NewData("data")
+	tenData.SetPropertyBytes("data", pbData)
 	if err != nil {
 		slog.Warn(fmt.Sprintf("OnData NewData error: %v", err), logTag)
 		return
 	}
 
-	rteEnv.SendData(rteData)
+	tenEnv.SendData(tenData)
 }
 
 func init() {
 	slog.Info("chat_transcriber extension init", logTag)
 
 	// Register addon
-	rte.RegisterAddonAsExtension(
+	ten.RegisterAddonAsExtension(
 		"chat_transcriber",
-		rte.NewDefaultExtensionAddon(newExtension),
+		ten.NewDefaultExtensionAddon(newExtension),
 	)
 }

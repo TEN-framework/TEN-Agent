@@ -1,13 +1,13 @@
 module openai_chatgpt
 
-go 1.21
+go 1.20
 
-replace agora.io/rte => ../../../interface
+replace ten_framework => ../../system/ten_runtime_go/interface
 
 require (
-	agora.io/rte v0.0.0-00010101000000-000000000000
 	github.com/sashabaranov/go-openai v1.24.1
 	github.com/stretchr/testify v1.9.0
+	ten_framework v0.0.0-00010101000000-000000000000
 )
 
 require (

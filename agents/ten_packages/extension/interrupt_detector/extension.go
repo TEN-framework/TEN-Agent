@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"agora.io/rte/rte"
+	"ten_framework/ten"
 )
 
 const (
@@ -29,21 +29,21 @@ var (
 )
 
 type interruptDetectorExtension struct {
-	rte.DefaultExtension
+	ten.DefaultExtension
 }
 
-func newExtension(name string) rte.Extension {
+func newExtension(name string) ten.Extension {
 	return &interruptDetectorExtension{}
 }
 
-// OnData receives data from rte graph.
+// OnData receives data from ten graph.
 // current supported data:
 //   - name: text_data
 //     example:
 //     {name: text_data, properties: {text: "hello", is_final: false}
 func (p *interruptDetectorExtension) OnData(
-	rteEnv rte.RteEnv,
-	data rte.Data,
+	tenEnv ten.TenEnv,
+	data ten.Data,
 ) {
 	text, err := data.GetPropertyString(textDataTextField)
 	if err != nil {
@@ -60,8 +60,8 @@ func (p *interruptDetectorExtension) OnData(
 	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
 
 	if final || len(text) >= 2 {
-		flushCmd, _ := rte.NewCmd(cmdNameFlush)
-		rteEnv.SendCmd(flushCmd, nil)
+		flushCmd, _ := ten.NewCmd(cmdNameFlush)
+		tenEnv.SendCmd(flushCmd, nil)
 
 		slog.Info(fmt.Sprintf("sent cmd: %s", cmdNameFlush), logTag)
 	}
@@ -71,8 +71,8 @@ func init() {
 	slog.Info("interrupt_detector extension init", logTag)
 
 	// Register addon
-	rte.RegisterAddonAsExtension(
+	ten.RegisterAddonAsExtension(
 		"interrupt_detector",
-		rte.NewDefaultExtensionAddon(newExtension),
+		ten.NewDefaultExtensionAddon(newExtension),
 	)
 }
