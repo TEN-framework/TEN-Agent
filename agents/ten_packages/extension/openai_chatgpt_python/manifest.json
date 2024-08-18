@@ -41,6 +41,9 @@
       "greeting": {
         "type": "string"
       },
+      "checking_vision_text_items": {
+        "type": "string"
+      },
       "proxy_url": {
         "type": "string"
       },

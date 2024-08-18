@@ -29,7 +29,7 @@ const Header = () => {
     <InfoPopover>
       <span className={styles.content}>
         <InfoIcon></InfoIcon>
-        <span className={styles.text}>Channel Name: {channel}</span>
+        <span className={styles.text}>{channel}</span>
       </span>
     </InfoPopover>
     <span onClick={onClickGithub} className={styles.githubWrapper}>
