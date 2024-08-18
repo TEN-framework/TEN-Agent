@@ -10,6 +10,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
 	"ten_framework/ten"
 )
@@ -29,8 +30,11 @@ func (p *defaultApp) OnInit(
 ) {
 	// Using the default property.json if not specified.
 	if len(p.cfg.PropertyFilePath) > 0 {
-		// TODO: fix init property
-		// 	property.Set(ten.MetadataTypeJSONFileName, p.cfg.PropertyFilePath)
+		if b, err := os.ReadFile(p.cfg.PropertyFilePath); err != nil {
+			log.Fatalf("Failed to read property file %s, err %v\n", p.cfg.PropertyFilePath, err)
+		}else{
+			tenEnv.InitPropertyFromJSONBytes(b)
+		}
 	}
 
 	tenEnv.OnInitDone()
