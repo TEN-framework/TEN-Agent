@@ -61,8 +61,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.5.0-rc1",
-      "hash": "36ddf94cd5b2db11ec399ccb5522061fce8a1323570aac9bb9ec0ef3eb7a9368",
+      "version": "0.5.0-rc2",
+      "hash": "02bd3a75f38a0d3f4a768c6b252fac66e348b8771f30e8f9108182286dcc28a7",
       "dependencies": [
         {
           "type": "system",
@@ -144,7 +144,8 @@
       "type": "system",
       "name": "nlohmann_json",
       "version": "3.11.2",
-      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19"
+      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
+      "supports": []
     },
     {
       "type": "system",
