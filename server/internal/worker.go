@@ -43,7 +43,7 @@ type WorkerUpdateReqTen struct {
 
 const (
 	workerCleanSleepSeconds = 5
-	workerExec              = "/app/agents/bin/worker"
+	workerExec              = "/app/agents/bin/start"
 	workerHttpServerUrl     = "http://127.0.0.1"
 )
 
