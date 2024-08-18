@@ -1,9 +1,9 @@
 *.log
-addon/extension_group/
-addon/extension/agora_rtc
-addon/extension/py_init_extension_cpp
-addon/system
-.rte
+ten_packages/extension_group/
+ten_packages/extension/agora_rtc
+ten_packages/extension/py_init_extension_cpp
+ten_packages/system
+.ten
 agoradns.dat
 agorareport.dat
 bin/
