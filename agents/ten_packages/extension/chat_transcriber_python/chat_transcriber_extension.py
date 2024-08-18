@@ -14,7 +14,6 @@ from ten import (
     Data,
     StatusCode,
     CmdResult,
-    MetadataInfo,
 )
 import time
 from .pb import chat_text_pb2 as pb
