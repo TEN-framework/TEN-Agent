@@ -368,8 +368,17 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 
 	// Get graph name
 	graphName := req.GraphName
+	language := req.AgoraAsrLanguage
+	if graphName == "camera.va.openai.azure" {
+		if language == languageChinese {
+			graphName = "camera.va.openai.azure.cn"
+		} else {
+			graphName = "camera.va.openai.azure.en"
+		}
+	}
 	if graphName == "" {
-		graphName = graphNameMap[req.AgoraAsrLanguage]
+		slog.Error("graph_name is mandatory", "requestId", req.RequestId, logTag)
+		return
 	}
 
 	// Generate token

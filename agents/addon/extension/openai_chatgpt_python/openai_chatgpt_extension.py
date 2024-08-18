@@ -5,6 +5,8 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
+import json
+import random
 import traceback
 from rte.image_frame import ImageFrame
 from .openai_chatgpt import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -48,6 +50,7 @@ PROPERTY_GREETING = "greeting"  # Optional
 PROPERTY_ENABLE_TOOLS = "enable_tools"  # Optional
 PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
+PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
 
 
 def get_current_time():
@@ -144,6 +147,7 @@ class OpenAIChatGPTExtension(Extension):
     image_data = None
     image_width = 0
     image_height = 0
+    checking_vision_text_items = []
 
     available_tools = [{
         "type": "function",
@@ -250,6 +254,14 @@ class OpenAIChatGPTExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_MAX_MEMORY_LENGTH} failed, err: {err}"
+            )
+
+        try:
+            checking_vision_text_items_str = rte.get_property_string(PROPERTY_CHECKING_VISION_TEXT_ITEMS)
+            self.checking_vision_text_items = json.loads(checking_vision_text_items_str)
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_CHECKING_VISION_TEXT_ITEMS} failed, err: {err}"
             )
 
         # Create openaiChatGPT instance
@@ -392,9 +404,9 @@ class OpenAIChatGPTExtension(Extension):
                     for tool_call in chat_completion.choices[0].delta.tool_calls:
                         logger.info(f"tool_call: {tool_call}")
                         if tool_call.function.name == "get_vision_image":
-                            if full_content is "":
+                            if full_content == "" and len(self.checking_vision_text_items) > 0:
                                 # if no text content, send a message to ask user to wait
-                                self.send_data(rte, "Let me take a look...", True, input_text)
+                                self.send_data(rte, random.choice(self.checking_vision_text_items), True, input_text)
                             # for get_vision_image, re-run the completion with vision, memory should not be affected
                             self.chat_completion_with_vision(rte, start_time, input_text, memory)
                             return
