@@ -1,0 +1,68 @@
+{
+    "type": "extension",
+    "name": "elevenlabs_tts",
+    "version": "0.4.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_go",
+            "version": "0.1"
+        }
+    ],
+    "api": {
+        "property": {
+            "api_key": {
+                "type": "string"
+            },
+            "model_id": {
+                "type": "string"
+            },
+            "request_timeout_seconds": {
+                "type": "int64"
+            },
+            "similarity_boost": {
+                "type": "float64"
+            },
+            "speaker_boost": {
+                "type": "bool"
+            },
+            "stability": {
+                "type": "float64"
+            },
+            "style": {
+                "type": "float64"
+            },
+            "optimize_streaming_latency": {
+                "type": "int64"
+            },
+            "voice_id": {
+                "type": "string"
+            }
+        },
+        "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "flush"
+            }
+        ],
+        "cmd_out": [
+            {
+                "name": "flush"
+            }
+        ],
+        "audio_frame_out": [
+            {
+                "name": "pcm_frame"
+            }
+        ]
+    }
+}

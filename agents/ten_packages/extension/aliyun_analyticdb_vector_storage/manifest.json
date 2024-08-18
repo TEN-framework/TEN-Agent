@@ -1,0 +1,121 @@
+{
+  "type": "extension",
+  "name": "aliyun_analyticdb_vector_storage",
+  "version": "0.4.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.1"
+    }
+  ],
+  "api": {
+    "property": {
+      "alibaba_cloud_access_key_id": {
+        "type": "string"
+      },
+      "alibaba_cloud_access_key_secret": {
+        "type": "string"
+      },
+      "adbpg_instance_id": {
+        "type": "string"
+      },
+      "adbpg_instance_region": {
+        "type": "string"
+      },
+      "adbpg_account": {
+        "type": "string"
+      },
+      "adbpg_account_password": {
+        "type": "string"
+      },
+      "adbpg_namespace": {
+        "type": "string"
+      },
+      "adbpg_namespace_password": {
+        "type": "string"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "upsert_vector",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "query_vector",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "int64"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "float64"
+            }
+          }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ],
+        "result": {
+          "property": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "create_collection",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          },
+          "dimension": {
+            "type": "int32"
+          }
+        },
+        "required": [
+          "collection_name"
+        ]
+      },
+      {
+        "name": "delete_collection",
+        "property": {
+          "collection_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection_name"
+        ]
+      }
+    ]
+  }
+}
