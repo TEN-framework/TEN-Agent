@@ -40,7 +40,7 @@ docker-build-server:
 
 run-gd-server:
 	@echo ">> run graph designer server"
-	cd agents && arpm dev-server
+	cd agents && tman dev-server
 	@echo ">> done"
 
 run-server:
