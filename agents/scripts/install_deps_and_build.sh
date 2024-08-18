@@ -6,40 +6,39 @@ OS="linux"
 # x64, arm64
 CPU="x64"
 
-build_cxx_addon() {
+build_cxx_extensions() {
   local app_dir=$1
 
   if [[ ! -f $app_dir/scripts/BUILD.gn ]]; then
-    echo "FATAL: the scripts/BUILD.gn is required to build cxx addons."
+    echo "FATAL: the scripts/BUILD.gn is required to build cxx extensions."
     exit 1
   fi
 
   cp $app_dir/scripts/BUILD.gn $app_dir
 
-  ag gen $OS $CPU release -- is_clang=false
-  ag build $OS $CPU release
+  tgn gen $OS $CPU release -- is_clang=false
+  tgn build $OS $CPU release
 
   local ret=$?
 
   cd $app_dir
 
   if [[ $ret -ne 0 ]]; then
-    echo "FATAL: failed to build cxx addons, see logs for detail."
+    echo "FATAL: failed to build cxx extensions, see logs for detail."
     exit 1
   fi
 
-  # Copy the output of addons to the addon/extension/xx/lib.
-
+  # Copy the output of ten_packages to the ten_packages/extension/xx/lib.
   local out="out/$OS/$CPU"
-  for extension in $out/addon/extension/*; do
+  for extension in $out/ten_packages/extension/*; do
     local extension_name=$(basename $extension)
     if [[ ! -d $extension/lib ]]; then
       echo "No output for extension $extension_name."
       exit 1
     fi
 
-    mkdir -p $app_dir/addon/extension/$extension_name/lib
-    cp -r $extension/lib/* $app_dir/addon/extension/$extension_name/lib
+    mkdir -p $app_dir/ten_packages/extension/$extension_name/lib
+    cp -r $extension/lib/* $app_dir/ten_packages/extension/$extension_name/lib
   done
 }
 
@@ -50,9 +49,9 @@ install_python_requirements() {
     pip install -r requirements.txt
   fi
 
-  # traverse the addon/extension directory to find the requirements.txt
-  if [[ -d "addon/extension" ]]; then
-    for extension in addon/extension/*; do
+  # traverse the ten_packages/extension directory to find the requirements.txt
+  if [[ -d "ten_packages/extension" ]]; then
+    for extension in ten_packages/extension/*; do
       if [[ -f "$extension/requirements.txt" ]]; then
         pip install -r $extension/requirements.txt
       fi
@@ -64,7 +63,7 @@ build_go_app() {
   local app_dir=$1
   cd $app_dir
 
-  go run scripts/build/main.go --verbose
+  go run ten_packages/system/ten_runtime_go/tools/build/main.go --verbose
   if [[ $? -ne 0 ]]; then
     echo "FATAL: failed to build go app, see logs for detail."
     exit 1
@@ -110,11 +109,11 @@ main() {
 
   # Install all dependencies specified in manifest.json.
   echo "install dependencies..."
-  arpm install
+  tman install
 
-  # build addons and app
-  echo "build_cxx_addon..."
-  build_cxx_addon $APP_HOME
+  # build extensions and app
+  echo "build_cxx_extensions..."
+  build_cxx_extensions $APP_HOME
   echo "build_go_app..."
   build_go_app $APP_HOME
   echo "install_python_requirements..."
