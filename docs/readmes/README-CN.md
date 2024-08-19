@@ -62,15 +62,15 @@
 
 </div>
 
-#### 设置国内代理
 
 > [!Note]
+> 设置国内代理
 > 注意， 如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
 
 
 ```bash
-# 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开，
-# export 的有效期为一个 session。
+# 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
+# export 的有效期为一个 session
 export https_proxy=http://127.0.0.1:（端口例如 7890） 
 export http_proxy=http://127.0.0.1:（端口例如 7890） 
 export all_proxy=socks5://127.0.0.1:（端口例如 7890）
@@ -79,7 +79,7 @@ export all_proxy=socks5://127.0.0.1:（端口例如 7890）
 export GOPROXY=https://goproxy.cn,direct
 
 # pip 代理设置, 此设置需要先安装 pip
- pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 下一步
@@ -91,7 +91,7 @@ cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. 绑定 extension 的 keys 
-打开 `.env` 文件，绑定对应的 `keys`，这里也可以通过配置不同的 `keys` 选用不用的 extensions：
+打开 `.env` 文件，绑定对应的 `keys`，这里也可以通过配置不同的 `keys` 选用不用的 `extensions`：
 ```
 # Agora app ID
 AGORA_APP_ID=
@@ -112,7 +112,7 @@ OPENAI_API_KEY=
 ```
 
 #### 3. 创建 Docker 容器
-在根目录下，拉取 Docker 镜像，然后创建 Docker 容器。
+在根目录下，拉取 Docker 镜像，然后创建 Docker 容器:
 ```bash
 docker compose up
 ```
@@ -137,7 +137,7 @@ make run-sever
 
 #### 验证 Astra voice agent 
 
-现在可以打开浏览器 http://localhost:3000 体验 Astra voice agent。
+现在可以打开浏览器 http://localhost:3000 体验 Astra voice agent
 
 #### 验证 Graph designer
 
