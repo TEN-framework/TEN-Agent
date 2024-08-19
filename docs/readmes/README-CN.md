@@ -21,7 +21,7 @@
 
 <div align="center">
 
-[文档](https://astra-9.gitbook.io/ten-platform)
+[文档](https://doc.theten.ai)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [快速开始](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
