@@ -1,0 +1,2 @@
+protobuf~=4.25.4
+google==3.0.0
