@@ -75,6 +75,11 @@ export https_proxy=http://127.0.0.1:（端口例如 7890）
 export http_proxy=http://127.0.0.1:（端口例如 7890） 
 export all_proxy=socks5://127.0.0.1:（端口例如 7890）
 
+# Docker
+export https_proxy=http://host.docker.internal:（端口例如 7890）
+export http_proxy=http://host.docker.internal:（端口例如 7890）
+export all_proxy=http://host.docker.internal:（端口例如 7890）
+
 # GO 代理设置
 export GOPROXY=https://goproxy.cn,direct
 
