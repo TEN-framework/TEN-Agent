@@ -1,0 +1,32 @@
+{
+  "type": "extension",
+  "name": "interrupt_detector",
+  "version": "0.4.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.1"
+    }
+  ],
+  "api": {
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  }
+}

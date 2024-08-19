@@ -33,17 +33,17 @@ type WorkerUpdateReq struct {
 	Collection  string              `form:"collection,omitempty" json:"collection"`
 	FileName    string              `form:"filename,omitempty" json:"filename"`
 	Path        string              `form:"path,omitempty" json:"path,omitempty"`
-	Rte         *WorkerUpdateReqRte `form:"rte,omitempty" json:"rte,omitempty"`
+	Ten         *WorkerUpdateReqTen `form:"_ten,omitempty" json:"_ten,omitempty"`
 }
 
-type WorkerUpdateReqRte struct {
+type WorkerUpdateReqTen struct {
 	Name string `form:"name,omitempty" json:"name,omitempty"`
 	Type string `form:"type,omitempty" json:"type,omitempty"`
 }
 
 const (
 	workerCleanSleepSeconds = 5
-	workerExec              = "/app/agents/bin/worker"
+	workerExec              = "/app/agents/bin/start"
 	workerHttpServerUrl     = "http://127.0.0.1"
 )
 
@@ -86,22 +86,22 @@ func (w *Worker) start(req *StartReq) (err error) {
 	slog.Info("Worker get pid", "requestId", req.RequestId, "shell", shell, logTag)
 
 	var pid int
-    for i := 0; i < 3; i++ {  // retry for 3 times
-        output, err := exec.Command("sh", "-c", shell).CombinedOutput()
-        if err == nil {
-            pid, err = strconv.Atoi(strings.TrimSpace(string(output)))
-            if err == nil && pid > 0 {
-                break  // if pid is successfully obtained, exit loop
-            }
-        }
-        slog.Warn("Worker get pid failed, retrying...", "attempt", i+1, "requestId", req.RequestId, logTag)
-        time.Sleep(500 * time.Millisecond)  // wait for 500ms
-    }
+	for i := 0; i < 3; i++ { // retry for 3 times
+		output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+		if err == nil {
+			pid, err = strconv.Atoi(strings.TrimSpace(string(output)))
+			if err == nil && pid > 0 {
+				break // if pid is successfully obtained, exit loop
+			}
+		}
+		slog.Warn("Worker get pid failed, retrying...", "attempt", i+1, "requestId", req.RequestId, logTag)
+		time.Sleep(500 * time.Millisecond) // wait for 500ms
+	}
 
-    if pid <= 0 {
-        slog.Error("Worker failed to obtain valid PID after 3 attempts", "requestId", req.RequestId, logTag)
-        return fmt.Errorf("failed to obtain valid PID")
-    }
+	if pid <= 0 {
+		slog.Error("Worker failed to obtain valid PID after 3 attempts", "requestId", req.RequestId, logTag)
+		return fmt.Errorf("failed to obtain valid PID")
+	}
 
 	w.Pid = pid
 	return

@@ -1,0 +1,49 @@
+#
+#
+# Agora Real Time Engagement
+# Created by Wei Hu in 2022-11.
+# Copyright (c) 2024 Agora IO. All rights reserved.
+#
+#
+import("//.gnfiles/build/feature/base_options.gni")
+import("//.gnfiles/build/feature/ten_package.gni")
+
+ten_package("azure_tts") {
+  package_kind = "extension"
+  enable_build = true
+
+  resources = [
+    "manifest.json",
+    "property.json",
+  ]
+  
+  sources = [ 
+    "src/main.cc",
+    "src/tts.cc"
+  ]
+
+  include_dirs = [
+    "include",
+    "//ten_packages/system/ten_runtime/include",
+    "//ten_packages/system/azure_speech_sdk/include/microsoft/c_api",
+    "//ten_packages/system/azure_speech_sdk/include/microsoft/cxx_api",
+  ]
+
+  lib_dirs = [ 
+    "lib",
+    "//ten_packages/system/ten_runtime/lib",
+    "//ten_packages/system/azure_speech_sdk/lib"
+  ]
+
+  libs = [
+    "ten_runtime",
+    "ten_utils",
+    "Microsoft.CognitiveServices.Speech.core",
+    "Microsoft.CognitiveServices.Speech.extension.audio.sys",
+    "Microsoft.CognitiveServices.Speech.extension.codec",
+    "Microsoft.CognitiveServices.Speech.extension.kws.ort",
+    "Microsoft.CognitiveServices.Speech.extension.kws",
+    "Microsoft.CognitiveServices.Speech.extension.lu",
+    "Microsoft.CognitiveServices.Speech.extension.mas"
+  ] 
+}

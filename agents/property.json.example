@@ -1,5 +1,5 @@
 {
-    "rte": {
+    "_ten": {
         "predefined_graphs": [
             {
                 "name": "va.openai.azure",
@@ -165,7 +165,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -390,7 +390,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "elevenlabs_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -569,7 +569,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -774,7 +774,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "cosy_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1012,7 +1012,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "cosy_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1180,7 +1180,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "polly_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1321,7 +1321,7 @@
                     {
                         "extension_group": "default",
                         "extension": "agora_rtc",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1410,7 +1410,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "polly_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1564,9 +1564,9 @@
                                 ]
                             }
                         ],
-                        "image_frame": [
+                        "video_frame": [
                             {
-                                "name": "image_frame",
+                                "name": "video_frame",
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",
@@ -1629,7 +1629,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -1798,9 +1798,9 @@
                                 ]
                             }
                         ],
-                        "image_frame": [
+                        "video_frame": [
                             {
-                                "name": "image_frame",
+                                "name": "video_frame",
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",
@@ -1863,7 +1863,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -2082,7 +2082,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [
@@ -2426,7 +2426,7 @@
                     {
                         "extension_group": "tts",
                         "extension": "azure_tts",
-                        "pcm_frame": [
+                        "audio_frame": [
                             {
                                 "name": "pcm_frame",
                                 "dest": [

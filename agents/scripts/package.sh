@@ -10,58 +10,52 @@ cd $APP_HOME
 rm -rf .release
 mkdir .release
 
-copy_extension() {
-    local extension=$1
-    mkdir -p .release/addon/extension/$extension
+copy_package() {
+    local package_type=$1
+    local package_name=$2
+    mkdir -p .release/ten_packages/${package_type}/${package_name}
 
-    if [[ -d addon/extension/$extension/lib ]]; then
-        cp -r addon/extension/$extension/lib .release/addon/extension/$extension/
+    if [[ -d ten_packages/${package_type}/${package_name}/lib ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/lib .release/ten_packages/${package_type}/${package_name}/
     fi
 
-    if [[ -f addon/extension/$extension/manifest.json ]]; then
-        cp addon/extension/$extension/manifest.json .release/addon/extension/$extension/
-
-        # package .py for python extensions
-        EXTENSION_LANGUAGE=$(jq -r '.language' addon/extension/$extension/manifest.json)
-        if [[ $EXTENSION_LANGUAGE == "python" ]]; then
-            # TODO: package 'publish' contents only
-            cp addon/extension/$extension/*.py .release/addon/extension/$extension/
-            if [[ -f addon/extension/$extension/requirements.txt ]]; then
-                cp addon/extension/$extension/requirements.txt .release/addon/extension/$extension/
-            fi
-
-            # TODO: copy specific contents
-            if [[ -d addon/extension/$extension/pb ]]; then
-                cp -r addon/extension/$extension/pb .release/addon/extension/$extension/
-            fi
-        fi
+    if [[ -d ten_packages/${package_type}/${package_name}/interface ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/interface .release/ten_packages/${package_type}/${package_name}/
     fi
 
-    if [[ -f addon/extension/$extension/property.json ]]; then
-        cp addon/extension/$extension/property.json .release/addon/extension/$extension/
+    if [[ -f ten_packages/${package_type}/${package_name}/manifest.json ]]; then
+        cp ten_packages/${package_type}/${package_name}/manifest.json .release/ten_packages/${package_type}/${package_name}/
+    fi
+
+    if [[ -f ten_packages/${package_type}/${package_name}/property.json ]]; then
+        cp ten_packages/${package_type}/${package_name}/property.json .release/ten_packages/${package_type}/${package_name}/
+    fi
+
+
+    # package .py for python extensions
+    # TODO: package 'publish' contents only
+    cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
+    if [[ -f ten_packages/${package_type}/${package_name}/requirements.txt ]]; then
+        cp ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
+    fi
+
+    # TODO: copy specific contents
+    if [[ -d ten_packages/${package_type}/${package_name}/pb ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/pb .release/ten_packages/${package_type}/${package_name}/
     fi
 }
 
 cp -r bin .release
-cp -r lib .release
 cp manifest.json .release
 cp property.json .release
 
-# python deps
-if [[ -d interface/rte ]]; then
-    mkdir -p .release/interface
-    cp -r interface/rte .release/interface
-fi
-
-# extension group
-mkdir -p .release/addon
-cp -r addon/extension_group .release/addon/
-
-# extensions
-mkdir -p .release/addon/extension
-for extension in addon/extension/*; do
-    extension_name=$(basename $extension)
-    copy_extension $extension_name
+# copy packages
+mkdir -p .release/ten_packages
+for package_type in system extension_group extension ; do
+    for package_path in ten_packages/${package_type}/*; do
+        package_name=$(basename ${package_path})
+        copy_package ${package_type} ${package_name}
+    done
 done
 
 if [[ -f session_control.conf ]]; then

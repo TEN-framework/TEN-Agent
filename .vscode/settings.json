@@ -1,6 +1,7 @@
 {
-    "python.analysis.extraPaths": [
-      "./agents/interface",
-    ],
-    "editor.formatOnSave": true,
-  }
+  "python.analysis.extraPaths": [
+    "./agents/ten_packages/system/ten_runtime_python/interface",
+  ],
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "editor.formatOnSave": true,
+}

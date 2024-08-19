@@ -282,7 +282,7 @@ func (s *HttpServer) handlerVectorDocumentUpdate(c *gin.Context) {
 		ChannelName: req.ChannelName,
 		Collection:  req.Collection,
 		FileName:    req.FileName,
-		Rte: &WorkerUpdateReqRte{
+		Ten: &WorkerUpdateReqTen{
 			Name: "update_querying_collection",
 			Type: "cmd",
 		},
@@ -334,7 +334,7 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 		Collection:  collection,
 		FileName:    fileName,
 		Path:        uploadFile,
-		Rte: &WorkerUpdateReqRte{
+		Ten: &WorkerUpdateReqTen{
 			Name: "file_chunk",
 			Type: "cmd",
 		},
@@ -391,7 +391,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
-	graph := fmt.Sprintf(`rte.predefined_graphs.#(name=="%s")`, graphName)
+	graph := fmt.Sprintf(`_ten.predefined_graphs.#(name=="%s")`, graphName)
 	// Automatically start on launch
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 

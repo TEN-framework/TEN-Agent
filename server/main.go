@@ -78,8 +78,8 @@ func processProperty(propertyJsonFile string) (err error) {
 	}
 
 	propertyJson := string(content)
-	for i := range gjson.Get(propertyJson, "rte.predefined_graphs").Array() {
-		graph := fmt.Sprintf("rte.predefined_graphs.%d", i)
+	for i := range gjson.Get(propertyJson, "_ten.predefined_graphs").Array() {
+		graph := fmt.Sprintf("_ten.predefined_graphs.%d", i)
 		// Shut down all auto-starting Graphs
 		propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), false)
 
