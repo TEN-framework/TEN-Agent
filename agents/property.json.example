@@ -2181,7 +2181,7 @@
                             "max_output_tokens": 512,
                             "model": "gemini-1.5-flash",
                             "prompt": "",
-                            "temperature": 1,
+                            "temperature": 1.0,
                             "top_k": 40,
                             "top_p": 0.95
                         }
