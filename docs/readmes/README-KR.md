@@ -13,10 +13,10 @@
 [![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
 [![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
-<a href="./README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="./docs/readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-<a href="./docs/readmes/README-JP.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-lightgrey"></a>
-<a href="./docs/readmes/README-KR.md"><img alt="한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
+<a href="../../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="../readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="../readmes/README-JP.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-lightgrey"></a>
+<a href="../readmes/README-KR.md"><img alt="한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
 
 [문서](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
