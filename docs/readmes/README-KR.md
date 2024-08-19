@@ -18,59 +18,60 @@
 <a href="./docs/readmes/README-JP.md"><img alt="日本語" src="https://img.shields.io/badge/日本語-lightgrey"></a>
 <a href="./docs/readmes/README-KR.md"><img alt="한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
 
-[Documentation](https://astra-9.gitbook.io/ten-platform)
+[문서](https://astra-9.gitbook.io/ten-platform)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Getting Started](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
+[시작하기](https://astra-9.gitbook.io/ten-platform/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Tutorials](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
+[튜토리얼](https://app.gitbook.com/o/we7IoLK5sA6RQzhItfkW/s/4KgjqM5ChU0dSGjTLZmG/~/changes/6/tutorials/how-to-build-extension-with-go)
 
 </div>
 
 <br>
 <h2>Voice agent: Astra</h2>
 
-[Voice agent: Astra](https://theastra.ai)
+[보이스 에이전트: Astra](https://theastra.ai)
 
-Astra is a voice agent, powered by TEN, demonstrating its ability to create intuitive and seamless conversational interactions.
+Astra는 TEN을 통해 구동되는 보이스 에이전트로, 직관적이고 원활한 대화 상호작용을 만들어내는 능력을 보여줍니다.
 
-[![Showcase Astra](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Astra 쇼케이스](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 <br>
-<h2>How to build voice agent locally
+<h2>로컬에서 보이스 에이전트 구축하는 방법
 
-### Prerequisites
+### 전제 조건
 
-#### Keys
-- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
-- [OpenAI](https://openai.com/index/openai-api/) API key
+#### 키
+- Agora 앱 ID 및 앱 인증서([여기서 방법 읽기](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
+- Azure의 [음성-텍스트](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 및 [텍스트-음성](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API 키
+- [OpenAI](https://openai.com/index/openai-api/) API 키
 
-#### Installation
+#### 설치
   - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
   - [Node.js(LTS) v18](https://nodejs.org/en)
 
-#### Minimum system requirements
-  - CPU >= 2 Core
+#### 최소 시스템 요구 사항
+  - CPU >= 2 코어
   - RAM >= 4 GB
 
-#### Docker setting on Apple Silicon
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
+#### Apple Silicon에서의 Docker 설정
+Apple Silicon을 사용하는 경우 Docker의 "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" 옵션을 선택 해제해야 합니다. 그렇지 않으면 서버가 작동하지 않습니다.
 
-![Docker Setting](https://github.com/rte-design/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Docker 설정](https://github.com/rte-design/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
 
-### Next step
+### 다음 단계
 
-#### 1. Modify config files
-In the root of the project, create these files from the examples. They will be used to store information for Docker Compose later.
+#### 1. 설정 파일 수정
+프로젝트 루트에서 예제 파일로부터 이 파일들을 생성하세요. 나중에 Docker Compose를 위한 정보를 저장하는 데 사용됩니다.
 ```bash
-# Create .env from the example
+# .env 예제로부터 .env 생성
 cp ./.env.example ./.env
 
-# Create property.json from the example
+# property.json 예제로부터 property.json 생성
 cp ./agents/property.json.example ./agents/property.json
 ```
 
-#### 2. Setup API keys
-Open the `.env` file and fill in the keys and regions. This is also where you can choose to use any different extensions:
+#### 2. API 키 설정
+`.env` 파일을 열고 키와 지역을 입력하세요. 다른 확장 기능을 사용하려면 이곳에서 선택할 수 있습니다:
+
 ```
 # Agora App ID and Agora App Certificate
 # required: this variable must be set
@@ -92,15 +93,15 @@ AZURE_TTS_REGION=
 OPENAI_API_KEY=
 ```
 
-#### 3. Start agent development containers
-In the same directory, run the `docker` command to compose containers:
+#### 3. 에이전트 개발 컨테이너 시작
+같은 디렉토리에서 `docker` 명령어를 실행하여 컨테이너를 구성합니다:
 ```bash
 # Execute docker compose up to start the services
 docker compose up
 ```
 
-#### 4. Build agent and start server
-Open up a separate terminal window, build the agent and start the server:
+#### 4. 에이전트 빌드 및 서버 시작
+별도의 터미널 창을 열고, 에이전트를 빌드하고 서버를 시작합니다:
 ```bash
 # Enter container to build agent
 docker exec -it astra_agents_dev bash
@@ -110,31 +111,33 @@ make build
 make run-server
 ```
 
-### Finish and verify 🎉
+### 완료 및 검증 🎉
 
-#### Astra voice agent
-Open up localhost:3000 in browser to test Astra voice agent.
+#### Astra 음성 에이전트
+브라우저에서 localhost:3000을 열어 Astra 음성 에이전트를 테스트하세요.
 
-#### Graph designer
+#### 그래프 디자이너
 
-Open up another tab go to localhost:3001, and use graph designer to edit the flow and properties of any extensions.
+다른 탭을 열어 localhost:3001로 이동하고, 그래프 디자이너를 사용하여 확장 기능의 흐름과 속성을 편집하세요.
+
 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>TEN Platform</h2>
+<h2>TEN 플랫폼</h2>
 
-Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://astra-9.gitbook.io/ten-platform).
-
-<br>
-<h2>Stay Tuned</h2>
-
-Before we dive further, be sure to star our repository and get instant notifications for all new releases!
-
-![TEN star us gif](https://github.com/rte-design/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+이제 첫 번째 AI 에이전트를 만들었으니, 여기서 창의력이 멈추지 않습니다. 더 놀라운 에이전트를 개발하려면 TEN 서비스가 내부적으로 어떻게 작동하는지에 대한 고급 이해가 필요합니다. [TEN 플랫폼 문서](https://astra-9.gitbook.io/ten-platform)를 참조하십시오.
 
 <br>
-<h2>Join Community</h2>
+<h2>연락을 유지하세요</h2>
+
+더 깊이 들어가기 전에, 꼭 우리 저장소에 별표를 표시하고 모든 새 릴리스에 대한 즉각적인 알림을 받으세요!
+
+![TEN 별표 표시 gif](https://github.com/rte-design/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+
+<br>
+<h2>커뮤니티 가입</h2>
+
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [GitHub Discussion](https://github.com/rte-design/astra.ai/discussions): Perfect for providing feedback and asking questions.
@@ -142,16 +145,17 @@ Before we dive further, be sure to star our repository and get instant notificat
 - [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=ten_platform): Great for sharing your agents and interacting with the community.
 
  <br>
- <h2>Code Contributors</h2>
+ <h2>코드 기여자</h2>
 
 [![TEN](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
 
 <br>
-<h2>Contribution Guidelines</h2>
+<h2>기여 가이드라인</h2>
 
-Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
+기여는 환영합니다! 먼저 [기여 가이드라인](CONTRIBUTING.md)을 읽어주세요.
 
 <br>
-<h2>License</h2>
+<h2>라이선스</h2>
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+이 프로젝트는 Apache 2.0 라이선스에 따라 라이선스가 부여됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하십시오.
+
