@@ -40,7 +40,6 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     request_id: genUUID(),
     agora_asr_language: language,
     channel_name: channel,
-    openai_proxy_url: "",
     remote_stream_id: userId,
     voice_type: voiceType,
     graph_name: graphName,
@@ -109,7 +108,7 @@ export const apiUpdateDocument = async (options: { channel: string, collection: 
 }
 
 
-// ping/pong 
+// ping/pong
 export const apiPing = async (channel: string) => {
   const url = `${REQUEST_URL}/ping`
   const data = {
