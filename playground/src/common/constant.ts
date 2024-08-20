@@ -26,7 +26,7 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   },
   {
     label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
-    value: "camera.va.openai.azure"
+    value: "camera.va.openai.azure.en"
   },
   {
     label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",

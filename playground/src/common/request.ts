@@ -35,7 +35,12 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
   const url = `${REQUEST_URL}/start`
-  const { language, channel, userId, voiceType, graphName } = config
+  let { language, channel, userId, voiceType, graphName } = config
+
+  if (graphName == "camera.va.openai.azure.en" && language == "zh-CN") {
+    graphName = "camera.va.openai.azure.cn"
+  }
+
   const data = {
     request_id: genUUID(),
     agora_asr_language: language,
