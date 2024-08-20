@@ -1960,9 +1960,9 @@
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "max_memory_length": 10,
                             "max_output_tokens": 512,
-                            "model": "gemini-1.0-pro-latest",
+                            "model": "gemini-1.5-flash",
                             "prompt": "",
-                            "temperature": 0.1,
+                            "temperature": 1.0,
                             "top_k": 40,
                             "top_p": 0.95
                         }
