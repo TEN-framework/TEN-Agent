@@ -22,7 +22,6 @@ services:
         restart: always
         ports:
             - "3000:3000"
-
     # use this when you want to run the playground in local development mode
     # astra_playground_dev:
     #     image: node:20-alpine

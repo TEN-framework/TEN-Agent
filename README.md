@@ -63,9 +63,6 @@ In the root of the project, create these files from the examples. They will be u
 ```bash
 # Create .env from the example
 cp ./.env.example ./.env
-
-# Create property.json from the example
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. Setup API keys

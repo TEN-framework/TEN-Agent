@@ -42,7 +42,7 @@
 <h2>如何本地搭建 Astra AI agent</h2>
 
 ### 先决条件
-#### Keys 
+#### Keys
 - Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
 - Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API Keys
 - [OpenAI](https://openai.com/index/openai-api/) API Key
@@ -71,8 +71,8 @@
 ```bash
 # 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
 # export 的有效期为一个 session
-export https_proxy=http://127.0.0.1:（端口例如 7890） 
-export http_proxy=http://127.0.0.1:（端口例如 7890） 
+export https_proxy=http://127.0.0.1:（端口例如 7890）
+export http_proxy=http://127.0.0.1:（端口例如 7890）
 export all_proxy=socks5://127.0.0.1:（端口例如 7890）
 
 # Docker
@@ -89,13 +89,12 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 ### 下一步
 #### 1. 创建配置文件
-克隆项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
+克隆项目后，在根目录下运行下面的命令创建 `.env`:
 ```bash
 cp ./.env.example ./.env
-cp ./agents/property.json.example ./agents/property.json
 ```
 
-#### 2. 绑定 extension 的 keys 
+#### 2. 绑定 extension 的 keys
 打开 `.env` 文件，绑定对应的 `keys`，这里也可以通过配置不同的 `keys` 选用不用的 `extensions`：
 ```
 # Agora app ID
@@ -140,7 +139,7 @@ make run-sever
 
 走到这里就本地构建完成了，简单 5 步，上手体验拉满！
 
-#### 验证 Astra voice agent 
+#### 验证 Astra voice agent
 
 现在可以打开浏览器 http://localhost:3000 体验 Astra voice agent
 

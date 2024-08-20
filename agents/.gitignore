@@ -27,4 +27,3 @@ xdump_config
 .vscode
 *.pyc
 *.pyc.*
-/property.json

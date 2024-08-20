@@ -9,6 +9,7 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"mime/multipart"
@@ -33,10 +34,8 @@ type HttpServerConfig struct {
 	AppId                    string
 	AppCertificate           string
 	LogPath                  string
-	PropertyJsonFile         string
 	Port                     string
-	TTSVendorChinese         string
-	TTSVendorEnglish         string
+	PropertyJson             string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
 }
@@ -358,26 +357,11 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 }
 
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
-	content, err := os.ReadFile(PropertyJsonFile)
-	if err != nil {
-		slog.Error("handlerStart read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
-		return
-	}
-
-	propertyJson := string(content)
-
 	// Get graph name
 	graphName := req.GraphName
-	language := req.AgoraAsrLanguage
-	if graphName == "camera.va.openai.azure" {
-		if language == languageChinese {
-			graphName = "camera.va.openai.azure.cn"
-		} else {
-			graphName = "camera.va.openai.azure.en"
-		}
-	}
 	if graphName == "" {
-		slog.Error("graph_name is mandatory", "requestId", req.RequestId, logTag)
+		err = errors.New("graph name empty")
+		slog.Error("processProperty graph name empty", "err", err, "requestId", req.RequestId, logTag)
 		return
 	}
 
@@ -386,14 +370,14 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	if s.config.AppCertificate != "" {
 		req.Token, err = rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, tokenExpirationInSeconds)
 		if err != nil {
-			slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
+			slog.Error("processProperty generate token failed", "err", err, "requestId", req.RequestId, logTag)
 			return
 		}
 	}
 
 	graph := fmt.Sprintf(`_ten.predefined_graphs.#(name=="%s")`, graphName)
 	// Automatically start on launch
-	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
+	propertyJson, _ := sjson.Set(s.config.PropertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 
 	// Set parameters from the request to property.json
 	for key, props := range startPropMap {

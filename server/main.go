@@ -48,11 +48,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Set graph name map
-	internal.SetGraphNameMap()
-
+	var propertyJson string
 	// Process property.json
-	if err = processProperty(internal.PropertyJsonFile); err != nil {
+	if propertyJson, err = processProperty(internal.PropertyJsonFile); err != nil {
 		slog.Error("process property.json failed", "err", err)
 		os.Exit(1)
 	}
@@ -63,6 +61,7 @@ func main() {
 		AppCertificate:           os.Getenv("AGORA_APP_CERTIFICATE"),
 		LogPath:                  logPath,
 		Port:                     os.Getenv("SERVER_PORT"),
+		PropertyJson:             propertyJson,
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
 	}
@@ -70,14 +69,14 @@ func main() {
 	httpServer.Start()
 }
 
-func processProperty(propertyJsonFile string) (err error) {
+func processProperty(propertyJsonFile string) (propertyJson string, err error) {
 	content, err := os.ReadFile(propertyJsonFile)
 	if err != nil {
 		slog.Error("read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile)
 		return
 	}
 
-	propertyJson := string(content)
+	propertyJson = string(content)
 	for i := range gjson.Get(propertyJson, "_ten.predefined_graphs").Array() {
 		graph := fmt.Sprintf("_ten.predefined_graphs.%d", i)
 		// Shut down all auto-starting Graphs
@@ -93,6 +92,5 @@ func processProperty(propertyJsonFile string) (err error) {
 		}
 	}
 
-	err = os.WriteFile(propertyJsonFile, []byte(propertyJson), 0644)
 	return
 }

@@ -68,9 +68,6 @@ Apple Silicon Mac を使用している場合は、Docker の "Use Rosetta for x
 ```bash
 # .env ファイルの作成
 cp ./.env.example ./.env
-
-# property.json ファイルの作成
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. キーのバインド

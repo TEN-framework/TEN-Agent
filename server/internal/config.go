@@ -2,7 +2,6 @@ package internal
 
 import (
 	"log/slog"
-	"os"
 )
 
 type Prop struct {
@@ -13,19 +12,19 @@ type Prop struct {
 const (
 	// Extension name
 	extensionNameAgoraRTC                      = "agora_rtc"
+	extensionNameAliyunAnalyticdbVectorStorage = "aliyun_analyticdb_vector_storage"
+	extensionNameAliyunTextEmbedding           = "aliyun_text_embedding"
 	extensionNameAzureTTS                      = "azure_tts"
 	extensionNameBedrockLLM                    = "bedrock_llm"
 	extensionNameCosyTTS                       = "cosy_tts"
 	extensionNameElevenlabsTTS                 = "elevenlabs_tts"
 	extensionNameGeminiLLM                     = "gemini_llm"
+	extensionNameHttpServer                    = "http_server"
 	extensionNameLiteLLM                       = "litellm"
 	extensionNameOpenaiChatgpt                 = "openai_chatgpt"
 	extensionNamePollyTTS                      = "polly_tts"
 	extensionNameQwenLLM                       = "qwen_llm"
 	extensionNameTranscribeAsr                 = "transcribe_asr"
-	extensionNameHttpServer                    = "http_server"
-	extensionNameAliyunAnalyticdbVectorStorage = "aliyun_analyticdb_vector_storage"
-	extensionNameAliyunTextEmbedding           = "aliyun_text_embedding"
 
 	// Language
 	languageChinese = "zh-CN"
@@ -138,12 +137,6 @@ var (
 		},
 	}
 
-	// The corresponding graph name based on the language
-	graphNameMap = map[string]string{
-		languageChinese: "va.openai.azure",
-		languageEnglish: "va.openai.azure",
-	}
-
 	// Retrieve parameters from the request and map them to the property.json file
 	startPropMap = map[string][]Prop{
 		"AgoraAsrLanguage": {
@@ -199,13 +192,3 @@ var (
 		},
 	}
 )
-
-func SetGraphNameMap() {
-	if graphNameZH := os.Getenv("GRAPH_NAME_ZH"); graphNameZH != "" {
-		graphNameMap[languageChinese] = graphNameZH
-	}
-
-	if graphNameEN := os.Getenv("GRAPH_NAME_EN"); graphNameEN != "" {
-		graphNameMap[languageEnglish] = graphNameEN
-	}
-}
