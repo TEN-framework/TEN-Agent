@@ -120,71 +120,17 @@ Open up another tab go to http://localhost:3001, and use graph designer to edit 
 
 <br>
 <h2>Feature comparison</h2>
-<table style="width: 100%;">
-  <tr>
-    <th align="center">Features</th>
-    <th align="center">TEN</th>
-    <th align="center">Dify</th>
-    <th align="center">LangChain</th>
-    <th align="center">Flowise</th>
-  </tr>
-  <tr>
-    <td align="center">Opensourced Multimodal Agent</td>
-    <td align="center">✅</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-  </tr>
-  <tr>
-    <td align="center">Extension Store</td>
-    <td align="center">✅</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-  </tr>
-  <tr>
-    <td align="center">Python, Go and C++ for Extensions</td>
-    <td align="center">✅</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-  </tr>
-  <tr>
-    <td align="center">All-in-one Package Manager</td>
-    <td align="center">✅</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-  </tr>
-  <tr>
-    <td align="center">Agora RTC Transportation</td>
-    <td align="center">✅</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-    <td align="center">❌</td>
-  </tr>
-  <tr>
-    <td align="center">RAG</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-  </tr>
-  <tr>
-    <td align="center">Workflow</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-  </tr>
-  <tr>
-    <td align="center">Local Deployment</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-    <td align="center">✅</td>
-  </tr>
-</table>
+
+| Features                        | TEN | Dify | LangChain | Flowise |
+|---------------------------------|-----|------|-----------|---------|
+| Opensourced Multimodal Agent    | ✅   | ❌    | ❌         | ❌       |
+| Extension Store                 | ✅   | ❌    | ❌         | ❌       |
+| Python, Go and C++ for Extensions | ✅   | ❌    | ❌         | ❌       |
+| All-in-one Package Manager      | ✅   | ❌    | ❌         | ❌       |
+| Agora RTC Transportation        | ✅   | ❌    | ❌         | ❌       |
+| RAG                             | ✅   | ✅    | ✅         | ✅       |
+| Workflow                        | ✅   | ✅    | ✅         | ✅       |
+| Local Deployment                | ✅   | ✅    | ✅         | ✅       |
 
 <br>
 <h2>TEN Platform</h2>
