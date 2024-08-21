@@ -10,8 +10,9 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
-	"agora.io/rte/rte"
+	"ten_framework/ten"
 )
 
 type appConfig struct {
@@ -19,25 +20,28 @@ type appConfig struct {
 }
 
 type defaultApp struct {
-	rte.DefaultApp
+	ten.DefaultApp
 
 	cfg *appConfig
 }
 
 func (p *defaultApp) OnInit(
-	rteEnv rte.RteEnv,
-	property rte.MetadataInfo,
+	tenEnv ten.TenEnv,
 ) {
 	// Using the default property.json if not specified.
 	if len(p.cfg.PropertyFilePath) > 0 {
-		property.Set(rte.MetadataTypeJSONFileName, p.cfg.PropertyFilePath)
+		if b, err := os.ReadFile(p.cfg.PropertyFilePath); err != nil {
+			log.Fatalf("Failed to read property file %s, err %v\n", p.cfg.PropertyFilePath, err)
+		}else{
+			tenEnv.InitPropertyFromJSONBytes(b)
+		}
 	}
 
-	rteEnv.OnInitDone(property)
+	tenEnv.OnInitDone()
 }
 
 func startAppBlocking(cfg *appConfig) {
-	appInstance, err := rte.NewApp(&defaultApp{
+	appInstance, err := ten.NewApp(&defaultApp{
 		cfg: cfg,
 	})
 	if err != nil {
@@ -46,9 +50,9 @@ func startAppBlocking(cfg *appConfig) {
 
 	appInstance.Run(true)
 	appInstance.Wait()
-	rte.UnloadAllAddons()
+	ten.UnloadAllAddons()
 
-	rte.EnsureCleanupWhenProcessExit()
+	ten.EnsureCleanupWhenProcessExit()
 }
 
 func setDefaultLog() {
