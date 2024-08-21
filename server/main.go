@@ -29,6 +29,12 @@ func main() {
 		}
 	}
 
+	log2Stdout, err := strconv.ParseBool(os.Getenv("LOG_STDOUT"))
+	if err != nil {
+		slog.Error("environment LOG_STDOUT invalid")
+		log2Stdout = false
+	}
+
 	// Check environment
 	agoraAppId := os.Getenv("AGORA_APP_ID")
 	if len(agoraAppId) != 32 {
@@ -65,6 +71,7 @@ func main() {
 		Port:                     os.Getenv("SERVER_PORT"),
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
+		Log2Stdout:               log2Stdout,
 	}
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()

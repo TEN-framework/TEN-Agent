@@ -33,6 +33,7 @@ type HttpServerConfig struct {
 	AppId                    string
 	AppCertificate           string
 	LogPath                  string
+	Log2Stdout               bool
 	PropertyJsonFile         string
 	Port                     string
 	TTSVendorChinese         string
@@ -161,7 +162,7 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 		return
 	}
 
-	worker := newWorker(req.ChannelName, logFile, propertyJsonFile)
+	worker := newWorker(req.ChannelName, logFile, s.config.Log2Stdout, propertyJsonFile)
 	worker.HttpServerPort = req.WorkerHttpServerPort
 	worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
 	if err := worker.start(&req); err != nil {
