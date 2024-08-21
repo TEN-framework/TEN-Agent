@@ -1,6 +1,7 @@
+![Astra banner image](https://github.com/rte-design/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/ten_platform?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=ten_platform)
+[![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
 ![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
 [![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
@@ -119,28 +120,27 @@ Open up another tab go to http://localhost:3001, and use graph designer to edit 
 ![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>Feature comparison</h2>
-
-<div align="center">
-
-| Features                        | TEN | Dify | LangChain | Flowise |
-|---------------------------------|:---:|:----:|:---------:|:-------:|
-| Opensourced Multimodal Agent    |  ✅  |  ❌   |     ❌     |    ❌    |
-| Extension Store                 |  ✅  |  ❌   |     ❌     |    ❌    |
-| Python, Go and C++ for Extensions |  ✅  |  ❌   |     ❌     |    ❌    |
-| All-in-one Package Manager      |  ✅  |  ❌   |     ❌     |    ❌    |
-| Agora RTC Transportation        |  ✅  |  ❌   |     ❌     |    ❌    |
-| RAG                             |  ✅  |  ✅   |     ✅     |    ✅    |
-| Workflow                        |  ✅  |  ✅   |     ✅     |    ✅    |
-| Local Deployment                |  ✅  |  ✅   |     ✅     |    ✅    |
-
-
-</div>
-
-<br>
 <h2>TEN Platform</h2>
 
 Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://doc.theten.ai).
+
+<br>
+<h2>TEN Feature Comparison</h2>
+
+<div align="center">
+
+| **Features**                             | **TEN** | **Dify** | **LangChain** | **Flowise** |
+|:----------------------------------------:|:-------:|:--------:|:-------------:|:-----------:|
+| **Opensourced Multimodal Agent**         |   ✅    |    ❌    |      ❌       |      ❌     |
+| **Python, Go, and C++ for Extensions**   |   ✅    |    ❌    |      ❌       |      ❌     |
+| **All-in-one Package Manager**           |   ✅    |    ❌    |      ❌       |      ❌     |
+| **RTC Transportation**                   |   ✅    |    ❌    |      ❌       |      ❌     |
+| **Extension Store**                      |   ✅    |    ✅    |      ❌       |      ❌     |
+| **RAG**                                  |   ✅    |    ✅    |      ✅       |      ✅     |
+| **Workflow Builder**                     |   ✅    |    ✅    |      ✅       |      ✅     |
+| **Local Deployment**                     |   ✅    |    ✅    |      ✅       |      ✅     |
+
+</div>
 
 <br>
 <h2>Stay Tuned</h2>
