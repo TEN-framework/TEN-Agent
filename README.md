@@ -73,8 +73,8 @@ Open the `.env` file and fill in the `keys` and `regions`. This is also where yo
 ```bash
 # Agora App ID and Agora App Certificate
 AGORA_APP_ID=
-# Leave empty unless you have enabled the certificate
-AGORA_APP_CERTIFICATE= ""
+# Leave empty unless you have enabled the certificate within the Agora account.
+AGORA_APP_CERTIFICATE=
 
 # Azure STT key and region
 AZURE_STT_KEY=
@@ -121,16 +121,21 @@ Open up another tab go to http://localhost:3001, and use graph designer to edit 
 <br>
 <h2>Feature comparison</h2>
 
+<div align="center">
+
 | Features                        | TEN | Dify | LangChain | Flowise |
-|---------------------------------|-----|------|-----------|---------|
-| Opensourced Multimodal Agent    | ✅   | ❌    | ❌         | ❌       |
-| Extension Store                 | ✅   | ❌    | ❌         | ❌       |
-| Python, Go and C++ for Extensions | ✅   | ❌    | ❌         | ❌       |
-| All-in-one Package Manager      | ✅   | ❌    | ❌         | ❌       |
-| Agora RTC Transportation        | ✅   | ❌    | ❌         | ❌       |
-| RAG                             | ✅   | ✅    | ✅         | ✅       |
-| Workflow                        | ✅   | ✅    | ✅         | ✅       |
-| Local Deployment                | ✅   | ✅    | ✅         | ✅       |
+|---------------------------------|:---:|:----:|:---------:|:-------:|
+| Opensourced Multimodal Agent    |  ✅  |  ❌   |     ❌     |    ❌    |
+| Extension Store                 |  ✅  |  ❌   |     ❌     |    ❌    |
+| Python, Go and C++ for Extensions |  ✅  |  ❌   |     ❌     |    ❌    |
+| All-in-one Package Manager      |  ✅  |  ❌   |     ❌     |    ❌    |
+| Agora RTC Transportation        |  ✅  |  ❌   |     ❌     |    ❌    |
+| RAG                             |  ✅  |  ✅   |     ✅     |    ✅    |
+| Workflow                        |  ✅  |  ✅   |     ✅     |    ✅    |
+| Local Deployment                |  ✅  |  ✅   |     ✅     |    ✅    |
+
+
+</div>
 
 <br>
 <h2>TEN Platform</h2>
