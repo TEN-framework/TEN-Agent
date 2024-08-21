@@ -1,5 +1,6 @@
 {
     "_ten": {
+        "log_level": 3,
         "predefined_graphs": [
             {
                 "name": "va.openai.azure",
