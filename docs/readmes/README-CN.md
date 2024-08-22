@@ -169,7 +169,7 @@ make run-server
 - [WeChat Group](https://github.com/rte-design/ASTRA.ai/discussions/170): 如果喜欢用微信群的社区，欢迎加入。
 - [Github Discussion](https://github.com/rte-design/astra.ai/discussions)：非常适合提供反馈和提问。
 - [GitHub Issues](https://github.com/rte-design/astra.ai/issues)：最适合报告错误和提出新功能。有关更多详细信息，请参阅我们的[贡献指南](./docs/code-of-conduct/contributing.md)。
-- [X（以前的Twitter）](https://twitter.com/intent/follow?screen_name=ten_platform)：非常适合分享您的代理并与社区互动。
+- [X（以前的Twitter）](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)：非常适合分享您的代理并与社区互动。
 
 <br>
  <h2>代码贡献者</h2>
