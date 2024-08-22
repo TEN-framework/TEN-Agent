@@ -137,11 +137,11 @@ func (w *Worker) start(req *StartReq) (err error) {
 
 	// Create PrefixWriter instances with appropriate writers
 	stdoutPrefixWriter := &PrefixWriter{
-		prefix: "0", // Initial prefix, will update after process starts
+		prefix: "-", // Initial prefix, will update after process starts
 		writer: stdoutWriter,
 	}
 	stderrPrefixWriter := &PrefixWriter{
-		prefix: "0", // Initial prefix, will update after process starts
+		prefix: "-", // Initial prefix, will update after process starts
 		writer: stderrWriter,
 	}
 
@@ -161,8 +161,8 @@ func (w *Worker) start(req *StartReq) (err error) {
 	}
 
 	// Update the prefix with the actual PID
-	stdoutPrefixWriter.prefix = fmt.Sprintf("%d", cmd.Process.Pid)
-	stderrPrefixWriter.prefix = fmt.Sprintf("%d", cmd.Process.Pid)
+	stdoutPrefixWriter.prefix = fmt.Sprintf("%s", w.ChannelName)
+	stderrPrefixWriter.prefix = fmt.Sprintf("%s", w.ChannelName)
 	w.Pid = pid
 
 	// Monitor the background process in a separate goroutine
