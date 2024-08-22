@@ -22,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gogf/gf/crypto/gmd5"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
@@ -358,6 +359,18 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
+// stringJoin is a helper function to join strings with a separator
+func stringJoin(elements []string, sep string) string {
+	result := ""
+	for i, elem := range elements {
+		if i > 0 {
+			result += sep
+		}
+		result += elem
+	}
+	return result
+}
+
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
@@ -369,14 +382,6 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 
 	// Get graph name
 	graphName := req.GraphName
-	language := req.AgoraAsrLanguage
-	if graphName == "camera.va.openai.azure" {
-		if language == languageChinese {
-			graphName = "camera.va.openai.azure.cn"
-		} else {
-			graphName = "camera.va.openai.azure.en"
-		}
-	}
 	if graphName == "" {
 		slog.Error("graph_name is mandatory", "requestId", req.RequestId, logTag)
 		return
@@ -393,16 +398,37 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	graph := fmt.Sprintf(`_ten.predefined_graphs.#(name=="%s")`, graphName)
+
+	// Get the array of graphs
+	graphs := gjson.Get(propertyJson, "_ten.predefined_graphs").Array()
+
+	// Create a new array for graphs that match the name
+	var newGraphs []string
+	for _, graph := range graphs {
+		if graph.Get("name").String() == graphName {
+			newGraphs = append(newGraphs, graph.Raw)
+		}
+	}
+
+	// Replace the predefined_graphs array with the filtered array
+	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", stringJoin(newGraphs, ",")))
+
 	// Automatically start on launch
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 
-	// Set parameters from the request to property.json
+	// Set environment variable values to property.json
+	for envKey, envProps := range EnvPropMap {
+		if envVal := os.Getenv(envKey); envVal != "" {
+			for _, envProp := range envProps {
+				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
+			}
+		}
+	}
+
+	// Set start parameters to property.json
 	for key, props := range startPropMap {
 		if val := getFieldValue(req, key); val != "" {
 			for _, prop := range props {
-				if key == "VoiceType" {
-					val = voiceNameMap[req.AgoraAsrLanguage][prop.ExtensionName][req.VoiceType]
-				}
 				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, prop.ExtensionName, prop.Property), val)
 			}
 		}
