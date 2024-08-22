@@ -1,20 +1,20 @@
-![Astra banner image](https://github.com/rte-design/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
 ![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
-[![Discussion posts](https://img.shields.io/github/discussions/rte-design/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/rte-design/astra.ai/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/rte-design/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/rte-design/astra.ai/graphs/commit-activity)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3Arte-design%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/rte-design/ASTRA.ai/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/rte-design/ASTRA.ai/pulls)
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/rte-design/ASTRA.ai/blob/main/LICENSE)
-[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/rte-design/ASTRA.ai/discussions/170)
+[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/astra.ai/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/astra.ai/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ASTRA.ai/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ASTRA.ai/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/TEN-framework/ASTRA.ai/blob/main/LICENSE)
+[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/TEN-framework/ASTRA.ai/discussions/170)
 
 [![Discord](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-[![GitHub watchers](https://img.shields.io/github/watchers/rte-design/astra.ai?style=social&label=Watch)](https://GitHub.com/rte-design/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
-[![GitHub forks](https://img.shields.io/github/forks/rte-design/astra.ai?style=social&label=Fork)](https://GitHub.com/rte-design/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
-[![GitHub stars](https://img.shields.io/github/stars/rte-design/astra.ai?style=social&label=Star)](https://GitHub.com/rte-design/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/astra.ai?style=social&label=Watch)](https://GitHub.com/TEN-framework/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/astra.ai?style=social&label=Fork)](https://GitHub.com/TEN-framework/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/astra.ai?style=social&label=Star)](https://GitHub.com/TEN-framework/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
 
 <a href="../../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
 <a href="../readmes/README-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
@@ -39,7 +39,7 @@
 
 [Astra voice agent](https://theastra.ai) は、TEN を使用して構築された音声エージェントであり、マルチモーダルで低遅延の能力を示しています。
 
-[![Showcase Astra voice agent](https://github.com/rte-design/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra voice agent](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
 
 <br>
 <h2>グラフデザイナーを使用して音声エージェントを構成する方法</h2>
@@ -61,7 +61,7 @@ Apple Silicon Mac を使用している場合は、Docker の "Use Rosetta for x
 
 <div align="center">
 
-![Docker Setting](https://github.com/rte-design/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
 
 </div>
 
@@ -128,28 +128,28 @@ make run-server
 
 別のタブを開いて `localhost:3001` にアクセスし、TEN グラフデザイナー (ベータ版) を体験できます。簡単なドラッグアンドドロップと動的なノード接続で、Astra 音声エージェントを簡単にカスタマイズできます。
 
-![TEN Graph Designer](https://github.com/rte-design/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
 <h2>スターを付ける</h2>
 
 頻繁に更新されるため、最新情報を見逃さないように、リポジトリにスターを付けてください。
 
-![TEN star us gif](https://github.com/rte-design/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
 
 <br>
 <h2>コミュニティに参加する</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ)：アプリケーションを共有し、コミュニティと交流するのに最適です。
-- [WeChat Group](https://github.com/rte-design/ASTRA.ai/discussions/170): WeChat グループのコミュニティが好きな方は、ぜひご参加ください。
-- [Github Discussion](https://github.com/rte-design/astra.ai/discussions)：フィードバックを提供し、質問するのに最適です。
-- [GitHub Issues](https://github.com/rte-design/astra.ai/issues)：バグを報告し、新機能を提案するのに最適です。詳細については、[貢献ガイドライン](./docs/code-of-conduct/contributing.md)をご覧ください。
+- [WeChat Group](https://github.com/TEN-framework/ASTRA.ai/discussions/170): WeChat グループのコミュニティが好きな方は、ぜひご参加ください。
+- [Github Discussion](https://github.com/TEN-framework/astra.ai/discussions)：フィードバックを提供し、質問するのに最適です。
+- [GitHub Issues](https://github.com/TEN-framework/astra.ai/issues)：バグを報告し、新機能を提案するのに最適です。詳細については、[貢献ガイドライン](./docs/code-of-conduct/contributing.md)をご覧ください。
 - [X（以前のTwitter）](https://twitter.com/intent/follow?screen_name=ten_platform)：エージェントを共有し、コミュニティと交流するのに最適です。
 
 <br>
  <h2>コード貢献者</h2>
 
-[![ASTRA](https://contrib.rocks/image?repo=rte-design/astra.ai)](https://github.com/rte-design/astra.ai/graphs/contributors)
+[![ASTRA](https://contrib.rocks/image?repo=TEN-framework/astra.ai)](https://github.com/TEN-framework/astra.ai/graphs/contributors)
 
 <br>
 <h2>貢献を歓迎します</h2>
