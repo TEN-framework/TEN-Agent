@@ -49,14 +49,13 @@ type PingReq struct {
 }
 
 type StartReq struct {
-	RequestId            string `json:"request_id,omitempty"`
-	AgoraAsrLanguage     string `json:"agora_asr_language,omitempty"`
-	ChannelName          string `json:"channel_name,omitempty"`
-	GraphName            string `json:"graph_name,omitempty"`
-	RemoteStreamId       uint32 `json:"remote_stream_id,omitempty"`
-	Token                string `json:"token,omitempty"`
-	VoiceType            string `json:"voice_type,omitempty"`
-	WorkerHttpServerPort int32  `json:"worker_http_server_port,omitempty"`
+	RequestId            string                            `json:"request_id,omitempty"`
+	ChannelName          string                            `json:"channel_name,omitempty"`
+	GraphName            string                            `json:"graph_name,omitempty"`
+	RemoteStreamId       uint32                            `json:"remote_stream_id,omitempty"`
+	Token                string                            `json:"token,omitempty"`
+	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
+	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
 }
 
 type StopReq struct {
@@ -410,6 +409,12 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
+	if len(newGraphs) == 0 {
+		slog.Error("handlerStart graph not found", "graph", graphName, "requestId", req.RequestId, logTag)
+		err = fmt.Errorf("graph not found")
+		return
+	}
+
 	// Replace the predefined_graphs array with the filtered array
 	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", stringJoin(newGraphs, ",")))
 
@@ -421,6 +426,15 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		if envVal := os.Getenv(envKey); envVal != "" {
 			for _, envProp := range envProps {
 				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
+			}
+		}
+	}
+
+	// Set additional properties to property.json
+	for extensionName, props := range req.Properties {
+		if extKey := extensionName; extKey != "" {
+			for prop, val := range props {
+				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, extKey, prop), val)
 			}
 		}
 	}

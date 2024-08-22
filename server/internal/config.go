@@ -136,9 +136,6 @@ var (
 
 	// Retrieve parameters from the request and map them to the property.json file
 	startPropMap = map[string][]Prop{
-		"AgoraAsrLanguage": {
-			{ExtensionName: extensionNameAgoraRTC, Property: "agora_asr_language"},
-		},
 		"ChannelName": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
 		},
@@ -152,36 +149,4 @@ var (
 			{ExtensionName: extensionNameHttpServer, Property: "listen_port"},
 		},
 	}
-
-	// Map the voice name to the voice type
-	// voiceNameMap = map[string]map[string]map[string]string{
-	// 	languageChinese: {
-	// 		extensionNameAzureTTS: {
-	// 			voiceTypeMale:   "zh-CN-YunxiNeural",
-	// 			voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
-	// 		},
-	// 		extensionNameElevenlabsTTS: {
-	// 			voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-	// 			voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-	// 		},
-	// 		extensionNamePollyTTS: {
-	// 			voiceTypeMale:   "Zhiyu",
-	// 			voiceTypeFemale: "Zhiyu",
-	// 		},
-	// 	},
-	// 	languageEnglish: {
-	// 		extensionNameAzureTTS: {
-	// 			voiceTypeMale:   "en-US-BrianNeural",
-	// 			voiceTypeFemale: "en-US-JaneNeural",
-	// 		},
-	// 		extensionNameElevenlabsTTS: {
-	// 			voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-	// 			voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-	// 		},
-	// 		extensionNamePollyTTS: {
-	// 			voiceTypeMale:   "Matthew",
-	// 			voiceTypeFemale: "Ruth",
-	// 		},
-	// 	},
-	// }
 )

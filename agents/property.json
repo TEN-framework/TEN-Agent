@@ -1499,7 +1499,7 @@
                             "prompt": "",
                             "proxy_url": "",
                             "greeting": "Astra已连接，需要我为您提供什么帮助?",
-                            "checking_vision_text_items":"[\"让我看看你的摄像头...\",\"让我看一下...\",\"我看一下，请稍候...\"]",
+                            "checking_vision_text_items": "[\"让我看看你的摄像头...\",\"让我看一下...\",\"我看一下，请稍候...\"]",
                             "max_memory_length": 10,
                             "enable_tools": true
                         }
@@ -1733,7 +1733,7 @@
                             "prompt": "",
                             "proxy_url": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
-                            "checking_vision_text_items":"[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+                            "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
                             "enable_tools": true
                         }
