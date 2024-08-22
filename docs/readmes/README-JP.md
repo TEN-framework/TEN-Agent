@@ -144,7 +144,8 @@ make run-server
 - [WeChat Group](https://github.com/TEN-framework/ASTRA.ai/discussions/170): WeChat グループのコミュニティが好きな方は、ぜひご参加ください。
 - [Github Discussion](https://github.com/TEN-framework/astra.ai/discussions)：フィードバックを提供し、質問するのに最適です。
 - [GitHub Issues](https://github.com/TEN-framework/astra.ai/issues)：バグを報告し、新機能を提案するのに最適です。詳細については、[貢献ガイドライン](./docs/code-of-conduct/contributing.md)をご覧ください。
-- [X（以前のTwitter）](https://twitter.com/intent/follow?screen_name=ten_platform)：エージェントを共有し、コミュニティと交流するのに最適です。
+- [X（以前のTwitter）](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)：エージェントを共有し、コミュニティと交流するのに最適です。
+
 
 <br>
  <h2>コード貢献者</h2>

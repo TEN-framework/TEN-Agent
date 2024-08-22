@@ -156,7 +156,8 @@ Before we dive further, be sure to star our repository and get instant notificat
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [GitHub Discussion](https://github.com/TEN-framework/astra.ai/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/TEN-framework/astra.ai/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
-- [X (formerly Twitter)](https://twitter.com/intent/follow?screen_name=ten_platform): Great for sharing your agents and interacting with the community.
+- [X (formerly Twitter)](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
+
 
  <br>
  <h2>Code Contributors</h2>
@@ -166,7 +167,7 @@ Before we dive further, be sure to star our repository and get instant notificat
 <br>
 <h2>Contribution Guidelines</h2>
 
-Contributions are welcome! Please read the [contribution guidelines](CONTRIBUTING.md) first.
+Contributions are welcome! Please read the [contribution guidelines](./docs/code-of-conduct/contributing.md) first.
 
 <br>
 <h2>License</h2>
