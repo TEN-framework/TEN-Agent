@@ -136,7 +136,7 @@ make build
 
 #### 5.开启服务
 ```bash
-make run-sever
+make run-server
 ```
 
 ### 构建完成 🎉
