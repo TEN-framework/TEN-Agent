@@ -1,7 +1,7 @@
 import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphOptionItem } from "@/types"
 
 export const REQUEST_URL = process.env.NEXT_PUBLIC_REQUEST_URL ?? ""
-export const GITHUB_URL = "https://github.com/rte-design/ASTRA.ai"
+export const GITHUB_URL = "https://github.com/TEN-framework/ASTRA.ai"
 export const OPTIONS_KEY = "__options__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
