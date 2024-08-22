@@ -1,6 +1,6 @@
 services:
     astra_agents_dev:
-        image: ghcr.io/TEN-framework/astra_agents_build:0.4.0
+        image: ghcr.io/ten-framework/astra_agents_build:0.4.0
         container_name: astra_agents_dev
         platform: linux/amd64
         tty: true
@@ -17,7 +17,7 @@ services:
         env_file:
             - .env
     astra_playground:
-        image: ghcr.io/TEN-framework/astra_playground:v0.3.0-rc1-2-g2385dfe
+        image: ghcr.io/ten-framework/astra_playground:v0.3.0-rc1-2-g2385dfe
         container_name: astra_playground
         restart: always
         ports:
