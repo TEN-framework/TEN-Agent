@@ -1,4 +1,4 @@
-openai==1.35.13
+openai
+numpy
 requests==2.32.3
-numpy==2.0.1
 pillow==10.4.0
