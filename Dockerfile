@@ -1,4 +1,4 @@
-FROM ghcr.io/rte-design/astra_agents_build:0.4.0 AS builder
+FROM ghcr.io/TEN-framework/astra_agents_build:0.4.0 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
