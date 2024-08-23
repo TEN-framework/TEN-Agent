@@ -1,7 +1,10 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
   DESCRIPTION, useAppDispatch, useAppSelector, apiPing, genUUID,
-  apiStartService, apiStopService, REQUEST_URL
+  apiStartService, apiStopService, REQUEST_URL,
+  voiceNameMap,
+  getGraphWithLanguage,
+  getGraphProperties
 } from "@/common"
 import { Select, Button, message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"
@@ -48,9 +51,8 @@ const Description = () => {
       const res = await apiStartService({
         channel,
         userId,
-        language,
-        voiceType,
-        graphName
+        graphName: getGraphWithLanguage(graphName, language),
+        properties: getGraphProperties(graphName, language, voiceType)
       })
       const { code, msg } = res || {}
       if (code != 0) {

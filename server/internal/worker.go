@@ -114,6 +114,9 @@ func (w *Worker) start(req *StartReq) (err error) {
 	shell := fmt.Sprintf("cd /app/agents && %s --property %s", workerExec, w.PropertyJsonFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
 	cmd := exec.Command("sh", "-c", shell)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true, // Start a new process group
+	}
 
 	var stdoutWriter, stderrWriter io.Writer
 	var logFile *os.File
@@ -183,9 +186,9 @@ func (w *Worker) start(req *StartReq) (err error) {
 }
 
 func (w *Worker) stop(requestId string, channelName string) (err error) {
-	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, logTag)
+	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 
-	err = syscall.Kill(w.Pid, syscall.SIGTERM)
+	err = syscall.Kill(-w.Pid, syscall.SIGTERM)
 	if err != nil {
 		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return

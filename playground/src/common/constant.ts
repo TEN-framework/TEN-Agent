@@ -69,3 +69,45 @@ export const COLOR_LIST: ColorItem[] = [{
   default: "#481C3F"
 }]
 
+export type VoiceTypeMap = {
+  [voiceType: string]: string;
+};
+
+export type VendorNameMap = {
+  [vendorName: string]: VoiceTypeMap;
+};
+
+export type LanguageMap = {
+  [language: string]: VendorNameMap;
+};
+
+export const voiceNameMap: LanguageMap = {
+  "zh-CN": {
+    azure: {
+      male: "zh-CN-YunxiNeural",
+      female: "zh-CN-XiaoxiaoNeural",
+    },
+    elevenlabs: {
+      male: "pNInz6obpgDQGcFmaJgB", // Adam
+      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+    },
+    polly: {
+      male: "Zhiyu",
+      female: "Zhiyu",
+    },
+  },
+  "en-US": {
+    azure: {
+      male: "en-US-BrianNeural",
+      female: "en-US-JaneNeural",
+    },
+    elevenlabs: {
+      male: "pNInz6obpgDQGcFmaJgB", // Adam
+      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+    },
+    polly: {
+      male: "Matthew",
+      female: "Ruth",
+    },
+  },
+};

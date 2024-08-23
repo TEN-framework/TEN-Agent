@@ -22,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gogf/gf/crypto/gmd5"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
@@ -48,14 +49,13 @@ type PingReq struct {
 }
 
 type StartReq struct {
-	RequestId            string `json:"request_id,omitempty"`
-	AgoraAsrLanguage     string `json:"agora_asr_language,omitempty"`
-	ChannelName          string `json:"channel_name,omitempty"`
-	GraphName            string `json:"graph_name,omitempty"`
-	RemoteStreamId       uint32 `json:"remote_stream_id,omitempty"`
-	Token                string `json:"token,omitempty"`
-	VoiceType            string `json:"voice_type,omitempty"`
-	WorkerHttpServerPort int32  `json:"worker_http_server_port,omitempty"`
+	RequestId            string                            `json:"request_id,omitempty"`
+	ChannelName          string                            `json:"channel_name,omitempty"`
+	GraphName            string                            `json:"graph_name,omitempty"`
+	RemoteStreamId       uint32                            `json:"remote_stream_id,omitempty"`
+	Token                string                            `json:"token,omitempty"`
+	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
+	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
 }
 
 type StopReq struct {
@@ -369,14 +369,6 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 
 	// Get graph name
 	graphName := req.GraphName
-	language := req.AgoraAsrLanguage
-	if graphName == "camera.va.openai.azure" {
-		if language == languageChinese {
-			graphName = "camera.va.openai.azure.cn"
-		} else {
-			graphName = "camera.va.openai.azure.en"
-		}
-	}
 	if graphName == "" {
 		slog.Error("graph_name is mandatory", "requestId", req.RequestId, logTag)
 		return
@@ -393,16 +385,52 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	graph := fmt.Sprintf(`_ten.predefined_graphs.#(name=="%s")`, graphName)
+
+	// Get the array of graphs
+	graphs := gjson.Get(propertyJson, "_ten.predefined_graphs").Array()
+
+	// Create a new array for graphs that match the name
+	var newGraphs []string
+	for _, graph := range graphs {
+		if graph.Get("name").String() == graphName {
+			newGraphs = append(newGraphs, graph.Raw)
+		}
+	}
+
+	if len(newGraphs) == 0 {
+		slog.Error("handlerStart graph not found", "graph", graphName, "requestId", req.RequestId, logTag)
+		err = fmt.Errorf("graph not found")
+		return
+	}
+
+	// Replace the predefined_graphs array with the filtered array
+	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", strings.Join(newGraphs, ",")))
+
 	// Automatically start on launch
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 
-	// Set parameters from the request to property.json
+	// Set environment variable values to property.json
+	for envKey, envProps := range EnvPropMap {
+		if envVal := os.Getenv(envKey); envVal != "" {
+			for _, envProp := range envProps {
+				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
+			}
+		}
+	}
+
+	// Set additional properties to property.json
+	for extensionName, props := range req.Properties {
+		if extKey := extensionName; extKey != "" {
+			for prop, val := range props {
+				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, extKey, prop), val)
+			}
+		}
+	}
+
+	// Set start parameters to property.json
 	for key, props := range startPropMap {
 		if val := getFieldValue(req, key); val != "" {
 			for _, prop := range props {
-				if key == "VoiceType" {
-					val = voiceNameMap[req.AgoraAsrLanguage][prop.ExtensionName][req.VoiceType]
-				}
 				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, prop.ExtensionName, prop.Property), val)
 			}
 		}
