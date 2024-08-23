@@ -17,7 +17,7 @@ services:
         env_file:
             - .env
     astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.3.0-rc1-2-g2385dfe
+        image: ghcr.io/ten-framework/astra_playground:v0.4.0-14-ga9ea9d2
         container_name: astra_playground
         restart: always
         ports:
@@ -33,9 +33,9 @@ services:
     #     - "3002:3000"
     #     volumes:
     #     - ./:/app
-    astra_graph_designer:
-        image: agoraio/astra_graph_designer:0.3.0
-        container_name: astra_graph_designer
+    ten_graph_designer:
+        image: ghcr.io/ten-framework/ten_graph_designer:0f67db6
+        container_name: ten_graph_designer
         restart: always
         ports:
             - "3001:3000"
