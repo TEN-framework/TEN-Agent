@@ -461,6 +461,6 @@ func (s *HttpServer) Start() {
 
 	slog.Info("server start", "port", s.config.Port, logTag)
 
-	go cleanWorker()
+	go timeoutWorkers()
 	r.Run(fmt.Sprintf(":%s", s.config.Port))
 }

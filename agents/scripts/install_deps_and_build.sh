@@ -57,6 +57,9 @@ install_python_requirements() {
       fi
     done
   fi
+
+  echo "pre-import python modules..."
+  python3.10 -c "import llama_index.core;"
 }
 
 build_go_app() {

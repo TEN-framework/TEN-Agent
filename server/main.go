@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/joho/godotenv"
 
@@ -50,6 +53,17 @@ func main() {
 		slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDES invalid")
 		os.Exit(1)
 	}
+
+	// Set up signal handler to clean up all workers on Ctrl+C
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		fmt.Println("Received interrupt signal, cleaning up workers...")
+		internal.CleanWorkers()
+		os.Exit(0)
+	}()
 
 	// Start server
 	httpServerConfig := &internal.HttpServerConfig{
