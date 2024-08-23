@@ -358,18 +358,6 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
-// stringJoin is a helper function to join strings with a separator
-func stringJoin(elements []string, sep string) string {
-	result := ""
-	for i, elem := range elements {
-		if i > 0 {
-			result += sep
-		}
-		result += elem
-	}
-	return result
-}
-
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
@@ -416,7 +404,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	// Replace the predefined_graphs array with the filtered array
-	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", stringJoin(newGraphs, ",")))
+	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", strings.Join(newGraphs, ",")))
 
 	// Automatically start on launch
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
