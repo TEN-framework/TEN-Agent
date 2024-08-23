@@ -1,12 +1,12 @@
+import { AnyObject } from "antd/es/_util/type"
 import { REQUEST_URL } from "./constant"
 import { genUUID } from "./utils"
 
 interface StartRequestConfig {
   channel: string
   userId: number,
-  language: string
-  voiceType: string
   graphName: string
+  properties: AnyObject
 }
 
 interface GenAgoraDataConfig {
@@ -35,15 +35,14 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
   const url = `${REQUEST_URL}/start`
-  const { language, channel, userId, voiceType, graphName } = config
+  const { channel, userId, graphName, properties } = config
   const data = {
     request_id: genUUID(),
-    agora_asr_language: language,
     channel_name: channel,
     openai_proxy_url: "",
     remote_stream_id: userId,
-    voice_type: voiceType,
     graph_name: graphName,
+    properties,
   }
   let resp: any = await fetch(url, {
     method: "POST",

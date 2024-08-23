@@ -2,7 +2,6 @@ package internal
 
 import (
 	"log/slog"
-	"os"
 )
 
 type Prop struct {
@@ -34,9 +33,6 @@ const (
 	PropertyJsonFile = "./agents/property.json"
 	// Token expire time
 	tokenExpirationInSeconds = uint32(86400)
-	// Voice type
-	voiceTypeMale   = "male"
-	voiceTypeFemale = "female"
 )
 
 var (
@@ -138,17 +134,8 @@ var (
 		},
 	}
 
-	// The corresponding graph name based on the language
-	graphNameMap = map[string]string{
-		languageChinese: "va.openai.azure",
-		languageEnglish: "va.openai.azure",
-	}
-
 	// Retrieve parameters from the request and map them to the property.json file
 	startPropMap = map[string][]Prop{
-		"AgoraAsrLanguage": {
-			{ExtensionName: extensionNameAgoraRTC, Property: "agora_asr_language"},
-		},
 		"ChannelName": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
 		},
@@ -158,54 +145,8 @@ var (
 		"Token": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "token"},
 		},
-		"VoiceType": {
-			{ExtensionName: extensionNameAzureTTS, Property: "azure_synthesis_voice_name"},
-			{ExtensionName: extensionNameElevenlabsTTS, Property: "voice_id"},
-		},
 		"WorkerHttpServerPort": {
 			{ExtensionName: extensionNameHttpServer, Property: "listen_port"},
 		},
 	}
-
-	// Map the voice name to the voice type
-	voiceNameMap = map[string]map[string]map[string]string{
-		languageChinese: {
-			extensionNameAzureTTS: {
-				voiceTypeMale:   "zh-CN-YunxiNeural",
-				voiceTypeFemale: "zh-CN-XiaoxiaoNeural",
-			},
-			extensionNameElevenlabsTTS: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-			extensionNamePollyTTS: {
-				voiceTypeMale:   "Zhiyu",
-				voiceTypeFemale: "Zhiyu",
-			},
-		},
-		languageEnglish: {
-			extensionNameAzureTTS: {
-				voiceTypeMale:   "en-US-BrianNeural",
-				voiceTypeFemale: "en-US-JaneNeural",
-			},
-			extensionNameElevenlabsTTS: {
-				voiceTypeMale:   "pNInz6obpgDQGcFmaJgB", // Adam
-				voiceTypeFemale: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-			},
-			extensionNamePollyTTS: {
-				voiceTypeMale:   "Matthew",
-				voiceTypeFemale: "Ruth",
-			},
-		},
-	}
 )
-
-func SetGraphNameMap() {
-	if graphNameZH := os.Getenv("GRAPH_NAME_ZH"); graphNameZH != "" {
-		graphNameMap[languageChinese] = graphNameZH
-	}
-
-	if graphNameEN := os.Getenv("GRAPH_NAME_EN"); graphNameEN != "" {
-		graphNameMap[languageEnglish] = graphNameEN
-	}
-}
