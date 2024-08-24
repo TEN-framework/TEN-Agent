@@ -109,46 +109,51 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   private _praseData(data: any): ITextItem | void {
     // @ts-ignore
-    const textstream = protoRoot.Agora.SpeechToText.lookup("Text").decode(data)
-    if (!textstream) {
-      return console.warn("Prase data failed.")
-    }
+    // const textstream = protoRoot.Agora.SpeechToText.lookup("Text").decode(data)
+    // if (!textstream) {
+    //   return console.warn("Prase data failed.")
+    // }
+    let decoder = new TextDecoder('utf-8')
+    let decodedMessage = decoder.decode(data)
+
+    const textstream = JSON.parse(decodedMessage)
+
     console.log("[test] textstream raw data", JSON.stringify(textstream))
-    const { dataType, words, uid, culture, time, durationMs, textTs, trans } = textstream
+    const { stream_id, is_final, text, text_ts, data_type } = textstream
     let textStr: string = ""
     let isFinal = false
     const textItem: ITextItem = {} as ITextItem
-    textItem.uid = uid
-    textItem.time = textTs
-    switch (dataType) {
-      case "transcribe":
-        words.forEach((word: any) => {
-          textStr += word.text
-          if (word.isFinal) {
-            isFinal = true
-          }
-        })
-        textItem.dataType = "transcribe"
-        textItem.language = culture
-        textItem.text = textStr
-        textItem.isFinal = isFinal
-        this.emit("textChanged", textItem)
-        break
-      // case "translate":
-      //   if (!trans?.length) {
-      //     return
-      //   }
-      //   trans.forEach((transItem: any) => {
-      //     textStr = transItem.texts.join("")
-      //     isFinal = !!transItem.isFinal
-      //     textItem.dataType = "translate"
-      //     textItem.language = transItem.lang
-      //     textItem.isFinal = isFinal
-      //     textItem.text = textStr
-      //     this.emit("textChanged", textItem)
-      //   })
-      //   break
-    }
+    textItem.uid = stream_id
+    textItem.time = text_ts
+    // switch (dataType) {
+    //   case "transcribe":
+    //     words.forEach((word: any) => {
+    //       textStr += word.text
+    //       if (word.isFinal) {
+    //         isFinal = true
+    //       }
+    //     })
+    textItem.dataType = "transcribe"
+    // textItem.language = culture
+    textItem.text = text
+    textItem.isFinal = is_final
+    this.emit("textChanged", textItem)
+    // break
+    // case "translate":
+    //   if (!trans?.length) {
+    //     return
+    //   }
+    //   trans.forEach((transItem: any) => {
+    //     textStr = transItem.texts.join("")
+    //     isFinal = !!transItem.isFinal
+    //     textItem.dataType = "translate"
+    //     textItem.language = transItem.lang
+    //     textItem.isFinal = isFinal
+    //     textItem.text = textStr
+    //     this.emit("textChanged", textItem)
+    //   })
+    //   break
+    // }
   }
 
 
