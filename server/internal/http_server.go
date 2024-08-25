@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -358,6 +359,23 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
+func replaceEnvVarsInJSON(jsonData string) string {
+	// Regex to find all occurrences of $VAR_NAME
+	re := regexp.MustCompile(`"\$(\w+)"`)
+
+	// Function to replace the match with the environment variable value
+	result := re.ReplaceAllStringFunc(jsonData, func(match string) string {
+		// Extract the variable name (removing the leading $ and surrounding quotes)
+		envVar := strings.Trim(match, "\"$")
+		// Get the environment variable value
+		value := os.Getenv(envVar)
+		// Replace with the value (keeping it quoted)
+		return fmt.Sprintf("\"%s\"", value)
+	})
+
+	return result
+}
+
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
@@ -410,13 +428,7 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
 
 	// Set environment variable values to property.json
-	for envKey, envProps := range EnvPropMap {
-		if envVal := os.Getenv(envKey); envVal != "" {
-			for _, envProp := range envProps {
-				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
-			}
-		}
-	}
+	propertyJson = replaceEnvVarsInJSON(propertyJson)
 
 	// Set additional properties to property.json
 	for extensionName, props := range req.Properties {
