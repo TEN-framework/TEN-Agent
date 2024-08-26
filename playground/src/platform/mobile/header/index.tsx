@@ -32,13 +32,15 @@ const Header = () => {
         <span className={styles.text}>{channel}</span>
       </span>
     </InfoPopover>
-    <span onClick={onClickGithub} className={styles.githubWrapper}>
-      <GithubIcon></GithubIcon>
-    </span>
-    <StylePopover>
-      <ColorPickerIcon color={themeColor} ></ColorPickerIcon>
-    </StylePopover>
-    <Network style={{ marginLeft: 12 }}></Network>
+    <div className={styles.links}>
+      <span onClick={onClickGithub} className={styles.githubWrapper}>
+        <GithubIcon></GithubIcon>
+      </span>
+      <StylePopover>
+        <ColorPickerIcon color={themeColor} ></ColorPickerIcon>
+      </StylePopover>
+      <Network></Network>
+    </div>
   </div>
 }
 
