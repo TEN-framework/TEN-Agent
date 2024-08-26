@@ -96,10 +96,9 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 ### 下一步
 #### 1. 创建配置文件
-克隆项目后，在根目录下跑下面的命创建 `property.json` 和 `.env`:
+克隆项目后，在根目录下跑下面的命创建 `.env`:
 ```bash
 cp ./.env.example ./.env
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. 绑定 extension 的 keys 
