@@ -1,9 +1,7 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
   DESCRIPTION, useAppDispatch, useAppSelector, apiPing, genUUID,
-  apiStartService, apiStopService, REQUEST_URL,
-  voiceNameMap,
-  getGraphWithLanguage,
+  apiStartService, apiStopService,
   getGraphProperties
 } from "@/common"
 import { message } from "antd"
@@ -51,7 +49,7 @@ const Description = () => {
       const res = await apiStartService({
         channel,
         userId,
-        graphName: getGraphWithLanguage(graphName, language),
+        graphName,
         properties: getGraphProperties(graphName, language, voiceType)
       })
       const { code, msg } = res || {}

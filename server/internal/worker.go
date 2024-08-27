@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -110,6 +111,16 @@ func (pw *PrefixWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// Function to check if a PID is in the correct process group
+func isInProcessGroup(pid, pgid int) bool {
+	actualPgid, err := syscall.Getpgid(pid)
+	if err != nil {
+		// If an error occurs, the process might not exist anymore
+		return false
+	}
+	return actualPgid == pgid
+}
+
 func (w *Worker) start(req *StartReq) (err error) {
 	shell := fmt.Sprintf("cd /app/agents && %s --property %s", workerExec, w.PropertyJsonFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
@@ -158,9 +169,21 @@ func (w *Worker) start(req *StartReq) (err error) {
 
 	pid := cmd.Process.Pid
 
-	if pid <= 0 {
-		slog.Error("Worker failed to obtain valid PID after 3 attempts", "requestId", req.RequestId, logTag)
-		return fmt.Errorf("failed to obtain valid PID")
+	// Ensure the process has fully started
+	shell = fmt.Sprintf("pgrep -P %d", pid)
+	slog.Info("Worker get pid", "requestId", req.RequestId, "shell", shell, logTag)
+
+	var subprocessPid int
+	for i := 0; i < 10; i++ { // retry for 3 times
+		output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+		if err == nil {
+			subprocessPid, err = strconv.Atoi(strings.TrimSpace(string(output)))
+			if err == nil && subprocessPid > 0 && isInProcessGroup(subprocessPid, cmd.Process.Pid) {
+				break // if pid is successfully obtained, exit loop
+			}
+		}
+		slog.Warn("Worker get pid failed, retrying...", "attempt", i+1, "pid", pid, "subpid", subprocessPid, "requestId", req.RequestId, logTag)
+		time.Sleep(1000 * time.Millisecond) // wait for 500ms
 	}
 
 	// Update the prefix with the actual PID
@@ -188,7 +211,9 @@ func (w *Worker) start(req *StartReq) (err error) {
 func (w *Worker) stop(requestId string, channelName string) (err error) {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 
-	err = syscall.Kill(-w.Pid, syscall.SIGTERM)
+	// TODO: SIGTERM is somehow ignored by subprocess before agent is fully initialized
+	// use SIGKILL for now
+	err = syscall.Kill(-w.Pid, syscall.SIGKILL)
 	if err != nil {
 		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return

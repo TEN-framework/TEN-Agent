@@ -45,7 +45,13 @@
     }
   }
 
-  .githubWrapper {
-    margin-right: 12px;
+  .links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    span {
+      display: flex;
+    }
   }
 }
