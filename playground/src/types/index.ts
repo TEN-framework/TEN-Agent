@@ -1,4 +1,4 @@
-export type Language = "en-US" | "zh-CN"
+export type Language = "en-US" | "zh-CN" | "ja-JP" | "ko-KR"
 export type VoiceType = "male" | "female"
 
 export interface ColorItem {
