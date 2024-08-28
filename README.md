@@ -66,7 +66,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 ### Next step
 
 #### 1. Modify config files
-In the root of the project, use the following command to create `.env` from the examples. 
+In the root of the project, use `cp` command to create `.env` from the example.
 
 They will be used to store information for `docker compose` later.
 ```bash
