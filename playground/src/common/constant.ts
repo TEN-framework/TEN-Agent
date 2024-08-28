@@ -17,6 +17,14 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "Chinese",
     value: "zh-CN"
+  },
+  {
+    label: "Korean",
+    value: "ko-KR"
+  },
+  {
+    label: "Japanese",
+    value: "ja-JP"
   }
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
@@ -79,35 +87,4 @@ export type VendorNameMap = {
 
 export type LanguageMap = {
   [language: string]: VendorNameMap;
-};
-
-export const voiceNameMap: LanguageMap = {
-  "zh-CN": {
-    azure: {
-      male: "zh-CN-YunxiNeural",
-      female: "zh-CN-XiaoxiaoNeural",
-    },
-    elevenlabs: {
-      male: "pNInz6obpgDQGcFmaJgB", // Adam
-      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-    },
-    polly: {
-      male: "Zhiyu",
-      female: "Zhiyu",
-    },
-  },
-  "en-US": {
-    azure: {
-      male: "en-US-BrianNeural",
-      female: "en-US-JaneNeural",
-    },
-    elevenlabs: {
-      male: "pNInz6obpgDQGcFmaJgB", // Adam
-      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
-    },
-    polly: {
-      male: "Matthew",
-      female: "Ruth",
-    },
-  },
 };
