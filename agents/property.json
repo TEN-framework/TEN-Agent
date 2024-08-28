@@ -1896,7 +1896,7 @@
                     },
                     {
                         "type": "extension",
-                        "extension_group": "file_chunker",
+                        "extension_group": "llama_index",
                         "addon": "file_chunker",
                         "name": "file_chunker",
                         "property": {}
@@ -1949,7 +1949,7 @@
                                 "name": "file_chunk",
                                 "dest": [
                                     {
-                                        "extension_group": "file_chunker",
+                                        "extension_group": "llama_index",
                                         "extension": "file_chunker"
                                     },
                                     {
@@ -2116,7 +2116,7 @@
                         ]
                     },
                     {
-                        "extension_group": "file_chunker",
+                        "extension_group": "llama_index",
                         "extension": "file_chunker",
                         "cmd": [
                             {

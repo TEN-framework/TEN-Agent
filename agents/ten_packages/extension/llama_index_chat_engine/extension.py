@@ -14,13 +14,8 @@ from ten import (
     CmdResult,
 )
 from .log import logger
-from .astra_llm import ASTRALLM
-from .astra_retriever import ASTRARetriever
 import queue, threading
 from datetime import datetime
-from llama_index.core.chat_engine import SimpleChatEngine, ContextChatEngine
-from llama_index.core.storage.chat_store import SimpleChatStore
-from llama_index.core.memory import ChatMemoryBuffer
 
 PROPERTY_CHAT_MEMORY_TOKEN_LIMIT = "chat_memory_token_limit"
 PROPERTY_GREETING = "greeting"
@@ -32,6 +27,19 @@ TASK_TYPE_GREETING = "greeting"
 class LlamaIndexExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
+
+        # lazy import packages which requires long time to load
+        global ChatMemoryBuffer
+        global SimpleChatEngine,ContextChatEngine
+        global SimpleChatStore
+        global ASTRALLM, ASTRARetriever
+        from llama_index.core.chat_engine import SimpleChatEngine, ContextChatEngine
+        from llama_index.core.storage.chat_store import SimpleChatStore
+        from llama_index.core.memory import ChatMemoryBuffer
+        from .astra_llm import ASTRALLM
+        from .astra_retriever import ASTRARetriever
+
+        
         self.queue = queue.Queue()
         self.thread = None
         self.stop = False

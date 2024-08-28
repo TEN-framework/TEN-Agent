@@ -4,8 +4,6 @@
 import asyncio
 import os
 import json
-from .client import AliGPDBClient
-from .model import Model
 from ten import (
     Extension,
     TenEnv,
@@ -20,15 +18,22 @@ from .log import logger
 import threading
 from datetime import datetime
 
-from alibabacloud_gpdb20160503.client import Client as gpdb20160503Client
-from alibabacloud_tea_openapi import models as open_api_models
-from alibabacloud_gpdb20160503 import models as gpdb_20160503_models
-from alibabacloud_tea_util import models as util_models
-from alibabacloud_tea_util.client import Client as UtilClient
-
 
 class AliPGDBExtension(Extension):
     def __init__(self, name):
+
+        # lazy import packages which requires long time to load
+        global gpdb20160503Client, open_api_models, gpdb_20160503_models, util_models, UtilClient
+        global AliGPDBClient, Model
+        from .client import AliGPDBClient
+        from .model import Model
+        from alibabacloud_gpdb20160503.client import Client as gpdb20160503Client
+        from alibabacloud_tea_openapi import models as open_api_models
+        from alibabacloud_gpdb20160503 import models as gpdb_20160503_models
+        from alibabacloud_tea_util import models as util_models
+        from alibabacloud_tea_util.client import Client as UtilClient
+
+
         self.stopEvent = asyncio.Event()
         self.thread = None
         self.loop = None

@@ -14,8 +14,6 @@ from ten import (
 )
 from typing import List, Any
 from .log import logger
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
 import json
 from datetime import datetime
 import uuid, math
@@ -45,6 +43,11 @@ def batch(nodes, size):
 class FileChunkerExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
+
+        # lazy import packages which requires long time to load
+        global SimpleDirectoryReader, SentenceSplitter
+        from llama_index.core import SimpleDirectoryReader
+        from llama_index.core.node_parser import SentenceSplitter
 
         self.counters = {}
         self.expected = {}

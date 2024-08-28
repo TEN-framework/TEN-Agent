@@ -6,7 +6,6 @@ from ten import (
     CmdResult,
 )
 
-import dashscope
 import json
 from typing import Generator, List
 from http import HTTPStatus
@@ -28,6 +27,11 @@ DASHSCOPE_MAX_BATCH_SIZE = 6
 class EmbeddingExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
+
+        # lazy import packages which requires long time to load
+        global dashscope
+        import dashscope
+
         self.api_key = ""
         self.model = ""
 
