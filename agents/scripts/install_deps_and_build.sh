@@ -57,6 +57,10 @@ install_python_requirements() {
       fi
     done
   fi
+
+  # pre-import llama-index as it cloud download additional resources during the first import
+  echo "pre-import python modules..."
+  python3.10 -c "import llama_index.core;"
 }
 
 build_go_app() {
@@ -67,6 +71,15 @@ build_go_app() {
   if [[ $? -ne 0 ]]; then
     echo "FATAL: failed to build go app, see logs for detail."
     exit 1
+  fi
+}
+
+post_install() {
+  local app_dir=$1
+  cd $app_dir
+
+  if [ -f "ten_packages/extension/agora_rtc/lib/liblinux_audio_hy_extension.so" ]; then
+    rm "ten_packages/extension/agora_rtc/lib/liblinux_audio_hy_extension.so"
   fi
 }
 
@@ -118,6 +131,9 @@ main() {
   build_go_app $APP_HOME
   echo "install_python_requirements..."
   install_python_requirements $APP_HOME
+
+  echo "post installation..."
+  post_install $APP_HOME
 }
 
 main "$@"

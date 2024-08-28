@@ -1,11 +1,10 @@
-FROM ghcr.io/rte-design/astra_agents_build:0.4.0 AS builder
+FROM ghcr.io/ten-framework/astra_agents_build:0.4.0 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
 WORKDIR /app
 
 COPY . .
-COPY agents/property.json.example agents/property.json
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
 RUN make clean && make build && \

@@ -1,7 +1,7 @@
 import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphOptionItem } from "@/types"
 
 export const REQUEST_URL = process.env.NEXT_PUBLIC_REQUEST_URL ?? ""
-export const GITHUB_URL = "https://github.com/rte-design/ASTRA.ai"
+export const GITHUB_URL = "https://github.com/TEN-framework/ASTRA.ai"
 export const OPTIONS_KEY = "__options__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
@@ -69,3 +69,45 @@ export const COLOR_LIST: ColorItem[] = [{
   default: "#481C3F"
 }]
 
+export type VoiceTypeMap = {
+  [voiceType: string]: string;
+};
+
+export type VendorNameMap = {
+  [vendorName: string]: VoiceTypeMap;
+};
+
+export type LanguageMap = {
+  [language: string]: VendorNameMap;
+};
+
+export const voiceNameMap: LanguageMap = {
+  "zh-CN": {
+    azure: {
+      male: "zh-CN-YunxiNeural",
+      female: "zh-CN-XiaoxiaoNeural",
+    },
+    elevenlabs: {
+      male: "pNInz6obpgDQGcFmaJgB", // Adam
+      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+    },
+    polly: {
+      male: "Zhiyu",
+      female: "Zhiyu",
+    },
+  },
+  "en-US": {
+    azure: {
+      male: "en-US-BrianNeural",
+      female: "en-US-JaneNeural",
+    },
+    elevenlabs: {
+      male: "pNInz6obpgDQGcFmaJgB", // Adam
+      female: "Xb7hH8MSUJpSbSDYk0k2", // Alice
+    },
+    polly: {
+      male: "Matthew",
+      female: "Ruth",
+    },
+  },
+};

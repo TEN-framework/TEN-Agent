@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 
 	"app/internal"
 )
@@ -27,6 +27,12 @@ func main() {
 			slog.Error("create log directory failed", "err", err)
 			os.Exit(1)
 		}
+	}
+
+	log2Stdout, err := strconv.ParseBool(os.Getenv("LOG_STDOUT"))
+	if err != nil {
+		slog.Error("environment LOG_STDOUT invalid")
+		log2Stdout = false
 	}
 
 	// Check environment
@@ -48,14 +54,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Set graph name map
-	internal.SetGraphNameMap()
+	// Set up signal handler to clean up all workers on Ctrl+C
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	// Process property.json
-	if err = processProperty(internal.PropertyJsonFile); err != nil {
-		slog.Error("process property.json failed", "err", err)
-		os.Exit(1)
-	}
+	go func() {
+		<-sigs
+		fmt.Println("Received interrupt signal, cleaning up workers...")
+		internal.CleanWorkers()
+		os.Exit(0)
+	}()
 
 	// Start server
 	httpServerConfig := &internal.HttpServerConfig{
@@ -65,34 +73,8 @@ func main() {
 		Port:                     os.Getenv("SERVER_PORT"),
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
+		Log2Stdout:               log2Stdout,
 	}
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
-}
-
-func processProperty(propertyJsonFile string) (err error) {
-	content, err := os.ReadFile(propertyJsonFile)
-	if err != nil {
-		slog.Error("read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile)
-		return
-	}
-
-	propertyJson := string(content)
-	for i := range gjson.Get(propertyJson, "_ten.predefined_graphs").Array() {
-		graph := fmt.Sprintf("_ten.predefined_graphs.%d", i)
-		// Shut down all auto-starting Graphs
-		propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), false)
-
-		// Set environment variable values to property.json
-		for envKey, envProps := range internal.EnvPropMap {
-			if envVal := os.Getenv(envKey); envVal != "" {
-				for _, envProp := range envProps {
-					propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, envProp.ExtensionName, envProp.Property), envVal)
-				}
-			}
-		}
-	}
-
-	err = os.WriteFile(propertyJsonFile, []byte(propertyJson), 0644)
-	return
 }

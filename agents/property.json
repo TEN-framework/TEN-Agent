@@ -12,7 +12,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -23,8 +23,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -41,12 +41,12 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "<openai_api_key>",
+                            "api_key": "$OPENAI_API_KEY",
                             "frequency_penalty": 0.9,
                             "model": "gpt-3.5-turbo",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "",
+                            "proxy_url": "$OPENAI_PROXY_URL",
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "max_memory_length": 10
                         }
@@ -57,16 +57,16 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
                     {
                         "type": "extension",
                         "extension_group": "transcriber",
-                        "addon": "chat_transcriber",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -107,7 +107,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -126,27 +126,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -191,7 +171,7 @@
                     },
                     {
                         "extension_group": "transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -231,7 +211,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -242,8 +222,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -260,12 +240,12 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "<openai_api_key>",
+                            "api_key": "$OPENAI_API_KEY",
                             "frequency_penalty": 0.9,
                             "model": "gpt-3.5-turbo",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "",
+                            "proxy_url": "$OPENAI_PROXY_URL",
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "max_memory_length": 10
                         }
@@ -276,7 +256,7 @@
                         "addon": "elevenlabs_tts",
                         "name": "elevenlabs_tts",
                         "property": {
-                            "api_key": "<elevenlabs_tts_key>",
+                            "api_key": "$ELEVENLABS_TTS_KEY",
                             "model_id": "eleven_multilingual_v2",
                             "optimize_streaming_latency": 0,
                             "request_timeout_seconds": 30,
@@ -290,8 +270,8 @@
                     {
                         "type": "extension",
                         "extension_group": "transcriber",
-                        "addon": "chat_transcriber",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -332,7 +312,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -351,27 +331,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -416,7 +376,7 @@
                     },
                     {
                         "extension_group": "transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -456,7 +416,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -467,8 +427,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -479,8 +439,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -494,8 +454,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -620,7 +580,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -631,8 +591,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -643,12 +603,12 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "<openai_api_key>",
+                            "api_key": "$OPENAI_API_KEY",
                             "frequency_penalty": 0.9,
                             "model": "gpt-3.5-turbo",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "",
+                            "proxy_url": "$OPENAI_PROXY_URL",
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "max_memory_length": 10
                         }
@@ -659,7 +619,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "<cosy_api_key>",
+                            "api_key": "$QWEN_API_KEY",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -674,8 +634,8 @@
                     {
                         "type": "extension",
                         "extension_group": "chat_transcriber",
-                        "addon": "chat_transcriber_python",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -716,7 +676,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -735,27 +695,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -815,7 +755,7 @@
                     },
                     {
                         "extension_group": "chat_transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -840,7 +780,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -851,8 +791,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -862,7 +802,7 @@
                         "addon": "qwen_llm_python",
                         "name": "qwen_llm",
                         "property": {
-                            "api_key": "<qwen_key>",
+                            "api_key": "$QWEN_API_KEY",
                             "model": "qwen-max",
                             "max_tokens": 512,
                             "prompt": "",
@@ -875,7 +815,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "<qwen_key>",
+                            "api_key": "$QWEN_API_KEY",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -884,8 +824,8 @@
                     {
                         "type": "extension",
                         "extension_group": "chat_transcriber",
-                        "addon": "chat_transcriber_python",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension",
@@ -928,7 +868,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -973,27 +913,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -1038,7 +958,7 @@
                     },
                     {
                         "extension_group": "chat_transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -1063,7 +983,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1074,8 +994,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1086,8 +1006,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -1102,8 +1022,8 @@
                         "name": "polly_tts",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "engine": "generative",
                             "voice": "Ruth",
                             "sample_rate": "16000",
@@ -1231,7 +1151,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "baf537f77ebc4187a06a1628a1827f14",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1242,8 +1162,8 @@
                             "enable_agora_asr": false,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1254,8 +1174,8 @@
                         "name": "transcribe_asr",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "sample_rate": "16000",
                             "lang_code": "en-US"
                         }
@@ -1267,8 +1187,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -1283,8 +1203,8 @@
                         "name": "polly_tts",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "<aws_access_key_id>",
-                            "secret_key": "<aws_secret_access_key>",
+                            "access_key": "$AWS_ACCESS_KEY_ID",
+                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
                             "engine": "generative",
                             "voice": "Ruth",
                             "sample_rate": "16000",
@@ -1452,7 +1372,7 @@
                 ]
             },
             {
-                "name": "camera.va.openai.azure.cn",
+                "name": "camera.va.openai.azure",
                 "auto_start": true,
                 "nodes": [
                     {
@@ -1461,241 +1381,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
-                            "token": "<agora_token>",
-                            "channel": "astra_agents_test",
-                            "stream_id": 1234,
-                            "remote_stream_id": 123,
-                            "subscribe_audio": true,
-                            "subscribe_video": true,
-                            "publish_audio": true,
-                            "publish_data": true,
-                            "enable_agora_asr": true,
-                            "agora_asr_vendor_name": "microsoft",
-                            "agora_asr_language": "zh-CN",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
-                            "agora_asr_session_control_file_path": "session_control.conf",
-                            "subscribe_video_pix_fmt": 4
-                        }
-                    },
-                    {
-                        "type": "extension",
-                        "extension_group": "default",
-                        "addon": "interrupt_detector",
-                        "name": "interrupt_detector"
-                    },
-                    {
-                        "type": "extension",
-                        "extension_group": "chatgpt",
-                        "addon": "openai_chatgpt_python",
-                        "name": "openai_chatgpt",
-                        "property": {
-                            "base_url": "",
-                            "api_key": "<openai_api_key>",
-                            "frequency_penalty": 0.9,
-                            "model": "gpt-4o",
-                            "max_tokens": 512,
-                            "prompt": "",
-                            "proxy_url": "",
-                            "greeting": "Astra已连接，需要我为您提供什么帮助?",
-                            "checking_vision_text_items":"[\"让我看看你的摄像头...\",\"让我看一下...\",\"我看一下，请稍候...\"]",
-                            "max_memory_length": 10,
-                            "enable_tools": true
-                        }
-                    },
-                    {
-                        "type": "extension",
-                        "extension_group": "tts",
-                        "addon": "azure_tts",
-                        "name": "azure_tts",
-                        "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
-                        }
-                    },
-                    {
-                        "type": "extension",
-                        "extension_group": "transcriber",
-                        "addon": "chat_transcriber",
-                        "name": "chat_transcriber"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
-                    }
-                ],
-                "connections": [
-                    {
-                        "extension_group": "default",
-                        "extension": "agora_rtc",
-                        "data": [
-                            {
-                                "name": "text_data",
-                                "dest": [
-                                    {
-                                        "extension_group": "default",
-                                        "extension": "interrupt_detector"
-                                    },
-                                    {
-                                        "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
-                                    },
-                                    {
-                                        "extension_group": "transcriber",
-                                        "extension": "chat_transcriber"
-                                    }
-                                ]
-                            }
-                        ],
-                        "video_frame": [
-                            {
-                                "name": "video_frame",
-                                "dest": [
-                                    {
-                                        "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "extension_group": "chatgpt",
-                        "extension": "openai_chatgpt",
-                        "data": [
-                            {
-                                "name": "text_data",
-                                "dest": [
-                                    {
-                                        "extension_group": "tts",
-                                        "extension": "azure_tts"
-                                    },
-                                    {
-                                        "extension_group": "transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        ],
-                        "cmd": [
-                            {
-                                "name": "flush",
-                                "dest": [
-                                    {
-                                        "extension_group": "tts",
-                                        "extension": "azure_tts"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "extension_group": "tts",
-                        "extension": "azure_tts",
-                        "audio_frame": [
-                            {
-                                "name": "pcm_frame",
-                                "dest": [
-                                    {
-                                        "extension_group": "default",
-                                        "extension": "agora_rtc"
-                                    }
-                                ]
-                            }
-                        ],
-                        "cmd": [
-                            {
-                                "name": "flush",
-                                "dest": [
-                                    {
-                                        "extension_group": "default",
-                                        "extension": "agora_rtc"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "extension_group": "transcriber",
-                        "extension": "chat_transcriber",
-                        "data": [
-                            {
-                                "name": "data",
-                                "dest": [
-                                    {
-                                        "extension_group": "default",
-                                        "extension": "agora_rtc"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "extension_group": "default",
-                        "extension": "interrupt_detector",
-                        "cmd": [
-                            {
-                                "name": "flush",
-                                "dest": [
-                                    {
-                                        "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "camera.va.openai.azure.en",
-                "auto_start": true,
-                "nodes": [
-                    {
-                        "type": "extension",
-                        "extension_group": "default",
-                        "addon": "agora_rtc",
-                        "name": "agora_rtc",
-                        "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1707,8 +1393,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf",
                             "subscribe_video_pix_fmt": 4
                         }
@@ -1726,14 +1412,14 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "<openai_api_key>",
+                            "api_key": "$OPENAI_API_KEY",
                             "frequency_penalty": 0.9,
-                            "model": "gpt-4o-mini",
+                            "model": "gpt-4o",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "",
+                            "proxy_url": "$OPENAI_PROXY_URL",
                             "greeting": "ASTRA agent connected. How can i help you today?",
-                            "checking_vision_text_items":"[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+                            "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
                             "enable_tools": true
                         }
@@ -1744,16 +1430,16 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
                     {
                         "type": "extension",
                         "extension_group": "transcriber",
-                        "addon": "chat_transcriber",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -1794,7 +1480,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -1824,27 +1510,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -1889,7 +1555,7 @@
                     },
                     {
                         "extension_group": "transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -1929,7 +1595,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1940,8 +1606,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1957,13 +1623,13 @@
                         "addon": "gemini_llm_python",
                         "name": "gemini_llm",
                         "property": {
-                            "api_key": "<gemini_api_key>",
+                            "api_key": "$GEMINI_API_KEY",
                             "greeting": "ASTRA agent connected. How can i help you today?",
                             "max_memory_length": 10,
                             "max_output_tokens": 512,
-                            "model": "gemini-1.0-pro-latest",
+                            "model": "gemini-1.5-flash",
                             "prompt": "",
-                            "temperature": 0.1,
+                            "temperature": 1.0,
                             "top_k": 40,
                             "top_p": 0.95
                         }
@@ -1974,16 +1640,16 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
                     {
                         "type": "extension",
                         "extension_group": "transcriber",
-                        "addon": "chat_transcriber",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -2024,7 +1690,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -2043,27 +1709,7 @@
                                     },
                                     {
                                         "extension_group": "transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -2108,7 +1754,7 @@
                     },
                     {
                         "extension_group": "transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
@@ -2148,7 +1794,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "<agora_appid>",
+                            "app_id": "$AGORA_APP_ID",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -2159,8 +1805,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "<azure_stt_key>",
-                            "agora_asr_vendor_region": "<azure_stt_region>",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -2170,7 +1816,7 @@
                         "addon": "qwen_llm_python",
                         "name": "qwen_llm",
                         "property": {
-                            "api_key": "<qwen_key>",
+                            "api_key": "$QWEN_API_KEY",
                             "model": "qwen-max",
                             "max_tokens": 512,
                             "prompt": "",
@@ -2183,7 +1829,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "<cosy_api_key>",
+                            "api_key": "$QWEN_API_KEY",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -2195,16 +1841,16 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "<azure_tts_key>",
-                            "azure_subscription_region": "<azure_tts_region>",
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
                     {
                         "type": "extension",
                         "extension_group": "chat_transcriber",
-                        "addon": "chat_transcriber_python",
-                        "name": "chat_transcriber"
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension",
@@ -2228,7 +1874,7 @@
                         "addon": "aliyun_text_embedding",
                         "name": "aliyun_text_embedding",
                         "property": {
-                            "api_key": "<aliyun_text_embedding_api_key>",
+                            "api_key": "$ALIYUN_TEXT_EMBEDDING_API_KEY",
                             "model": "text-embedding-v3"
                         }
                     },
@@ -2238,14 +1884,14 @@
                         "addon": "aliyun_analyticdb_vector_storage",
                         "name": "aliyun_analyticdb_vector_storage",
                         "property": {
-                            "alibaba_cloud_access_key_id": "<alibaba_cloud_access_key_id>",
-                            "alibaba_cloud_access_key_secret": "<alibaba_cloud_access_key_secret>",
-                            "adbpg_instance_id": "<aliyun_analyticdb_instance_id>",
-                            "adbpg_instance_region": "cn-shanghai",
-                            "adbpg_account": "<aliyun_analyticdb_account>",
-                            "adbpg_account_password": "<aliyun_analyticdb_account_password>",
-                            "adbpg_namespace": "<aliyun_analyticdb_namespace>",
-                            "adbpg_namespace_password": "<aliyun_analyticdb_namespace_password>"
+                            "alibaba_cloud_access_key_id": "$ALIBABA_CLOUD_ACCESS_KEY_ID",
+                            "alibaba_cloud_access_key_secret": "$ALIBABA_CLOUD_ACCESS_KEY_SECRET",
+                            "adbpg_instance_id": "$ALIYUN_ANALYTICDB_INSTANCE_ID",
+                            "adbpg_instance_region": "$ALIYUN_ANALYTICDB_INSTANCE_REGION",
+                            "adbpg_account": "$ALIYUN_ANALYTICDB_ACCOUNT",
+                            "adbpg_account_password": "$ALIYUN_ANALYTICDB_ACCOUNT_PASSWORD",
+                            "adbpg_namespace": "$ALIYUN_ANALYTICDB_NAMESPACE",
+                            "adbpg_namespace_password": "$ALIYUN_ANALYTICDB_NAMESPACE_PASSWORD"
                         }
                     },
                     {
@@ -2280,7 +1926,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber"
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -2356,27 +2002,7 @@
                                     },
                                     {
                                         "extension_group": "chat_transcriber",
-                                        "extension": "chat_transcriber",
-                                        "cmd_conversions": [
-                                            {
-                                                "cmd": {
-                                                    "type": "per_property",
-                                                    "keep_original": true,
-                                                    "rules": [
-                                                        {
-                                                            "path": "is_final",
-                                                            "type": "fixed_value",
-                                                            "value": "bool(true)"
-                                                        },
-                                                        {
-                                                            "path": "stream_id",
-                                                            "type": "fixed_value",
-                                                            "value": "uint32(999)"
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        ]
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -2452,7 +2078,7 @@
                     },
                     {
                         "extension_group": "chat_transcriber",
-                        "extension": "chat_transcriber",
+                        "extension": "message_collector",
                         "data": [
                             {
                                 "name": "data",
