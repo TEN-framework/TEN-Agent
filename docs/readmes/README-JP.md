@@ -71,13 +71,9 @@ Apple Silicon Mac を使用している場合は、Docker の "Use Rosetta for x
 
 ### 次のステップ
 #### 1. 設定ファイルの準備
-プロジェクトをクローンした後、ルートディレクトリで以下のコマンドを実行して `property.json` と `.env` を作成します：
+プロジェクトのルートで、`cp` コマンドを使って、サンプルから `.env` を作成してください。
 ```bash
-# .env ファイルの作成
 cp ./.env.example ./.env
-
-# property.json ファイルの作成
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. キーのバインド

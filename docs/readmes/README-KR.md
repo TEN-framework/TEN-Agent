@@ -65,13 +65,9 @@ Apple Silicon을 사용하는 경우 Docker의 "Use Rosetta for x86_64/amd64 emu
 ### 다음 단계
 
 #### 1. 설정 파일 수정
-프로젝트 루트에서 예제 파일로부터 이 파일들을 생성하세요. 나중에 Docker Compose를 위한 정보를 저장하는 데 사용됩니다.
+프로젝트의 루트에서 `cp` 명령어를 사용하여 예시에서 `.env` 파일을 생성하세요.
 ```bash
-# .env 예제로부터 .env 생성
 cp ./.env.example ./.env
-
-# property.json 예제로부터 property.json 생성
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. API 키 설정

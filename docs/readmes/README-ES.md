@@ -67,12 +67,11 @@ Si está utilizando Apple Silicon, deberá desmarcar la opción "Use Rosetta for
 ### Siguiente paso
 
 #### 1. Modificar archivos de configuración
-En la raíz del proyecto, usa el siguiente comando para crear `.env` y `./agents/property.json` a partir de los ejemplos.
+En la raíz del proyecto, usa el siguiente comando para crear .env a partir del ejemplo.
 
 Se utilizarán para almacenar información para `docker compose` más adelante.
 ```bash
 cp ./.env.example ./.env
-cp ./agents/property.json.example ./agents/property.json
 ```
 
 #### 2. Configurar claves de API
