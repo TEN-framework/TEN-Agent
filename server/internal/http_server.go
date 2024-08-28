@@ -38,8 +38,6 @@ type HttpServerConfig struct {
 	Log2Stdout               bool
 	PropertyJsonFile         string
 	Port                     string
-	TTSVendorChinese         string
-	TTSVendorEnglish         string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
 }
