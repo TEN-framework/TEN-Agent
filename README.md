@@ -68,7 +68,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 #### 1. Modify config files
 In the root of the project, use `cp` command to create `.env` from the example.
 
-They will be used to store information for `docker compose` later.
+It will be used to store information for `docker compose` later.
 ```bash
 cp ./.env.example ./.env
 ```
@@ -115,11 +115,11 @@ make run-server
 ### Finish and verify 🎉
 
 #### Astra multimodal agent
-Open up http://localhost:3000 in browser to test Astra multimodal agent.
+Open up http://localhost:3000 in browser to play and test the Astra agent.
 
 #### Graph designer
 
-Open up another tab go to http://localhost:3001, and use graph designer to edit the flow and properties of any extensions.
+Open up another tab go to http://localhost:3001, and use Graph Designer to create, connect and edit extensions on canvas.
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
