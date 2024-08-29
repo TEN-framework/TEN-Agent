@@ -31,7 +31,6 @@ copy_package() {
         cp ten_packages/${package_type}/${package_name}/property.json .release/ten_packages/${package_type}/${package_name}/
     fi
 
-
     # package .py for python extensions
     # TODO: package 'publish' contents only
     cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
@@ -43,6 +42,9 @@ copy_package() {
     if [[ -d ten_packages/${package_type}/${package_name}/pb ]]; then
         cp -r ten_packages/${package_type}/${package_name}/pb .release/ten_packages/${package_type}/${package_name}/
     fi
+    if [[ -d ten_packages/${package_type}/${package_name}/src ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/src .release/ten_packages/${package_type}/${package_name}/
+    fi
 }
 
 cp -r bin .release
@@ -51,7 +53,7 @@ cp property.json .release
 
 # copy packages
 mkdir -p .release/ten_packages
-for package_type in system extension_group extension ; do
+for package_type in system extension_group extension; do
     for package_path in ten_packages/${package_type}/*; do
         package_name=$(basename ${package_path})
         copy_package ${package_type} ${package_name}
