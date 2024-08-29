@@ -92,36 +92,36 @@ func (s *HttpServer) handlerHealth(c *gin.Context) {
 	s.output(c, codeOk, nil)
 }
 
-func (s *HttpServer) handlerPing(c *gin.Context) {
-	var req PingReq
+// func (s *HttpServer) handlerPing(c *gin.Context) {
+// 	var req PingReq
 
-	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
-		slog.Error("handlerPing params invalid", "err", err, logTag)
-		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
-		return
-	}
+// 	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+// 		slog.Error("handlerPing params invalid", "err", err, logTag)
+// 		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
+// 		return
+// 	}
 
-	slog.Info("handlerPing start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+// 	slog.Info("handlerPing start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 
-	if strings.TrimSpace(req.ChannelName) == "" {
-		slog.Error("handlerPing channel empty", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrChannelEmpty, http.StatusBadRequest)
-		return
-	}
+// 	if strings.TrimSpace(req.ChannelName) == "" {
+// 		slog.Error("handlerPing channel empty", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+// 		s.output(c, codeErrChannelEmpty, http.StatusBadRequest)
+// 		return
+// 	}
 
-	if !workers.Contains(req.ChannelName) {
-		slog.Error("handlerPing channel not existed", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrChannelNotExisted, http.StatusBadRequest)
-		return
-	}
+// 	if !workers.Contains(req.ChannelName) {
+// 		slog.Error("handlerPing channel not existed", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+// 		s.output(c, codeErrChannelNotExisted, http.StatusBadRequest)
+// 		return
+// 	}
 
-	// Update worker
-	worker := workers.Get(req.ChannelName).(*Worker)
-	worker.UpdateTs = time.Now().Unix()
+// 	// Update worker
+// 	worker := workers.Get(req.ChannelName).(*Worker)
+// 	worker.UpdateTs = time.Now().Unix()
 
-	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
-	s.output(c, codeSuccess, nil)
-}
+// 	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
+// 	s.output(c, codeSuccess, nil)
+// }
 
 func (s *HttpServer) handlerStart(c *gin.Context) {
 	workersRunning := workers.Size()
@@ -461,7 +461,6 @@ func (s *HttpServer) Start() {
 
 	r.GET("/", s.handlerHealth)
 	r.GET("/health", s.handlerHealth)
-	r.POST("/ping", s.handlerPing)
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/token/generate", s.handlerGenerateToken)
@@ -471,6 +470,5 @@ func (s *HttpServer) Start() {
 
 	slog.Info("server start", "port", s.config.Port, logTag)
 
-	go timeoutWorkers()
 	r.Run(fmt.Sprintf(":%s", s.config.Port))
 }

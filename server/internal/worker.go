@@ -253,27 +253,6 @@ func (w *Worker) update(req *WorkerUpdateReq) (err error) {
 	return
 }
 
-func timeoutWorkers() {
-	for {
-		for _, channelName := range workers.Keys() {
-			worker := workers.Get(channelName).(*Worker)
-
-			nowTs := time.Now().Unix()
-			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
-				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
-					slog.Error("Worker cleanWorker failed", "err", err, "channelName", channelName, logTag)
-					continue
-				}
-
-				slog.Info("Worker cleanWorker success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
-			}
-		}
-
-		slog.Debug("Worker cleanWorker sleep", "sleep", workerCleanSleepSeconds, logTag)
-		time.Sleep(workerCleanSleepSeconds * time.Second)
-	}
-}
-
 func CleanWorkers() {
 	for _, channelName := range workers.Keys() {
 		worker := workers.Get(channelName).(*Worker)
