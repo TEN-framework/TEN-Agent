@@ -4,8 +4,6 @@
 import asyncio
 import os
 import json
-from .client import AliGPDBClient
-from .model import Model
 from ten import (
     Extension,
     TenEnv,
@@ -20,12 +18,6 @@ from .log import logger
 import threading
 from datetime import datetime
 
-from alibabacloud_gpdb20160503.client import Client as gpdb20160503Client
-from alibabacloud_tea_openapi import models as open_api_models
-from alibabacloud_gpdb20160503 import models as gpdb_20160503_models
-from alibabacloud_tea_util import models as util_models
-from alibabacloud_tea_util.client import Client as UtilClient
-
 
 class AliPGDBExtension(Extension):
     def __init__(self, name):
@@ -37,7 +29,7 @@ class AliPGDBExtension(Extension):
         self.region_id = os.environ.get("ADBPG_INSTANCE_REGION")
         self.dbinstance_id = os.environ.get("ADBPG_INSTANCE_ID")
         self.endpoint = f"gpdb.aliyuncs.com"
-        self.client = None
+        self.model = None
         self.account = os.environ.get("ADBPG_ACCOUNT")
         self.account_password = os.environ.get("ADBPG_ACCOUNT_PASSWORD")
         self.namespace = os.environ.get("ADBPG_NAMESPACE")
@@ -92,9 +84,15 @@ class AliPGDBExtension(Extension):
             self.endpoint = "gpdb.aliyuncs.com"
         else:
             self.endpoint = f"gpdb.{self.region_id}.aliyuncs.com"
-        self.client = AliGPDBClient(
+
+        # lazy import packages which requires long time to load
+        from .client import AliGPDBClient
+        from .model import Model
+
+        client = AliGPDBClient(
             self.access_key_id, self.access_key_secret, self.endpoint
         )
+        self.model = Model(self.region_id, self.dbinstance_id, client)
         self.thread = threading.Thread(
             target=asyncio.run, args=(self.__thread_routine(ten),)
         )
@@ -141,7 +139,6 @@ class AliPGDBExtension(Extension):
             ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def async_create_collection(self, ten: TenEnv, cmd: Cmd):
-        m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         dimension = 1024
         try:
@@ -149,11 +146,11 @@ class AliPGDBExtension(Extension):
         except Exception as e:
             logger.warning(f"Error: {e}")
 
-        err = await m.create_collection_async(
+        err = await self.model.create_collection_async(
             self.account, self.account_password, self.namespace, collection
         )
         if err is None:
-            await m.create_vector_index_async(
+            await self.model.create_vector_index_async(
                 self.account,
                 self.account_password,
                 self.namespace,
@@ -166,14 +163,13 @@ class AliPGDBExtension(Extension):
 
     async def async_upsert_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
-        m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         file = cmd.get_property_string("file_name")
         content = cmd.get_property_string("content")
         obj = json.loads(content)
         rows = [(file, item["text"], item["embedding"]) for item in obj]
 
-        err = await m.upsert_collection_data_async(
+        err = await self.model.upsert_collection_data_async(
             collection, self.namespace, self.namespace_password, rows
         )
         logger.info(
@@ -192,12 +188,11 @@ class AliPGDBExtension(Extension):
 
     async def async_query_vector(self, ten: TenEnv, cmd: Cmd):
         start_time = datetime.now()
-        m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
         embedding = cmd.get_property_to_json("embedding")
         top_k = cmd.get_property_int("top_k")
         vector = json.loads(embedding)
-        response, error = await m.query_collection_data_async(
+        response, error = await self.model.query_collection_data_async(
             collection, self.namespace, self.namespace_password, vector, top_k=top_k
         )
         logger.info(
@@ -212,15 +207,14 @@ class AliPGDBExtension(Extension):
         if error:
             return ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         else:
-            body = m.parse_collection_data(response.body)
+            body = self.model.parse_collection_data(response.body)
             ret = CmdResult.create(StatusCode.OK)
             ret.set_property_from_json("response", body)
             ten.return_result(ret, cmd)
 
     async def async_delete_collection(self, ten: TenEnv, cmd: Cmd):
-        m = Model(self.region_id, self.dbinstance_id, self.client)
         collection = cmd.get_property_string("collection_name")
-        err = await m.delete_collection_async(
+        err = await self.model.delete_collection_async(
             self.account, self.account_password, self.namespace, collection
         )
         if err is None:

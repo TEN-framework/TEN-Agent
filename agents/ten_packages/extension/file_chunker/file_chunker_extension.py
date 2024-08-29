@@ -14,8 +14,6 @@ from ten import (
 )
 from typing import List, Any
 from .log import logger
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
 import json
 from datetime import datetime
 import uuid, math
@@ -63,6 +61,9 @@ class FileChunkerExtension(Extension):
         return "coll_" + uuid.uuid1().hex.lower()
 
     def split(self, path: str) -> List[Any]:
+        # lazy import packages which requires long time to load
+        from llama_index.core import SimpleDirectoryReader
+        from llama_index.core.node_parser import SentenceSplitter
 
         # load pdf file by path
         documents = SimpleDirectoryReader(

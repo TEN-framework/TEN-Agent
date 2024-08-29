@@ -14,7 +14,6 @@ from ten import (
     StatusCode,
     CmdResult,
 )
-from .gemini_llm import GeminiLLM, GeminiLLMConfig
 from .log import logger
 from .utils import get_micro_ts, parse_sentence
 
@@ -45,6 +44,10 @@ class GeminiLLMExtension(Extension):
 
     def on_start(self, ten: TenEnv) -> None:
         logger.info("GeminiLLMExtension on_start")
+
+        # lazy import packages which requires long time to load
+        from .gemini_llm import GeminiLLM, GeminiLLMConfig
+
         # Prepare configuration
         gemini_llm_config = GeminiLLMConfig.default_config()
 
