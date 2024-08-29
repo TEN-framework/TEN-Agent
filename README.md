@@ -46,8 +46,8 @@ Astra is a multimodal agent powered by [ TEN ](https://doc.theten.ai), demonstra
 ### Prerequisites
 
 #### Keys
-- Agora App ID and App Certificate([read here on how](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Azure's [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
+- Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate is not required)
+- Azure [SST](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys (feel  free to use another provider)
 - [OpenAI](https://openai.com/index/openai-api/) API key
 
 #### Installation
@@ -124,25 +124,17 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
 
 <br>
-<h2>TEN Platform</h2>
-
-Now that you’ve created your first AI agent, the creativity doesn't stop here. To develop more amazing agents, you’ll need an advanced understanding of how the TEN service works under the hood. Please refer to the [ TEN platform documentation ](https://doc.theten.ai).
-
-<br>
-<h2>TEN Feature Comparison</h2>
+<h2>Astra agent comparison</h2>
 
 <div align="center">
 
-| **Features**                             | **TEN** | **Dify** | **LangChain** | **Flowise** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:-----------:|
-| **Opensourced Multimodal Agent**         |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Python, Go, and C++ for Extensions**   |   ✅    |    ❌    |      ❌       |      ❌     |
-| **All-in-one Package Manager**           |   ✅    |    ❌    |      ❌       |      ❌     |
-| **RTC Transportation**                   |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Extension Store**                      |   ✅    |    ✅    |      ❌       |      ❌     |
-| **RAG**                                  |   ✅    |    ✅    |      ✅       |      ✅     |
-| **Workflow Builder**                     |   ✅    |    ✅    |      ✅       |      ✅     |
-| **Local Deployment**                     |   ✅    |    ✅    |      ✅       |      ✅     |
+| **Features**                             | **Astra** | **Pipecat** | **LiveKit** |
+|:----------------------------------------:|:-------:|:--------:|:-------------:|
+| **Go support for extension**   |   ✅    |    ❌    |      ❌       |
+| **C++ support for extension**   |   ✅    |    ❌    |      ❌       |
+| **Python support for extension**   |   ✅    |    ❌    |      ❌       |
+| **Workflow builder for extension**                     |   ✅    |    ✅    |      ✅       |
+| **RAG support**                                  |   ✅    |    ✅    |      ✅       |
 
 </div>
 
