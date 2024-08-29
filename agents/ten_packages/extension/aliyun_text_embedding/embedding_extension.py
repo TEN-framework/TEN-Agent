@@ -6,7 +6,6 @@ from ten import (
     CmdResult,
 )
 
-import dashscope
 import json
 from typing import Generator, List
 from http import HTTPStatus
@@ -45,6 +44,11 @@ class EmbeddingExtension(Extension):
         self.api_key = self.get_property_string(ten, "api_key", self.api_key)
         self.model = self.get_property_string(ten, "model", self.api_key)
 
+
+        # lazy import packages which requires long time to load
+        global dashscope
+        import dashscope
+        
         dashscope.api_key = self.api_key
 
         for i in range(self.parallel):

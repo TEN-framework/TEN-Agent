@@ -14,13 +14,8 @@ from ten import (
     CmdResult,
 )
 from .log import logger
-from .astra_llm import ASTRALLM
-from .astra_retriever import ASTRARetriever
 import queue, threading
 from datetime import datetime
-from llama_index.core.chat_engine import SimpleChatEngine, ContextChatEngine
-from llama_index.core.storage.chat_store import SimpleChatStore
-from llama_index.core.memory import ChatMemoryBuffer
 
 PROPERTY_CHAT_MEMORY_TOKEN_LIMIT = "chat_memory_token_limit"
 PROPERTY_GREETING = "greeting"
@@ -79,6 +74,8 @@ class LlamaIndexExtension(Extension):
         self.thread.start()
 
         # enable chat memory
+        from llama_index.core.storage.chat_store import SimpleChatStore
+        from llama_index.core.memory import ChatMemoryBuffer
         self.chat_memory = ChatMemoryBuffer.from_defaults(
             token_limit=self.chat_memory_token_limit,
             chat_store=SimpleChatStore(),
@@ -204,9 +201,14 @@ class LlamaIndexExtension(Extension):
 
                 logger.info("process input text [%s] ts [%s]", input_text, ts)
 
+                # lazy import packages which requires long time to load
+                from .astra_llm import ASTRALLM
+                from .astra_retriever import ASTRARetriever
+                
                 # prepare chat engine
                 chat_engine = None
                 if len(self.collection_name) > 0:
+                    from llama_index.core.chat_engine import ContextChatEngine                    
                     chat_engine = ContextChatEngine.from_defaults(
                         llm=ASTRALLM(ten=ten),
                         retriever=ASTRARetriever(ten=ten, coll=self.collection_name),
@@ -229,6 +231,7 @@ class LlamaIndexExtension(Extension):
                         ),
                     )
                 else:
+                    from llama_index.core.chat_engine import SimpleChatEngine
                     chat_engine = SimpleChatEngine.from_defaults(
                         llm=ASTRALLM(ten=ten),
                         system_prompt=(
