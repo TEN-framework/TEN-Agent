@@ -89,21 +89,21 @@ class MessageCollectorExtension(Extension):
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception as e:
-            logger.exception(
+            logger.warning(
                 f"on_data get_property_bool {TEXT_DATA_FINAL_FIELD} error: {e}"
             )
 
         try:
             stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
         except Exception as e:
-            logger.exception(
+            logger.warning(
                 f"on_data get_property_int {TEXT_DATA_STREAM_ID_FIELD} error: {e}"
             )
 
         try:
             end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
         except Exception as e:
-            logger.exception(
+            logger.warning(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
             )
 
