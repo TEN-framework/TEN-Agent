@@ -1,8 +1,7 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
   DESCRIPTION, useAppDispatch, useAppSelector, apiPing, genUUID,
-  apiStartService, apiStopService,
-  getGraphProperties
+  apiStartService, apiStopService
 } from "@/common"
 import { Select, Button, message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"
@@ -50,7 +49,8 @@ const Description = () => {
         channel,
         userId,
         graphName,
-        properties: getGraphProperties(graphName, language, voiceType)
+        language,
+        voiceType
       })
       const { code, msg } = res || {}
       if (code != 0) {

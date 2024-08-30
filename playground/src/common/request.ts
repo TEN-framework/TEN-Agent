@@ -1,12 +1,14 @@
 import { AnyObject } from "antd/es/_util/type"
 import { REQUEST_URL } from "./constant"
 import { genUUID } from "./utils"
+import { Language } from "@/types"
 
 interface StartRequestConfig {
   channel: string
   userId: number,
-  graphName: string
-  properties: AnyObject
+  graphName: string,
+  language: Language,
+  voiceType: "male" | "female"
 }
 
 interface GenAgoraDataConfig {
@@ -34,15 +36,15 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 }
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
-  const url = `${REQUEST_URL}/start`
-  const { channel, userId, graphName, properties } = config
+  const url = `/api/agents/start`
+  const { channel, userId, graphName, language, voiceType } = config
   const data = {
     request_id: genUUID(),
     channel_name: channel,
-    openai_proxy_url: "",
-    remote_stream_id: userId,
+    chat_uid: userId,
     graph_name: graphName,
-    properties,
+    language,
+    voice_type: voiceType
   }
   let resp: any = await fetch(url, {
     method: "POST",
@@ -56,7 +58,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
 }
 
 export const apiStopService = async (channel: string) => {
-  const url = `${REQUEST_URL}/stop`
+  const url = `/api/agents/stop`
   const data = {
     request_id: genUUID(),
     channel_name: channel
