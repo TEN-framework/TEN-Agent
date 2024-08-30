@@ -1,4 +1,4 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra_banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
@@ -43,7 +43,7 @@
 
 [Astra AI agent](https://theastra.ai) 是通过 TEN 搭建出来的 multimodal AI agent, 展示了其多模态，低延迟的能力。
 
-[![Showcase Astra voice agent](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra voice agent](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 
 <br>
 <h2>如何本地搭建 Astra AI agent</h2>
@@ -65,7 +65,7 @@
 
 <div align="center">
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker_setting.gif?raw=true)
 
 </div>
 
@@ -154,14 +154,14 @@ make run-server
 
 同时可以再开一个 tab 在 http://localhost:3001 体验 Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra voice agent。
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph_designer.gif?raw=true)
 
 <br>
 <h2>点星收藏</h2>
 
 我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 
 
