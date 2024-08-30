@@ -134,8 +134,8 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 | **Rich TTS Support for different languages**              |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
 | **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
 | **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌ 
 | **RAG support**                          |   ✅    |    ❌    |      ❌        | ❌     |      ❌     |     ❌      |
+| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌ 
 | **Rich LLM Support**              |   ✅    |    ✅   |      ✅     |     ✅    |     ✅    |    ✅     |
 | **Python support for extension**          |   ✅    |   ✅    |      ✅       |     ✅    |     ✅      |     ✅     |
 | **Open source**                          |   ✅    |     ✅     |     ✅       |     ❌    |     ❌       |     ❌       |
