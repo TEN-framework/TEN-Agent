@@ -128,14 +128,17 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 
 <div align="center">
 
-| **Features**                             | **Astra Agent** | **Pipecat** | **LiveKit** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|
-| **Go support for extension**              |   ✅    |    ❌    |      ❌       |    
-| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |    
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |    
-| **RAG support**                          |   ✅    |    ❌    |      ❌       |     
-| **Python support for extension**          |   ✅    |   ✅    |      ✅       |     
-| **Open source**                          |   ✅    |     ✅     |     ✅       |    
+| **Features**                             | **Astra Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
+|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
+| **Vision**              |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
+| **Rich TTS Support for different languages**              |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
+| **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌ 
+| **RAG support**                          |   ✅    |    ❌    |      ❌        | ❌     |      ❌     |     ❌      |
+| **Rich LLM Support**              |   ✅    |    ✅   |      ✅     |     ✅    |     ✅    |    ✅     |
+| **Python support for extension**          |   ✅    |   ✅    |      ✅       |     ✅    |     ✅      |     ✅     |
+| **Open source**                          |   ✅    |     ✅     |     ✅       |     ❌    |     ❌       |     ❌       |
 
 </div>
 
