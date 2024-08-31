@@ -42,11 +42,6 @@ type HttpServerConfig struct {
 	WorkerQuitTimeoutSeconds int
 }
 
-type PingReq struct {
-	RequestId   string `json:"request_id,omitempty"`
-	ChannelName string `json:"channel_name,omitempty"`
-}
-
 type StartReq struct {
 	RequestId            string                            `json:"request_id,omitempty"`
 	ChannelName          string                            `json:"channel_name,omitempty"`
@@ -92,36 +87,21 @@ func (s *HttpServer) handlerHealth(c *gin.Context) {
 	s.output(c, codeOk, nil)
 }
 
-// func (s *HttpServer) handlerPing(c *gin.Context) {
-// 	var req PingReq
-
-// 	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
-// 		slog.Error("handlerPing params invalid", "err", err, logTag)
-// 		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	slog.Info("handlerPing start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-
-// 	if strings.TrimSpace(req.ChannelName) == "" {
-// 		slog.Error("handlerPing channel empty", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-// 		s.output(c, codeErrChannelEmpty, http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	if !workers.Contains(req.ChannelName) {
-// 		slog.Error("handlerPing channel not existed", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-// 		s.output(c, codeErrChannelNotExisted, http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	// Update worker
-// 	worker := workers.Get(req.ChannelName).(*Worker)
-// 	worker.UpdateTs = time.Now().Unix()
-
-// 	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
-// 	s.output(c, codeSuccess, nil)
-// }
+func (s *HttpServer) handlerList(c *gin.Context) {
+	slog.Info("handlerList start", logTag)
+	// Create a slice of maps to hold the filtered data
+	filtered := make([]map[string]interface{}, len(workers.Keys()))
+	for _, channelName := range workers.Keys() {
+		worker := workers.Get(channelName).(*Worker)
+		workerJson := map[string]interface{}{
+			"channelName": worker.ChannelName,
+			"createTs":    worker.CreateTs,
+		}
+		filtered = append(filtered, workerJson)
+	}
+	slog.Info("handlerList end", logTag)
+	s.output(c, codeSuccess, filtered)
+}
 
 func (s *HttpServer) handlerStart(c *gin.Context) {
 	workersRunning := workers.Size()
@@ -461,6 +441,7 @@ func (s *HttpServer) Start() {
 
 	r.GET("/", s.handlerHealth)
 	r.GET("/health", s.handlerHealth)
+	r.GET("/list", s.handlerList)
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/token/generate", s.handlerGenerateToken)
