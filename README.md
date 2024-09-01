@@ -1,4 +1,4 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra_banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
@@ -39,7 +39,7 @@
 
 Astra is a multimodal agent powered by [ TEN ](https://doc.theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
 
-[![Showcase Astra multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra_voice_agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 <br>
 <h2>How to build Astra locally
 
@@ -61,7 +61,7 @@ Astra is a multimodal agent powered by [ TEN ](https://doc.theten.ai), demonstra
 #### Docker setting on Apple Silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker_setting.gif?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### Next step
 
@@ -121,21 +121,24 @@ Open up http://localhost:3000 in browser to play and test the Astra agent.
 
 Open up another tab go to http://localhost:3001, and use Graph Designer to create, connect and edit extensions on canvas.
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph_designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
 <br>
 <h2>Astra Agent Comparison</h2>
 
 <div align="center">
 
-| **Features**                             | **Astra Agent** | **Pipecat** | **LiveKit** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|
-| **Go support for extension**              |   ✅    |    ❌    |      ❌       |    
-| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |    
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |    
-| **RAG support**                          |   ✅    |    ❌    |      ❌       |     
-| **Python support for extension**          |   ✅    |   ✅    |      ✅       |     
-| **Open source**                          |   ✅    |     ✅     |     ✅       |    
+| **Features**                             | **Astra Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
+|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
+| **Vision**                               |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
+| **Rich TTS Support for different languages** |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
+| **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **RAG support**                          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
+| **Rich LLM Support**                      |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
+| **Python support for extension**          |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
+| **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
 
 </div>
 
@@ -144,7 +147,7 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 
 Before we dive further, be sure to star our repository and get instant notifications for all new releases!
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star_the_repo_confetti_higher_quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 <br>
 <h2>Join Community</h2>

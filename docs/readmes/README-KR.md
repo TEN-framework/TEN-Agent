@@ -1,4 +1,4 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
@@ -32,13 +32,13 @@
 </div>
 
 <br>
-<h2>Voice agent: Astra</h2>
+<h2>Astra Agent</h2>
 
 [보이스 에이전트: Astra](https://theastra.ai)
 
 Astra는 TEN을 통해 구동되는 보이스 에이전트로, 직관적이고 원활한 대화 상호작용을 만들어내는 능력을 보여줍니다.
 
-[![Astra 쇼케이스](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Astra 쇼케이스](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 <br>
 <h2>로컬에서 보이스 에이전트 구축하는 방법
 
@@ -60,7 +60,7 @@ Astra는 TEN을 통해 구동되는 보이스 에이전트로, 직관적이고 �
 #### Apple Silicon에서의 Docker 설정
 Apple Silicon을 사용하는 경우 Docker의 "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" 옵션을 선택 해제해야 합니다. 그렇지 않으면 서버가 작동하지 않습니다.
 
-![Docker 설정](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Docker 설정](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### 다음 단계
 
@@ -122,7 +122,7 @@ make run-server
 다른 탭을 열어 localhost:3001로 이동하고, 그래프 디자이너를 사용하여 확장 기능의 흐름과 속성을 편집하세요.
 
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
 <br>
 <h2>TEN 플랫폼</h2>
@@ -134,7 +134,7 @@ make run-server
 
 더 깊이 들어가기 전에, 꼭 우리 저장소에 별표를 표시하고 모든 새 릴리스에 대한 즉각적인 알림을 받으세요!
 
-![TEN 별표 표시 gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+![TEN 별표 표시 gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 <br>
 <h2>커뮤니티 가입</h2>

@@ -1,4 +1,4 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
@@ -39,7 +39,7 @@
 
 Astra è un agente multimodale alimentato da [ TEN ](https://doc.theten.ai), che dimostra le sue capacità in termini di linguaggio, visione e ragionamento attraverso RAG dalla documentazione locale.
 
-[![Mostra Astra agente multimodale](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Mostra Astra agente multimodale](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 <br>
 <h2>Come costruire Astra localmente
 
@@ -61,7 +61,7 @@ Astra è un agente multimodale alimentato da [ TEN ](https://doc.theten.ai), che
 #### Impostazione Docker su Apple Silicon
 Se si utilizza Apple Silicon, è necessario deselezionare l'opzione "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" per Docker, altrimenti il server non funzionerà.
 
-![Impostazione Docker](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Impostazione Docker](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### Prossimo passo
 
@@ -121,7 +121,7 @@ Apri http://localhost:3000 nel browser per testare Astra agente multimodale.
 
 Apri un'altra scheda e vai su http://localhost:3001, utilizza il graph designer per modificare il flusso e le proprietà delle estensioni.
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
 <br>
 <h2>La piattaforma TEN</h2>
@@ -151,7 +151,7 @@ Ora che hai creato il tuo primo agente di intelligenza artificiale, la creativit
 
 Prima di continuare, assicurati di mettere una stella al nostro repository e ricevere notifiche istantanee per tutte le nuove versioni!
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 <br>
 <h2>Unisciti alla community</h2>

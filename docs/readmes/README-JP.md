@@ -1,4 +1,4 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/imgs/astra-banner.jpg?raw=true)
+![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
@@ -43,7 +43,7 @@
 
 [Astra voice agent](https://theastra.ai) は、TEN を使用して構築された音声エージェントであり、マルチモーダルで低遅延の能力を示しています。
 
-[![Showcase Astra voice agent](https://github.com/TEN-framework/docs/blob/main/assets/gifs/astra-voice-agent.gif?raw=true)](https://theastra.ai)
+[![Showcase Astra voice agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 
 <br>
 <h2>グラフデザイナーを使用して音声エージェントを構成する方法</h2>
@@ -65,7 +65,7 @@ Apple Silicon Mac を使用している場合は、Docker の "Use Rosetta for x
 
 <div align="center">
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gifs/docker-setting.gif?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 </div>
 
@@ -128,14 +128,14 @@ make run-server
 
 別のタブを開いて `localhost:3001` にアクセスし、TEN グラフデザイナー (ベータ版) を体験できます。簡単なドラッグアンドドロップと動的なノード接続で、Astra 音声エージェントを簡単にカスタマイズできます。
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gifs/graph-designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
 <br>
 <h2>スターを付ける</h2>
 
 頻繁に更新されるため、最新情報を見逃さないように、リポジトリにスターを付けてください。
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gifs/star-the-repo-confetti-higher-quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 <br>
 <h2>コミュニティに参加する</h2>
