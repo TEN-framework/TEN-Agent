@@ -42,6 +42,11 @@ type HttpServerConfig struct {
 	WorkerQuitTimeoutSeconds int
 }
 
+type PingReq struct {
+	RequestId   string `json:"request_id,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
+}
+
 type StartReq struct {
 	RequestId            string                            `json:"request_id,omitempty"`
 	ChannelName          string                            `json:"channel_name,omitempty"`
@@ -50,6 +55,7 @@ type StartReq struct {
 	Token                string                            `json:"token,omitempty"`
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
+	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
 }
 
 type StopReq struct {
@@ -103,6 +109,37 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 	s.output(c, codeSuccess, filtered)
 }
 
+func (s *HttpServer) handlerPing(c *gin.Context) {
+	var req PingReq
+
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+		slog.Error("handlerPing params invalid", "err", err, logTag)
+		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("handlerPing start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+
+	if strings.TrimSpace(req.ChannelName) == "" {
+		slog.Error("handlerPing channel empty", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrChannelEmpty, http.StatusBadRequest)
+		return
+	}
+
+	if !workers.Contains(req.ChannelName) {
+		slog.Error("handlerPing channel not existed", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrChannelNotExisted, http.StatusBadRequest)
+		return
+	}
+
+	// Update worker
+	worker := workers.Get(req.ChannelName).(*Worker)
+	worker.UpdateTs = time.Now().Unix()
+
+	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
+	s.output(c, codeSuccess, nil)
+}
+
 func (s *HttpServer) handlerStart(c *gin.Context) {
 	workersRunning := workers.Size()
 
@@ -143,7 +180,13 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 
 	worker := newWorker(req.ChannelName, logFile, s.config.Log2Stdout, propertyJsonFile)
 	worker.HttpServerPort = req.WorkerHttpServerPort
-	worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
+
+	if req.QuitTimeoutSeconds > 0 {
+		worker.QuitTimeoutSeconds = req.QuitTimeoutSeconds
+	} else {
+		worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
+	}
+
 	if err := worker.start(&req); err != nil {
 		slog.Error("handlerStart start worker failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrStartWorkerFailed, http.StatusInternalServerError)
@@ -444,6 +487,7 @@ func (s *HttpServer) Start() {
 	r.GET("/list", s.handlerList)
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
+	r.POST("/ping", s.handlerPing)
 	r.POST("/token/generate", s.handlerGenerateToken)
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
 	r.POST("/vector/document/update", s.handlerVectorDocumentUpdate)
@@ -451,5 +495,6 @@ func (s *HttpServer) Start() {
 
 	slog.Info("server start", "port", s.config.Port, logTag)
 
+	go timeoutWorkers()
 	r.Run(fmt.Sprintf(":%s", s.config.Port))
 }

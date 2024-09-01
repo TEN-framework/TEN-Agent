@@ -36,6 +36,7 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 }
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
+  // look at app/api/agents/start/route.tsx for the server-side implementation
   const url = `/api/agents/start`
   const { channel, userId, graphName, language, voiceType } = config
   const data = {
@@ -58,6 +59,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
 }
 
 export const apiStopService = async (channel: string) => {
+  // look at app/api/agents/stop/route.tsx for the server-side implementation
   const url = `/api/agents/stop`
   const data = {
     request_id: genUUID(),

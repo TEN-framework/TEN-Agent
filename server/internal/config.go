@@ -18,6 +18,8 @@ const (
 	PropertyJsonFile = "./agents/property.json"
 	// Token expire time
 	tokenExpirationInSeconds = uint32(86400)
+
+	WORKER_TIMEOUT_INFINITY = -1
 )
 
 var (

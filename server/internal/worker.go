@@ -296,6 +296,32 @@ func killProcess(pid int) {
 	}
 }
 
+func timeoutWorkers() {
+	for {
+		for _, channelName := range workers.Keys() {
+			worker := workers.Get(channelName).(*Worker)
+
+			// Skip workers with infinite timeout
+			if worker.QuitTimeoutSeconds == WORKER_TIMEOUT_INFINITY {
+				continue
+			}
+
+			nowTs := time.Now().Unix()
+			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
+				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
+					slog.Error("Timeout worker stop failed", "err", err, "channelName", channelName, logTag)
+					continue
+				}
+
+				slog.Info("Timeout worker stop success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
+			}
+		}
+
+		slog.Debug("Worker timeout check", "sleep", workerCleanSleepSeconds, logTag)
+		time.Sleep(workerCleanSleepSeconds * time.Second)
+	}
+}
+
 func CleanWorkers() {
 	// Stop all workers
 	for _, channelName := range workers.Keys() {
