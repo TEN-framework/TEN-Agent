@@ -42,7 +42,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
   const data = {
     request_id: genUUID(),
     channel_name: channel,
-    chat_uid: userId,
+    user_uid: userId,
     graph_name: graphName,
     language,
     voice_type: voiceType

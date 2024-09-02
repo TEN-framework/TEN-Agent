@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const {
       request_id,
       channel_name,
-      chat_uid,
+      user_uid,
       graph_name,
       language,
       voice_type,
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         request_id,
         channel_name,
-        chat_uid,
+        user_uid,
         graph_name,
         // Get the graph properties based on the graph name, language, and voice type
         properties: getGraphProperties(graph_name, language, voice_type),

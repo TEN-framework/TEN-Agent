@@ -51,7 +51,8 @@ type StartReq struct {
 	RequestId            string                            `json:"request_id,omitempty"`
 	ChannelName          string                            `json:"channel_name,omitempty"`
 	GraphName            string                            `json:"graph_name,omitempty"`
-	RemoteStreamId       uint32                            `json:"chat_uid,omitempty"`
+	RemoteStreamId       uint32                            `json:"user_uid,omitempty"`
+	BotStreamId          uint32                            `json:"bot_uid,omitempty"`
 	Token                string                            `json:"token,omitempty"`
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
