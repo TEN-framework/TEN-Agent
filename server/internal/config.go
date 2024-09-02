@@ -18,6 +18,8 @@ const (
 	PropertyJsonFile = "./agents/property.json"
 	// Token expire time
 	tokenExpirationInSeconds = uint32(86400)
+
+	WORKER_TIMEOUT_INFINITY = -1
 )
 
 var (
@@ -30,6 +32,9 @@ var (
 		},
 		"RemoteStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "remote_stream_id"},
+		},
+		"BotStreamId": {
+			{ExtensionName: extensionNameAgoraRTC, Property: "uid"},
 		},
 		"Token": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "token"},

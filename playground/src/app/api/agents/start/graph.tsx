@@ -1,4 +1,4 @@
-import { LanguageMap } from "./constant";
+import { LanguageMap } from "@/common/constant";
 
 export const voiceNameMap: LanguageMap = {
     "zh-CN": {
@@ -43,6 +43,8 @@ export const voiceNameMap: LanguageMap = {
     },
 };
 
+// Get the graph properties based on the graph name, language, and voice type
+// This is the place where you can customize the properties for different graphs to override default property.json
 export const getGraphProperties = (graphName: string, language: string, voiceType: string) => {
     let localizationOptions = {
         "greeting": "ASTRA agent connected. How can i help you today?",

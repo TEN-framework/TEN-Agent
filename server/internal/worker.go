@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
@@ -203,6 +204,10 @@ func (w *Worker) start(req *StartReq) (err error) {
 		if logFile != nil {
 			logFile.Close()
 		}
+
+		// Remove the worker from the map
+		workers.Remove(w.ChannelName)
+
 	}()
 
 	return
@@ -253,28 +258,72 @@ func (w *Worker) update(req *WorkerUpdateReq) (err error) {
 	return
 }
 
+// Function to get the PIDs of running workers
+func getRunningWorkerPIDs() map[int]struct{} {
+	// Define the command to find processes
+	cmd := exec.Command("sh", "-c", `ps aux | grep "bin/worker --property" | grep -v grep`)
+
+	// Run the command and capture the output
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return nil
+	}
+
+	// Parse the PIDs from the output
+	lines := strings.Split(out.String(), "\n")
+	runningPIDs := make(map[int]struct{})
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) > 1 {
+			pid, err := strconv.Atoi(fields[1]) // PID is typically the second field
+			if err == nil {
+				runningPIDs[pid] = struct{}{}
+			}
+		}
+	}
+	return runningPIDs
+}
+
+// Function to kill a process by PID
+func killProcess(pid int) {
+	err := syscall.Kill(pid, syscall.SIGKILL)
+	if err != nil {
+		slog.Info("Failed to kill process", "pid", pid, "error", err)
+	} else {
+		slog.Info("Successfully killed process", "pid", pid)
+	}
+}
+
 func timeoutWorkers() {
 	for {
 		for _, channelName := range workers.Keys() {
 			worker := workers.Get(channelName).(*Worker)
 
+			// Skip workers with infinite timeout
+			if worker.QuitTimeoutSeconds == WORKER_TIMEOUT_INFINITY {
+				continue
+			}
+
 			nowTs := time.Now().Unix()
 			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
 				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
-					slog.Error("Worker cleanWorker failed", "err", err, "channelName", channelName, logTag)
+					slog.Error("Timeout worker stop failed", "err", err, "channelName", channelName, logTag)
 					continue
 				}
 
-				slog.Info("Worker cleanWorker success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
+				slog.Info("Timeout worker stop success", "channelName", channelName, "worker", worker, "nowTs", nowTs, logTag)
 			}
 		}
 
-		slog.Debug("Worker cleanWorker sleep", "sleep", workerCleanSleepSeconds, logTag)
+		slog.Debug("Worker timeout check", "sleep", workerCleanSleepSeconds, logTag)
 		time.Sleep(workerCleanSleepSeconds * time.Second)
 	}
 }
 
 func CleanWorkers() {
+	// Stop all workers
 	for _, channelName := range workers.Keys() {
 		worker := workers.Get(channelName).(*Worker)
 		if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
@@ -283,5 +332,23 @@ func CleanWorkers() {
 		}
 
 		slog.Info("Worker cleanWorker success", "channelName", channelName, "worker", worker, logTag)
+	}
+
+	// Get running processes with the specific command pattern
+	runningPIDs := getRunningWorkerPIDs()
+
+	// Create maps for easy lookup
+	workerMap := make(map[int]*Worker)
+	for _, channelName := range workers.Keys() {
+		worker := workers.Get(channelName).(*Worker)
+		workerMap[worker.Pid] = worker
+	}
+
+	// Kill processes that are running but not in the workers list
+	for pid := range runningPIDs {
+		if _, exists := workerMap[pid]; !exists {
+			slog.Info("Killing redundant process", "pid", pid)
+			killProcess(pid)
+		}
 	}
 }

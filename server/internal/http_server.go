@@ -51,10 +51,12 @@ type StartReq struct {
 	RequestId            string                            `json:"request_id,omitempty"`
 	ChannelName          string                            `json:"channel_name,omitempty"`
 	GraphName            string                            `json:"graph_name,omitempty"`
-	RemoteStreamId       uint32                            `json:"remote_stream_id,omitempty"`
+	RemoteStreamId       uint32                            `json:"user_uid,omitempty"`
+	BotStreamId          uint32                            `json:"bot_uid,omitempty"`
 	Token                string                            `json:"token,omitempty"`
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
+	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
 }
 
 type StopReq struct {
@@ -90,6 +92,22 @@ func NewHttpServer(httpServerConfig *HttpServerConfig) *HttpServer {
 func (s *HttpServer) handlerHealth(c *gin.Context) {
 	slog.Debug("handlerHealth", logTag)
 	s.output(c, codeOk, nil)
+}
+
+func (s *HttpServer) handlerList(c *gin.Context) {
+	slog.Info("handlerList start", logTag)
+	// Create a slice of maps to hold the filtered data
+	filtered := make([]map[string]interface{}, len(workers.Keys()))
+	for _, channelName := range workers.Keys() {
+		worker := workers.Get(channelName).(*Worker)
+		workerJson := map[string]interface{}{
+			"channelName": worker.ChannelName,
+			"createTs":    worker.CreateTs,
+		}
+		filtered = append(filtered, workerJson)
+	}
+	slog.Info("handlerList end", logTag)
+	s.output(c, codeSuccess, filtered)
 }
 
 func (s *HttpServer) handlerPing(c *gin.Context) {
@@ -163,7 +181,13 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 
 	worker := newWorker(req.ChannelName, logFile, s.config.Log2Stdout, propertyJsonFile)
 	worker.HttpServerPort = req.WorkerHttpServerPort
-	worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
+
+	if req.QuitTimeoutSeconds > 0 {
+		worker.QuitTimeoutSeconds = req.QuitTimeoutSeconds
+	} else {
+		worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds
+	}
+
 	if err := worker.start(&req); err != nil {
 		slog.Error("handlerStart start worker failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrStartWorkerFailed, http.StatusInternalServerError)
@@ -461,9 +485,10 @@ func (s *HttpServer) Start() {
 
 	r.GET("/", s.handlerHealth)
 	r.GET("/health", s.handlerHealth)
-	r.POST("/ping", s.handlerPing)
+	r.GET("/list", s.handlerList)
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
+	r.POST("/ping", s.handlerPing)
 	r.POST("/token/generate", s.handlerGenerateToken)
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
 	r.POST("/vector/document/update", s.handlerVectorDocumentUpdate)
