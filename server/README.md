@@ -45,6 +45,7 @@ This api stops the agent you started
 | -------- | ------- |
 | request_id  | any uuid for tracing purpose    |
 | channel_name | channel name, the one you used to start the agent  |
+
 Example:
 ```bash
 curl 'http://localhost:8080/stop' \
@@ -63,6 +64,7 @@ This api sends a ping to the server to indicate connection is still alive. This 
 | -------- | ------- |
 | request_id  | any uuid for tracing purpose    |
 | channel_name | channel name, the one you used to start the agent  |
+
 Example:
 ```bash
 curl 'http://localhost:8080/ping' \
