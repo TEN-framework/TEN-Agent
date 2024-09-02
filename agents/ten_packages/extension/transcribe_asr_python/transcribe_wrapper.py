@@ -16,13 +16,8 @@ from .transcribe_config import TranscribeConfig
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
-
-def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool):
-    stable_data = Data.create("text_data")
-    stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
-    stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text_result)
-    ten.send_data(stable_data)
-
+DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
+DATA_OUT_TEXT_DATA_PROPERTY_EOS = "end_of_segment"
 
 class AsyncTranscribeWrapper():
     def __init__(self, config: TranscribeConfig, queue: asyncio.Queue, ten:TenEnv, loop: asyncio.BaseEventLoop):
@@ -51,6 +46,11 @@ class AsyncTranscribeWrapper():
         asyncio.set_event_loop(self.loop)
         self.reset_stream()
 
+    def set_user_id(self, user_id:str="0", remote_user_id:str="0"):
+        logger.info(f"set_user_id: {user_id}, {remote_user_id}")
+        self.user_id = user_id
+        self.remote_user_id = remote_user_id
+
     def reset_stream(self):
         self.stream = None
         self.handler = None
@@ -71,6 +71,7 @@ class AsyncTranscribeWrapper():
         try:
             self.stream = await self.get_transcribe_stream()
             self.handler = TranscribeEventHandler(self.stream.output_stream, self.ten)
+            self.handler.set_user_id(self.user_id, self.remote_user_id)
             self.event_handler_task = asyncio.create_task(self.handler.handle_events())
         except Exception as e:
             logger.exception(e)
@@ -143,15 +144,20 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
         super().__init__(transcript_result_stream)
         self.ten = ten
 
+        self.user_id = 0
+        self.remote_user_id = 0
+
     async def handle_transcript_event(self, transcript_event: TranscriptEvent) -> None:
         results = transcript_event.transcript.results
         text_result = ""
 
         is_final = True
+        end_of_segment = True
 
         for result in results:
             if result.is_partial:
                 is_final = False
+                end_of_segment = False
                 # continue
 
             for alt in result.alternatives:
@@ -162,4 +168,19 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
 
         logger.info(f"got transcript: [{text_result}], is_final: [{is_final}]")
 
-        create_and_send_data(ten=self.ten, text_result=text_result, is_final=is_final)
+        self.create_and_send_data(text_result=text_result, is_final=is_final, end_of_segment=end_of_segment)
+
+    def set_user_id(self, user_id:str="0", remote_user_id:str="0"):
+        self.user_id = int(user_id)
+        self.remote_user_id = int(remote_user_id)
+
+    def create_and_send_data(self, text_result: str, is_final: bool, end_of_segment: bool):
+        stable_data = Data.create("text_data")
+        try:
+            stable_data.set_property_int(DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, self.remote_user_id)
+            stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text_result)
+            stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
+            stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_EOS, end_of_segment)
+            self.ten.send_data(stable_data)
+        except Exception as e:
+            logger.exception(e)

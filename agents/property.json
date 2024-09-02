@@ -441,7 +441,7 @@
                             "region": "us-east-1",
                             "access_key": "$AWS_ACCESS_KEY_ID",
                             "secret_key": "$AWS_SECRET_ACCESS_KEY",
-                            "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                            "model": "$AWS_BEDROCK_MODEL",
                             "max_tokens": 512,
                             "prompt": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
@@ -1008,7 +1008,7 @@
                             "region": "us-east-1",
                             "access_key": "$AWS_ACCESS_KEY_ID",
                             "secret_key": "$AWS_SECRET_ACCESS_KEY",
-                            "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                            "model": "$AWS_BEDROCK_MODEL",
                             "max_tokens": 512,
                             "prompt": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
@@ -1035,6 +1035,12 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -1067,6 +1073,10 @@
                                     {
                                         "extension_group": "bedrock",
                                         "extension": "bedrock_llm"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -1082,6 +1092,30 @@
                                     {
                                         "extension_group": "tts",
                                         "extension": "polly_tts"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector",
+                                        "cmd_conversions": [
+                                            {
+                                                "cmd": {
+                                                    "type": "per_property",
+                                                    "keep_original": true,
+                                                    "rules": [
+                                                        {
+                                                            "path": "is_final",
+                                                            "type": "fixed_value",
+                                                            "value": "bool(true)"
+                                                        },
+                                                        {
+                                                            "path": "stream_id",
+                                                            "type": "fixed_value",
+                                                            "value": "uint32(999)"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -1125,6 +1159,21 @@
                         ]
                     },
                     {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
                         "extension_group": "default",
                         "extension": "interrupt_detector",
                         "cmd": [
@@ -1158,7 +1207,7 @@
                             "remote_stream_id": 123,
                             "subscribe_audio": true,
                             "publish_audio": true,
-                            "publish_data": false,
+                            "publish_data": true,
                             "enable_agora_asr": false,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
@@ -1189,7 +1238,7 @@
                             "region": "us-east-1",
                             "access_key": "$AWS_ACCESS_KEY_ID",
                             "secret_key": "$AWS_SECRET_ACCESS_KEY",
-                            "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                            "model": "$AWS_BEDROCK_MODEL",
                             "max_tokens": 512,
                             "prompt": "",
                             "greeting": "ASTRA agent connected. How can i help you today?",
@@ -1216,6 +1265,12 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
                     },
                     {
                         "type": "extension_group",
@@ -1297,6 +1352,10 @@
                                     {
                                         "extension_group": "bedrock",
                                         "extension": "bedrock_llm"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
                                     }
                                 ]
                             }
@@ -1312,6 +1371,30 @@
                                     {
                                         "extension_group": "tts",
                                         "extension": "polly_tts"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector",
+                                        "cmd_conversions": [
+                                            {
+                                                "cmd": {
+                                                    "type": "per_property",
+                                                    "keep_original": true,
+                                                    "rules": [
+                                                        {
+                                                            "path": "is_final",
+                                                            "type": "fixed_value",
+                                                            "value": "bool(true)"
+                                                        },
+                                                        {
+                                                            "path": "stream_id",
+                                                            "type": "fixed_value",
+                                                            "value": "uint32(999)"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -1345,6 +1428,21 @@
                         "cmd": [
                             {
                                 "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
                                 "dest": [
                                     {
                                         "extension_group": "default",

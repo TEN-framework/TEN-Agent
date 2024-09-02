@@ -7,6 +7,29 @@ from botocore.exceptions import ClientError
 
 from .log import logger
 
+ENGINE_STANDARD = 'standard'
+ENGINE_NEURAL = 'neural'
+ENGINE_GENERATIVE = 'generative'
+ENGINE_LONG_FORM = 'long-form'
+
+VOICE_ENGINE_MAP = {
+    "Zhiyu": [ENGINE_STANDARD, ENGINE_NEURAL],
+    "Matthew": [ENGINE_GENERATIVE, ENGINE_NEURAL],
+    "Ruth": [ENGINE_GENERATIVE, ENGINE_NEURAL, ENGINE_LONG_FORM]
+}
+
+VOICE_LANG_MAP = {
+    "Zhiyu": ['cmn-CN'],
+    "Matthew": ['en-US'],
+    "Ruth": ['en-US']
+}
+
+LANGCODE_MAP = {
+    'cmn-CN': 'cmn-CN',
+    'zh-CN': 'cmn-CN',
+    'en-US': 'en-US'
+}
+
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/polly/client/synthesize_speech.html
 class PollyConfig:
     def __init__(self, 
@@ -29,6 +52,23 @@ class PollyConfig:
         self.speech_mark_type = 'sentence' # 'sentence'|'ssml'|'viseme'|'word'
         self.audio_format = 'pcm' # 'json'|'mp3'|'ogg_vorbis'|'pcm'
         self.include_visemes = False
+
+    def validate(self):
+        if not self.voice in set(VOICE_ENGINE_MAP.keys()):
+            err_msg = f"Invalid voice '{self.voice}'. Must be one of {list(VOICE_ENGINE_MAP.keys())}."
+            logger.error(err_msg)
+            raise ValueError(err_msg)
+
+        if not self.engine in VOICE_ENGINE_MAP[self.voice]:
+            logger.warn(f"Invalid engine '{self.engine}' for voice '{self.voice}'. Must be one of {VOICE_ENGINE_MAP[self.voice]}. Fallback to {VOICE_ENGINE_MAP[self.voice][0]}")
+            self.engine = VOICE_ENGINE_MAP[self.voice][0]
+
+        if self.lang_code:
+            self.lang_code = LANGCODE_MAP.get(self.lang_code, self.lang_code)
+
+            if not self.lang_code in VOICE_LANG_MAP[self.voice]:
+                logger.warn(f"Invalid language code '{self.lang_code}' for voice '{self.voice}'. Must be one of {VOICE_LANG_MAP[self.voice]}. Fallback to {VOICE_LANG_MAP[self.voice][0]}")
+                self.lang_code = VOICE_LANG_MAP[self.voice][0]
 
     @classmethod
     def default_config(cls):

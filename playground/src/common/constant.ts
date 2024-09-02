@@ -40,6 +40,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
     value: "va.qwen.rag"
   },
+  {
+    label: "Voice Agent - Transcribe + Bedrock + Polly",
+    value: "va.transcribe-bedrock.polly"
+  },
 ]
 
 export const isRagGraph = (graphName: string) => {

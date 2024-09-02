@@ -7,6 +7,7 @@ from ten import (
     CmdResult,
 )
 
+import json
 import asyncio
 import threading
 
@@ -63,24 +64,30 @@ class TranscribeAsrExtension(Extension):
 
         ten.on_start_done()
 
-    def put_pcm_frame(self, pcm_frame: AudioFrame) -> None:
+    def put_audio_frame(self, pcm_frame: AudioFrame) -> None:
+        if self.loop.is_closed():
+            logger.warning("Event loop is closed, cannot enqueue frame")
+            return
+
         try:
             asyncio.run_coroutine_threadsafe(
                 self.queue.put(pcm_frame), self.loop
             ).result(timeout=0.1)
         except asyncio.QueueFull:
             logger.exception("Queue is full, dropping frame")
+        except asyncio.TimeoutError:
+            logger.warning("Timeout while putting frame in queue")
         except Exception as e:
             logger.exception(f"Error putting frame in queue: {e}")
 
     def on_audio_frame(self, ten: TenEnv, frame: AudioFrame) -> None:
-        self.put_pcm_frame(pcm_frame=frame)
+        self.put_audio_frame(pcm_frame=frame)
 
     def on_stop(self, ten: TenEnv) -> None:
         logger.info("TranscribeAsrExtension on_stop")
 
         # put an empty frame to stop transcribe_wrapper
-        self.put_pcm_frame(None)
+        self.put_audio_frame(None)
         self.stopped = True
         self.thread.join()
         self.loop.stop()
@@ -92,10 +99,16 @@ class TranscribeAsrExtension(Extension):
         logger.info("TranscribeAsrExtension on_cmd")
         cmd_json = cmd.to_json()
         logger.info("TranscribeAsrExtension on_cmd json: " + cmd_json)
+        try:
+            cmd_json = json.loads(cmd_json)
 
-        cmdName = cmd.get_name()
-        logger.info("got cmd %s" % cmdName)
+            cmdName = cmd.get_name()
+            logger.info("got cmd %s" % cmdName)
+            if cmdName == "on_user_joined":
+                self.transcribe.set_user_id(cmd_json.get('user_id', '0'), cmd_json.get('remote_user_id', '0'))
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        cmd_result.set_property_string("detail", "success")
-        ten.return_result(cmd_result, cmd)
+            cmd_result = CmdResult.create(StatusCode.OK)
+            cmd_result.set_property_string("detail", "success")
+            ten.return_result(cmd_result, cmd)
+        except Exception as e:
+            logger.exception(f"Error handling cmd: {e}")

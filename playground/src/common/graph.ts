@@ -101,6 +101,16 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va.transcribe-bedrock.polly") {
+        return {
+            "transcribe_asr": {
+                "lang_code": language,
+            },
+            "polly_tts": {
+                "voice": voiceNameMap[language]["polly"][voiceType],
+                "lang_code": language
+            }
+        }
     }
     return {}
 }
