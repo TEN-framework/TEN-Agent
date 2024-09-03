@@ -16,12 +16,18 @@ services:
         working_dir: /app
         env_file:
             - .env
+        networks:
+            - astra_network
     astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.4.0-26-g9a72676
+        image: ghcr.io/ten-framework/astra_playground:v0.4.0-35-g56d3b8e
         container_name: astra_playground
         restart: always
         ports:
             - "3000:3000"
+        networks:
+            - astra_network
+        environment:
+            - NEXT_PUBLIC_REQUEST_URL=http://astra_network:8080
 
     # use this when you want to run the playground in local development mode
     # astra_playground_dev:
@@ -39,3 +45,8 @@ services:
         restart: always
         ports:
             - "3001:3000"
+        networks:
+            - astra_network
+networks:
+  astra_network:
+    driver: bridge

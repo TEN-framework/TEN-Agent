@@ -1,4 +1,3 @@
-import { REQUEST_URL } from '@/common/constant';
 import { NextRequest, NextResponse } from 'next/server';
 import { getGraphProperties } from './graph';
 
@@ -10,6 +9,13 @@ import { getGraphProperties } from './graph';
  */
 export async function POST(request: NextRequest) {
   try {
+    const { AGENT_SERVER_URL } = process.env;
+
+    // Check if environment variables are available
+    if (!AGENT_SERVER_URL) {
+      throw "Environment variables are not available";
+    }
+
     const body = await request.json();
     const {
       request_id,
@@ -21,7 +27,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Send a POST request to start the agent
-    const response = await fetch(`${REQUEST_URL}/start`, {
+    const response = await fetch(`${AGENT_SERVER_URL}/start`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -9,6 +9,12 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    const { AGENT_SERVER_URL } = process.env;
+
+    // Check if environment variables are available
+    if (!AGENT_SERVER_URL) {
+      throw "Environment variables are not available";
+    }
     const body = await request.json();
     const {
       channel_name,
@@ -16,7 +22,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Send a POST request to stop the agent
-    const response = await fetch(`${REQUEST_URL}/stop`, {
+    const response = await fetch(`${AGENT_SERVER_URL}/stop`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
