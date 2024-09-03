@@ -19,7 +19,7 @@ services:
         networks:
             - astra_network
     astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.4.0-35-g56d3b8e
+        image: ghcr.io/ten-framework/astra_playground:v0.4.0-37-g5c5ccc8
         container_name: astra_playground
         restart: always
         ports:
@@ -27,7 +27,7 @@ services:
         networks:
             - astra_network
         environment:
-            - NEXT_PUBLIC_REQUEST_URL=http://astra_network:8080
+            - AGENT_SERVER_URL=http://astra_agents_dev:8080
 
     # use this when you want to run the playground in local development mode
     # astra_playground_dev:
