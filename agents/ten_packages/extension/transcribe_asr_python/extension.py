@@ -1,1 +1,1 @@
-EXTENSION_NAME = "transcribe_asr"
+EXTENSION_NAME = "transcribe_asr_python"
