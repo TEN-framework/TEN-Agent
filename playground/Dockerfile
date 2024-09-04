@@ -7,7 +7,7 @@ WORKDIR /app
 # COPY .env.example .env
 COPY . .
 
-RUN npm i && \
+RUN npm i --verbose && \
     npm run build
 
 

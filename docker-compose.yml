@@ -40,7 +40,7 @@ services:
     #     volumes:
     #     - ./:/app
     ten_graph_designer:
-        image: ghcr.io/ten-framework/ten_graph_designer:8d56e8f
+        image: ghcr.io/ten-framework/ten_graph_designer:dde0ff1
         container_name: ten_graph_designer
         restart: always
         ports:
