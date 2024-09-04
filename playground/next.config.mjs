@@ -1,9 +1,41 @@
 /** @type {import('next').NextConfig} */
+
+const { AGENT_SERVER_URL } = process.env;
+
+// Check if environment variables are available
+if (!AGENT_SERVER_URL) {
+  throw "Environment variables AGENT_SERVER_URL are not available";
+}
+
 const nextConfig = {
   // basePath: '/ai-agent',
   // output: 'export',
   output: 'standalone',
   reactStrictMode: false,
+  async rewrites() {
+    return [
+      // customize agents start at /app/api/agents/start.tsx
+      {
+        source: '/api/agents/start',
+        destination: '/api/agents/start',
+      },
+      // Proxy all other agents API requests
+      {
+        source: '/api/agents/:path*',
+        destination: `${AGENT_SERVER_URL}/:path*`,
+      },
+      // Proxy all other documents requests
+      {
+        source: '/api/vector/:path*',
+        destination: `${AGENT_SERVER_URL}/vector/:path*`,
+      },
+      // Proxy all other documents requests
+      {
+        source: '/api/token/:path*',
+        destination: `${AGENT_SERVER_URL}/token/:path*`,
+      },
+    ];
+  },
   webpack(config) {
     // Grab the existing rule that handles SVG imports
     const fileLoaderRule = config.module.rules.find((rule) =>

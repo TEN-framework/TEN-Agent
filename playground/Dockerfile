@@ -4,7 +4,7 @@ FROM base AS builder
 
 WORKDIR /app
 
-COPY .env.example .env
+# COPY .env.example .env
 COPY . .
 
 RUN npm i && \
