@@ -1,18 +1,17 @@
 /** @type {import('next').NextConfig} */
 
-const { AGENT_SERVER_URL } = process.env;
-
-// Check if environment variables are available
-if (!AGENT_SERVER_URL) {
-  throw "Environment variables AGENT_SERVER_URL are not available";
-}
-
 const nextConfig = {
   // basePath: '/ai-agent',
   // output: 'export',
   output: 'standalone',
   reactStrictMode: false,
   async rewrites() {
+    const { AGENT_SERVER_URL } = process.env;
+
+    // Check if environment variables are available
+    if (!AGENT_SERVER_URL) {
+      throw "Environment variables AGENT_SERVER_URL are not available";
+    }
     return [
       // customize agents start at /app/api/agents/start.tsx
       {
