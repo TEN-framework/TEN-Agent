@@ -58,7 +58,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
 }
 
 export const apiStopService = async (channel: string) => {
-  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/agents/stop`
   const data = {
     request_id: genUUID(),
@@ -76,6 +76,7 @@ export const apiStopService = async (channel: string) => {
 }
 
 export const apiGetDocumentList = async () => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/vector/document/preset/list`
   let resp: any = await fetch(url, {
     method: "GET",
@@ -91,7 +92,7 @@ export const apiGetDocumentList = async () => {
 }
 
 export const apiUpdateDocument = async (options: { channel: string, collection: string, fileName: string }) => {
-  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/vector/document/update`
   const { channel, collection, fileName } = options
   const data = {
@@ -114,7 +115,7 @@ export const apiUpdateDocument = async (options: { channel: string, collection: 
 
 // ping/pong 
 export const apiPing = async (channel: string) => {
-  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/agents/ping`
   const data = {
     request_id: genUUID(),

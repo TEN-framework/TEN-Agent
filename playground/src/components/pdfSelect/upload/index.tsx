@@ -22,6 +22,7 @@ const PdfUpload = (props: PdfSelectProps) => {
     accept: "application/pdf",
     maxCount: 1,
     showUploadList: false,
+    // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
     action: `/api/vector/document/upload`,
     data: {
       channel_name: channel,
