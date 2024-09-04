@@ -40,13 +40,15 @@ services:
     #     volumes:
     #     - ./:/app
     ten_graph_designer:
-        image: ghcr.io/ten-framework/ten_graph_designer:72db9b2
+        image: ghcr.io/ten-framework/ten_graph_designer:8d56e8f
         container_name: ten_graph_designer
         restart: always
         ports:
             - "3001:3000"
         networks:
             - astra_network
+        environment:
+            - TEN_DEV_SERVER_URL=http://astra_agents_dev:49483
 networks:
   astra_network:
     driver: bridge
