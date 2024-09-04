@@ -7,6 +7,7 @@ from ten import (
 )
 
 from amazon_transcribe.auth import StaticCredentialResolver
+from amazon_transcribe.endpoints import BaseEndpointResolver
 from amazon_transcribe.client import TranscribeStreamingClient
 from amazon_transcribe.handlers import TranscriptResultStreamHandler
 from amazon_transcribe.model import TranscriptEvent, TranscriptResultStream, StartStreamTranscriptionEventStream
@@ -19,6 +20,14 @@ DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
 DATA_OUT_TEXT_DATA_PROPERTY_EOS = "end_of_segment"
 
+class TranscribeCnEndpointResolver(BaseEndpointResolver):
+    def __init__(self, region: str):
+        self.region = region
+
+    async def resolve(self, region: str) -> str:
+        """Apply region to transcribe uri template."""
+        return f"https://transcribestreaming.{region}.amazonaws.com.cn"
+
 class AsyncTranscribeWrapper():
     def __init__(self, config: TranscribeConfig, queue: asyncio.Queue, ten:TenEnv, loop: asyncio.BaseEventLoop):
         self.queue = queue
@@ -29,8 +38,14 @@ class AsyncTranscribeWrapper():
 
         if config.access_key and config.secret_key:
             logger.info(f"init trascribe client with access key: {config.access_key}")
+
+            endpoint_resolver = None
+            if config.region.startswith("cn-"):
+                endpoint_resolver = TranscribeCnEndpointResolver(config.region)
+
             self.transcribe_client = TranscribeStreamingClient(
                 region=config.region,
+                endpoint_resolver=endpoint_resolver,
                 credential_resolver=StaticCredentialResolver(
                     access_key_id=config.access_key,
                     secret_access_key=config.secret_key
