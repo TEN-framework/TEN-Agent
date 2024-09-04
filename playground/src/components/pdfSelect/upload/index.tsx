@@ -1,7 +1,7 @@
 import { Select, Button, message, Upload, UploadProps } from "antd"
 import { useState } from "react"
 import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
-import { REQUEST_URL, useAppSelector, genUUID } from "@/common"
+import { useAppSelector, genUUID } from "@/common"
 import { IPdfData } from "@/types"
 
 import styles from "./index.module.scss"
@@ -22,7 +22,7 @@ const PdfUpload = (props: PdfSelectProps) => {
     accept: "application/pdf",
     maxCount: 1,
     showUploadList: false,
-    action: `${REQUEST_URL}/vector/document/upload`,
+    action: `/api/vector/document/upload`,
     data: {
       channel_name: channel,
       uid: String(userId),

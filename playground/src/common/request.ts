@@ -1,5 +1,3 @@
-import { AnyObject } from "antd/es/_util/type"
-import { REQUEST_URL } from "./constant"
 import { genUUID } from "./utils"
 import { Language } from "@/types"
 
@@ -17,7 +15,8 @@ interface GenAgoraDataConfig {
 }
 
 export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
-  const url = `${REQUEST_URL}/token/generate`
+  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  const url = `/api/token/generate`
   const { userId, channel } = config
   const data = {
     request_id: genUUID(),
@@ -59,7 +58,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
 }
 
 export const apiStopService = async (channel: string) => {
-  // look at app/api/agents/stop/route.tsx for the server-side implementation
+  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
   const url = `/api/agents/stop`
   const data = {
     request_id: genUUID(),
@@ -77,7 +76,7 @@ export const apiStopService = async (channel: string) => {
 }
 
 export const apiGetDocumentList = async () => {
-  const url = `${REQUEST_URL}/vector/document/preset/list`
+  const url = `/api/vector/document/preset/list`
   let resp: any = await fetch(url, {
     method: "GET",
     headers: {
@@ -92,7 +91,8 @@ export const apiGetDocumentList = async () => {
 }
 
 export const apiUpdateDocument = async (options: { channel: string, collection: string, fileName: string }) => {
-  const url = `${REQUEST_URL}/vector/document/update`
+  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  const url = `/api/vector/document/update`
   const { channel, collection, fileName } = options
   const data = {
     request_id: genUUID(),
@@ -114,7 +114,8 @@ export const apiUpdateDocument = async (options: { channel: string, collection: 
 
 // ping/pong 
 export const apiPing = async (channel: string) => {
-  const url = `${REQUEST_URL}/ping`
+  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  const url = `/api/agents/ping`
   const data = {
     request_id: genUUID(),
     channel_name: channel
