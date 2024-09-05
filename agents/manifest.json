@@ -6,22 +6,27 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.1"
+      "version": "0.2"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.1"
+      "version": "0.2"
     },
     {
       "type": "extension_group",
       "name": "default_extension_group",
-      "version": "0.1"
+      "version": "0.2"
     },
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.5.1"
+      "version": "=0.7.0-rc1"
+    },
+    {
+      "type": "system",
+      "name": "azure_speech_sdk",
+      "version": "1.38.0"
     },
     {
       "type": "extension",
