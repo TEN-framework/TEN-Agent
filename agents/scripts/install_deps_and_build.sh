@@ -6,6 +6,9 @@ OS="linux"
 # x64, arm64
 CPU="x64"
 
+# debug, release
+BUILD_TYPE="release"
+
 build_cxx_extensions() {
   local app_dir=$1
 
@@ -16,8 +19,8 @@ build_cxx_extensions() {
 
   cp $app_dir/scripts/BUILD.gn $app_dir
 
-  tgn gen $OS $CPU release -- is_clang=false
-  tgn build $OS $CPU release
+  tgn gen $OS $CPU $BUILD_TYPE -- is_clang=false enable_sanitizer=false
+  tgn build $OS $CPU $BUILD_TYPE
 
   local ret=$?
 
