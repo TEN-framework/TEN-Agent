@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/agents/bin/worker",
             "env": {
                 "LD_LIBRARY_PATH": "${workspaceFolder}/agents/ten_packages/system/ten_runtime_go/lib:${workspaceFolder}/agents/ten_packages/system/agora_rtc_sdk/lib:${workspaceFolder}/agents/ten_packages/system/azure_speech_sdk/lib",
-                "TEN_APP_BASE_DIR": "${workspaceFolder}"
+                "TEN_APP_BASE_DIR": "${workspaceFolder}/agents"
             }
         },
         {
