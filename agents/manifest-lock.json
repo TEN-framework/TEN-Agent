@@ -62,8 +62,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.7.0-rc1",
-      "hash": "459eda37e62dd3e4012153a4a906192e4e68f2bc2210dd867d88f5fc008e73fd",
+      "version": "0.7.0-rc2",
+      "hash": "89d7af8f84d06afbd79901e0057182280f3f430227ad6fae98ec154067ffa82c",
       "dependencies": [
         {
           "type": "system",
