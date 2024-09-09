@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -381,23 +380,6 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
-func replaceEnvVarsInJSON(jsonData string) string {
-	// Regex to find all occurrences of $VAR_NAME
-	re := regexp.MustCompile(`"\$(\w+)"`)
-
-	// Function to replace the match with the environment variable value
-	result := re.ReplaceAllStringFunc(jsonData, func(match string) string {
-		// Extract the variable name (removing the leading $ and surrounding quotes)
-		envVar := strings.Trim(match, "\"$")
-		// Get the environment variable value
-		value := os.Getenv(envVar)
-		// Replace with the value (keeping it quoted)
-		return fmt.Sprintf("\"%s\"", value)
-	})
-
-	return result
-}
-
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
@@ -430,10 +412,10 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	graphs := gjson.Get(propertyJson, "_ten.predefined_graphs").Array()
 
 	// Create a new array for graphs that match the name
-	var newGraphs []string
+	var newGraphs []gjson.Result
 	for _, graph := range graphs {
 		if graph.Get("name").String() == graphName {
-			newGraphs = append(newGraphs, graph.Raw)
+			newGraphs = append(newGraphs, graph)
 		}
 	}
 
@@ -443,20 +425,28 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		return
 	}
 
+	// Set the array of graphs directly using sjson.Set
+	graphData := make([]interface{}, len(newGraphs))
+	for i, graph := range newGraphs {
+		graphData[i] = graph.Value() // Convert gjson.Result to interface{}
+	}
+
 	// Replace the predefined_graphs array with the filtered array
-	propertyJson, _ = sjson.SetRaw(propertyJson, "_ten.predefined_graphs", fmt.Sprintf("[%s]", strings.Join(newGraphs, ",")))
+	propertyJson, _ = sjson.Set(propertyJson, "_ten.predefined_graphs", graphData)
 
 	// Automatically start on launch
 	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
-
-	// Set environment variable values to property.json
-	propertyJson = replaceEnvVarsInJSON(propertyJson)
 
 	// Set additional properties to property.json
 	for extensionName, props := range req.Properties {
 		if extKey := extensionName; extKey != "" {
 			for prop, val := range props {
-				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, extKey, prop), val)
+				// Construct the path
+				path := fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, extKey, prop)
+				propertyJson, err = sjson.Set(propertyJson, path, val)
+				if err != nil {
+					slog.Error("handlerStart set property failed", "err", err, "graph", graphName, "extensionName", extensionName, "prop", prop, "val", val, "requestId", req.RequestId, logTag)
+				}
 			}
 		}
 	}
