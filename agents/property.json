@@ -4,7 +4,7 @@
         "predefined_graphs": [
             {
                 "name": "va.openai.azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1587,7 +1587,7 @@
             },
             {
                 "name": "va.gemini.azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1786,7 +1786,7 @@
             },
             {
                 "name": "va.qwen.rag",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
