@@ -1,0 +1,409 @@
+#!/Users/arlene/.ten-cli/venv/bin/python3
+
+import sys
+import subprocess
+import argparse
+import textwrap
+import shutil
+import signal
+import json
+
+def check_dependencies():
+    dependencies = ['docker', 'make']
+    missing = []
+
+    for dep in dependencies:
+        if shutil.which(dep) is None:
+            missing.append(dep)
+
+    # Check for docker compose
+    docker_compose_output = subprocess.run(['docker', 'compose', 'version'], capture_output=True, text=True)
+    if docker_compose_output.returncode != 0:
+        missing.append('docker compose')
+
+    if missing:
+        print(f"Error: The following dependencies are missing: {', '.join(missing)}")
+        print("Please install them and try again.")
+        sys.exit(1)
+
+def graceful_shutdown(signum, frame):
+    print("\nReceived interrupt signal. Shutting down containers...")
+    stop_all_services()
+    sys.exit(0)
+
+def run_command(command, silent=False, is_server=False):
+    try:
+        if silent:
+            result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+            return result.returncode
+        else:
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, text=True, bufsize=1, universal_newlines=True)
+            
+            while True:
+                try:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    print(line, end='')
+                except KeyboardInterrupt:
+                    if is_server:
+                        print("\nReceived keyboard interrupt. Shutting down...")
+                        stop_all_services()
+                        sys.exit(0)
+                    else:
+                        print("\nReceived keyboard interrupt. Stopping command...")
+                        process.terminate()
+                        break
+            
+            process.wait()
+            return process.returncode
+    except subprocess.CalledProcessError as e:
+        if not silent:
+            print(f"Command failed with error: {e}")
+        return e.returncode
+
+def run_make_command(target, *args, is_server=False):
+    command = f"make {target}"
+    if args:
+        command += f" {' '.join(args)}"
+    print(f"Running: {command}")
+    return_code = run_command(command, is_server=is_server)
+    if return_code != 0:
+        print(f"Error: Command exited with status {return_code}")
+    else:
+        print(f"Command completed successfully!")
+
+def check_ten_containers(target_name):
+    try:
+        # Check if any TEN-related containers are running
+        check_command = "docker ps --format '{{.Names}}'"
+        result = subprocess.run(check_command, shell=True, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode != 0:
+            print(f"Error executing Docker command. Return code: {result.returncode}")
+            print(f"Error output: {result.stderr}")
+            return None
+        
+        container_names = result.stdout.strip().split('\n')
+        
+        # Check if the target container is running
+        if target_name in container_names:
+            return True
+        else:
+            print(f"Error: Target container '{target_name}' is not running. Start the service first.")
+            return False
+    
+    except subprocess.TimeoutExpired:
+        print("Error: Docker command timed out after 10 seconds")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    
+    return False
+
+def create_extension(args):
+    target_container = 'astra_agents_dev'
+    # target_container_exist = check_ten_containers(target_container)
+    # if target_container_exist:
+    #     return
+    
+    if not args.name:
+        args.name = get_user_input("What is the name of your extension?")
+    
+    if not args.language:
+        args.language = get_user_input("What language do you want to use?", choices=['python', 'go', 'cpp'])
+    
+    print(f"Creating extension: {args.name} in {args.language}")
+    scaffold_extension(args.name, args.language, target_container)
+
+def scaffold_extension(extension_name, language, container_name):
+    # Check if the container is running
+    check_container_cmd = f"docker container inspect -f '{{{{.State.Running}}}}' {container_name}"
+    container_running = subprocess.run(check_container_cmd, shell=True, capture_output=True, text=True)
+    
+    if container_running.stdout.strip() != 'true':
+        print(f"Error: The {container_name} container is not running.")
+        print("Please start the services first using 'ten run-all' or 'ten run-services astra_agents_dev'")
+        return
+    
+    print(f"Scaffolding {language} extension: {extension_name}")
+    
+    # Commands to run inside the container
+    cd_cmd = "cd agents/ten_packages/extension"
+    tman_cmd = f"tman install extension default_extension_{language} --template-mode --template-data package_name={extension_name} --template-data class_name_prefix={extension_name.capitalize()}"
+
+    try:
+        print("Entering container...")
+        # Start an interactive shell in the container
+        process = subprocess.Popen(['docker', 'exec', '-i', container_name, '/bin/bash'],
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   text=True)
+
+        # Execute commands
+        commands = f"{cd_cmd}\n{tman_cmd}\nexit\n"
+        stdout, stderr = process.communicate(input=commands)
+
+        # Print output
+        print(stdout)
+
+        if process.returncode != 0:
+            print(f"Error: Failed to scaffold extension {extension_name}")
+            print(f"Error output: {stderr}")
+        else:
+            print(f"Extension {extension_name} successfully scaffolded!")
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Failed to scaffold extension {extension_name}")
+        print(f"Error output: {e.output}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {str(e)}")
+
+def start_services():
+    # Check if the image exists
+    check_image_command = "docker image inspect astra_agents_dev >/dev/null 2>&1"
+    image_exists = subprocess.run(check_image_command, shell=True).returncode == 0
+
+    if image_exists:
+        print("Image exists. Starting all services...")
+        run_all_services(build=False)
+    else:
+        print("Image doesn't exist. Building and starting all services...")
+        run_all_services(build=True)
+
+    print("Please try scaffolding the extension again after the services are up.")
+
+def build(target='all'):
+    targets = {
+        'all': 'build',
+        'agents': 'build-agents',
+        'playground': 'build-playground',
+        'server': 'build-server'
+    }
+    make_target = targets.get(target, 'build')
+    run_make_command(make_target)
+
+def clean():
+    run_make_command('clean')
+
+def docker_build(target='all'):
+    targets = {
+        'all': 'docker-build',
+        'playground': 'docker-build-playground',
+        'server': 'docker-build-server'
+    }
+    make_target = targets.get(target, 'docker-build')
+    run_make_command(make_target)
+
+def run_gd_server():
+    run_make_command('run-gd-server', is_server=True)
+
+def run_server():
+    run_make_command('run-server', is_server=True)
+
+def run_dev():
+    run_make_command('run-dev', is_server=True)
+
+def run_services(services, build=False, local=False):
+    if not services:
+        print("Error: No services specified.")
+        return
+    
+    build_arg = "BUILD=true" if build else ""
+    services_arg = f"SERVICES=\"{' '.join(services)}\""
+    local_arg = "LOCAL=true" if local else ""
+    run_make_command('run-services', services_arg, build_arg, local_arg, is_server=True)
+
+def run_all_services(build=False, local=False):
+    build_arg = "BUILD=true" if build else ""
+    local_arg = "LOCAL=true" if local else ""
+    os_type = "linux"  # Assuming the container is running on Linux
+    cpu_type = "x64"   # Assuming x64 architecture, adjust if necessary
+    run_make_command('run-all', build_arg, local_arg, f"OS={os_type}", f"CPU={cpu_type}", is_server=True)
+
+def stop_services(services):
+    command = f"docker compose stop {' '.join(services)}"
+    print(f"Stopping services: {', '.join(services)}")
+    output, error = run_command(command)
+    if error:
+        print(f"Stop Services Error: {error}")
+    else:
+        print(output)
+
+def stop_all_services():
+    command = "docker compose down"
+    print("Stopping all services...")
+    return_code = run_command(command, silent=True)
+    if return_code != 0:
+        print(f"Stop All Services Error: Command exited with status {return_code}")
+    else:
+        print("All services stopped successfully.")
+
+def print_help():
+    help_text = """
+    TEN Framework CLI
+
+    Usage:
+      ten <command> [options]
+
+    Commands:
+      extension     Create a new extension
+      build         Build the project
+      clean         Clean build artifacts
+      docker-build  Build Docker images
+      run-gd-server Run Graph Designer server
+      run-server    Run the main server
+      run-dev       Build and run the server
+      run-services  Run specified services
+      run-all       Run all services
+      stop          Stop specified services
+      stop-all      Stop all services
+      help          Show this help message
+
+    Extension Command:
+      ten extension [name] [language]
+      ten extension --name <name> --language <language>
+      ten extension -n <name> -l <language>
+
+      Options:
+        name        Name of the extension
+        language    Programming language for the extension (python, go, cpp)
+
+    Build Command:
+      ten build [target]
+
+      Options:
+        target      Build target (all, agents, playground, server)
+
+    Docker Build Command:
+      ten docker-build [target]
+
+      Options:
+        target      Docker build target (all, playground, server)
+
+    Run Services Command:
+      ten run-services [services...] [--build] [--local]
+
+      Options:
+        services    Services to run
+        --build     Build containers when running services
+        --local     Use local Dockerfile for development
+
+    Run All Command:
+      ten run-all [--build] [--local]
+
+      Options:
+        --build     Build containers when running all services
+        --local     Use local Dockerfile for development
+
+    Stop Command:
+      ten stop [services...]
+
+      Options:
+        services    Services to stop
+
+    Stop All Command:
+      ten stop-all
+
+    For more information on a specific command, use:
+      ten <command> --help
+    """
+    print(textwrap.dedent(help_text))
+
+def get_user_input(prompt, choices=None):
+    while True:
+        if choices:
+            user_input = input(f"{prompt} ({'/'.join(choices)}): ").strip().lower()
+            if user_input in choices:
+                return user_input
+        else:
+            user_input = input(f"{prompt}: ").strip()
+            if user_input:
+                return user_input
+        print("Invalid input. Please try again.")
+
+def main():
+    # Set up signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, graceful_shutdown)
+    signal.signal(signal.SIGTERM, graceful_shutdown)
+
+    parser = argparse.ArgumentParser(description="TEN Framework CLI", add_help=False)
+    parser.add_argument('--help', '-h', action='store_true', help='Show this help message')
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
+
+    # Extension command
+    extension_parser = subparsers.add_parser("extension", help="Create a new extension")
+    extension_parser.add_argument("name", nargs="?", help="Name of the extension")
+    extension_parser.add_argument("language", nargs="?", choices=['python', 'go', 'cpp'], help="Programming language for the extension")
+    extension_parser.add_argument("-n", "--name", dest="name_flag", help="Name of the extension (flag version)")
+    extension_parser.add_argument("-l", "--language", dest="language_flag", choices=['python', 'go', 'cpp'], help="Programming language for the extension (flag version)")
+
+    # Build command
+    build_parser = subparsers.add_parser("build", help="Build the project")
+    build_parser.add_argument("target", nargs="?", default="all", choices=['all', 'agents', 'playground', 'server'], help="Build target")
+
+    # Other commands
+    subparsers.add_parser("clean", help="Clean build artifacts")
+    docker_build_parser = subparsers.add_parser("docker-build", help="Build Docker images")
+    docker_build_parser.add_argument("target", nargs="?", default="all", choices=['all', 'playground', 'server'], help="Docker build target")
+    subparsers.add_parser("run-gd-server", help="Run Graph Designer server")
+    subparsers.add_parser("run-server", help="Run the main server")
+    subparsers.add_parser("run-dev", help="Build and run the server")
+    
+    run_services_parser = subparsers.add_parser("run-services", help="Run specified services")
+    run_services_parser.add_argument("services", nargs="*", help="Services to run")
+    run_services_parser.add_argument("--build", action="store_true", help="Build containers when running services")
+    run_services_parser.add_argument("--local", action="store_true", help="Use local Dockerfile for development")
+    
+    run_all_parser = subparsers.add_parser("run-all", help="Run all services")
+    run_all_parser.add_argument("--build", action="store_true", help="Build containers when running all services")
+    run_all_parser.add_argument("--local", action="store_true", help="Use local Dockerfile for development")
+
+    # Stop command
+    stop_parser = subparsers.add_parser("stop", help="Stop specified services")
+    stop_parser.add_argument("services", nargs="*", help="Services to stop")
+
+    # Stop All command
+    subparsers.add_parser("stop-all", help="Stop all services")
+
+    # Help command
+    subparsers.add_parser("help", help="Show help message")
+
+    args = parser.parse_args()
+
+    if args.help or args.command == "help" or len(sys.argv) == 1:
+        print_help()
+        sys.exit(0)
+
+    if args.command == "extension":
+        # Prioritize flag versions over positional arguments
+        args.name = args.name_flag or args.name
+        args.language = args.language_flag or args.language
+        create_extension(args)
+    elif args.command == "build":
+        build(args.target)
+    elif args.command == "clean":
+        clean()
+    elif args.command == "docker-build":
+        docker_build(args.target)
+    elif args.command == "run-gd-server":
+        run_gd_server()
+    elif args.command == "run-server":
+        run_server()
+    elif args.command == "run-dev":
+        run_dev()
+    elif args.command == "run-services":
+        run_services(args.services, args.build, args.local)
+    elif args.command == "run-all":
+        run_services(["astra_agents_dev", "astra_playground", "ten_graph_designer"], args.build, args.local)
+    elif args.command == "stop":
+        stop_services(args.services)
+    elif args.command == "stop-all":
+        stop_all_services()
+    else:
+        print(f"Unknown command: {args.command}")
+        print_help()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    check_dependencies()
+    main()
