@@ -1,0 +1,4 @@
+openai
+numpy
+requests==2.32.3
+pillow==10.4.0
