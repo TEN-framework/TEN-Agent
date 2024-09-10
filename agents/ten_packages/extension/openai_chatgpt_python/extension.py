@@ -5,12 +5,12 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from base64 import b64encode
-from datetime import datetime
-from io import BytesIO
+import asyncio
 import json
+import random
+import traceback
 
-from .helper import get_property_bool, get_property_float, get_property_int, get_property_string
+from .helper import get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentence, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     AudioFrame,
@@ -22,7 +22,6 @@ from ten import (
     CmdResult,
     Data,
 )
-from PIL import Image
 from .log import logger
 
 CMD_IN_FLUSH = "flush"
@@ -46,93 +45,6 @@ PROPERTY_ENABLE_TOOLS = "enable_tools"  # Optional
 PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
 PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
-
-def get_current_time():
-    # Get the current time
-    start_time = datetime.now()
-    # Get the number of microseconds since the Unix epoch
-    unix_microseconds = int(start_time.timestamp() * 1_000_000)
-    return unix_microseconds
-
-
-def is_punctuation(char):
-    if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
-        return True
-    return False
-
-
-def parse_sentence(sentence, content):
-    remain = ""
-    found_punc = False
-
-    for char in content:
-        if not found_punc:
-            sentence += char
-        else:
-            remain += char
-
-        if not found_punc and is_punctuation(char):
-            found_punc = True
-
-    return sentence, remain, found_punc
-
-
-def rgb2base64jpeg(rgb_data, width, height):
-    # Convert the RGB image to a PIL Image
-    pil_image = Image.frombytes("RGBA", (width, height), bytes(rgb_data))
-    pil_image = pil_image.convert("RGB")
-
-    # Resize the image while maintaining its aspect ratio
-    pil_image = resize_image_keep_aspect(pil_image, 320)
-
-    # Save the image to a BytesIO object in JPEG format
-    buffered = BytesIO()
-    pil_image.save(buffered, format="JPEG")
-    # pil_image.save("test.jpg", format="JPEG")
-
-    # Get the byte data of the JPEG image
-    jpeg_image_data = buffered.getvalue()
-
-    # Convert the JPEG byte data to a Base64 encoded string
-    base64_encoded_image = b64encode(jpeg_image_data).decode("utf-8")
-
-    # Create the data URL
-    mime_type = "image/jpeg"
-    base64_url = f"data:{mime_type};base64,{base64_encoded_image}"
-    return base64_url
-
-
-def resize_image_keep_aspect(image, max_size=512):
-    """
-    Resize an image while maintaining its aspect ratio, ensuring the larger dimension is max_size.
-    If both dimensions are smaller than max_size, the image is not resized.
-
-    :param image: A PIL Image object
-    :param max_size: The maximum size for the larger dimension (width or height)
-    :return: A PIL Image object (resized or original)
-    """
-    # Get current width and height
-    width, height = image.size
-
-    # If both dimensions are already smaller than max_size, return the original image
-    if width <= max_size and height <= max_size:
-        return image
-
-    # Calculate the aspect ratio
-    aspect_ratio = width / height
-
-    # Determine the new dimensions
-    if width > height:
-        new_width = max_size
-        new_height = int(max_size / aspect_ratio)
-    else:
-        new_height = max_size
-        new_width = int(max_size * aspect_ratio)
-
-    # Resize the image with the new dimensions
-    resized_image = image.resize((new_width, new_height))
-
-    return resized_image
 
 
 class OpenAIChatGPTExtension(Extension):
@@ -245,8 +157,22 @@ class OpenAIChatGPTExtension(Extension):
         ten_env.return_result(cmd_result, cmd)
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
-        # TODO: process data
-        pass
+        # Get the necessary properties
+        is_final = get_property_bool(data, DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+        input_text = get_property_string(data, DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+
+        if not is_final:
+            logger.info("ignore non-final input")
+            return
+        if not input_text:
+            logger.info("ignore empty text")
+            return
+
+        logger.info(f"OnData input text: [{input_text}]")
+
+        # Start an asynchronous task for handling chat completion
+        start_time = get_current_time()
+        asyncio.create_task(self.__async_chat_completion(ten_env, start_time, input_text, self.memory))
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame
@@ -258,21 +184,20 @@ class OpenAIChatGPTExtension(Extension):
         self.image_width = video_frame.get_width()
         self.image_height = video_frame.get_height()
         return
-        pass
 
-    def __append_memory(self, message):
+    def __append_memory(self, message:str):
         if len(self.memory) > self.max_memory_length:
             self.memory.pop(0)
         self.memory.append(message)
 
-    def __send_data(self, ten, sentence, end_of_segment, input_text):
+    def __send_data(self, ten_env: TenEnv, sentence: str, end_of_segment: bool, input_text: str):
         try:
             output_data = Data.create("text_data")
             output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
             output_data.set_property_bool(
                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, end_of_segment
             )
-            ten.send_data(output_data)
+            ten_env.send_data(output_data)
             logger.info(
                 f"for input text: [{input_text}] {'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
             )
@@ -280,3 +205,88 @@ class OpenAIChatGPTExtension(Extension):
             logger.info(
                 f"for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
             )
+
+    async def __async_chat_completion(self, ten: TenEnv, start_time, input_text, memory):
+        """Async chat completion task to be run from on_data."""
+        try:
+            logger.info(f"for input text: [{input_text}] memory: {memory}")
+            message = {"role": "user", "content": input_text}
+            tools = self.available_tools if self.enable_tools else None
+
+            # Make an async API call to get chat completions
+            resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message], tools)
+            if not resp:
+                logger.error(f"get_chat_completions_stream Response is None: {input_text}")
+                return
+
+            # Process the completions asynchronously
+            await self.__process_completions(resp, ten, start_time, input_text, memory)
+        except Exception as e:
+            logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {input_text}")
+
+    async def __async_chat_completion_with_vision(self, ten: TenEnv, start_time, input_text, memory):
+        """Handles chat completion when a vision-based tool call is invoked."""
+        try:
+            logger.info(f"for input text: [{input_text}] memory: {memory}")
+            
+            # Prepare the message with vision content
+            message = {"role": "user", "content": input_text}
+            if self.image_data is not None:
+                url = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
+                message = {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": input_text},
+                        {"type": "image_url", "image_url": {"url": url}},
+                    ],
+                }
+                logger.info(f"msg with vision data: {message}")
+
+            # Asynchronous request to OpenAI for chat completions with vision
+            resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message])
+            if not resp:
+                logger.error(f"get_chat_completions_stream Response is None for input text: {input_text}")
+                return
+
+            # Process completions asynchronously
+            await self.__process_completions(resp, ten, start_time, input_text, memory)
+
+        except Exception as e:
+            logger.error(f"Error in chat_completion_with_vision: {str(e)} for input text: {input_text}")
+
+
+    async def __process_completions(self, chat_completions, ten, start_time, input_text, memory):
+        """Processes completions and sends them asynchronously."""
+        full_content = ""
+        first_sentence_sent = False
+
+        for chat_completion in chat_completions:
+            if start_time < self.outdate_ts:
+                logger.info(f"recv interrupt for input text: [{input_text}]")
+                break
+
+            content = chat_completion.choices[0].delta.content if len(chat_completion.choices) > 0 and chat_completion.choices[0].delta.content else ""
+
+            if chat_completion.choices[0].delta.tool_calls:
+                for tool_call in chat_completion.choices[0].delta.tool_calls:
+                    logger.info(f"tool_call: {tool_call}")
+                    if tool_call.function.name == "get_vision_image":
+                        if not full_content and self.checking_vision_text_items:
+                            await self.__send_data(ten, random.choice(self.checking_vision_text_items), True, input_text)
+                        await self.__async_chat_completion_with_vision(ten, start_time, input_text, memory)
+                        return
+
+            full_content += content
+
+            sentence, content, sentence_is_final = "", content, False
+            while sentence_is_final:
+                sentence, content, sentence_is_final = parse_sentence(sentence, content)
+                logger.info(f"recv for input text: [{input_text}] got sentence: [{sentence}]")
+                await self.__send_data(ten, sentence, False, input_text)
+                if not first_sentence_sent:
+                    first_sentence_sent = True
+                    logger.info(f"first sentence latency: {get_current_time() - start_time}ms")
+
+        self.__append_memory({"role": "user", "content": input_text})
+        self.__append_memory({"role": "assistant", "content": full_content})
+        await self.__send_data(ten, "", True, input_text)
