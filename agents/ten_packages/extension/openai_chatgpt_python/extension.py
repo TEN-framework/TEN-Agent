@@ -8,6 +8,7 @@
 import asyncio
 import json
 import random
+import threading
 import traceback
 
 from .helper import get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentence, rgb2base64jpeg
@@ -46,6 +47,8 @@ PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
 PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
 
+async def test_task():
+    logger.info("Test task is running")
 
 class OpenAIChatGPTExtension(Extension):
     memory = []
@@ -57,6 +60,7 @@ class OpenAIChatGPTExtension(Extension):
     image_width = 0
     image_height = 0
     checking_vision_text_items = []
+    loop = None
 
     available_tools = [
         {
@@ -77,25 +81,31 @@ class OpenAIChatGPTExtension(Extension):
     def on_start(self, ten_env: TenEnv) -> None:
         logger.info("on_start")
 
+        self.loop = asyncio.new_event_loop()
+        def start_loop():
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_forever()
+        threading.Thread(target=start_loop, args=[]).start()
+
         # Prepare configuration
         openai_chatgpt_config = OpenAIChatGPTConfig.default_config()
 
         # Mandatory properties
-        openai_chatgpt_config.base_url = get_property_string(ten_env, PROPERTY_BASE_URL)
+        openai_chatgpt_config.base_url = get_property_string(ten_env, PROPERTY_BASE_URL) or openai_chatgpt_config.base_url
         openai_chatgpt_config.api_key = get_property_string(ten_env, PROPERTY_API_KEY)
         if not openai_chatgpt_config.api_key:
             logger.info(f"API key is missing, exiting on_start")
             return
 
         # Optional properties
-        openai_chatgpt_config.model = get_property_string(ten_env, PROPERTY_MODEL)
-        openai_chatgpt_config.prompt = get_property_string(ten_env, PROPERTY_PROMPT)
-        openai_chatgpt_config.frequency_penalty = get_property_float(ten_env, PROPERTY_FREQUENCY_PENALTY)
-        openai_chatgpt_config.presence_penalty = get_property_float(ten_env, PROPERTY_PRESENCE_PENALTY)
-        openai_chatgpt_config.temperature = get_property_float(ten_env, PROPERTY_TEMPERATURE)
-        openai_chatgpt_config.top_p = get_property_float(ten_env, PROPERTY_TOP_P)
-        openai_chatgpt_config.max_tokens = get_property_int(ten_env, PROPERTY_MAX_TOKENS)
-        openai_chatgpt_config.proxy_url = get_property_string(ten_env, PROPERTY_PROXY_URL)
+        openai_chatgpt_config.model = get_property_string(ten_env, PROPERTY_MODEL) or openai_chatgpt_config.model
+        openai_chatgpt_config.prompt = get_property_string(ten_env, PROPERTY_PROMPT) or openai_chatgpt_config.prompt
+        openai_chatgpt_config.frequency_penalty = get_property_float(ten_env, PROPERTY_FREQUENCY_PENALTY) or openai_chatgpt_config.frequency_penalty
+        openai_chatgpt_config.presence_penalty = get_property_float(ten_env, PROPERTY_PRESENCE_PENALTY) or openai_chatgpt_config.presence_penalty
+        openai_chatgpt_config.temperature = get_property_float(ten_env, PROPERTY_TEMPERATURE) or openai_chatgpt_config.temperature
+        openai_chatgpt_config.top_p = get_property_float(ten_env, PROPERTY_TOP_P) or openai_chatgpt_config.top_p
+        openai_chatgpt_config.max_tokens = get_property_int(ten_env, PROPERTY_MAX_TOKENS) or openai_chatgpt_config.max_tokens
+        openai_chatgpt_config.proxy_url = get_property_string(ten_env, PROPERTY_PROXY_URL) or openai_chatgpt_config.proxy_url
 
         # Properties that don't affect openai_chatgpt_config
         greeting = get_property_string(ten_env, PROPERTY_GREETING)
@@ -108,10 +118,10 @@ class OpenAIChatGPTExtension(Extension):
             except Exception as err:
                 logger.info(f"Error parsing {PROPERTY_CHECKING_VISION_TEXT_ITEMS}: {err}")
 
-        # Create openaiChatGPT instance
+        # Create instance
         try:
             self.openai_chatgpt = OpenAIChatGPT(openai_chatgpt_config)
-            logger.info(f"OpenAIChatGPT initialized with max_tokens: {openai_chatgpt_config.max_tokens}, model: {openai_chatgpt_config.model}")
+            logger.info(f"initialized with max_tokens: {openai_chatgpt_config.max_tokens}, model: {openai_chatgpt_config.model}")
         except Exception as err:
             logger.info(f"Failed to initialize OpenAIChatGPT: {err}")
 
@@ -172,7 +182,7 @@ class OpenAIChatGPTExtension(Extension):
 
         # Start an asynchronous task for handling chat completion
         start_time = get_current_time()
-        asyncio.create_task(self.__async_chat_completion(ten_env, start_time, input_text, self.memory))
+        asyncio.run_coroutine_threadsafe(self.__async_chat_completion(ten_env, start_time, input_text, self.memory), self.loop)
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame
@@ -260,7 +270,7 @@ class OpenAIChatGPTExtension(Extension):
         full_content = ""
         first_sentence_sent = False
 
-        for chat_completion in chat_completions:
+        async for chat_completion in chat_completions:
             if start_time < self.outdate_ts:
                 logger.info(f"recv interrupt for input text: [{input_text}]")
                 break
@@ -289,4 +299,4 @@ class OpenAIChatGPTExtension(Extension):
 
         self.__append_memory({"role": "user", "content": input_text})
         self.__append_memory({"role": "assistant", "content": full_content})
-        await self.__send_data(ten, "", True, input_text)
+        self.__send_data(ten, full_content, True, input_text)

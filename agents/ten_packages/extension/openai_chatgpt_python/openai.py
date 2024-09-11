@@ -1,6 +1,6 @@
 import random
 import requests
-from openai import OpenAI
+from openai import AsyncOpenAI
 from typing import List, Dict, Any, Optional
 from .log import logger
 
@@ -52,7 +52,7 @@ class OpenAIChatGPT:
     def __init__(self, config: OpenAIChatGPTConfig):
         self.config = config
         logger.info(f"OpenAIChatGPT initialized with config: {config.api_key}")
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url
         )
@@ -65,7 +65,7 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
-    def get_chat_completions_stream(self, messages, tools = None):
+    async def get_chat_completions_stream(self, messages, tools = None):
         req = {
             "model": self.config.model,
             "messages": [
@@ -86,7 +86,7 @@ class OpenAIChatGPT:
         }
 
         try:
-            response = self.client.chat.completions.create(**req)
+            response = await self.client.chat.completions.create(**req)
             return response
         except Exception as e:
             raise Exception(f"CreateChatCompletionStream failed, err: {e}")
