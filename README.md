@@ -31,10 +31,34 @@
 
 </div>
 
+TEN Agent, powered by the world’s first real-time multimodal framework. It is open-source, with the ability to speak, see, and access a knowledge base. By taking advantage of TEN Framework, TEN Agent has the following features:
+
+1. **High-Performance Real-Time Multimodal Interactions**
+Offers high-performance, low-latency solutions for complex audio-visual AI applications.
+
+2. **Multi-Language and Multi-Platform Support** 
+Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
+
+3. **Edge-Cloud Integration**
+Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
+
+4. **Flexibility Beyond Model Limitations**
+Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
+
+5. **Real-Time Agent State Management**
+Manages and adjusts agent behavior in real-time for dynamic responsiveness.
+
+<br>
+<h2>Stay Tuned</h2>
+
+Before we dive further, be sure to star our repository and get instant notifications for all new releases!
+
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
+
 <br>
 <h2>TEN Agent</h2>
 
-[TEN multimodal agent](https://agent.theten.ai)
+[TEN Agent](https://agent.theten.ai)
 
 TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
 
@@ -142,11 +166,7 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 </div>
 
 <br>
-<h2>Stay Tuned</h2>
 
-Before we dive further, be sure to star our repository and get instant notifications for all new releases!
-
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
 
 <br>
 <h2>Join Community</h2>
