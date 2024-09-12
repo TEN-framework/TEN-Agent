@@ -1,3 +1,5 @@
+![TEN Agent banner](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
@@ -22,38 +24,38 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
+[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+[Create Extensions](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
+<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+[TEN Documentation](https://doc.theten.ai/)
 
-[Documentation](https://doc.theten.ai)
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Getting Started](https://doc.theten.ai/getting-started/quickstart)
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Tutorials](https://doc.theten.ai/getting-started/create-a-hello-world-extension)
 
 </div>
 
 TEN Agent, powered by the world’s first real-time multimodal framework. It is open-source, with the ability to speak, see, and access a knowledge base. By taking advantage of TEN Framework, TEN Agent has the following features:
 
-1. **High-Performance Real-Time Multimodal Interactions**
+1. **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
 
-2. **Multi-Language and Multi-Platform Support** 
+2. **Multi-Language and Multi-Platform Support** :
 Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
 
-3. **Edge-Cloud Integration**
+3. **Edge-Cloud Integration**:
 Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
 
-4. **Flexibility Beyond Model Limitations**
+4. **Flexibility Beyond Model Limitations**:
 Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
 
-5. **Real-Time Agent State Management**
+5. **Real-Time Agent State Management**:
 Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 <br>
 <h2>Stay Tuned</h2>
 
-Before we dive further, be sure to star our repository and get instant notifications for all new releases!
+Before we get started, be sure to star our repository and get instant notifications for all new releases!
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
 <h2>TEN Agent</h2>
@@ -62,7 +64,7 @@ Before we dive further, be sure to star our repository and get instant notificat
 
 TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
 
-[![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://agent.theten.ai)
+[![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
 <br>
 <h2>How to build TEN Agent locally
 
