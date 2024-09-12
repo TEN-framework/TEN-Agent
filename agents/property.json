@@ -805,6 +805,7 @@
                             "api_key": "$QWEN_API_KEY",
                             "model": "qwen-max",
                             "max_tokens": 512,
+                            "greeting": "ASTRA agent connected. How can i help you today?",
                             "prompt": "",
                             "max_memory_length": 10
                         }

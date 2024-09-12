@@ -23,6 +23,8 @@ import re
 from http import HTTPStatus
 from .log import logger
 
+DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
+DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
 
 class QWenLLMExtension(Extension):
     def __init__(self, name: str):
@@ -190,6 +192,18 @@ class QWenLLMExtension(Extension):
         self.model = ten.get_property_string("model")
         self.prompt = ten.get_property_string("prompt")
         self.max_history = ten.get_property_int("max_memory_length")
+        greeting = ten.get_property_string("greeting")
+
+        if greeting:
+            try:
+                output_data = Data.create("text_data")
+                output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting)
+                output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True)
+                ten.send_data(output_data)
+                logger.info(f"greeting [{greeting}] sent")
+            except Exception as e:
+                logger.error(f"greeting [{greeting}] send failed, err: {e}")
+
 
         dashscope.api_key = self.api_key
         self.thread = threading.Thread(target=self.async_handle, args=[ten])
