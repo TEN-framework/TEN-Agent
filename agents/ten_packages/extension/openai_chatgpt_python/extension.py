@@ -47,8 +47,6 @@ PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
 PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
 
-async def test_task():
-    logger.info("Test task is running")
 
 class OpenAIChatGPTExtension(Extension):
     memory = []
@@ -301,7 +299,6 @@ class OpenAIChatGPTExtension(Extension):
 
         self._append_memory({"role": "user", "content": input_text})
         self._append_memory({"role": "assistant", "content": full_content})
-        self._send_data(ten, full_content, True, input_text)
 
     def _append_memory(self, message:str):
         if len(self.memory) > self.max_memory_length:
