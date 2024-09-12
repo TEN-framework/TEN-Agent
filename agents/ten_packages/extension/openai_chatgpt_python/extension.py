@@ -271,6 +271,7 @@ class OpenAIChatGPTExtension(Extension):
 
     async def _process_completions(self, chat_completions, ten, start_time, input_text, memory):
         """Processes completions and sends them asynchronously."""
+        sentence = ""
         full_content = ""
         first_sentence_sent = False
 
@@ -288,14 +289,16 @@ class OpenAIChatGPTExtension(Extension):
 
             full_content += content
 
-            sentence, content, sentence_is_final = "", content, False
-            while sentence_is_final:
+            while True:
                 sentence, content, sentence_is_final = parse_sentence(sentence, content)
-                logger.info(f"recv for input text: [{input_text}] got sentence: [{sentence}]")
-                await self._send_data(ten, sentence, False, input_text)
+                if len(sentence) == 0 or not sentence_is_final:
+                    break
+                self._send_data(ten, sentence, False, input_text)
+                sentence = ""
+
                 if not first_sentence_sent:
                     first_sentence_sent = True
-                    logger.info(f"first sentence latency: {get_current_time() - start_time}ms")
+                    logger.info(f"first sentence latency: {float(get_current_time() - start_time)/1000}ms")
 
         self._append_memory({"role": "user", "content": input_text})
         self._append_memory({"role": "assistant", "content": full_content})
