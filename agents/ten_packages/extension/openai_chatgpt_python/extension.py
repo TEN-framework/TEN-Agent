@@ -53,7 +53,6 @@ async def test_task():
 class OpenAIChatGPTExtension(Extension):
     memory = []
     max_memory_length = 10
-    outdate_ts = 0
     openai_chatgpt = None
     enable_tools = False
     image_data = None
@@ -61,6 +60,10 @@ class OpenAIChatGPTExtension(Extension):
     image_height = 0
     checking_vision_text_items = []
     loop = None
+    ten_env = None
+
+    # Create the queue for message processing
+    queue = asyncio.Queue()
 
     available_tools = [
         {
@@ -86,6 +89,8 @@ class OpenAIChatGPTExtension(Extension):
             asyncio.set_event_loop(self.loop)
             self.loop.run_forever()
         threading.Thread(target=start_loop, args=[]).start()
+
+        self.loop.create_task(self._process_queue(ten_env))
 
         # Prepare configuration
         openai_chatgpt_config = OpenAIChatGPTConfig.default_config()
@@ -154,7 +159,7 @@ class OpenAIChatGPTExtension(Extension):
         cmd_name = cmd.get_name()
 
         if cmd_name == CMD_IN_FLUSH:
-            self.outdate_ts = get_current_time()
+            asyncio.run_coroutine_threadsafe(self._flush_queue(), self.loop)
             ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH), None)
             logger.info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
@@ -181,8 +186,7 @@ class OpenAIChatGPTExtension(Extension):
         logger.info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        start_time = get_current_time()
-        asyncio.run_coroutine_threadsafe(self.__async_chat_completion(ten_env, start_time, input_text, self.memory), self.loop)
+        asyncio.run_coroutine_threadsafe(self.queue.put(input_text), self.loop)
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame
@@ -195,28 +199,30 @@ class OpenAIChatGPTExtension(Extension):
         self.image_height = video_frame.get_height()
         return
 
-    def __append_memory(self, message:str):
-        if len(self.memory) > self.max_memory_length:
-            self.memory.pop(0)
-        self.memory.append(message)
+    async def _process_queue(self, ten_env: TenEnv):
+        """Asynchronously process queue items one by one."""
+        while True:
+            # Wait for an item to be available in the queue
+            message = await self.queue.get()
+            try:
+                # Create a new task for the new message
+                start_time = get_current_time()
+                self.current_task = asyncio.create_task(self._async_chat_completion(ten_env, start_time, message, self.memory))
+                await self.current_task  # Wait for the current task to finish or be cancelled
+            except asyncio.CancelledError:
+                logger.info(f"Task cancelled: {message}")
+            finally:
+                self.queue.task_done()
 
-    def __send_data(self, ten_env: TenEnv, sentence: str, end_of_segment: bool, input_text: str):
-        try:
-            output_data = Data.create("text_data")
-            output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
-            output_data.set_property_bool(
-                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, end_of_segment
-            )
-            ten_env.send_data(output_data)
-            logger.info(
-                f"for input text: [{input_text}] {'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
-            )
-        except Exception as err:
-            logger.info(
-                f"for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
-            )
+    async def _flush_queue(self):
+        """Flushes the self.queue and cancels the current task."""
+        while not self.queue.empty():
+            self.queue.get_nowait()
+            self.queue.task_done()
+        if self.current_task:
+            self.current_task.cancel()
 
-    async def __async_chat_completion(self, ten: TenEnv, start_time, input_text, memory):
+    async def _async_chat_completion(self, ten: TenEnv, start_time, input_text, memory):
         """Async chat completion task to be run from on_data."""
         try:
             logger.info(f"for input text: [{input_text}] memory: {memory}")
@@ -230,11 +236,11 @@ class OpenAIChatGPTExtension(Extension):
                 return
 
             # Process the completions asynchronously
-            await self.__process_completions(resp, ten, start_time, input_text, memory)
+            await self._process_completions(resp, ten, start_time, input_text, memory)
         except Exception as e:
             logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {input_text}")
 
-    async def __async_chat_completion_with_vision(self, ten: TenEnv, start_time, input_text, memory):
+    async def _async_chat_completion_with_vision(self, ten: TenEnv, start_time, input_text, memory):
         """Handles chat completion when a vision-based tool call is invoked."""
         try:
             logger.info(f"for input text: [{input_text}] memory: {memory}")
@@ -259,22 +265,18 @@ class OpenAIChatGPTExtension(Extension):
                 return
 
             # Process completions asynchronously
-            await self.__process_completions(resp, ten, start_time, input_text, memory)
+            await self._process_completions(resp, ten, start_time, input_text, memory)
 
         except Exception as e:
             logger.error(f"Error in chat_completion_with_vision: {str(e)} for input text: {input_text}")
 
 
-    async def __process_completions(self, chat_completions, ten, start_time, input_text, memory):
+    async def _process_completions(self, chat_completions, ten, start_time, input_text, memory):
         """Processes completions and sends them asynchronously."""
         full_content = ""
         first_sentence_sent = False
 
         async for chat_completion in chat_completions:
-            if start_time < self.outdate_ts:
-                logger.info(f"recv interrupt for input text: [{input_text}]")
-                break
-
             content = chat_completion.choices[0].delta.content if len(chat_completion.choices) > 0 and chat_completion.choices[0].delta.content else ""
 
             if chat_completion.choices[0].delta.tool_calls:
@@ -282,8 +284,8 @@ class OpenAIChatGPTExtension(Extension):
                     logger.info(f"tool_call: {tool_call}")
                     if tool_call.function.name == "get_vision_image":
                         if not full_content and self.checking_vision_text_items:
-                            await self.__send_data(ten, random.choice(self.checking_vision_text_items), True, input_text)
-                        await self.__async_chat_completion_with_vision(ten, start_time, input_text, memory)
+                            await self._send_data(ten, random.choice(self.checking_vision_text_items), True, input_text)
+                        await self._async_chat_completion_with_vision(ten, start_time, input_text, memory)
                         return
 
             full_content += content
@@ -292,11 +294,32 @@ class OpenAIChatGPTExtension(Extension):
             while sentence_is_final:
                 sentence, content, sentence_is_final = parse_sentence(sentence, content)
                 logger.info(f"recv for input text: [{input_text}] got sentence: [{sentence}]")
-                await self.__send_data(ten, sentence, False, input_text)
+                await self._send_data(ten, sentence, False, input_text)
                 if not first_sentence_sent:
                     first_sentence_sent = True
                     logger.info(f"first sentence latency: {get_current_time() - start_time}ms")
 
-        self.__append_memory({"role": "user", "content": input_text})
-        self.__append_memory({"role": "assistant", "content": full_content})
-        self.__send_data(ten, full_content, True, input_text)
+        self._append_memory({"role": "user", "content": input_text})
+        self._append_memory({"role": "assistant", "content": full_content})
+        self._send_data(ten, full_content, True, input_text)
+
+    def _append_memory(self, message:str):
+        if len(self.memory) > self.max_memory_length:
+            self.memory.pop(0)
+        self.memory.append(message)
+
+    def _send_data(self, ten_env: TenEnv, sentence: str, end_of_segment: bool, input_text: str):
+        try:
+            output_data = Data.create("text_data")
+            output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
+            output_data.set_property_bool(
+                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, end_of_segment
+            )
+            ten_env.send_data(output_data)
+            logger.info(
+                f"for input text: [{input_text}] {'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
+            )
+        except Exception as err:
+            logger.info(
+                f"for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
+            )
