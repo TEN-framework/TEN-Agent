@@ -86,7 +86,7 @@ TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstra
 #### Docker setting on Apple Silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
-<!-- ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true) -->
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### Next step
 
