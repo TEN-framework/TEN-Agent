@@ -302,6 +302,7 @@ class OpenAIChatGPTExtension(Extension):
 
         self._append_memory({"role": "user", "content": input_text})
         self._append_memory({"role": "assistant", "content": full_content})
+        self._send_data(ten, sentence, True, input_text)
 
     def _append_memory(self, message:str):
         if len(self.memory) > self.max_memory_length:
