@@ -60,20 +60,21 @@ def is_punctuation(char):
     return False
 
 
-def parse_sentence(sentence, content):
-    remain = ""
-    found_punc = False
-
+def parse_sentences(sentence_fragment, content):
+    sentences = []
+    current_sentence = sentence_fragment
     for char in content:
-        if not found_punc:
-            sentence += char
-        else:
-            remain += char
+        current_sentence += char
+        if is_punctuation(char):
+            # Check if the current sentence contains non-punctuation characters
+            stripped_sentence = current_sentence.strip()
+            if any(c.isalnum() for c in stripped_sentence):
+                sentences.append(stripped_sentence)
+            current_sentence = ""  # Reset for the next sentence
 
-        if not found_punc and is_punctuation(char):
-            found_punc = True
+    remain = current_sentence  # Any remaining characters form the incomplete sentence
+    return sentences, remain
 
-    return sentence, remain, found_punc
 
 
 def rgb2base64jpeg(rgb_data, width, height):

@@ -11,7 +11,8 @@ import random
 import threading
 import traceback
 
-from .helper import get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentence, rgb2base64jpeg
+from .events import AsyncEventEmitter
+from .helper import get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     AudioFrame,
@@ -58,7 +59,7 @@ class OpenAIChatGPTExtension(Extension):
     image_height = 0
     checking_vision_text_items = []
     loop = None
-    ten_env = None
+    sentence_fragment = ""
 
     # Create the queue for message processing
     queue = asyncio.Queue()
@@ -204,8 +205,7 @@ class OpenAIChatGPTExtension(Extension):
             message = await self.queue.get()
             try:
                 # Create a new task for the new message
-                start_time = get_current_time()
-                self.current_task = asyncio.create_task(self._async_chat_completion(ten_env, start_time, message, self.memory))
+                self.current_task = asyncio.create_task(self._run_chatflow(ten_env, message, self.memory))
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 logger.info(f"Task cancelled: {message}")
@@ -220,96 +220,148 @@ class OpenAIChatGPTExtension(Extension):
         if self.current_task:
             self.current_task.cancel()
 
-    async def _async_chat_completion(self, ten: TenEnv, start_time, input_text, memory):
-        """Async chat completion task to be run from on_data."""
+    async def _run_chatflow(self, ten_env: TenEnv, input_text: str, memory):
+        """Run the chatflow asynchronously."""
+        completion_finished = False
+        memory_cache = []
         try:
-            logger.info(f"for input text: [{input_text}] memory: {memory}")
-            message = {"role": "user", "content": input_text}
-            tools = self.available_tools if self.enable_tools else None
+            while not completion_finished:
+                logger.info(f"for input text: [{input_text}] memory: {memory}")
+                message = {"role": "user", "content": input_text}
+                memory_cache = memory_cache + [message, {"role": "assistant", "content": ""}]
+                tools = self.available_tools if self.enable_tools else None
 
-            # Make an async API call to get chat completions
-            resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message], tools)
-            if not resp:
-                logger.error(f"get_chat_completions_stream Response is None: {input_text}")
-                return
+                self.sentence_fragment = ""
 
-            # Process the completions asynchronously
-            await self._process_completions(resp, ten, start_time, input_text, memory)
+                # Create an asyncio.Event to signal when content is finished
+                content_finished_event = asyncio.Event()
+
+                # Create an async listener to handle tool calls and content updates
+                async def handle_content_update(content:str):
+                    # Append the content to the last assistant message
+                    for item in reversed(memory_cache):
+                        if item.get('role') == 'assistant':
+                            item['content'] = item['content'] + content
+                            break
+                    sentences, self.sentence_fragment = parse_sentences(self.sentence_fragment, content)
+                    for s in sentences:
+                        self._send_data(ten_env, s, False)
+
+                async def handle_content_finished(full_content:str):
+                    nonlocal completion_finished
+                    completion_finished = True
+                    content_finished_event.set()
+
+                listener = AsyncEventEmitter()
+                listener.on("tool_call", lambda tool_call: logger.info(f"tool_call: {tool_call}"))
+                listener.on("content_update", handle_content_update)
+                listener.on("content_finished", handle_content_finished)
+
+                # Make an async API call to get chat completions
+                await self.openai_chatgpt.get_chat_completions_stream(memory + [message], tools, listener)
+
+                # Wait for the content to be finished
+                await content_finished_event.wait()
+        except asyncio.CancelledError:
+            logger.info(f"Task cancelled: {input_text}")
         except Exception as e:
             logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {input_text}")
+        finally:
+            self._send_data(ten_env, "", True)
+            # always append the memory
+            for m in memory_cache:
+                self._append_memory(m)
 
-    async def _async_chat_completion_with_vision(self, ten: TenEnv, start_time, input_text, memory):
-        """Handles chat completion when a vision-based tool call is invoked."""
-        try:
-            logger.info(f"for input text: [{input_text}] memory: {memory}")
+    # async def _async_chat_completion(self, ten: TenEnv, start_time, input_text, memory):
+    #     """Async chat completion task to be run from on_data."""
+    #     try:
+    #         logger.info(f"for input text: [{input_text}] memory: {memory}")
+    #         message = {"role": "user", "content": input_text}
+    #         tools = self.available_tools if self.enable_tools else None
+
+    #         # Make an async API call to get chat completions
+    #         resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message], tools)
+    #         if not resp:
+    #             logger.error(f"get_chat_completions_stream Response is None: {input_text}")
+    #             return
+
+    #         # Process the completions asynchronously
+    #         await self._process_completions(resp, ten, start_time, input_text, memory)
+    #     except Exception as e:
+    #         logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {input_text}")
+
+    # async def _async_chat_completion_with_vision(self, ten: TenEnv, start_time, input_text, memory):
+    #     """Handles chat completion when a vision-based tool call is invoked."""
+    #     try:
+    #         logger.info(f"for input text: [{input_text}] memory: {memory}")
             
-            # Prepare the message with vision content
-            message = {"role": "user", "content": input_text}
-            if self.image_data is not None:
-                url = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
-                message = {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": input_text},
-                        {"type": "image_url", "image_url": {"url": url}},
-                    ],
-                }
-                logger.info(f"msg with vision data: {message}")
+    #         # Prepare the message with vision content
+    #         message = {"role": "user", "content": input_text}
+    #         if self.image_data is not None:
+    #             url = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
+    #             message = {
+    #                 "role": "user",
+    #                 "content": [
+    #                     {"type": "text", "text": input_text},
+    #                     {"type": "image_url", "image_url": {"url": url}},
+    #                 ],
+    #             }
+    #             logger.info(f"msg with vision data: {message}")
 
-            # Asynchronous request to OpenAI for chat completions with vision
-            resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message])
-            if not resp:
-                logger.error(f"get_chat_completions_stream Response is None for input text: {input_text}")
-                return
+    #         # Asynchronous request to OpenAI for chat completions with vision
+    #         resp = await self.openai_chatgpt.get_chat_completions_stream(memory + [message])
+    #         if not resp:
+    #             logger.error(f"get_chat_completions_stream Response is None for input text: {input_text}")
+    #             return
 
-            # Process completions asynchronously
-            await self._process_completions(resp, ten, start_time, input_text, memory)
+    #         # Process completions asynchronously
+    #         await self._process_completions(resp, ten, start_time, input_text, memory)
 
-        except Exception as e:
-            logger.error(f"Error in chat_completion_with_vision: {str(e)} for input text: {input_text}")
+    #     except Exception as e:
+    #         logger.error(f"Error in chat_completion_with_vision: {str(e)} for input text: {input_text}")
 
 
-    async def _process_completions(self, chat_completions, ten, start_time, input_text, memory):
-        """Processes completions and sends them asynchronously."""
-        sentence = ""
-        full_content = ""
-        first_sentence_sent = False
+    # async def _process_completions(self, chat_completions, ten, start_time, input_text, memory):
+    #     """Processes completions and sends them asynchronously."""
+    #     sentence = ""
+    #     full_content = ""
+    #     first_sentence_sent = False
 
-        async for chat_completion in chat_completions:
-            content = chat_completion.choices[0].delta.content if len(chat_completion.choices) > 0 and chat_completion.choices[0].delta.content else ""
+    #     async for chat_completion in chat_completions:
+    #         content = chat_completion.choices[0].delta.content if len(chat_completion.choices) > 0 and chat_completion.choices[0].delta.content else ""
 
-            if chat_completion.choices[0].delta.tool_calls:
-                for tool_call in chat_completion.choices[0].delta.tool_calls:
-                    logger.info(f"tool_call: {tool_call}")
-                    if tool_call.function.name == "get_vision_image":
-                        if not full_content and self.checking_vision_text_items:
-                            await self._send_data(ten, random.choice(self.checking_vision_text_items), True, input_text)
-                        await self._async_chat_completion_with_vision(ten, start_time, input_text, memory)
-                        return
+    #         if chat_completion.choices[0].delta.tool_calls:
+    #             for tool_call in chat_completion.choices[0].delta.tool_calls:
+    #                 logger.info(f"tool_call: {tool_call}")
+    #                 if tool_call.function.name == "get_vision_image":
+    #                     if not full_content and self.checking_vision_text_items:
+    #                         await self._send_data(ten, random.choice(self.checking_vision_text_items), True, input_text)
+    #                     await self._async_chat_completion_with_vision(ten, start_time, input_text, memory)
+    #                     return
 
-            full_content += content
+    #         full_content += content
 
-            while True:
-                sentence, content, sentence_is_final = parse_sentence(sentence, content)
-                if len(sentence) == 0 or not sentence_is_final:
-                    break
-                self._send_data(ten, sentence, False, input_text)
-                sentence = ""
+    #         while True:
+    #             sentence, content, sentence_is_final = parse_sentence(sentence, content)
+    #             if len(sentence) == 0 or not sentence_is_final:
+    #                 break
+    #             self._send_data(ten, sentence, False, input_text)
+    #             sentence = ""
 
-                if not first_sentence_sent:
-                    first_sentence_sent = True
-                    logger.info(f"first sentence latency: {float(get_current_time() - start_time)/1000}ms")
+    #             if not first_sentence_sent:
+    #                 first_sentence_sent = True
+    #                 logger.info(f"first sentence latency: {float(get_current_time() - start_time)/1000}ms")
 
-        self._append_memory({"role": "user", "content": input_text})
-        self._append_memory({"role": "assistant", "content": full_content})
-        self._send_data(ten, sentence, True, input_text)
+    #     self._append_memory({"role": "user", "content": input_text})
+    #     self._append_memory({"role": "assistant", "content": full_content})
+    #     self._send_data(ten, sentence, True, input_text)
 
     def _append_memory(self, message:str):
         if len(self.memory) > self.max_memory_length:
             self.memory.pop(0)
         self.memory.append(message)
 
-    def _send_data(self, ten_env: TenEnv, sentence: str, end_of_segment: bool, input_text: str):
+    def _send_data(self, ten_env: TenEnv, sentence: str, end_of_segment: bool):
         try:
             output_data = Data.create("text_data")
             output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
@@ -318,9 +370,9 @@ class OpenAIChatGPTExtension(Extension):
             )
             ten_env.send_data(output_data)
             logger.info(
-                f"for input text: [{input_text}] {'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
+                f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
             )
         except Exception as err:
             logger.info(
-                f"for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
+                f"send sentence [{sentence}] failed, err: {err}"
             )

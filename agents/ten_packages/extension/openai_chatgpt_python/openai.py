@@ -1,3 +1,10 @@
+#
+#
+# Agora Real Time Engagement
+# Created by Wei Hu in 2024-08.
+# Copyright (c) 2024 Agora IO. All rights reserved.
+#
+#
 import random
 import requests
 from openai import AsyncOpenAI
@@ -65,7 +72,7 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
-    async def get_chat_completions_stream(self, messages, tools = None):
+    async def get_chat_completions_stream(self, messages, tools = None, listener = None):
         req = {
             "model": self.config.model,
             "messages": [
@@ -87,6 +94,32 @@ class OpenAIChatGPT:
 
         try:
             response = await self.client.chat.completions.create(**req)
-            return response
         except Exception as e:
             raise Exception(f"CreateChatCompletionStream failed, err: {e}")
+        
+        full_content = ""
+
+        async for chat_completion in response:
+            choice = chat_completion.choices[0]
+            delta = choice.delta
+
+            content = delta.content if delta and delta.content else ""
+
+            # Emit content update event (fire-and-forget)
+            if listener and content:
+                listener.emit('content_update', content)
+
+            full_content += content
+
+            # Check for tool calls
+            if delta.tool_calls:
+                for tool_call in delta.tool_calls:
+                    logger.info(f"tool_call: {tool_call}")
+
+                    # Emit tool call event (fire-and-forget)
+                    if listener:
+                        listener.emit('tool_call', tool_call)
+
+        # Emit content finished event after the loop completes
+        if listener:
+            listener.emit('content_finished', full_content)
