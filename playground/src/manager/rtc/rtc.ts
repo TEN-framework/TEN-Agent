@@ -138,7 +138,10 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       text: text,
       isFinal: is_final
     };
-    this.emit("textChanged", textItem);
+
+    if (text.trim().length > 0) {
+      this.emit("textChanged", textItem);
+    }
   }
   
   /**

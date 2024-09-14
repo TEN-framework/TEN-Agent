@@ -20,7 +20,7 @@ from ten import (
 )
 from .log import logger
 
-MAX_SIZE = 1024  # 1 KB limit
+MAX_SIZE = 800  # 1 KB limit
 OVERHEAD_ESTIMATE = 200  # Estimate for the overhead of metadata in the JSON
 
 CMD_NAME_FLUSH = "flush"
@@ -135,33 +135,47 @@ class MessageCollectorExtension(Extension):
         }
 
         try:
-            # Check if the text + metadata exceeds 1 KB (1024 bytes)
+            # Convert the text to UTF-8 bytes
             text_bytes = text.encode('utf-8')
+
+            # If the text + metadata fits within the size limit, send it directly
             if len(text_bytes) + OVERHEAD_ESTIMATE <= MAX_SIZE:
-                # If it's within the limit, send it directly
                 base_msg_data["text"] = text
                 msg_data = json.dumps(base_msg_data)
                 ten_data = Data.create("data")
                 ten_data.set_property_buf("data", msg_data.encode())
                 ten_env.send_data(ten_data)
             else:
-                # Split the text into smaller chunks
+                # Split the text bytes into smaller chunks, ensuring safe UTF-8 splitting
                 max_text_size = MAX_SIZE - OVERHEAD_ESTIMATE
                 total_length = len(text_bytes)
-                total_parts = (total_length + max_text_size - 1) // max_text_size  # Calculate the number of parts
-                logger.info(f"Splitting text into {total_parts} parts")
+                total_parts = (total_length + max_text_size - 1) // max_text_size  # Calculate number of parts
                 
-                for part_number in range(total_parts):
-                    start_index = part_number * max_text_size
-                    end_index = min(start_index + max_text_size, total_length)
-                    text_part = text_bytes[start_index:end_index].decode('utf-8', errors='ignore')
+                def get_valid_utf8_chunk(start, end):
+                    """Helper function to ensure valid UTF-8 chunks."""
+                    while end > start:
+                        try:
+                            # Decode to check if this chunk is valid UTF-8
+                            text_part = text_bytes[start:end].decode('utf-8')
+                            return text_part, end
+                        except UnicodeDecodeError:
+                            # Reduce the end point to avoid splitting in the middle of a character
+                            end -= 1
+                    # If no valid chunk is found (shouldn't happen with valid UTF-8 input), return an empty string
+                    return "", start
+
+                part_number = 0
+                start_index = 0
+                while start_index < total_length:
+                    part_number += 1
+                    # Get a valid UTF-8 chunk
+                    text_part, end_index = get_valid_utf8_chunk(start_index, min(start_index + max_text_size, total_length))
                     
-                    # Create a message for this part
+                    # Prepare the part data with metadata
                     part_data = base_msg_data.copy()
                     part_data.update({
                         "text": text_part,
-                        "is_final": False,  # Parts are not final
-                        "part_number": part_number + 1,
+                        "part_number": part_number,
                         "total_parts": total_parts,
                     })
                     
@@ -170,6 +184,9 @@ class MessageCollectorExtension(Extension):
                     ten_data = Data.create("data")
                     ten_data.set_property_buf("data", part_msg_data.encode())
                     ten_env.send_data(ten_data)
+
+                    # Move to the next chunk
+                    start_index = end_index
 
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")
