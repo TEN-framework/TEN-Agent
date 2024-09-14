@@ -166,7 +166,7 @@ class AsyncQueue:
                 self._queue.appendleft(item)  # Prepend item to the front
             else:
                 self._queue.append(item)  # Append item to the back
-            self._condition.notify()  # Notify consumers that a new item is available
+            self._condition.notify() 
 
     async def get(self):
         """Remove and return an item from the queue."""

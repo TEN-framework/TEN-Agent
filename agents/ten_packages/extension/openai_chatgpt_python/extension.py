@@ -260,7 +260,8 @@ class OpenAIChatGPTExtension(Extension):
             async def handle_tool_call(tool_call):
                 logger.info(f"tool_call: {tool_call}")
                 if tool_call.function.name == "get_vision_image":
-                    self.queue._queue.appendleft([TASK_TYPE_CHAT_COMPLETION_WITH_VISION, input_text])
+                    # Append the vision image to the last assistant message
+                    await self.queue.put([TASK_TYPE_CHAT_COMPLETION_WITH_VISION, input_text], True)
 
             async def handle_content_update(content:str):
                 # Append the content to the last assistant message
