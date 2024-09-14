@@ -67,7 +67,7 @@ def parse_sentences(sentence_fragment, content):
         current_sentence += char
         if is_punctuation(char):
             # Check if the current sentence contains non-punctuation characters
-            stripped_sentence = current_sentence.strip()
+            stripped_sentence = current_sentence
             if any(c.isalnum() for c in stripped_sentence):
                 sentences.append(stripped_sentence)
             current_sentence = ""  # Reset for the next sentence
