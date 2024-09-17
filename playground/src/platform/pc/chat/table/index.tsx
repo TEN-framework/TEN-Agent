@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Empty, ConfigProvider, Table, Input, Form, Checkbox } from 'antd';
+import { Button, Empty, ConfigProvider, Table, Input, Form, Checkbox, InputRef } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 // Define the data type for the table rows
@@ -38,7 +38,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
     );
     const [editingKey, setEditingKey] = useState<string>('');
     const [form] = Form.useForm();
-    const inputRef = useRef<Input>(null); // Ref to manage focus
+    const inputRef = useRef<InputRef>(null); // Ref to manage focus
 
     // Function to check if the current row is being edited
     const isEditing = (record: DataType) => record.key === editingKey;
