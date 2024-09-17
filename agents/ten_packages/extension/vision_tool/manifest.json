@@ -19,5 +19,19 @@
       "README.md"
     ]
   },
-  "api": {}
+  "api": {
+    "cmd_in": [
+      {
+        "name": "register_tool"
+      },
+      {
+        "name": "run_tool"
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "video_frame"
+      }
+    ]
+  }
 }
