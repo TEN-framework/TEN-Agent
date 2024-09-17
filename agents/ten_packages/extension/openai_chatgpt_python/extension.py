@@ -11,7 +11,9 @@ import random
 import threading
 import traceback
 
-from .helper import AsyncEventEmitter, AsyncQueue, get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentences, rgb2base64jpeg
+from .aibase import AsyncEventEmitter, LLMExtension, TenLLMToolResult
+
+from .helper import parse_sentences
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     AudioFrame,
@@ -49,75 +51,62 @@ PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
 
 
 TASK_TYPE_CHAT_COMPLETION = "chat_completion"
-TASK_TYPE_CHAT_COMPLETION_WITH_VISION = "chat_completion_with_vision"
+TASK_TYPE_CHAT_COMPLETION_WITH_ANSWER = "chat_completion_with_answer"
 
-class OpenAIChatGPTExtension(Extension):
+class OpenAIChatGPTExtension(LLMExtension):
     memory = []
     max_memory_length = 10
     openai_chatgpt = None
     enable_tools = False
-    image_data = None
-    image_width = 0
-    image_height = 0
     checking_vision_text_items = []
     loop = None
     sentence_fragment = ""
-
-    # Create the queue for message processing
-    queue = AsyncQueue()
-
-    available_tools = [
-        {
-            "type": "function",
-            "function": {
-                # ensure you use gpt-4o or later model if you need image recognition, gpt-4o-mini does not work quite well in this case
-                "name": "get_vision_image",
-                "description": "Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
-            },
-            "strict": True,
-        }
-    ]
+    # available_tools = [
+    #     {
+    #         "type": "function",
+    #         "function": {
+    #             # ensure you use gpt-4o or later model if you need image recognition, gpt-4o-mini does not work quite well in this case
+    #             "name": "get_vision_image",
+    #             "description": "Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
+    #         },
+    #         "strict": True,
+    #     }
+    # ]
 
     def on_init(self, ten_env: TenEnv) -> None:
+        super().on_init(ten_env)
         logger.info("on_init")
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
+        super().on_start(ten_env)
         logger.info("on_start")
-
-        self.loop = asyncio.new_event_loop()
-        def start_loop():
-            asyncio.set_event_loop(self.loop)
-            self.loop.run_forever()
-        threading.Thread(target=start_loop, args=[]).start()
-
-        self.loop.create_task(self._process_queue(ten_env))
 
         # Prepare configuration
         openai_chatgpt_config = OpenAIChatGPTConfig.default_config()
 
         # Mandatory properties
-        openai_chatgpt_config.base_url = get_property_string(ten_env, PROPERTY_BASE_URL) or openai_chatgpt_config.base_url
-        openai_chatgpt_config.api_key = get_property_string(ten_env, PROPERTY_API_KEY)
+        openai_chatgpt_config.base_url = self.get_property_string(ten_env, PROPERTY_BASE_URL) or openai_chatgpt_config.base_url
+        openai_chatgpt_config.api_key = self.get_property_string(ten_env, PROPERTY_API_KEY)
         if not openai_chatgpt_config.api_key:
             logger.info(f"API key is missing, exiting on_start")
             return
 
         # Optional properties
-        openai_chatgpt_config.model = get_property_string(ten_env, PROPERTY_MODEL) or openai_chatgpt_config.model
-        openai_chatgpt_config.prompt = get_property_string(ten_env, PROPERTY_PROMPT) or openai_chatgpt_config.prompt
-        openai_chatgpt_config.frequency_penalty = get_property_float(ten_env, PROPERTY_FREQUENCY_PENALTY) or openai_chatgpt_config.frequency_penalty
-        openai_chatgpt_config.presence_penalty = get_property_float(ten_env, PROPERTY_PRESENCE_PENALTY) or openai_chatgpt_config.presence_penalty
-        openai_chatgpt_config.temperature = get_property_float(ten_env, PROPERTY_TEMPERATURE) or openai_chatgpt_config.temperature
-        openai_chatgpt_config.top_p = get_property_float(ten_env, PROPERTY_TOP_P) or openai_chatgpt_config.top_p
-        openai_chatgpt_config.max_tokens = get_property_int(ten_env, PROPERTY_MAX_TOKENS) or openai_chatgpt_config.max_tokens
-        openai_chatgpt_config.proxy_url = get_property_string(ten_env, PROPERTY_PROXY_URL) or openai_chatgpt_config.proxy_url
+        openai_chatgpt_config.model = self.get_property_string(ten_env, PROPERTY_MODEL) or openai_chatgpt_config.model
+        openai_chatgpt_config.prompt = self.get_property_string(ten_env, PROPERTY_PROMPT) or openai_chatgpt_config.prompt
+        openai_chatgpt_config.frequency_penalty = self.get_property_float(ten_env, PROPERTY_FREQUENCY_PENALTY) or openai_chatgpt_config.frequency_penalty
+        openai_chatgpt_config.presence_penalty = self.get_property_float(ten_env, PROPERTY_PRESENCE_PENALTY) or openai_chatgpt_config.presence_penalty
+        openai_chatgpt_config.temperature = self.get_property_float(ten_env, PROPERTY_TEMPERATURE) or openai_chatgpt_config.temperature
+        openai_chatgpt_config.top_p = self.get_property_float(ten_env, PROPERTY_TOP_P) or openai_chatgpt_config.top_p
+        openai_chatgpt_config.max_tokens = self.get_property_int(ten_env, PROPERTY_MAX_TOKENS) or openai_chatgpt_config.max_tokens
+        openai_chatgpt_config.proxy_url = self.get_property_string(ten_env, PROPERTY_PROXY_URL) or openai_chatgpt_config.proxy_url
 
         # Properties that don't affect openai_chatgpt_config
-        greeting = get_property_string(ten_env, PROPERTY_GREETING)
-        self.enable_tools = get_property_bool(ten_env, PROPERTY_ENABLE_TOOLS)
-        self.max_memory_length = get_property_int(ten_env, PROPERTY_MAX_MEMORY_LENGTH)
-        checking_vision_text_items_str = get_property_string(ten_env, PROPERTY_CHECKING_VISION_TEXT_ITEMS)
+        greeting = self.get_property_string(ten_env, PROPERTY_GREETING)
+        self.enable_tools = self.get_property_bool(ten_env, PROPERTY_ENABLE_TOOLS)
+        self.max_memory_length = self.get_property_int(ten_env, PROPERTY_MAX_MEMORY_LENGTH)
+        checking_vision_text_items_str = self.get_property_string(ten_env, PROPERTY_CHECKING_VISION_TEXT_ITEMS)
         if checking_vision_text_items_str:
             try:
                 self.checking_vision_text_items = json.loads(checking_vision_text_items_str)
@@ -130,6 +119,7 @@ class OpenAIChatGPTExtension(Extension):
             logger.info(f"initialized with max_tokens: {openai_chatgpt_config.max_tokens}, model: {openai_chatgpt_config.model}")
         except Exception as err:
             logger.info(f"Failed to initialize OpenAIChatGPT: {err}")
+
 
         # Send greeting if available
         if greeting:
@@ -144,6 +134,7 @@ class OpenAIChatGPTExtension(Extension):
         ten_env.on_start_done()
 
     def on_stop(self, ten_env: TenEnv) -> None:
+        super().on_stop(ten_env)
         logger.info("on_stop")
 
         # TODO: clean up resources
@@ -151,6 +142,7 @@ class OpenAIChatGPTExtension(Extension):
         ten_env.on_stop_done()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
+        super().on_deinit(ten_env)
         logger.info("on_deinit")
         ten_env.on_deinit_done()
 
@@ -160,7 +152,7 @@ class OpenAIChatGPTExtension(Extension):
         cmd_name = cmd.get_name()
 
         if cmd_name == CMD_IN_FLUSH:
-            asyncio.run_coroutine_threadsafe(self._flush_queue(), self.loop)
+            self.flush_data_frame_queue()
             ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH), None)
             logger.info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
@@ -174,81 +166,48 @@ class OpenAIChatGPTExtension(Extension):
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         # Get the necessary properties
-        is_final = get_property_bool(data, DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
-        input_text = get_property_string(data, DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+        is_final = self.get_property_bool(data, DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+        input_text = self.get_property_string(data, DATA_IN_TEXT_DATA_PROPERTY_TEXT)
 
-        if not is_final:
-            logger.info("ignore non-final input")
-            return
-        if not input_text:
-            logger.info("ignore empty text")
-            return
+        logger.debug(f"OnData input text: [{input_text}]")
 
-        logger.info(f"OnData input text: [{input_text}]")
-
-        # Start an asynchronous task for handling chat completion
-        asyncio.run_coroutine_threadsafe(self.queue.put([TASK_TYPE_CHAT_COMPLETION, input_text]), self.loop)
+        if is_final and input_text:
+            # Start an asynchronous task for handling chat completion
+            self.queue_data_frame(ten_env, [TASK_TYPE_CHAT_COMPLETION, input_text, self.memory])
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame
         pass
 
-    def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
-        # logger.info(f"OpenAIChatGPTExtension on_video_frame {frame.get_width()} {frame.get_height()}")
-        self.image_data = video_frame.get_buf()
-        self.image_width = video_frame.get_width()
-        self.image_height = video_frame.get_height()
-        return
-
-    async def _process_queue(self, ten_env: TenEnv):
-        """Asynchronously process queue items one by one."""
-        while True:
-            # Wait for an item to be available in the queue
-            [task_type, message] = await self.queue.get()
-            try:
-                # Create a new task for the new message
-                self.current_task = asyncio.create_task(self._run_chatflow(ten_env, task_type, message, self.memory))
-                await self.current_task  # Wait for the current task to finish or be cancelled
-            except asyncio.CancelledError:
-                logger.info(f"Task cancelled: {message}")
-
-    async def _flush_queue(self):
-        """Flushes the self.queue and cancels the current task."""
-        # Flush the queue using the new flush method
-        await self.queue.flush()
-
-        # Cancel the current task if one is running
-        if self.current_task:
-            logger.info("Cancelling the current task during flush.")
-            self.current_task.cancel()
-
-    async def _run_chatflow(self, ten_env: TenEnv, task_type:str, input_text: str, memory):
+    async def on_process_data_frame(self, ten_env: TenEnv, data: any) -> None:
         """Run the chatflow asynchronously."""
         memory_cache = []
+        [task_type, content, memory] = data
         try:
-            logger.info(f"for input text: [{input_text}] memory: {memory}")
+            logger.info(f"for input text: [{content}] memory: {memory}")
             message = None
             tools = None
 
             # Prepare the message and tools based on the task type
             if task_type == TASK_TYPE_CHAT_COMPLETION:
-                message = {"role": "user", "content": input_text}
+                message = {"role": "user", "content": content}
                 memory_cache = memory_cache + [message, {"role": "assistant", "content": ""}]
-                tools = self.available_tools if self.enable_tools else None
-            elif task_type == TASK_TYPE_CHAT_COMPLETION_WITH_VISION:
-                message = {"role": "user", "content": input_text}
-                memory_cache = memory_cache + [message, {"role": "assistant", "content": ""}]
-                tools = self.available_tools if self.enable_tools else None
-                if self.image_data is not None:
-                    url = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
-                    message = {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": input_text},
-                            {"type": "image_url", "image_url": {"url": url}},
-                        ],
-                    }
-                    logger.info(f"msg with vision data: {message}")
+                tools = [] if len(self.available_tools) > 0 else None
+                for tool in self.available_tools:
+                    tools.append({
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": tool.description,
+                        },
+                        "strict": True
+                    })
+            elif task_type == TASK_TYPE_CHAT_COMPLETION_WITH_ANSWER:
+                message = {"role": "user", "content": content}
+                non_artifact_content = [item for item in content if item.get("type") != "image_url"]
+                non_artifact_message = {"role": "user", "content": non_artifact_content}
+                memory_cache = memory_cache + [non_artifact_message, {"role": "assistant", "content": ""}]
+                tools = None
 
 
             self.sentence_fragment = ""
@@ -256,12 +215,43 @@ class OpenAIChatGPTExtension(Extension):
             # Create an asyncio.Event to signal when content is finished
             content_finished_event = asyncio.Event()
 
+            # Create a future to track the single tool call task
+            tool_task_future = None
+
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
                 logger.info(f"tool_call: {tool_call}")
-                if tool_call.function.name == "get_vision_image":
-                    # Append the vision image to the last assistant message
-                    await self.queue.put([TASK_TYPE_CHAT_COMPLETION_WITH_VISION, input_text], True)
+                for tool in self.available_tools:
+                    if tool_call.function.name == tool.name:
+                        cmd = Cmd.create("run_tool")
+                        cmd.set_property_string("name", tool.name)
+                        # cmd.set_property_from_json("arguments", json.dumps(tool_call.arguments))
+                        cmd.set_property_from_json("arguments", json.dumps([]))
+
+                        # Create an asyncio.Future to manage the synchronization for the tool result callback
+                        tool_task_future = asyncio.get_event_loop().create_future()
+
+                        # Tool result handler (non-async callback)
+                        def handle_tool_result(ten_env: TenEnv, result:CmdResult):
+                            if result.get_status_code() == StatusCode.OK:
+                                tool_result = TenLLMToolResult.from_json(json.loads(result.get_property_to_json('data')))
+                                logger.info(f"tool_result: {tool_result}")
+                                content = []
+                                for item in tool_result.variables:
+                                    if item.type == "text":
+                                        content.append({"type": "text", "text": item.value})
+                                    elif item.type == "image":
+                                        content.append({"type": "image_url", "image_url": {"url": item.value}})
+                                    else:
+                                        logger.warning(f"Unknown tool result type: {item.type}")
+                                self.queue_data_frame(ten_env, [TASK_TYPE_CHAT_COMPLETION_WITH_ANSWER, content, memory_cache], True)
+                            else:
+                                logger.error(f"Tool call failed: {result.get_property_to_json('error')}")
+                            # Mark the future as complete once the callback is done
+                            tool_task_future.set_result(None)
+
+                        # Send the command and handle the result through the future
+                        ten_env.send_cmd(cmd, handle_tool_result)
 
             async def handle_content_update(content:str):
                 # Append the content to the last assistant message
@@ -274,6 +264,9 @@ class OpenAIChatGPTExtension(Extension):
                     self._send_data(ten_env, s, False)
 
             async def handle_content_finished(full_content:str):
+                # Wait for the single tool task to complete (if any)
+                if tool_task_future:
+                    await tool_task_future
                 content_finished_event.set()
 
             listener = AsyncEventEmitter()
@@ -287,10 +280,11 @@ class OpenAIChatGPTExtension(Extension):
             # Wait for the content to be finished
             await content_finished_event.wait()
         except asyncio.CancelledError:
-            logger.info(f"Task cancelled: {input_text}")
+            logger.info(f"Task cancelled: {content}")
         except Exception as e:
-            logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {input_text}")
+            logger.error(f"Error in chat_completion: {traceback.format_exc()} for input text: {content}")
         finally:
+            logger.info(f"Task completed: {content}")
             self._send_data(ten_env, "", True)
             # always append the memory
             for m in memory_cache:

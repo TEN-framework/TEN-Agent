@@ -1385,7 +1385,7 @@
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
-                            "remote_stream_id": 123,
+                            "remote_stream_id": 122295,
                             "subscribe_audio": true,
                             "subscribe_video": true,
                             "publish_audio": true,
@@ -1434,6 +1434,12 @@
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "chatgpt",
+                        "addon": "vision_tool",
+                        "name": "vision_tool"
                     },
                     {
                         "type": "extension",
@@ -1491,7 +1497,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
+                                        "extension": "vision_tool"
                                     }
                                 ]
                             }
@@ -1522,6 +1528,24 @@
                                     {
                                         "extension_group": "tts",
                                         "extension": "azure_tts"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "register_tool",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "vision_tool"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "run_tool",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "vision_tool"
                                     }
                                 ]
                             }

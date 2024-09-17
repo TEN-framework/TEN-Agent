@@ -92,6 +92,12 @@
     "cmd_out": [
       {
         "name": "flush"
+      },
+      {
+        "name": "register_tool"
+      },
+      {
+        "name": "run_tool"
       }
     ],
     "video_frame_in": [

@@ -1,4 +1,4 @@
 openai
 numpy
 requests
-pillow
+colorlog

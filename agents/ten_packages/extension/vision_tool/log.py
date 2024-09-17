@@ -9,7 +9,7 @@ import logging
 import colorlog
 
 # Create logger
-logger = logging.getLogger("openai_chatgpt_python")
+logger = logging.getLogger("vision_tool")
 logger.setLevel(logging.INFO)
 
 # Define log format with colors
