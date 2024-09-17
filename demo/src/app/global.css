@@ -8,6 +8,7 @@ html,
 body {
   background-color: #0F0F11;
   font-family: "PingFang SC";
+  height: 100%;
 }
 
 a {
