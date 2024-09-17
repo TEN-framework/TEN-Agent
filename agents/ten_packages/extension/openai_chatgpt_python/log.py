@@ -17,6 +17,7 @@ formatter_str = (
     "%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(process)d - "
     "[%(filename)s:%(lineno)d] - %(message)s"
 )
+formatter = logging.Formatter(formatter_str)
 
 # Create a colored formatter
 formatter = colorlog.ColoredFormatter(

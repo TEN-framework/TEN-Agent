@@ -11,9 +11,13 @@ import random
 import threading
 import traceback
 
+<<<<<<< HEAD
 from .aibase import AsyncEventEmitter, LLMExtension, TenLLMToolResult
 
 from .helper import parse_sentences
+=======
+from .helper import AsyncEventEmitter, AsyncQueue, get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentences, rgb2base64jpeg
+>>>>>>> origin/dev/0.5.0
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     AudioFrame,
@@ -119,7 +123,6 @@ class OpenAIChatGPTExtension(LLMExtension):
             logger.info(f"initialized with max_tokens: {openai_chatgpt_config.max_tokens}, model: {openai_chatgpt_config.model}")
         except Exception as err:
             logger.info(f"Failed to initialize OpenAIChatGPT: {err}")
-
 
         # Send greeting if available
         if greeting:
