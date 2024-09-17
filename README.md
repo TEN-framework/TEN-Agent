@@ -28,12 +28,13 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [Create Extensions](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[TEN Documentation](https://doc.theten.ai/)
+[TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
+
 
 
 </div>
 
-TEN Agent, powered by the world’s first real-time multimodal framework. It is open-source, with the ability to speak, see, and access a knowledge base. By taking advantage of TEN Framework, TEN Agent has the following features:
+**TEN Agent**, powered by the world’s first real-time multimodal framework. It is open-source, with the ability to speak, see, and access a knowledge base. By taking advantage of TEN Framework, TEN Agent has the following features:
 
 1. **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
