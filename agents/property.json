@@ -1443,12 +1443,6 @@
                     },
                     {
                         "type": "extension",
-                        "extension_group": "chatgpt",
-                        "addon": "weather_tool",
-                        "name": "weather_tool"
-                    },
-                    {
-                        "type": "extension",
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
@@ -1538,15 +1532,20 @@
                                 ]
                             },
                             {
+                                "name": "register_tool",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "vision_tool"
+                                    }
+                                ]
+                            },
+                            {
                                 "name": "run_tool",
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",
                                         "extension": "vision_tool"
-                                    },
-                                    {
-                                        "extension_group": "chatgpt",
-                                        "extension": "weather_tool"
                                     }
                                 ]
                             }
