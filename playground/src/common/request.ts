@@ -7,6 +7,7 @@ interface StartRequestConfig {
   graphName: string,
   language: Language,
   voiceType: "male" | "female"
+  properties: Record<string, any>
 }
 
 interface GenAgoraDataConfig {
@@ -15,7 +16,7 @@ interface GenAgoraDataConfig {
 }
 
 export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
-  // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/token/generate`
   const { userId, channel } = config
   const data = {
@@ -37,14 +38,15 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
   // look at app/api/agents/start/route.tsx for the server-side implementation
   const url = `/api/agents/start`
-  const { channel, userId, graphName, language, voiceType } = config
+  const { channel, userId, graphName, language, voiceType, properties } = config
   const data = {
     request_id: genUUID(),
     channel_name: channel,
     user_uid: userId,
     graph_name: graphName,
     language,
-    voice_type: voiceType
+    voice_type: voiceType,
+    properties,
   }
   let resp: any = await fetch(url, {
     method: "POST",
@@ -127,6 +129,45 @@ export const apiPing = async (channel: string) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
+  })
+  resp = (await resp.json()) || {}
+  return resp
+}
+
+export const apiGetGraphs = async () => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/graphs`
+  let resp: any = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+  resp = (await resp.json()) || {}
+  return resp
+}
+
+export const apiGetExtensionMetadata = async () => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/addons/extensions`
+  let resp: any = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+  resp = (await resp.json()) || {}
+  return resp
+}
+
+export const apiGetNodes = async (graphName: string) => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/graphs/${graphName}/nodes`
+  let resp: any = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
   })
   resp = (await resp.json()) || {}
   return resp

@@ -6,7 +6,6 @@ export const DEFAULT_OPTIONS: IOptions = {
   userName: "",
   userId: 0
 }
-export const DESCRIPTION = "This is an AI voice assistant powered by ASTRA.ai framework, Agora, Azure and ChatGPT."
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",

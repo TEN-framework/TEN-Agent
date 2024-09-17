@@ -28,6 +28,7 @@ services:
             - astra_network
         environment:
             - AGENT_SERVER_URL=http://astra_agents_dev:8080
+            - TEN_DEV_SERVER_URL=http://astra_agents_dev:49483
 
     # use this when you want to run the playground in local development mode
     # astra_playground_dev:

@@ -11,8 +11,12 @@ const PCEntry = () => {
     <div className={styles.content}>
       <Description></Description>
       <div className={styles.body}>
-        <Rtc></Rtc>
-        <Chat></Chat>
+        <div className={styles.rtc}>
+          <Rtc></Rtc>
+        </div>
+        <div className={styles.chat}>
+          <Chat></Chat>
+        </div>
       </div>
     </div>
   </div>

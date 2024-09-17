@@ -10,7 +10,10 @@ export interface InitialState {
   language: Language
   voiceType: VoiceType
   chatItems: IChatItem[],
-  graphName: string
+  graphName: string,
+  graphs: string[],
+  extensions: Record<string, any>,
+  extensionMetadata: Record<string, any>
 }
 
 const getInitialState = (): InitialState => {
@@ -22,7 +25,10 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "camera.va.openai.azure"
+    graphName: "camera.va.openai.azure",
+    graphs: [],
+    extensions: {},
+    extensionMetadata: {},
   }
 }
 
@@ -87,6 +93,16 @@ export const globalSlice = createSlice({
     setGraphName: (state, action: PayloadAction<string>) => {
       state.graphName = action.payload
     },
+    setGraphs: (state, action: PayloadAction<string[]>) => {
+      state.graphs = action.payload
+    },
+    setExtensions: (state, action: PayloadAction<Record<string, any>>) => {
+      let { graphName, nodesMap } = action.payload
+      state.extensions[graphName] = nodesMap
+    },
+    setExtensionMetadata: (state, action: PayloadAction<Record<string, any>>) => {
+      state.extensionMetadata = action.payload
+    },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
     },
@@ -99,7 +115,7 @@ export const globalSlice = createSlice({
 
 export const { reset, setOptions,
   setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage, setGraphName } =
+  addChatItem, setThemeColor, setLanguage, setGraphName, setGraphs, setExtensions, setExtensionMetadata } =
   globalSlice.actions
 
 export default globalSlice.reducer

@@ -2,16 +2,27 @@
   position: relative;
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 
   .content {
     position: relative;
     padding: 16px;
     box-sizing: border-box;
+    display: flex;
+    height: calc(100% - 64px);
+    flex-direction: column;
 
     .body {
       margin-top: 16px;
       display: flex;
       gap: 24px;
+      flex-grow: 1;
+
+      .chat {
+        display: flex;
+        flex-grow: 1;
+      }
     }
   }
 }
