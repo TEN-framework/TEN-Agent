@@ -15,7 +15,6 @@ const Agent = (props: AgentProps) => {
   const subscribedVolumes = useMultibandTrackVolume(audioTrack, 12);
 
   return <div className={styles.agent}>
-    <div className={styles.text}>Agent</div>
     <div className={styles.view}>
       <AudioVisualizer
         type="agent"

@@ -1,7 +1,6 @@
 .agent {
   position: relative;
   display: flex;
-  height: 292px;
   padding: 20px 16px;
   flex-direction: column;
   justify-content: flex-start;
@@ -22,7 +21,6 @@
   }
 
   .view {
-    margin-top: 32px;
     display: flex;
     align-items: center;
     justify-content: center;

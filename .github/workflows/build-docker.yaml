@@ -1,53 +1,63 @@
 name: Build Docker
 
-on: 
+on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: ["v*.*.*"]
     paths-ignore:
-      - '.devcontainer/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'images/**'
-      - 'playground/**'
-      - '**.md'
+      - ".devcontainer/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "images/**"
+      - "playground/**"
+      - "**.md"
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
   SERVER_IMAGE_NAME: astra_agents_server
   PLAYGROUND_IMAGE_NAME: astra_playground
+  DEMO_IMAGE_NAME: agent_demo
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-tags: true
-        fetch-depth: '0'
-    - id: pre-step
-      shell: bash
-      run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
-    - name: Build & Publish Docker Image for Agents Server 
-      uses: elgohr/Publish-Docker-Github-Action@v5
-      with:
-        name: ${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        registry: ghcr.io
-        tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
-        no_push: ${{ github.event_name == 'pull_request' }}
-    - name: Build & Publish Docker Image for Playground
-      uses: elgohr/Publish-Docker-Github-Action@v5
-      with:
-        name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        registry: ghcr.io
-        workdir: playground
-        tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
-        no_push: ${{ github.event_name == 'pull_request' }}
-
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: "0"
+      - id: pre-step
+        shell: bash
+        run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      - name: Build & Publish Docker Image for Agents Server
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+      - name: Build & Publish Docker Image for Playground
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          workdir: playground
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+      - name: Build & Publish Docker Image for demo
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.DEMO_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          workdir: demo
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}

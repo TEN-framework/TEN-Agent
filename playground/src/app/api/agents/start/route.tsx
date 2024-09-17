@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGraphProperties } from './graph';
 
 /**
  * Handles the POST request to start an agent.
@@ -24,6 +23,7 @@ export async function POST(request: NextRequest) {
       graph_name,
       language,
       voice_type,
+      properties
     } = body;
 
     // Send a POST request to start the agent
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         user_uid,
         graph_name,
         // Get the graph properties based on the graph name, language, and voice type
-        properties: getGraphProperties(graph_name, language, voice_type),
+        properties: properties,
       }),
     });
 

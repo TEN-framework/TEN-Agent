@@ -1,14 +1,35 @@
-import LoginCard from "@/components/loginCard"
-import styles from "./index.module.scss"
+"use client"
 
-export default function Login() {
+import AuthInitializer from "@/components/authInitializer"
+import { getRandomChannel, getRandomUserId, isMobile, useAppDispatch, useAppSelector } from "@/common"
+import dynamic from 'next/dynamic'
+import { useEffect, useState } from "react"
+import { setOptions } from "@/store/reducers/global"
+
+const PCEntry = dynamic(() => import('@/platform/pc/entry'), {
+  ssr: false,
+})
+
+const MobileEntry = dynamic(() => import('@/platform/mobile/entry'), {
+  ssr: false,
+})
+
+export default function Home() {
+  const dispatch = useAppDispatch()
+  const [mobile, setMobile] = useState<boolean | null>(null);
+
+
+  useEffect(() => {
+    setMobile(isMobile())
+  })
 
   return (
-    <main className={styles.login}>
-      <div className={styles.starts}></div>
-      <div className={styles.starts2}></div>
-      <div className={styles.starts3}></div>
-      <LoginCard></LoginCard>
-    </main>
+    mobile === null ? <></> :
+    <AuthInitializer>
+      {mobile ? <MobileEntry></MobileEntry> : <PCEntry></PCEntry>}
+    </AuthInitializer >
   );
 }
+
+
+

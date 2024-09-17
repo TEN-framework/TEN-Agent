@@ -10,16 +10,12 @@ import CamSection from "./camSection"
 import Agent from "./agent"
 import styles from "./index.module.scss"
 import { useRef, useEffect, useState, Fragment } from "react"
-import { VoiceIcon } from "@/components/icons"
-import CustomSelect from "@/components/customSelect"
 
 let hasInit = false
 
 const Rtc = () => {
   const dispatch = useAppDispatch()
   const options = useAppSelector(state => state.global.options)
-  const voiceType = useAppSelector(state => state.global.voiceType)
-  const agentConnected = useAppSelector(state => state.global.agentConnected)
   const { userId, channel } = options
   const [videoTrack, setVideoTrack] = useState<ICameraVideoTrack>()
   const [audioTrack, setAudioTrack] = useState<IMicrophoneAudioTrack>()
@@ -97,25 +93,15 @@ const Rtc = () => {
     }
   }
 
-  const onVoiceChange = (value: any) => {
-    dispatch(setVoiceType(value))
-  }
-
 
   return <section className={styles.rtc}>
     <div className={styles.header}>
       <span className={styles.text}>Audio & Video</span>
-      <CustomSelect className={styles.voiceSelect}
-        disabled={agentConnected}
-        value={voiceType}
-        prefixIcon={<VoiceIcon></VoiceIcon>}
-        options={VOICE_OPTIONS} onChange={onVoiceChange}></CustomSelect>
     </div>
     {/* agent */}
     <Agent audioTrack={remoteuser?.audioTrack}></Agent>
     {/* you */}
     <div className={styles.you}>
-      <div className={styles.title}>You</div>
       {/* microphone */}
       <MicSection audioTrack={audioTrack}></MicSection>
       {/* camera */}
