@@ -15,6 +15,11 @@
     display: flex;
     align-items: center;
 
+    .title {
+      color: white;
+      font-weight: bold;
+    }
+
     .text {
       margin-left: 8px;
       color: var(---white, #FFF);

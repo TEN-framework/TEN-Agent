@@ -47,7 +47,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "$OPENAI_PROXY_URL",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -246,7 +246,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "$OPENAI_PROXY_URL",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -444,7 +444,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -609,7 +609,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "$OPENAI_PROXY_URL",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1011,7 +1011,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1192,7 +1192,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1418,7 +1418,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "$OPENAI_PROXY_URL",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
                             "enable_tools": true
@@ -1624,7 +1624,7 @@
                         "name": "gemini_llm",
                         "property": {
                             "api_key": "$GEMINI_API_KEY",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10,
                             "max_output_tokens": 512,
                             "model": "gemini-1.5-flash",
@@ -1907,7 +1907,7 @@
                         "addon": "llama_index_chat_engine",
                         "name": "llama_index",
                         "property": {
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "chat_memory_token_limit": 3000
                         }
                     }

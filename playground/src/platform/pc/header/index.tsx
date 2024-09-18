@@ -24,7 +24,8 @@ const Header = () => {
 
   return <div className={styles.header}>
     <span className={styles.logoWrapper}>
-      <LogoIcon></LogoIcon>
+      {/* <LogoIcon></LogoIcon> */}
+      <span className={styles.title} >TEN Agent</span>
     </span>
     <InfoPopover>
       <span className={styles.content}>
