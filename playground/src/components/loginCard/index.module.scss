@@ -39,19 +39,20 @@
   .content {
 
     .title {
-      margin-bottom: 32px;
+      color: white;
+      font-weight: bold;
+      font-size: 25px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
 
       .text {
-        margin-top: 8px;
         color: var(--Grey-300, #EAECF0);
         text-align: center;
         font-size: 18px;
         font-weight: 500;
+        margin-bottom: 40px;
       }
     }
 
