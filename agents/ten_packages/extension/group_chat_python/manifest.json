@@ -1,0 +1,114 @@
+{
+  "type": "extension",
+  "name": "group_chat_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "src/**.tent",
+      "src/**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "frequency_penalty": {
+        "type": "float64"
+      },
+      "presence_penalty": {
+        "type": "float64"
+      },
+      "temperature": {
+        "type": "float64"
+      },
+      "top_p": {
+        "type": "float64"
+      },
+      "model": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int64"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "character": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "proxy_url": {
+        "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int64"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "on_user_joined",
+        "property": {
+          "channel": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "remote_user_id": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "on_user_left",
+        "property": {
+          "channel": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "remote_user_id": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  }
+}

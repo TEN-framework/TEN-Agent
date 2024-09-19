@@ -3,6 +3,225 @@
         "log_level": 3,
         "predefined_graphs": [
             {
+                "name": "gc.openai.azure",
+                "auto_start": true,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "default",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "$AGORA_APP_ID",
+                            "token": "<agora_token>",
+                            "channel": "astra_agents_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "enable_agora_asr": true,
+                            "agora_asr_vendor_name": "microsoft",
+                            "agora_asr_language": "en-US",
+                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_session_control_file_path": "session_control.conf"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "default",
+                        "addon": "interrupt_detector",
+                        "name": "interrupt_detector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "chatgpt",
+                        "addon": "group_chat_python",
+                        "name": "group_chat_python",
+                        "property": {
+                            "base_url": "",
+                            "api_key": "$OPENAI_API_KEY",
+                            "frequency_penalty": 0.9,
+                            "model": "gpt-4o",
+                            "max_tokens": 1024,
+                            "stream_id": 1234,
+                            "prompt": "",
+                            "character": "Astra",
+                            "max_memory_length": 10
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tts",
+                        "addon": "azure_tts",
+                        "name": "azure_tts",
+                        "property": {
+                            "azure_subscription_key": "$AZURE_TTS_KEY",
+                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_synthesis_voice_name": "en-US-NovaMultilingualNeuralHD"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    },
+                    {
+                        "type": "extension_group",
+                        "addon": "default_extension_group",
+                        "name": "default"
+                    },
+                    {
+                        "type": "extension_group",
+                        "addon": "default_extension_group",
+                        "name": "chatgpt"
+                    },
+                    {
+                        "type": "extension_group",
+                        "addon": "default_extension_group",
+                        "name": "tts"
+                    },
+                    {
+                        "type": "extension_group",
+                        "addon": "default_extension_group",
+                        "name": "transcriber"
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "default",
+                        "extension": "agora_rtc",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "interrupt_detector"
+                                    },
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "group_chat_python"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "on_user_joined",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "group_chat_python"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "on_user_left",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "group_chat_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "chatgpt",
+                        "extension": "group_chat_python",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "azure_tts"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "azure_tts"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tts",
+                        "extension": "azure_tts",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "default",
+                        "extension": "interrupt_detector",
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "group_chat_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
                 "name": "va.openai.azure",
                 "auto_start": true,
                 "nodes": [

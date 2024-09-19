@@ -132,10 +132,11 @@ class azure_tts_extension_t : public ten::extension_t {
       AZURE_TTS_LOGD("input text is empty, ignored");
       return;
     }
-    AZURE_TTS_LOGI("input text: [%s]", text.c_str());
+    auto ssml = data->get_property_bool(kDataFieldSSML.c_str());
+    AZURE_TTS_LOGI("input text: [%s], ssml %d", text.c_str(), ssml);
 
     // push received text to tts queue for synthesis
-    azure_tts_->Push(text);
+    azure_tts_->Push(text, ssml);
   }
 
   // on_stop will be called when the extension is stopping.
@@ -159,6 +160,7 @@ class azure_tts_extension_t : public ten::extension_t {
 
   const std::string kCmdNameFlush{"flush"};
   const std::string kDataFieldText{"text"};
+  const std::string kDataFieldSSML{"ssml"};
 };
 
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(azure_tts, azure_tts_extension_t);

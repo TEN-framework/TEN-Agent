@@ -6,7 +6,7 @@ const { AGENT_SERVER_URL } = process.env;
 
 // Check if environment variables are available
 if (!AGENT_SERVER_URL) {
-  throw "Environment variables AGENT_SERVER_URL are not available";
+    throw "Environment variables AGENT_SERVER_URL are not available";
 }
 
 
@@ -91,6 +91,19 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "gc.openai.azure") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "openai_chatgpt": {
+                "model": "gpt-4o",
+                ...localizationOptions
+            },
+            "azure_tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     } else if (graphName == "va.openai.azure") {
         return {
             "agora_rtc": {
@@ -118,42 +131,42 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
 }
 
 export async function startAgent(request: NextRequest) {
-    try{
-    const body = await request.json();
-    const {
-      request_id,
-      channel_name,
-      user_uid,
-      graph_name,
-      language,
-      voice_type,
-    } = body;
+    try {
+        const body = await request.json();
+        const {
+            request_id,
+            channel_name,
+            user_uid,
+            graph_name,
+            language,
+            voice_type,
+        } = body;
 
-    // Send a POST request to start the agent
-    const response = await fetch(`${AGENT_SERVER_URL}/start`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        request_id,
-        channel_name,
-        user_uid,
-        graph_name,
-        // Get the graph properties based on the graph name, language, and voice type
-        properties: getGraphProperties(graph_name, language, voice_type),
-      }),
-    });
+        // Send a POST request to start the agent
+        const response = await fetch(`${AGENT_SERVER_URL}/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                request_id,
+                channel_name,
+                user_uid,
+                graph_name,
+                // Get the graph properties based on the graph name, language, and voice type
+                properties: getGraphProperties(graph_name, language, voice_type),
+            }),
+        });
 
-    const responseData = await response.json();
+        const responseData = await response.json();
 
-    return NextResponse.json(responseData, { status: response.status });
-  } catch (error) {
-    if (error instanceof Response) {
-      const errorData = await error.json();
-      return NextResponse.json(errorData, { status: error.status });
-    } else {
-      return NextResponse.json({ code: "1", data: null, msg: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json(responseData, { status: response.status });
+    } catch (error) {
+        if (error instanceof Response) {
+            const errorData = await error.json();
+            return NextResponse.json(errorData, { status: error.status });
+        } else {
+            return NextResponse.json({ code: "1", data: null, msg: "Internal Server Error" }, { status: 500 });
+        }
     }
-  }
 }

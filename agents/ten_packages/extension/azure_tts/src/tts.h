@@ -40,10 +40,10 @@ class AzureTTS {
 
   void Flush() noexcept;
 
-  void Push(const std::string &text) noexcept;
+  void Push(const std::string &text, bool ssml) noexcept;
 
  private:
-  void SpeechText(const std::string &text, int64_t text_recv_ts);
+  void SpeechText(const std::string &text, int64_t text_recv_ts, bool ssml);
 
   int64_t time_since_epoch_in_us() const;
 
@@ -59,10 +59,11 @@ class AzureTTS {
   std::atomic_int64_t outdate_ts_{0};  // for flushing
 
   struct Task {
-    Task(const std::string &t, int64_t ts) : ts(ts), text(t) {}
+    Task(const std::string &t, int64_t ts, bool ssml) : ts(ts), text(t), ssml(ssml) {}
 
     int64_t ts{0};
     std::string text;
+    bool ssml;
   };
 
   std::queue<std::unique_ptr<Task>> tasks_;

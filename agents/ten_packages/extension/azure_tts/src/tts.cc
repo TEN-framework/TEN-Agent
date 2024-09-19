@@ -44,7 +44,7 @@ bool AzureTTS::Start() {
         tasks_.pop();
       }
 
-      SpeechText(task->text, task->ts);
+      SpeechText(task->text, task->ts, task->ssml);
     }
 
     AZURE_TTS_LOGI("tts_thread stopped");
@@ -67,16 +67,17 @@ bool AzureTTS::Stop() {
   return true;
 }
 
-void AzureTTS::Push(const std::string& text) noexcept {
+void AzureTTS::Push(const std::string& text, bool ssml) noexcept {
   auto ts = time_since_epoch_in_us();
 
   {
     std::unique_lock<std::mutex> lock(tasks_mutex_);
-    tasks_.emplace(std::make_unique<Task>(text, ts));
+    tasks_.emplace(std::make_unique<Task>(text, ts, ssml));
     tasks_cv_.notify_one();
 
-    AZURE_TTS_LOGD("task pushed for text: [%s], text_recv_ts: %" PRId64 ", queue size %d",
+    AZURE_TTS_LOGD("task pushed for text: [%s], ssml: %d, text_recv_ts: %" PRId64 ", queue size %d",
                    text.c_str(),
+                   ssml,
                    ts,
                    int(tasks_.size()));
   }
@@ -94,9 +95,9 @@ void AzureTTS::Flush() noexcept {
   }
 }
 
-void AzureTTS::SpeechText(const std::string& text, int64_t text_recv_ts) {
+void AzureTTS::SpeechText(const std::string& text, int64_t text_recv_ts, bool ssml) {
   auto start_time = time_since_epoch_in_us();
-  AZURE_TTS_LOGD("task starting for text: [%s], text_recv_ts: %" PRId64, text.c_str(), text_recv_ts);
+  AZURE_TTS_LOGD("task starting for text: [%s], ssml: %d text_recv_ts: %" PRId64, text.c_str(), ssml, text_recv_ts);
 
   if (text_recv_ts < outdate_ts_.load()) {
     AZURE_TTS_LOGI("task discard for text: [%s], text_recv_ts: %" PRId64 ", outdate_ts: %" PRId64,
@@ -108,24 +109,46 @@ void AzureTTS::SpeechText(const std::string& text, int64_t text_recv_ts) {
 
   using namespace Microsoft::CognitiveServices;
 
+  std::shared_ptr<Speech::SpeechSynthesisResult> result;
   // async mode
-  auto result = speech_synthesizer_->StartSpeakingTextAsync(text).get();
-  if (result->Reason == Speech::ResultReason::Canceled) {
-    auto cancellation = Speech::SpeechSynthesisCancellationDetails::FromResult(result);
-    AZURE_TTS_LOGW("task canceled for text: [%s], text_recv_ts: %" PRId64 ", reason: %d",
-                   text.c_str(),
-                   text_recv_ts,
-                   (int)cancellation->Reason);
+  if (ssml) {
+    result = speech_synthesizer_->StartSpeakingSsmlAsync(text).get();
+    if (result->Reason == Speech::ResultReason::Canceled) {
+      auto cancellation = Speech::SpeechSynthesisCancellationDetails::FromResult(result);
+      AZURE_TTS_LOGW("task canceled for ssml: [%s], text_recv_ts: %" PRId64 ", reason: %d",
+                    text.c_str(),
+                    text_recv_ts,
+                    (int)cancellation->Reason);
 
-    if (cancellation->Reason == Speech::CancellationReason::Error) {
-      AZURE_TTS_LOGW("task canceled on error for text: [%s], text_recv_ts: %" PRId64
-                     ", errorcode: %d, details: %s, did you update the subscription info?",
-                     text.c_str(),
-                     text_recv_ts,
-                     (int)cancellation->ErrorCode,
-                     cancellation->ErrorDetails.c_str());
+      if (cancellation->Reason == Speech::CancellationReason::Error) {
+        AZURE_TTS_LOGW("task canceled on error for ssml: [%s], text_recv_ts: %" PRId64
+                      ", errorcode: %d, details: %s, did you update the subscription info?",
+                      text.c_str(),
+                      text_recv_ts,
+                      (int)cancellation->ErrorCode,
+                      cancellation->ErrorDetails.c_str());
+      }
+      return;
     }
-    return;
+  } else {
+    result = speech_synthesizer_->StartSpeakingTextAsync(text).get();
+    if (result->Reason == Speech::ResultReason::Canceled) {
+      auto cancellation = Speech::SpeechSynthesisCancellationDetails::FromResult(result);
+      AZURE_TTS_LOGW("task canceled for text: [%s], text_recv_ts: %" PRId64 ", reason: %d",
+                    text.c_str(),
+                    text_recv_ts,
+                    (int)cancellation->Reason);
+
+      if (cancellation->Reason == Speech::CancellationReason::Error) {
+        AZURE_TTS_LOGW("task canceled on error for text: [%s], text_recv_ts: %" PRId64
+                      ", errorcode: %d, details: %s, did you update the subscription info?",
+                      text.c_str(),
+                      text_recv_ts,
+                      (int)cancellation->ErrorCode,
+                      cancellation->ErrorDetails.c_str());
+      }
+      return;
+    }
   }
 
   auto audioDataStream = Speech::AudioDataStream::FromResult(result);
