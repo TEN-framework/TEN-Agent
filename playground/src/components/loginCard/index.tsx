@@ -57,7 +57,7 @@ const LoginCard = () => {
       <div className={styles.title}>
         {/* <LogoIcon transform="scale(1.5 1.5)"></LogoIcon> */}
       <span className={styles.title} >TEN Agent</span>
-        <span className={styles.text}>A realtime multimodal AI agent powered by <a href="https://theten.ai" >TEN</a></span>
+        <span className={styles.text}>A Real-Time Multimodal AI Agent Powered by <a href="https://theten.ai" >TEN</a></span>
       </div>
       <div className={styles.section}>
         <input placeholder="User Name" value={userName} onChange={onUserNameChange} ></input>
