@@ -34,10 +34,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
     value: "camera.va.openai.azure"
   },
-  {
-    label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
-    value: "va.qwen.rag"
-  },
+  //{
+  //  label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
+  //  value: "va.qwen.rag"
+  // },
 ]
 
 export const isRagGraph = (graphName: string) => {
