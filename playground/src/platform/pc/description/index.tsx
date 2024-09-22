@@ -87,7 +87,7 @@ const Description = () => {
 
   return <div className={styles.description}>
     <span className={styles.title}>Description</span>
-    <span className={styles.text}>TEN Agent is a multimodal AI agent that can speak, see, and access a knowledge base.</span>
+    <span className={styles.text}>TEN Agent is a real-time multimodal AI agent that can speak, see, and access a knowledge base.</span>
     <span className={`${styles.btnConnect} ${agentConnected ? styles.disconnect : ''}`} onClick={onClickConnect}>
       <span className={`${styles.btnText} ${agentConnected ? styles.disconnect : ''}`}>
         {!agentConnected ? "Connect" : "Disconnect"}
