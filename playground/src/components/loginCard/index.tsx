@@ -3,7 +3,7 @@
 import packageData from "../../../package.json"
 import { useRouter } from 'next/navigation'
 import { message } from "antd"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { GithubIcon, LogoIcon } from "../icons"
 import { GITHUB_URL, getRandomUserId, useAppDispatch, getRandomChannel } from "@/common"
 import { setOptions } from "@/store/reducers/global"
@@ -16,6 +16,7 @@ const LoginCard = () => {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const [userName, setUserName] = useState("")
+  const [isLoadingSuccess, setIsLoadingSuccess] = useState(false);
 
   const onClickGithub = () => {
     if (typeof window !== "undefined") {
@@ -29,7 +30,18 @@ const LoginCard = () => {
     setUserName(value)
   }
 
+  useEffect(() => {
+    const onPageLoad = () => {
+      setIsLoadingSuccess(true);
+    };
 
+    if (document.readyState === 'complete') {
+      onPageLoad();
+    } else {
+      window.addEventListener('load', onPageLoad, false);
+      return () => window.removeEventListener('load', onPageLoad);
+    }
+  }, []);
 
   const onClickJoin = () => {
     if (!userName) {
@@ -63,8 +75,10 @@ const LoginCard = () => {
         <input placeholder="User Name" value={userName} onChange={onUserNameChange} ></input>
       </div>
       <div className={styles.section}>
-        <div className={styles.btn} onClick={onClickJoin}>
-          <span className={styles.btnText}>Join</span>
+        <div className={`${styles.btn} ${!isLoadingSuccess && styles.btnLoadingBg}`} onClick={onClickJoin}>
+          <div className={styles.btnText}>
+            {isLoadingSuccess ? "Join" : <div><span>Loading</span><span className={styles.dotting}></span></div>}
+          </div>
         </div>
       </div>
       <div className={styles.version}>Version {version}</div>
