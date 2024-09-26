@@ -18,9 +18,9 @@ services:
             - .env
         networks:
             - astra_network
-    astra_playground:
+    ten_agent_frontend:
         image: ghcr.io/ten-framework/astra_playground:v0.4.1-2-gb324bcd
-        container_name: astra_playground
+        container_name: ten_agent_frontend
         restart: always
         ports:
             - "3000:3000"
@@ -29,12 +29,12 @@ services:
         environment:
             - AGENT_SERVER_URL=http://astra_agents_dev:8080
 
-    # use this when you want to run the playground in local development mode
-    # astra_playground_dev:
+    # use this when you want to run the frontend in local development mode
+    # ten_agent_frontend_dev:
     #     image: node:20-alpine
-    #     container_name: astra_playground_dev
+    #     container_name: ten_agent_frontend_dev
     #     restart: always
-    #     command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
+    #     command: sh -c "cd /app/frontend && npm i && npm run dev" #build && npm run start"
     #     ports:
     #     - "3002:3000"
     #     volumes:

@@ -9,15 +9,15 @@ on:
       - '.devcontainer/**'
       - '.github/ISSUE_TEMPLATE/**'
       - 'images/**'
-      - 'playground/**'
+      - 'frontend/**'
       - '**.md'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
 env:
-  SERVER_IMAGE_NAME: astra_agents_server
-  PLAYGROUND_IMAGE_NAME: astra_playground
+  SERVER_IMAGE_NAME: ten_agent_server
+  FRONTEND_IMAGE_NAME: ten_agent_frontend
 
 jobs:
   build:
@@ -40,14 +40,13 @@ jobs:
         registry: ghcr.io
         tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
         no_push: ${{ github.event_name == 'pull_request' }}
-    - name: Build & Publish Docker Image for Playground
+    - name: Build & Publish Docker Image for Frontend
       uses: elgohr/Publish-Docker-Github-Action@v5
       with:
-        name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
+        name: ${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
-        workdir: playground
+        workdir: frontend
         tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
         no_push: ${{ github.event_name == 'pull_request' }}
-

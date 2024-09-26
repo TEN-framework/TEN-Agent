@@ -2,7 +2,7 @@ PROJECT_NAME := astra
 PROJECT_VERSION ?= "0.1."$(shell date -u +'%Y%m%d%H')
 REGISTRY ?= agoraio/
 
-.PHONY: build build-agents build-playground build-server clean clean-agents docker-build-playground docker-build-server run-gd-server run-server
+.PHONY: build build-agents build-frontend build-server clean clean-agents docker-build-frontend docker-build-server run-gd-server run-server
 
 build: build-agents build-server
 
@@ -11,9 +11,9 @@ build-agents:
 	cd agents && ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
 	@echo ">> done"
 
-build-playground:
-	@echo ">> build playground"
-	cd playground && npm i && npm run build
+build-frontend:
+	@echo ">> build frontend"
+	cd frontend && npm i && npm run build
 	@echo ">> done"
 
 build-server:
@@ -28,9 +28,9 @@ clean-agents:
 	rm -rf agents/bin/worker agents/out agents/interface agents/include agents/lib agents/lib64 agents/ten_packages/system agents/ten_packages/extension_group agents/.release
 	@echo ">> done"
 
-docker-build-playground:
-	@echo ">> docker build playground"
-	cd playground && docker build -t $(REGISTRY)$(PROJECT_NAME)_playground:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
+docker-build-frontend:
+	@echo ">> docker build frontend"
+	cd frontend && docker build -t $(REGISTRY)$(PROJECT_NAME)_frontend:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
 	@echo ">> done"
 
 docker-build-server:
