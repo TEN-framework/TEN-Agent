@@ -4,7 +4,7 @@ import packageData from "../../../package.json"
 import { useRouter } from 'next/navigation'
 import { message } from "antd"
 import { useState } from "react"
-import { GithubIcon, LogoIcon } from "../icons"
+import { GithubIcon } from "../icons"
 import { GITHUB_URL, getRandomUserId, useAppDispatch, getRandomChannel } from "@/common"
 import { setOptions } from "@/store/reducers/global"
 import styles from "./index.module.scss"
@@ -55,7 +55,6 @@ const LoginCard = () => {
     </section>
     <section className={styles.content}>
       <div className={styles.title}>
-        {/* <LogoIcon transform="scale(1.5 1.5)"></LogoIcon> */}
       <span className={styles.title} >TEN Agent</span>
         <span className={styles.text}>A Real-Time Multimodal AI Agent Powered by <a href="https://theten.ai" >TEN</a></span>
       </div>

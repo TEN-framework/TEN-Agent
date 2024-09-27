@@ -4,7 +4,7 @@ import { useAppSelector, GITHUB_URL, useSmallScreen } from "@/common"
 import Network from "./network"
 import InfoPopover from "./infoPopover"
 import StylePopover from "./stylePopover"
-import { GithubIcon, LogoIcon, InfoIcon, ColorPickerIcon } from "@/components/icons"
+import { GithubIcon, InfoIcon, ColorPickerIcon } from "@/components/icons"
 
 import styles from "./index.module.scss"
 
@@ -24,7 +24,6 @@ const Header = () => {
 
   return <div className={styles.header}>
     <span className={styles.logoWrapper}>
-      {/* <LogoIcon></LogoIcon> */}
       <span className={styles.title} >TEN Agent</span>
     </span>
     <InfoPopover>
