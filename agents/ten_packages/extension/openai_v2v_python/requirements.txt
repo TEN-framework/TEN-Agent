@@ -1,0 +1,6 @@
+asyncio
+pydantic
+numpy==1.26.4
+sounddevice==0.4.7
+pydub==0.25.1
+aiohttp==3.10.7
