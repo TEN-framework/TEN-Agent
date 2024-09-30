@@ -54,6 +54,7 @@ class OpenAIV2VExtension(Extension):
     # openai related
     config: RealtimeApiConfig = None
     session_id: str = ""
+    session: Session = None
 
     # audo related
     sample_rate : int = 24000
@@ -62,6 +63,7 @@ class OpenAIV2VExtension(Extension):
     transcript: str = ''
 
     # agora related
+    channel_name: str = ""
     stream_id: int = 0
     remote_stream_id: int = 0
     ctx: dict = {}
@@ -163,8 +165,9 @@ class OpenAIV2VExtension(Extension):
                         case SessionCreated():
                             logger.info(f"Session is created: {message.session.id}")
                             self.session_id = message.session.id
-                            # update_msg = self.update_session()
-                            # await self.client.send_message(update_msg)
+                            self.session = message.session
+                            update_msg = self.update_session()
+                            await self.client.send_message(update_msg)
                             update_conversation = self.update_conversation()
                             await self.client.send_message(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
@@ -321,16 +324,9 @@ class OpenAIV2VExtension(Extension):
 
     def update_session(self) -> SessionUpdate:
         params = SessionUpdateParams()
-        params.model = self.config.model
-        params.modalities = set(["audio", "text"])
-        params.instructions = ""
-        params.voice = self.config.voice
-        params.input_audio_format = AudioFormats.PCM16
-        params.output_audio_format = AudioFormats.PCM16
-        params.turn_detection = DEFAULT_TURN_DETECTION
-        params.input_audio_transcription = InputAudioTranscription(enabled=True, model='whisper-1')
+        params.input_audio_transcription = InputAudioTranscription(model='whisper-1')
         params.temperature = self.config.temperature
-        # params.max_response_output_tokens = self.config.max_tokens
+        params.tool_choice = "none"
         return SessionUpdate(session=params)
 
     def update_conversation(self) -> UpdateConversationConfig:

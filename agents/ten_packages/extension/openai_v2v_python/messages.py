@@ -1,35 +1,38 @@
 import abc
-import random
-import string
 from enum import Enum
 from typing import Annotated, Any, Literal, Set
 
 from pydantic import BaseModel, PrivateAttr, TypeAdapter
 from pydantic.fields import Field
+from typing_extensions import override
 
-####################################################################################################
-# ID Generation
-####################################################################################################
-# Do not use internal libraries for now.
-
-
-def generate_rand_str(prefix: str, len: int = 16) -> str:
-    # Generate a random string of specified length with the given prefix
-    random_str = "".join(random.choices(string.ascii_letters + string.digits, k=len))
-    return f"{prefix}_{random_str}"
-
-
-def generate_event_id() -> str:
-    return generate_rand_str("event")
-
-
-def generate_response_id() -> str:
-    return generate_rand_str("resp")
-
+from .id import generate_event_id, generate_response_id
 
 ####################################################################################################
 # Common
 ####################################################################################################
+
+
+class RealtimeError(BaseModel):
+    type: str
+    code: str | None = None
+    message: str
+    param: str | None = None
+    event_id: str | None = None
+
+
+class ApiError(BaseModel):
+    type: str
+    code: str | None = None
+    message: str
+    param: str | None = None
+
+
+class ResponseError(BaseModel):
+    type: str
+    code: str | None = None
+    message: str
+
 
 DEFAULT_CONVERSATION = "default"
 
@@ -39,6 +42,13 @@ DEFAULT_TEMPERATURE = 0.8
 class Voices(str, Enum):
     Alloy = "alloy"
     Echo = "echo"
+    Fable = "fable"
+    Nova = "nova"
+    Nova_2 = "nova_2"
+    Nova_3 = "nova_3"
+    Nova_4 = "nova_4"
+    Nova_5 = "nova_5"
+    Onyx = "onyx"
     Shimmer = "shimmer"
 
 
@@ -59,18 +69,12 @@ class InputAudioTranscription(BaseModel):
     model: Literal["whisper-1"]
 
 
-class NoTurnDetection(BaseModel):
-    type: Literal["none"] = "none"
-
-
 class ServerVAD(BaseModel):
     type: Literal["server_vad"] = "server_vad"
     threshold: float | None = None
     prefix_padding_ms: int | None = None
     silence_duration_ms: int | None = None
 
-
-TurnDetection = ServerVAD | NoTurnDetection
 
 VAD_THRESHOLD_DEFAULT = 0.5
 VAD_PREFIX_PADDING_MS_DEFAULT = 300
@@ -82,6 +86,14 @@ DEFAULT_TURN_DETECTION = ServerVAD(
 )
 
 
+class ServerVADUpdateParams(BaseModel):
+    # Always required
+    type: Literal["server_vad"]
+    threshold: float | None = None
+    prefix_padding_ms: int | None = None
+    silence_duration_ms: int | None = None
+
+
 class FunctionToolChoice(BaseModel):
     type: Literal["function"] = "function"
     name: str
@@ -90,19 +102,19 @@ class FunctionToolChoice(BaseModel):
 ToolChoice = Literal["none", "auto", "required"] | FunctionToolChoice
 
 
-class ItemType(Enum):
+class ItemType(str, Enum):
     message = "message"
     function_call = "function_call"
     function_call_output = "function_call_output"
 
 
-class MessageRole(Enum):
+class MessageRole(str, Enum):
     system = "system"
     user = "user"
     assistant = "assistant"
 
 
-class ContentType(Enum):
+class ContentType(str, Enum):
     input_text = "input_text"
     input_audio = "input_audio"
     text = "text"
@@ -110,18 +122,18 @@ class ContentType(Enum):
 
 
 class InputTextContentPartParam(BaseModel):
-    type: str = ContentType.input_text
+    type: Literal[ContentType.input_text] = ContentType.input_text
     text: str
 
 
 class InputAudioContentPartParam(BaseModel):
-    type: str = ContentType.input_audio
+    type: Literal[ContentType.input_audio] = ContentType.input_audio
     audio: str
     transcript: str | None = None
 
 
 class OutputTextContentPartParam(BaseModel):
-    type: str = ContentType.text
+    type: Literal[ContentType.text] = ContentType.text
     text: str
 
 
@@ -129,56 +141,50 @@ SystemContentPartParam = InputTextContentPartParam
 UserContentPartParam = InputTextContentPartParam | InputAudioContentPartParam
 AssistantContentPartParam = OutputTextContentPartParam
 
-ItemParamStatus = str
-"""
-The client can only pass items with status `completed` or `incomplete`,
-but we're lenient here since actual validation happens further down.
-"""
+ItemParamStatus = Literal["incomplete", "completed"]
 
 
 class SystemMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: str = MessageRole.system
-    content: list[SystemContentPartParam]
     status: ItemParamStatus | None = None
+    role: Literal[MessageRole.system] = MessageRole.system
+    content: list[SystemContentPartParam]
 
 
 class UserMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: str = MessageRole.user
-    content: list[UserContentPartParam]
     status: ItemParamStatus | None = None
+    role: Literal[MessageRole.user] = MessageRole.user
+    content: list[UserContentPartParam]
 
 
 class AssistantMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: str = MessageRole.assistant
-    content: list[AssistantContentPartParam]
     status: ItemParamStatus | None = None
+    role: Literal[MessageRole.assistant] = MessageRole.assistant
+    content: list[AssistantContentPartParam]
 
 
 class MessageReferenceItemParam(BaseModel):
     type: Literal[ItemType.message] = ItemType.message
     id: str
-    status: ItemParamStatus | None = None
 
 
 class FunctionCallItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.function_call] = ItemType.function_call
+    status: ItemParamStatus | None = None
     name: str
     call_id: str
     arguments: str
-    status: ItemParamStatus | None = None
 
 
 class FunctionCallOutputItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.function_call_output] = ItemType.function_call_output
-    status: ItemParamStatus | None = None
     call_id: str
     output: str
 
@@ -201,26 +207,25 @@ class BaseItem(BaseModel):
     id: str | None = None
     object: Literal["realtime.item"] | None = None
     type: ItemType
-    status: ItemStatus
 
 
 class InputTextContentPart(BaseModel):
-    type: str = ContentType.input_text
+    type: Literal[ContentType.input_text] = ContentType.input_text
     text: str
 
 
 class InputAudioContentPart(BaseModel):
-    type: str = ContentType.input_audio
+    type: Literal[ContentType.input_audio] = ContentType.input_audio
     transcript: str | None
 
 
 class TextContentPart(BaseModel):
-    type: str = ContentType.text
+    type: Literal[ContentType.text] = ContentType.text
     text: str
 
 
 class AudioContentPart(BaseModel):
-    type: str = ContentType.audio
+    type: Literal[ContentType.audio] = ContentType.audio
     transcript: str | None
     _audio: str = PrivateAttr(default_factory=str)
 
@@ -229,25 +234,28 @@ ContentPart = InputTextContentPart | InputAudioContentPart | TextContentPart | A
 
 
 class MessageItem(BaseItem):
-    type: str = ItemType.message
+    type: Literal[ItemType.message] = ItemType.message
+    status: ItemStatus
     role: MessageRole
     content: list[ContentPart]
 
 
 class FunctionCallItem(BaseItem):
-    type: str = ItemType.function_call
+    type: Literal[ItemType.function_call] = ItemType.function_call
+    status: ItemStatus
     name: str
     call_id: str
     arguments: str
 
 
 class FunctionCallOutputItem(BaseItem):
-    type: str = ItemType.function_call_output
+    type: Literal[ItemType.function_call_output] = ItemType.function_call_output
     call_id: str
     output: str
 
 
 Item = MessageItem | FunctionCallItem | FunctionCallOutputItem
+OutputItem = MessageItem | FunctionCallItem
 
 ResponseStatus = Literal["in_progress", "completed", "cancelled", "incomplete", "failed"]
 
@@ -264,16 +272,29 @@ class ResponseIncompleteDetails(BaseModel):
 
 class ResponseFailedDetails(BaseModel):
     type: Literal["failed"] = "failed"
-    error: Any
+    error: ResponseError
 
 
 ResponseStatusDetails = ResponseCancelledDetails | ResponseIncompleteDetails | ResponseFailedDetails
 
 
+class InputTokenDetails(BaseModel):
+    cached_tokens: int = 0
+    text_tokens: int = 0
+    audio_tokens: int = 0
+
+
+class OutputTokenDetails(BaseModel):
+    text_tokens: int = 0
+    audio_tokens: int = 0
+
+
 class Usage(BaseModel):
-    total_tokens: int
-    input_tokens: int
-    output_tokens: int
+    total_tokens: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    input_token_details: InputTokenDetails = InputTokenDetails()
+    output_token_details: OutputTokenDetails = OutputTokenDetails()
 
 
 class RateLimitDetails(BaseModel):
@@ -354,24 +375,51 @@ class ClientToServerMessage(RealtimeMessage, abc.ABC):
 
 
 class SessionUpdateParams(BaseModel):
+    """
+    Update Events in the OpenAI API have specific behavior:
+    - If a field is not provided, it is not updated.
+    - If a field is provided, the new value is used for the field.
+        - If a null value is provided for a nullable field, that field is updated to null.
+        - If a null value is provided for a non-nullable field, the API will return an invalid type error.
+    - If a nested field is provided, and the parent object's type matches the current parent's type,
+      only that field is updated (i.e. the API supports sparse updates). If the parent object's type
+      is different from the current parent's type, the entire object is updated.
+    """
+
     model: str | None = None
     modalities: Set[Literal["text", "audio"]] | None = None
-    voice: Voices | None = None
     instructions: str | None = None
+    voice: Voices | None = None
+    turn_detection: ServerVADUpdateParams | None = None
     input_audio_format: AudioFormats | None = None
     output_audio_format: AudioFormats | None = None
     input_audio_transcription: InputAudioTranscription | None = None
-    turn_detection: TurnDetection | None = None
     tools: list[dict[str, Any]] | None = None
     tool_choice: ToolChoice | None = None
     temperature: float | None = None
-    # FIXME: support -1
-    # max_response_output_tokens: int | None = None
+    max_response_output_tokens: int | Literal["inf"] | None = None
 
 
 class SessionUpdate(ClientToServerMessage):
     type: Literal[EventType.SESSION_UPDATE] = EventType.SESSION_UPDATE
     session: SessionUpdateParams
+
+    @override
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """
+        Override model_dump to ensure `session` only includes set fields.
+        """
+        dict_value = super().model_dump(**kwargs)
+        dict_value["session"] = self.session.model_dump(**kwargs, exclude_unset=True)
+        return dict_value
+
+    @override
+    def model_dump_json(self, **kwargs) -> str:
+        """
+        Override model_dump_json to ensure `session` only includes set fields.
+        """
+        dict_value = self.model_dump(**kwargs)
+        return self.__pydantic_serializer__.to_json(value=dict_value, **kwargs).decode()
 
 
 class InputAudioBufferAppend(ClientToServerMessage):
@@ -437,18 +485,20 @@ class ResponseCreateParams(BaseModel):
 
     # TODO: gate to enabled users
     commit: bool = True
+    # TODO: gate to enabled users
     cancel_previous: bool = True
+    # TODO: gate to enabled users
     append_input_items: list[ItemParam] | None = None
+    # TODO: gate to enabled users
     input_items: list[ItemParam] | None = None
-    instructions: str | None = None
     modalities: Set[Literal["text", "audio"]] | None = None
+    instructions: str | None = None
     voice: Voices | None = None
-    temperature: float | None = None
-    # FIXME: support -1
-    max_output_tokens: int | None = None
+    output_audio_format: AudioFormats | None = None
     tools: list[dict[str, Any]] | None = None
     tool_choice: ToolChoice | None = None
-    output_audio_format: AudioFormats | None = None
+    temperature: float | None = None
+    max_output_tokens: int | Literal["inf"] | None = None
 
 
 class ResponseCreate(ClientToServerMessage):
@@ -495,30 +545,25 @@ class ServerToClientMessage(RealtimeMessage, abc.ABC):
     event_id: str = Field(default_factory=generate_event_id)
 
 
-class RealtimeError(BaseModel):
-    message: str
-    type: str | None = None
-    code: str | None = None
-    param: str | None = None
-    event_id: str | None = None
-
-
 class Session(BaseModel):
     id: str
     object: Literal["realtime.session"] = "realtime.session"
     model: str
+    expires_at: int
+    """
+    The time at which this session will be forceably closed, expressed in seconds since epoch.
+    """
     modalities: Set[Literal["text", "audio"]] = Field(default_factory=lambda: {"text", "audio"})
     instructions: str
     voice: Voices = DEFAULT_VOICE
+    turn_detection: ServerVAD | None = DEFAULT_TURN_DETECTION  # null indicates disabled
     input_audio_format: AudioFormats = DEFAULT_AUDIO_FORMAT
     output_audio_format: AudioFormats = DEFAULT_AUDIO_FORMAT
-    input_audio_transcription: InputAudioTranscription | None = None
-    turn_detection: TurnDetection = DEFAULT_TURN_DETECTION
+    input_audio_transcription: InputAudioTranscription | None = None  # null indicates disabled
     tools: list[dict] = []
     tool_choice: Literal["auto", "none", "required"] = "auto"
     temperature: float = DEFAULT_TEMPERATURE
-    # FIXME: support -1
-    # max_response_output_tokens: int | None = None  # Null indicates infinity
+    max_response_output_tokens: int | Literal["inf"] = "inf"
 
 
 class Response(BaseModel):
@@ -625,7 +670,7 @@ class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
     )
     item_id: str
     content_index: int
-    error: RealtimeError
+    error: ApiError
 
 
 class ResponseCreated(ServerToClientMessage):
@@ -642,17 +687,17 @@ class ResponseOutputItemAdded(ServerToClientMessage):
     type: Literal[EventType.RESPONSE_OUTPUT_ITEM_ADDED] = EventType.RESPONSE_OUTPUT_ITEM_ADDED
     response_id: str
     output_index: int
-    item: Item
+    item: OutputItem
 
 
 class ResponseOutputItemDone(ServerToClientMessage):
     type: Literal[EventType.RESPONSE_OUTPUT_ITEM_DONE] = EventType.RESPONSE_OUTPUT_ITEM_DONE
     response_id: str
     output_index: int
-    item: Item
+    item: OutputItem
 
 
-class ResponseContenPartAdded(ServerToClientMessage):
+class ResponseContentPartAdded(ServerToClientMessage):
     type: Literal[EventType.RESPONSE_CONTENT_PART_ADDED] = EventType.RESPONSE_CONTENT_PART_ADDED
     response_id: str
     item_id: str
@@ -796,7 +841,7 @@ ServerToClientMessages = (
     | ResponseAudioDone
     | ResponseAudioTranscriptDelta
     | ResponseAudioTranscriptDone
-    | ResponseContenPartAdded
+    | ResponseContentPartAdded
     | ResponseContentPartDone
     | ResponseCreated
     | ResponseDone
