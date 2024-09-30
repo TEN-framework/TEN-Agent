@@ -163,9 +163,8 @@ class OpenAIV2VExtension(Extension):
                         case SessionCreated():
                             logger.info(f"Session is created: {message.session.id}")
                             self.session_id = message.session.id
-                            update_msg = self.update_session()
-                            await self.client.send_message(update_msg)
-
+                            # update_msg = self.update_session()
+                            # await self.client.send_message(update_msg)
                             update_conversation = self.update_conversation()
                             await self.client.send_message(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
