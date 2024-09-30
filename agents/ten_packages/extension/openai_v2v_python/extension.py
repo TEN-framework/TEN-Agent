@@ -324,6 +324,7 @@ class OpenAIV2VExtension(Extension):
         params = SessionUpdateParams()
         params.model = self.config.model
         params.modalities = set(["audio", "text"])
+        params.instructions = ""
         params.voice = self.config.voice
         params.input_audio_format = AudioFormats.PCM16
         params.output_audio_format = AudioFormats.PCM16

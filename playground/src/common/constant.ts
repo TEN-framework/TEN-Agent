@@ -37,6 +37,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
     value: "va.qwen.rag"
   },
+  {
+    label: "Voice Agent with Open Realtime API (Alpha)",
+    value: "va.openai.v2v"
+  }
 ]
 
 export const isRagGraph = (graphName: string) => {

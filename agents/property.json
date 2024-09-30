@@ -2191,6 +2191,7 @@
                             "stream_id": 1234,
                             "max_tokens": 2048,
                             "voice": "alloy",
+                            "language": "en-US",
                             "server_vad": true
                         }
                     },

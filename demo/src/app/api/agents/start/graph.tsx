@@ -81,6 +81,14 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va.openai.v2v") {
+        return {
+            "openai_v2v_python": {
+                "model": "gpt-4o-realtime-preview-2024-10-01",
+                "language": language,
+                ...localizationOptions
+            }
+        }
     } else if (graphName == "va.openai.azure") {
         return {
             "agora_rtc": {
