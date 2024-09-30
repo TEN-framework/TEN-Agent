@@ -115,6 +115,8 @@ class OpenAIV2VExtension(Extension):
                 logger.info(f"Start session for {stream_id}")
             
             frame_buf = audio_frame.get_buf()
+            with open("audio_stt_in.pcm", "ab") as dump_file:
+                dump_file.write(frame_buf)
             asyncio.run_coroutine_threadsafe(self.on_audio(frame_buf), self.loop)
         except:
             logger.exception(f"OpenAIV2VExtension on audio frame failed")
@@ -321,13 +323,14 @@ class OpenAIV2VExtension(Extension):
     def update_session(self) -> SessionUpdate:
         params = SessionUpdateParams()
         params.model = self.config.model
+        params.modalities = set(["audio", "text"])
         params.voice = self.config.voice
         params.input_audio_format = AudioFormats.PCM16
         params.output_audio_format = AudioFormats.PCM16
         params.turn_detection = DEFAULT_TURN_DETECTION
         params.input_audio_transcription = InputAudioTranscription(enabled=True, model='whisper-1')
         params.temperature = self.config.temperature
-        params.max_response_output_tokens = self.config.max_tokens
+        # params.max_response_output_tokens = self.config.max_tokens
         return SessionUpdate(session=params)
 
     def update_conversation(self) -> UpdateConversationConfig:
@@ -349,6 +352,8 @@ class OpenAIV2VExtension(Extension):
 
     def on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
+        with open("audio_stt_out.pcm", "ab") as dump_file:
+            dump_file.write(audio_data)
         f = AudioFrame.create(AUDIO_PCM_FRAME)
         f.set_sample_rate(self.sample_rate)
         f.set_bytes_per_sample(2)

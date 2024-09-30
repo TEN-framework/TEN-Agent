@@ -1,7 +1,7 @@
 import abc
 import random
 import string
-from enum import Enum, StrEnum
+from enum import Enum
 from typing import Annotated, Any, Literal, Set
 
 from pydantic import BaseModel, PrivateAttr, TypeAdapter
@@ -90,19 +90,19 @@ class FunctionToolChoice(BaseModel):
 ToolChoice = Literal["none", "auto", "required"] | FunctionToolChoice
 
 
-class ItemType(StrEnum):
+class ItemType(Enum):
     message = "message"
     function_call = "function_call"
     function_call_output = "function_call_output"
 
 
-class MessageRole(StrEnum):
+class MessageRole(Enum):
     system = "system"
     user = "user"
     assistant = "assistant"
 
 
-class ContentType(StrEnum):
+class ContentType(Enum):
     input_text = "input_text"
     input_audio = "input_audio"
     text = "text"
@@ -110,18 +110,18 @@ class ContentType(StrEnum):
 
 
 class InputTextContentPartParam(BaseModel):
-    type: Literal[ContentType.input_text] = ContentType.input_text
+    type: str = ContentType.input_text
     text: str
 
 
 class InputAudioContentPartParam(BaseModel):
-    type: Literal[ContentType.input_audio] = ContentType.input_audio
+    type: str = ContentType.input_audio
     audio: str
     transcript: str | None = None
 
 
 class OutputTextContentPartParam(BaseModel):
-    type: Literal[ContentType.text] = ContentType.text
+    type: str = ContentType.text
     text: str
 
 
@@ -139,7 +139,7 @@ but we're lenient here since actual validation happens further down.
 class SystemMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: Literal[MessageRole.system] = MessageRole.system
+    role: str = MessageRole.system
     content: list[SystemContentPartParam]
     status: ItemParamStatus | None = None
 
@@ -147,7 +147,7 @@ class SystemMessageItemParam(BaseModel):
 class UserMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: Literal[MessageRole.user] = MessageRole.user
+    role: str = MessageRole.user
     content: list[UserContentPartParam]
     status: ItemParamStatus | None = None
 
@@ -155,7 +155,7 @@ class UserMessageItemParam(BaseModel):
 class AssistantMessageItemParam(BaseModel):
     id: str | None = None
     type: Literal[ItemType.message] = ItemType.message
-    role: Literal[MessageRole.assistant] = MessageRole.assistant
+    role: str = MessageRole.assistant
     content: list[AssistantContentPartParam]
     status: ItemParamStatus | None = None
 
@@ -205,22 +205,22 @@ class BaseItem(BaseModel):
 
 
 class InputTextContentPart(BaseModel):
-    type: Literal[ContentType.input_text] = ContentType.input_text
+    type: str = ContentType.input_text
     text: str
 
 
 class InputAudioContentPart(BaseModel):
-    type: Literal[ContentType.input_audio] = ContentType.input_audio
+    type: str = ContentType.input_audio
     transcript: str | None
 
 
 class TextContentPart(BaseModel):
-    type: Literal[ContentType.text] = ContentType.text
+    type: str = ContentType.text
     text: str
 
 
 class AudioContentPart(BaseModel):
-    type: Literal[ContentType.audio] = ContentType.audio
+    type: str = ContentType.audio
     transcript: str | None
     _audio: str = PrivateAttr(default_factory=str)
 
@@ -229,20 +229,20 @@ ContentPart = InputTextContentPart | InputAudioContentPart | TextContentPart | A
 
 
 class MessageItem(BaseItem):
-    type: Literal[ItemType.message] = ItemType.message
+    type: str = ItemType.message
     role: MessageRole
     content: list[ContentPart]
 
 
 class FunctionCallItem(BaseItem):
-    type: Literal[ItemType.function_call] = ItemType.function_call
+    type: str = ItemType.function_call
     name: str
     call_id: str
     arguments: str
 
 
 class FunctionCallOutputItem(BaseItem):
-    type: Literal[ItemType.function_call_output] = ItemType.function_call_output
+    type: str = ItemType.function_call_output
     call_id: str
     output: str
 
