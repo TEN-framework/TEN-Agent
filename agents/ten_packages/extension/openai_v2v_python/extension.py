@@ -163,13 +163,14 @@ class OpenAIV2VExtension(Extension):
                     logger.info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            logger.info(f"Session is created: {message.session.id}")
+                            logger.info(f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
                             update_msg = self.update_session()
                             await self.client.send_message(update_msg)
-                            update_conversation = self.update_conversation()
-                            await self.client.send_message(update_conversation)
+                            
+                            #update_conversation = self.update_conversation()
+                            #await self.client.send_message(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
                             logger.info(f"On request transript {message.transcript}")
                             self.send_transcript(ten_env, message.transcript, ROLE_USER, True)
@@ -323,11 +324,18 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
 
     def update_session(self) -> SessionUpdate:
-        params = SessionUpdateParams()
-        params.input_audio_transcription = InputAudioTranscription(model='whisper-1')
-        params.temperature = self.config.temperature
-        params.tool_choice = "none"
-        return SessionUpdate(session=params)
+        prompt = self.replace(self.config.system_message)
+        return SessionUpdate(session=SessionUpdateParams(
+            instructions = prompt,
+            input_audio_transcription = InputAudioTranscription(model="whisper-1"),
+            temperature = self.config.temperature,
+            voice = self.config.voice,
+            model= self.config.model,
+            input_audio_format="pcm16",
+            output_audio_format="pcm16",
+            max_response_output_tokens = "inf",
+            turn_detection = ServerVADUpdateParams(type="server_vad", threshold=VAD_THRESHOLD_DEFAULT, prefix_padding_ms=VAD_PREFIX_PADDING_MS_DEFAULT, silence_duration_ms=VAD_SILENCE_DURATION_MS_DEFAULT)
+        ))
 
     def update_conversation(self) -> UpdateConversationConfig:
         prompt = self.replace(self.config.system_message)
