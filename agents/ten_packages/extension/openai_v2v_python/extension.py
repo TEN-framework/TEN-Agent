@@ -348,9 +348,9 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
 
     def _update_session(self) -> SessionUpdate:
-        prompt = self._replace(self.config.system_message)
+        #prompt = self._replace(self.config.system_message)
         return SessionUpdate(session=SessionUpdateParams(
-            instructions=prompt,
+            #instructions=prompt,
             voice=self.config.voice,
             input_audio_transcription=InputAudioTranscription(
                 model="whisper-1")
