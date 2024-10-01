@@ -123,7 +123,7 @@ class OpenAIV2VExtension(Extension):
                 logger.info(f"Start session for {stream_id}")
 
             frame_buf = audio_frame.get_buf()
-            with open(os.path.join(os.getenv('LOG_PATH', ""), "audio_in_{}.pcm".format(self.channel_name)), "ab") as dump_file:
+            with open("audio_in_{}.pcm".format(self.channel_name), "ab") as dump_file:
                 dump_file.write(frame_buf)
             asyncio.run_coroutine_threadsafe(
                 self.on_audio(frame_buf), self.loop)
@@ -392,7 +392,7 @@ class OpenAIV2VExtension(Extension):
 
     def on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
-        with open(os.path.join(os.getenv('LOG_PATH', ""), "audio_out_{}.pcm".format(self.channel_name)), "ab") as dump_file:
+        with open("audio_out_{}.pcm".format(self.channel_name), "ab") as dump_file:
             dump_file.write(audio_data)
         f = AudioFrame.create(AUDIO_PCM_FRAME)
         f.set_sample_rate(self.sample_rate)
