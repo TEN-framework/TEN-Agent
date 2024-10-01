@@ -14,6 +14,10 @@ export const voiceNameMap: LanguageMap = {
             male: "Zhiyu",
             female: "Zhiyu",
         },
+        openai: {
+            male: "echo",
+            female: "shimmer"
+        }
     },
     "en-US": {
         azure: {
@@ -28,18 +32,30 @@ export const voiceNameMap: LanguageMap = {
             male: "Matthew",
             female: "Ruth",
         },
+        openai: {
+            male: "echo",
+            female: "shimmer"
+        }
     },
     "ja-JP": {
         azure: {
             male: "ja-JP-KeitaNeural",
             female: "ja-JP-NanamiNeural",
         },
+        openai: {
+            male: "echo",
+            female: "shimmer"
+        }
     },
     "ko-KR": {
         azure: {
             male: "ko-KR-InJoonNeural",
             female: "ko-KR-JiMinNeural",
         },
+        openai: {
+            male: "echo",
+            female: "shimmer"
+        }
     },
 };
 
@@ -85,6 +101,7 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
         return {
             "openai_v2v_python": {
                 "model": "gpt-4o-realtime-preview-2024-10-01",
+                "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
                 ...localizationOptions
             }
