@@ -328,6 +328,7 @@ class EventType(str, Enum):
 
     ERROR = "error"
     SESSION_CREATED = "session.created"
+    SESSION_UPDATED = "session.updated"
 
     INPUT_AUDIO_BUFFER_COMMITTED = "input_audio_buffer.committed"
     INPUT_AUDIO_BUFFER_CLEARED = "input_audio_buffer.cleared"
@@ -587,6 +588,9 @@ class SessionCreated(ServerToClientMessage):
     type: Literal[EventType.SESSION_CREATED] = EventType.SESSION_CREATED
     session: Session
 
+class SessionUpdated(ServerToClientMessage):
+    type: Literal[EventType.SESSION_UPDATED] = EventType.SESSION_UPDATED
+    session: Session
 
 class InputAudioBufferCommitted(ServerToClientMessage):
     """
@@ -852,6 +856,7 @@ ServerToClientMessages = (
     | ResponseTextDelta
     | ResponseTextDone
     | SessionCreated
+    | SessionUpdated
 )
 
 AnnotatedServerToClientMessages = Annotated[ServerToClientMessages, Field(discriminator="type")]
