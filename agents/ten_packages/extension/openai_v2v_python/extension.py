@@ -60,7 +60,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx: dict = {}
 
         # audo related
-        self.sample_rate: int = 24000
+        self.sample_rate: int = 16000
         self.out_audio_buff: bytearray = b''
         self.audio_len_threshold: int = 10240
         self.transcript: str = ''
@@ -137,7 +137,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_client(self):
         try:
             self.client = RealtimeApiClient(
-                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model)
+                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
             logger.info(f"Finish init client {self.config} {self.client}")
         except:
             logger.exception(f"Failed to create client {self.config}")

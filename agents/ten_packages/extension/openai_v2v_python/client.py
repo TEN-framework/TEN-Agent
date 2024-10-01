@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import json
-import logging
 import os
 from typing import Any, AsyncGenerator
 
@@ -9,9 +8,7 @@ import uuid
 import aiohttp
 from . import messages
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+from .log import logger
 
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
