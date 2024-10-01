@@ -9,6 +9,7 @@ import asyncio
 import threading
 import base64
 from datetime import datetime
+import os
 
 from ten import (
     AudioFrame,
@@ -31,8 +32,8 @@ PROPERTY_MODEL = "model"  # Optional
 PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
 PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
-PROPERTY_VOICE = "voice" #Optional
-PROPERTY_SERVER_VAD = "server_vad" #Optional
+PROPERTY_VOICE = "voice"  # Optional
+PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 
@@ -43,6 +44,7 @@ AUDIO_PCM_FRAME = "pcm_frame"
 ROLE_ASSISTANT = "assistant"
 ROLE_USER = "user"
 
+
 class OpenAIV2VExtension(Extension):
     # handler
     queue = asyncio.Queue(maxsize=3000)
@@ -50,16 +52,16 @@ class OpenAIV2VExtension(Extension):
     thread: threading.Thread = None
     client: RealtimeApiClient = None
     connected: bool = False
-    
+
     # openai related
     config: RealtimeApiConfig = None
     session_id: str = ""
     session: Session = None
 
     # audo related
-    sample_rate : int = 24000
+    sample_rate: int = 24000
     out_audio_buff: bytearray = b''
-    audio_len_threshold : int = 10240
+    audio_len_threshold: int = 10240
     transcript: str = ''
 
     # agora related
@@ -83,8 +85,9 @@ class OpenAIV2VExtension(Extension):
         def start_event_loop(loop):
             asyncio.set_event_loop(loop)
             loop.run_forever()
-        
-        self.thread = threading.Thread(target=start_event_loop, args=(self.loop,))
+
+        self.thread = threading.Thread(
+            target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
         asyncio.run_coroutine_threadsafe(self.init_client(), self.loop)
@@ -111,15 +114,19 @@ class OpenAIV2VExtension(Extension):
             # frame_name = audio_frame.get_name()
             stream_id = audio_frame.get_property_int("stream_id")
             # logger.info(f"OpenAIV2VExtension on_audio_frame {frame_name} {stream_id}")
+            if self.channel_name == "":
+                self.channel_name = audio_frame.get_property_string("channel")
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
-                asyncio.run_coroutine_threadsafe(self.run_client_loop(ten_env), self.loop)
+                asyncio.run_coroutine_threadsafe(
+                    self.run_client_loop(ten_env), self.loop)
                 logger.info(f"Start session for {stream_id}")
-            
+
             frame_buf = audio_frame.get_buf()
-            with open("audio_stt_in.pcm", "ab") as dump_file:
+            with open(os.path.join(os.getenv('LOG_PATH', ""), "audio_in_{}.pcm".format(self.channel_name)), "ab") as dump_file:
                 dump_file.write(frame_buf)
-            asyncio.run_coroutine_threadsafe(self.on_audio(frame_buf), self.loop)
+            asyncio.run_coroutine_threadsafe(
+                self.on_audio(frame_buf), self.loop)
         except:
             logger.exception(f"OpenAIV2VExtension on audio frame failed")
 
@@ -138,7 +145,8 @@ class OpenAIV2VExtension(Extension):
 
     async def init_client(self):
         try:
-            self.client = RealtimeApiClient(base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model)
+            self.client = RealtimeApiClient(
+                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model)
             logger.info(f"Finish init client {self.config} {self.client}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -151,7 +159,7 @@ class OpenAIV2VExtension(Extension):
         try:
             await self.client.connect()
             self.connected = True
-            item_id = "" # For truncate
+            item_id = ""  # For truncate
             response_id = ""
             content_index = 0
             relative_start_ms = get_time_ms()
@@ -163,77 +171,98 @@ class OpenAIV2VExtension(Extension):
                     logger.info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            logger.info(f"Session is created: {message.session}")
+                            logger.info(
+                                f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
                             update_msg = self.update_session()
                             await self.client.send_message(update_msg)
-                            
-                            #update_conversation = self.update_conversation()
-                            #await self.client.send_message(update_conversation)
+
+                            # update_conversation = self.update_conversation()
+                            # await self.client.send_message(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
-                            logger.info(f"On request transript {message.transcript}")
-                            self.send_transcript(ten_env, message.transcript, ROLE_USER, True)
+                            logger.info(
+                                f"On request transript {message.transcript}")
+                            self.send_transcript(
+                                ten_env, message.transcript, ROLE_USER, True)
                         case ItemInputAudioTranscriptionFailed():
-                            logger.warning(f"On request transript failed {message.item_id} {message.error}")
+                            logger.warning(
+                                f"On request transript failed {message.item_id} {message.error}")
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
                         case ResponseCreated():
-                            logger.info(f"On response created {message.response.id}")
+                            logger.info(
+                                f"On response created {message.response.id}")
                             response_id = message.response.id
                         case ResponseDone():
-                            logger.info(f"On response done {message.response.id} {message.response.status}")
+                            logger.info(
+                                f"On response done {message.response.id} {message.response.status}")
                             if message.response.id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
-                            logger.info(f"On response transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                            logger.info(
+                                f"On response transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                             if message.response_id in flushed:
-                                logger.warning(f"On flushed transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                                logger.warning(
+                                    f"On flushed transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
                             self.transcript += message.delta
-                            self.send_transcript(ten_env, self.transcript, ROLE_ASSISTANT, False)
+                            self.send_transcript(
+                                ten_env, self.transcript, ROLE_ASSISTANT, False)
                         case ResponseAudioTranscriptDone():
-                            logger.info(f"On response transript done {message.output_index} {message.content_index} {message.transcript}")
+                            logger.info(
+                                f"On response transript done {message.output_index} {message.content_index} {message.transcript}")
                             if message.response_id in flushed:
-                                logger.warning(f"On flushed transript done {message.response_id}")
+                                logger.warning(
+                                    f"On flushed transript done {message.response_id}")
                                 continue
                             self.transcript = ""
-                            self.send_transcript(ten_env, message.transcript, ROLE_ASSISTANT, True)
+                            self.send_transcript(
+                                ten_env, message.transcript, ROLE_ASSISTANT, True)
                         case ResponseOutputItemDone():
                             logger.info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
-                            logger.info(f"Output item added {message.output_index} {message.item.id}")
+                            logger.info(
+                                f"Output item added {message.output_index} {message.item.id}")
                         case ResponseAudioDelta():
                             if message.response_id in flushed:
-                                logger.warning(f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}")
+                                logger.warning(
+                                    f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}")
                                 continue
                             item_id = message.item_id
                             content_index = message.content_index
                             self.on_audio_delta(ten_env, message.delta)
                         case InputAudioBufferSpeechStarted():
-                            logger.info(f"On server listening, in response {response_id}, last item {item_id}")
+                            logger.info(
+                                f"On server listening, in response {response_id}, last item {item_id}")
                             # Tuncate the on-going audio stream
                             end_ms = get_time_ms() - relative_start_ms
                             if item_id:
-                                truncate = ItemTruncate(item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
+                                truncate = ItemTruncate(
+                                    item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
                                 await self.client.send_message(truncate)
                             self.flush(ten_env)
                             if response_id:
                                 transcript = self.transcript + "[interrupted]"
-                                self.send_transcript(ten_env, transcript, ROLE_ASSISTANT, True)
+                                self.send_transcript(
+                                    ten_env, transcript, ROLE_ASSISTANT, True)
                                 self.transcript = ""
-                                flushed.add(response_id) # memory leak, change to lru later
+                                # memory leak, change to lru later
+                                flushed.add(response_id)
                             item_id = ""
                         case InputAudioBufferSpeechStopped():
                             relative_start_ms = get_time_ms() - message.audio_end_ms
-                            logger.info(f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}")
+                            logger.info(
+                                f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}")
                         case ErrorMessage():
-                            logger.error(f"Error message received: {message.error}")
+                            logger.error(
+                                f"Error message received: {message.error}")
                         case _:
                             logger.debug(f"Not handled message {message}")
                 except:
-                    logger.exception(f"Error processing message: {message.type}")
-            
+                    logger.exception(
+                        f"Error processing message: {message.type}")
+
             logger.info("Client loop finished")
         except:
             logger.exception(f"Failed to handle loop")
@@ -243,7 +272,8 @@ class OpenAIV2VExtension(Extension):
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
             await self.client.send_audio_data(self.out_audio_buff)
-            logger.info(f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
+            logger.info(
+                f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
 
     def fetch_properties(self, ten_env: TenEnv):
@@ -251,7 +281,8 @@ class OpenAIV2VExtension(Extension):
             api_key = ten_env.get_property_string(PROPERTY_API_KEY)
             self.config.api_key = api_key
         except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
+            logger.info(
+                f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
             return
 
         try:
@@ -262,11 +293,13 @@ class OpenAIV2VExtension(Extension):
             logger.info(f"GetProperty optional {PROPERTY_MODEL} error: {err}")
 
         try:
-            system_message = ten_env.get_property_string(PROPERTY_SYSTEM_MESSAGE)
+            system_message = ten_env.get_property_string(
+                PROPERTY_SYSTEM_MESSAGE)
             if system_message:
                 self.config.system_message = system_message
         except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_SYSTEM_MESSAGE} error: {err}")
+            logger.info(
+                f"GetProperty optional {PROPERTY_SYSTEM_MESSAGE} error: {err}")
 
         try:
             temperature = ten_env.get_property_float(PROPERTY_TEMPERATURE)
@@ -275,7 +308,7 @@ class OpenAIV2VExtension(Extension):
             logger.info(
                 f"GetProperty optional {PROPERTY_TEMPERATURE} failed, err: {err}"
             )
-        
+
         try:
             max_tokens = ten_env.get_property_int(PROPERTY_MAX_TOKENS)
             if max_tokens > 0:
@@ -284,7 +317,7 @@ class OpenAIV2VExtension(Extension):
             logger.info(
                 f"GetProperty optional {PROPERTY_MAX_TOKENS} failed, err: {err}"
             )
-        
+
         try:
             voice = ten_env.get_property_string(PROPERTY_VOICE)
             if voice:
@@ -298,13 +331,14 @@ class OpenAIV2VExtension(Extension):
                 self.config.voice = v
         except Exception as err:
             logger.info(f"GetProperty optional {PROPERTY_VOICE} error: {err}")
-        
+
         try:
             language = ten_env.get_property_string(PROPERTY_LANGUAGE)
             if language:
                 self.config.language = language
         except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
+            logger.info(
+                f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
 
         try:
             server_vad = ten_env.get_property_bool(PROPERTY_SERVER_VAD)
@@ -326,15 +360,17 @@ class OpenAIV2VExtension(Extension):
     def update_session(self) -> SessionUpdate:
         prompt = self.replace(self.config.system_message)
         return SessionUpdate(session=SessionUpdateParams(
-            instructions = prompt,
-            input_audio_transcription = InputAudioTranscription(model="whisper-1"),
-            temperature = self.config.temperature,
-            voice = self.config.voice,
-            model= self.config.model,
+            instructions=prompt,
+            input_audio_transcription=InputAudioTranscription(
+                model="whisper-1"),
+            temperature=self.config.temperature,
+            voice=self.config.voice,
+            model=self.config.model,
             input_audio_format="pcm16",
             output_audio_format="pcm16",
-            max_response_output_tokens = "inf",
-            turn_detection = ServerVADUpdateParams(type="server_vad", threshold=VAD_THRESHOLD_DEFAULT, prefix_padding_ms=VAD_PREFIX_PADDING_MS_DEFAULT, silence_duration_ms=VAD_SILENCE_DURATION_MS_DEFAULT)
+            max_response_output_tokens="inf",
+            turn_detection=ServerVADUpdateParams(type="server_vad", threshold=VAD_THRESHOLD_DEFAULT,
+                                                 prefix_padding_ms=VAD_PREFIX_PADDING_MS_DEFAULT, silence_duration_ms=VAD_SILENCE_DURATION_MS_DEFAULT)
         ))
 
     def update_conversation(self) -> UpdateConversationConfig:
@@ -348,7 +384,7 @@ class OpenAIV2VExtension(Extension):
         conf.output_audio_format = AudioFormats.PCM16
         return conf
 
-    def replace(self, prompt:str) -> str:
+    def replace(self, prompt: str) -> str:
         result = prompt
         for token, value in self.ctx.items():
             result = result.replace(f"{token}", value)
@@ -356,7 +392,7 @@ class OpenAIV2VExtension(Extension):
 
     def on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
-        with open("audio_stt_out.pcm", "ab") as dump_file:
+        with open(os.path.join(os.getenv('LOG_PATH', ""), "audio_out_{}.pcm".format(self.channel_name)), "ab") as dump_file:
             dump_file.write(audio_data)
         f = AudioFrame.create(AUDIO_PCM_FRAME)
         f.set_sample_rate(self.sample_rate)
@@ -369,18 +405,20 @@ class OpenAIV2VExtension(Extension):
         buff[:] = audio_data
         f.unlock_buf(buff)
         ten_env.send_audio_frame(f)
-    
+
     def send_transcript(self, ten_env: TenEnv, transcript: str, role: str, is_final: bool) -> None:
         try:
             d = Data.create(DATA_TEXT_DATA)
             d.set_property_string("text", transcript)
             d.set_property_bool("end_of_segment", is_final)
-            d.set_property_int("stream_id", self.stream_id if role == ROLE_ASSISTANT else self.remote_stream_id)
+            d.set_property_int("stream_id", self.stream_id if role ==
+                               ROLE_ASSISTANT else self.remote_stream_id)
             d.set_property_bool("is_final", is_final)
             ten_env.send_data(d)
         except:
-            logger.exception(f"Error send text data {role}: {transcript} {is_final}")
-    
+            logger.exception(
+                f"Error send text data {role}: {transcript} {is_final}")
+
     def flush(self, ten_env: TenEnv) -> None:
         try:
             c = Cmd.create(CMD_FLUSH)
