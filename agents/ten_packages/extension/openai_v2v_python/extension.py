@@ -233,7 +233,7 @@ class OpenAIV2VExtension(Extension):
                                     item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
                                 await self.client.send_message(truncate)
                             self._flush(ten_env)
-                            if response_id:
+                            if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
                                 self._send_transcript(
                                     ten_env, transcript, Role.Assistant, True)
