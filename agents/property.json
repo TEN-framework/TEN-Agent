@@ -2176,7 +2176,8 @@
                             "remote_stream_id": 123,
                             "subscribe_audio": true,
                             "publish_audio": true,
-                            "publish_data": true
+                            "publish_data": true,
+                            "subscribe_audio_sample_rate": 24000
                         }
                     },
                     {
