@@ -9,7 +9,6 @@ import asyncio
 import threading
 import base64
 from datetime import datetime
-import os
 
 from ten import (
     AudioFrame,
@@ -36,50 +35,45 @@ PROPERTY_VOICE = "voice"  # Optional
 PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
+PROPERTY_DUMP = "dump"
 
-DATA_TEXT_DATA = "text_data"
-CMD_FLUSH = "flush"
-AUDIO_PCM_FRAME = "pcm_frame"
 
-ROLE_ASSISTANT = "assistant"
-ROLE_USER = "user"
+class Role(str, Enum):
+    User = "user"
+    Assistant = "assistant"
 
 
 class OpenAIV2VExtension(Extension):
-    # handler
-    queue = asyncio.Queue(maxsize=3000)
-    loop = None
-    thread: threading.Thread = None
-    client: RealtimeApiClient = None
-    connected: bool = False
+    def __init__(self, name: str):
+        super().__init__(name)
 
-    # openai related
-    config: RealtimeApiConfig = None
-    session_id: str = ""
-    session: Session = None
-
-    # audo related
-    sample_rate: int = 24000
-    out_audio_buff: bytearray = b''
-    audio_len_threshold: int = 10240
-    transcript: str = ''
-
-    # agora related
-    channel_name: str = ""
-    stream_id: int = 0
-    remote_stream_id: int = 0
-    ctx: dict = {}
-
-    def on_init(self, ten_env: TenEnv) -> None:
-        logger.info("OpenAIV2VExtension on_init")
-        self.config = RealtimeApiConfig()
+        # handler
         self.loop = asyncio.new_event_loop()
-        ten_env.on_init_done()
+        self.thread: threading.Thread = None
+
+        # openai related
+        self.config: RealtimeApiConfig = RealtimeApiConfig()
+        self.client: RealtimeApiClient = None
+        self.connected: bool = False
+        self.session_id: str = ""
+        self.session: Session = None
+        self.ctx: dict = {}
+
+        # audo related
+        self.sample_rate: int = 24000
+        self.out_audio_buff: bytearray = b''
+        self.audio_len_threshold: int = 10240
+        self.transcript: str = ''
+
+        # misc.
+        self.remote_stream_id: int = 0
+        self.channel_name: str = ""
+        self.dump: bool = False
 
     def on_start(self, ten_env: TenEnv) -> None:
         logger.info("OpenAIV2VExtension on_start")
 
-        self.fetch_properties(ten_env)
+        self._fetch_properties(ten_env)
 
         # Start async handler
         def start_event_loop(loop):
@@ -90,7 +84,7 @@ class OpenAIV2VExtension(Extension):
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
-        asyncio.run_coroutine_threadsafe(self.init_client(), self.loop)
+        asyncio.run_coroutine_threadsafe(self._init_client(), self.loop)
 
         ten_env.on_start_done()
 
@@ -102,31 +96,28 @@ class OpenAIV2VExtension(Extension):
         if self.thread:
             self.loop.call_soon_threadsafe(self.loop.stop)
             self.thread.join()
+            self.thread = None
 
         ten_env.on_stop_done()
 
-    def on_deinit(self, ten_env: TenEnv) -> None:
-        logger.info("OpenAIV2VExtension on_deinit")
-        ten_env.on_deinit_done()
-
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         try:
-            # frame_name = audio_frame.get_name()
             stream_id = audio_frame.get_property_int("stream_id")
-            # logger.info(f"OpenAIV2VExtension on_audio_frame {frame_name} {stream_id}")
+            # logger.debug(f"on_audio_frame {stream_id}")
             if self.channel_name == "":
                 self.channel_name = audio_frame.get_property_string("channel")
+
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
                 asyncio.run_coroutine_threadsafe(
-                    self.run_client_loop(ten_env), self.loop)
+                    self._run_client_loop(ten_env), self.loop)
                 logger.info(f"Start session for {stream_id}")
 
             frame_buf = audio_frame.get_buf()
-            with open("audio_in_{}.pcm".format(self.channel_name), "ab") as dump_file:
-                dump_file.write(frame_buf)
+            self._dump_audio_if_need(frame_buf, Role.User)
+
             asyncio.run_coroutine_threadsafe(
-                self.on_audio(frame_buf), self.loop)
+                self._on_audio(frame_buf), self.loop)
         except:
             logger.exception(f"OpenAIV2VExtension on audio frame failed")
 
@@ -143,7 +134,7 @@ class OpenAIV2VExtension(Extension):
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         pass
 
-    async def init_client(self):
+    async def _init_client(self):
         try:
             self.client = RealtimeApiClient(
                 base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model)
@@ -151,7 +142,7 @@ class OpenAIV2VExtension(Extension):
         except:
             logger.exception(f"Failed to create client {self.config}")
 
-    async def run_client_loop(self, ten_env: TenEnv):
+    async def _run_client_loop(self, ten_env: TenEnv):
         def get_time_ms() -> int:
             current_time = datetime.now()
             return current_time.microsecond // 1000
@@ -175,7 +166,7 @@ class OpenAIV2VExtension(Extension):
                                 f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
-                            update_msg = self.update_session()
+                            update_msg = self._update_session()
                             await self.client.send_message(update_msg)
 
                             # update_conversation = self.update_conversation()
@@ -183,8 +174,8 @@ class OpenAIV2VExtension(Extension):
                         case ItemInputAudioTranscriptionCompleted():
                             logger.info(
                                 f"On request transript {message.transcript}")
-                            self.send_transcript(
-                                ten_env, message.transcript, ROLE_USER, True)
+                            self._send_transcript(
+                                ten_env, message.transcript, Role.User, True)
                         case ItemInputAudioTranscriptionFailed():
                             logger.warning(
                                 f"On request transript failed {message.item_id} {message.error}")
@@ -207,8 +198,8 @@ class OpenAIV2VExtension(Extension):
                                     f"On flushed transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
                             self.transcript += message.delta
-                            self.send_transcript(
-                                ten_env, self.transcript, ROLE_ASSISTANT, False)
+                            self._send_transcript(
+                                ten_env, self.transcript, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
                             logger.info(
                                 f"On response transript done {message.output_index} {message.content_index} {message.transcript}")
@@ -217,8 +208,8 @@ class OpenAIV2VExtension(Extension):
                                     f"On flushed transript done {message.response_id}")
                                 continue
                             self.transcript = ""
-                            self.send_transcript(
-                                ten_env, message.transcript, ROLE_ASSISTANT, True)
+                            self._send_transcript(
+                                ten_env, message.transcript, Role.Assistant, True)
                         case ResponseOutputItemDone():
                             logger.info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
@@ -231,7 +222,7 @@ class OpenAIV2VExtension(Extension):
                                 continue
                             item_id = message.item_id
                             content_index = message.content_index
-                            self.on_audio_delta(ten_env, message.delta)
+                            self._on_audio_delta(ten_env, message.delta)
                         case InputAudioBufferSpeechStarted():
                             logger.info(
                                 f"On server listening, in response {response_id}, last item {item_id}")
@@ -241,11 +232,11 @@ class OpenAIV2VExtension(Extension):
                                 truncate = ItemTruncate(
                                     item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
                                 await self.client.send_message(truncate)
-                            self.flush(ten_env)
+                            self._flush(ten_env)
                             if response_id:
                                 transcript = self.transcript + "[interrupted]"
-                                self.send_transcript(
-                                    ten_env, transcript, ROLE_ASSISTANT, True)
+                                self._send_transcript(
+                                    ten_env, transcript, Role.Assistant, True)
                                 self.transcript = ""
                                 # memory leak, change to lru later
                                 flushed.add(response_id)
@@ -267,7 +258,7 @@ class OpenAIV2VExtension(Extension):
         except:
             logger.exception(f"Failed to handle loop")
 
-    async def on_audio(self, buff: bytearray):
+    async def _on_audio(self, buff: bytearray):
         self.out_audio_buff += buff
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
@@ -276,7 +267,7 @@ class OpenAIV2VExtension(Extension):
                 f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
 
-    def fetch_properties(self, ten_env: TenEnv):
+    def _fetch_properties(self, ten_env: TenEnv):
         try:
             api_key = ten_env.get_property_string(PROPERTY_API_KEY)
             self.config.api_key = api_key
@@ -349,16 +340,15 @@ class OpenAIV2VExtension(Extension):
             )
 
         try:
-            self.stream_id = ten_env.get_property_int(PROPERTY_STREAM_ID)
+            self.dump = ten_env.get_property_bool(PROPERTY_DUMP)
         except Exception as err:
             logger.info(
-                f"GetProperty optional {PROPERTY_STREAM_ID} failed, err: {err}"
-            )
+                f"GetProperty optional {PROPERTY_DUMP} error: {err}")
 
         self.ctx = self.config.build_ctx()
 
-    def update_session(self) -> SessionUpdate:
-        prompt = self.replace(self.config.system_message)
+    def _update_session(self) -> SessionUpdate:
+        prompt = self._replace(self.config.system_message)
         return SessionUpdate(session=SessionUpdateParams(
             instructions=prompt,
             input_audio_transcription=InputAudioTranscription(
@@ -373,8 +363,8 @@ class OpenAIV2VExtension(Extension):
                                                  prefix_padding_ms=VAD_PREFIX_PADDING_MS_DEFAULT, silence_duration_ms=VAD_SILENCE_DURATION_MS_DEFAULT)
         ))
 
-    def update_conversation(self) -> UpdateConversationConfig:
-        prompt = self.replace(self.config.system_message)
+    def _update_conversation(self) -> UpdateConversationConfig:
+        prompt = self._replace(self.config.system_message)
         conf = UpdateConversationConfig()
         conf.system_message = prompt
         conf.temperature = self.config.temperature
@@ -384,17 +374,19 @@ class OpenAIV2VExtension(Extension):
         conf.output_audio_format = AudioFormats.PCM16
         return conf
 
-    def replace(self, prompt: str) -> str:
+    def _replace(self, prompt: str) -> str:
         result = prompt
         for token, value in self.ctx.items():
             result = result.replace(f"{token}", value)
         return result
 
-    def on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
+    def _on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
-        with open("audio_out_{}.pcm".format(self.channel_name), "ab") as dump_file:
-            dump_file.write(audio_data)
-        f = AudioFrame.create(AUDIO_PCM_FRAME)
+        logger.debug("on_audio_delta audio_data len {} samples {}".format(
+            len(audio_data), len(audio_data) // 2))
+        self._dump_audio_if_need(audio_data, Role.Assistant)
+
+        f = AudioFrame.create("pcm_frame")
         f.set_sample_rate(self.sample_rate)
         f.set_bytes_per_sample(2)
         f.set_number_of_channels(1)
@@ -406,22 +398,31 @@ class OpenAIV2VExtension(Extension):
         f.unlock_buf(buff)
         ten_env.send_audio_frame(f)
 
-    def send_transcript(self, ten_env: TenEnv, transcript: str, role: str, is_final: bool) -> None:
+    def _send_transcript(self, ten_env: TenEnv, transcript: str, role: Role, is_final: bool) -> None:
         try:
-            d = Data.create(DATA_TEXT_DATA)
+            d = Data.create("text_data")
             d.set_property_string("text", transcript)
             d.set_property_bool("end_of_segment", is_final)
-            d.set_property_int("stream_id", self.stream_id if role ==
-                               ROLE_ASSISTANT else self.remote_stream_id)
+            stream_id = self.remote_stream_id if role == Role.User else 0
+            d.set_property_int("stream_id", stream_id)
             d.set_property_bool("is_final", is_final)
+            logger.debug(
+                f"send transcript text [{transcript}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
             ten_env.send_data(d)
         except:
             logger.exception(
                 f"Error send text data {role}: {transcript} {is_final}")
 
-    def flush(self, ten_env: TenEnv) -> None:
+    def _flush(self, ten_env: TenEnv) -> None:
         try:
-            c = Cmd.create(CMD_FLUSH)
+            c = Cmd.create("flush")
             ten_env.send_cmd(c, lambda ten, result: logger.info("flush done"))
         except:
             logger.exception(f"Error flush")
+
+    def _dump_audio_if_need(self, buf: bytearray, role: Role) -> None:
+        if not self.dump:
+            return
+
+        with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
+            dump_file.write(buf)

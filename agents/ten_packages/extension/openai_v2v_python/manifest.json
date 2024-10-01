@@ -24,9 +24,6 @@
       "api_key": {
         "type": "string"
       },
-      "stream_id": {
-        "type": "int32"
-      },
       "temperature": {
         "type": "float64"
       },
@@ -47,6 +44,9 @@
       },
       "language": {
         "type": "string"
+      },
+      "dump": {
+        "type": "bool"
       }
     },
     "audio_frame_in": [

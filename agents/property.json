@@ -2188,11 +2188,11 @@
                             "api_key": "${env:OPENAI_API_KEY}",
                             "temperature": 0.9,
                             "model": "gpt-4o-realtime-preview-2024-10-01",
-                            "stream_id": 1234,
                             "max_tokens": 2048,
                             "voice": "alloy",
                             "language": "en-US",
-                            "server_vad": true
+                            "server_vad": true,
+                            "dump": true
                         }
                     },
                     {
