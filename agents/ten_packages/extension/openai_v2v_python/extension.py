@@ -60,7 +60,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx: dict = {}
 
         # audo related
-        self.sample_rate: int = 16000
+        self.sample_rate: int = 24000
         self.out_audio_buff: bytearray = b''
         self.audio_len_threshold: int = 10240
         self.transcript: str = ''
@@ -352,16 +352,8 @@ class OpenAIV2VExtension(Extension):
         return SessionUpdate(session=SessionUpdateParams(
             instructions=prompt,
             input_audio_transcription=InputAudioTranscription(
-                model="whisper-1"),
-            temperature=self.config.temperature,
-            voice=self.config.voice,
-            model=self.config.model,
-            input_audio_format="pcm16",
-            output_audio_format="pcm16",
-            max_response_output_tokens="inf",
-            turn_detection=ServerVADUpdateParams(type="server_vad", threshold=VAD_THRESHOLD_DEFAULT,
-                                                 prefix_padding_ms=VAD_PREFIX_PADDING_MS_DEFAULT, silence_duration_ms=VAD_SILENCE_DURATION_MS_DEFAULT)
-        ))
+                model="whisper-1")
+            ))
 
     def _update_conversation(self) -> UpdateConversationConfig:
         prompt = self._replace(self.config.system_message)
@@ -377,7 +369,7 @@ class OpenAIV2VExtension(Extension):
     def _replace(self, prompt: str) -> str:
         result = prompt
         for token, value in self.ctx.items():
-            result = result.replace(f"{token}", value)
+            result = result.replace("{"+token+"}", value)
         return result
 
     def _on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
