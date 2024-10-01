@@ -252,7 +252,7 @@ class OpenAIV2VExtension(Extension):
                             logger.debug(f"Not handled message {message}")
                 except:
                     logger.exception(
-                        f"Error processing message: {message.type}")
+                        f"Error processing message: {message}")
 
             logger.info("Client loop finished")
         except:
