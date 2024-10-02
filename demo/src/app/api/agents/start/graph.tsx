@@ -63,23 +63,23 @@ export const voiceNameMap: LanguageMap = {
 // This is the place where you can customize the properties for different graphs to override default property.json
 export const getGraphProperties = (graphName: string, language: string, voiceType: string) => {
     let localizationOptions = {
-        "greeting": "ASTRA agent connected. How can i help you today?",
+        "greeting": "Hey, I\'m TEN Agent with OpenAI Realtime API Beta， anything I can help you with?",
         "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
     }
 
     if (language === "zh-CN") {
         localizationOptions = {
-            "greeting": "Astra已连接，需要我为您提供什么帮助?",
+            "greeting": "TEN Agent 已连接，需要我为您提供什么帮助?",
             "checking_vision_text_items": "[\"让我看看你的摄像头...\",\"让我看一下...\",\"我看一下，请稍候...\"]",
         }
     } else if (language === "ja-JP") {
         localizationOptions = {
-            "greeting": "ASTRAエージェントに接続されました。今日は何をお手伝いしましょうか?",
+            "greeting": "TEN Agent に接続されました。今日は何をお手伝いしましょうか?",
             "checking_vision_text_items": "[\"ちょっと見てみます...\",\"カメラをチェックします...\",\"少々お待ちください...\"]",
         }
     } else if (language === "ko-KR") {
         localizationOptions = {
-            "greeting": "ASTRA 에이전트에 연결되었습니다. 오늘은 무엇을 도와드릴까요?",
+            "greeting": "TEN Agent 에이전트에 연결되었습니다. 오늘은 무엇을 도와드릴까요?",
             "checking_vision_text_items": "[\"조금만 기다려 주세요...\",\"카메라를 확인해 보겠습니다...\",\"잠시만 기다려 주세요...\"]",
         }
     }
