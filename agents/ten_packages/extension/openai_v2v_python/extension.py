@@ -22,8 +22,9 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
-from .client import RealtimeApiClient, RealtimeApiConfig
-from .messages import *
+from .conf import RealtimeApiConfig
+from realtime.connection import RealtimeApiConnection
+from realtime.struct import *
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
@@ -37,11 +38,11 @@ PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 PROPERTY_DUMP = "dump"
 
+DEFAULT_VOICE = Voices.Alloy
 
 class Role(str, Enum):
     User = "user"
     Assistant = "assistant"
-
 
 class OpenAIV2VExtension(Extension):
     def __init__(self, name: str):
@@ -53,10 +54,10 @@ class OpenAIV2VExtension(Extension):
 
         # openai related
         self.config: RealtimeApiConfig = RealtimeApiConfig()
-        self.client: RealtimeApiClient = None
+        self.conn: RealtimeApiConnection = None
         self.connected: bool = False
         self.session_id: str = ""
-        self.session: Session = None
+        self.session: SessionUpdateParams = None
         self.ctx: dict = {}
 
         # audo related
@@ -84,7 +85,7 @@ class OpenAIV2VExtension(Extension):
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
-        asyncio.run_coroutine_threadsafe(self._init_client(), self.loop)
+        asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
 
         ten_env.on_start_done()
 
@@ -134,11 +135,11 @@ class OpenAIV2VExtension(Extension):
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         pass
 
-    async def _init_client(self):
+    async def _init_connection(self):
         try:
-            self.client = RealtimeApiClient(
-                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
-            logger.info(f"Finish init client {self.config} {self.client}")
+            self.conn = RealtimeApiConnection(
+                base_uri=self.config.base_uri, api_key=self.config.api_key, verbose=True)
+            logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
 
@@ -148,7 +149,7 @@ class OpenAIV2VExtension(Extension):
             return current_time.microsecond // 1000
 
         try:
-            await self.client.connect()
+            await self.conn.connect()
             self.connected = True
             item_id = ""  # For truncate
             response_id = ""
@@ -157,7 +158,7 @@ class OpenAIV2VExtension(Extension):
             flushed = set()
 
             logger.info("Client loop started")
-            async for message in self.client.listen():
+            async for message in self.conn.listen():
                 try:
                     logger.info(f"Received message: {message.type}")
                     match message:
@@ -167,10 +168,10 @@ class OpenAIV2VExtension(Extension):
                             self.session_id = message.session.id
                             self.session = message.session
                             update_msg = self._update_session()
-                            await self.client.send_message(update_msg)
+                            await self.conn.send_request(update_msg)
 
                             # update_conversation = self.update_conversation()
-                            # await self.client.send_message(update_conversation)
+                            # await self.conn.send_request(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
                             logger.info(
                                 f"On request transript {message.transcript}")
@@ -231,7 +232,7 @@ class OpenAIV2VExtension(Extension):
                             if item_id:
                                 truncate = ItemTruncate(
                                     item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
-                                await self.client.send_message(truncate)
+                                await self.conn.send_request(truncate)
                             self._flush(ten_env)
                             if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
@@ -262,7 +263,7 @@ class OpenAIV2VExtension(Extension):
         self.out_audio_buff += buff
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
-            await self.client.send_audio_data(self.out_audio_buff)
+            await self.conn.send_audio_data(self.out_audio_buff)
             logger.info(
                 f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
@@ -348,15 +349,16 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
 
     def _update_session(self) -> SessionUpdate:
-        #prompt = self._replace(self.config.system_message)
+        prompt = self._replace(self.config.instruction)
         return SessionUpdate(session=SessionUpdateParams(
-            #instructions=prompt,
+            instructions=prompt,
             model=self.config.model,
             voice=self.config.voice,
             input_audio_transcription=InputAudioTranscription(
                 model="whisper-1")
             ))
 
+    '''
     def _update_conversation(self) -> UpdateConversationConfig:
         prompt = self._replace(self.config.system_message)
         conf = UpdateConversationConfig()
@@ -367,6 +369,7 @@ class OpenAIV2VExtension(Extension):
         conf.disable_audio = False
         conf.output_audio_format = AudioFormats.PCM16
         return conf
+    '''
 
     def _replace(self, prompt: str) -> str:
         result = prompt
