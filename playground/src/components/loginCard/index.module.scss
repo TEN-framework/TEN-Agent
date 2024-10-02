@@ -39,19 +39,20 @@
   .content {
 
     .title {
-      margin-bottom: 32px;
+      color: white;
+      font-weight: bold;
+      font-size: 25px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
 
       .text {
-        margin-top: 8px;
         color: var(--Grey-300, #EAECF0);
         text-align: center;
         font-size: 18px;
         font-weight: 500;
+        margin-bottom: 40px;
       }
     }
 
@@ -95,6 +96,10 @@
           line-height: 24px;
         }
       }
+
+      .btnLoadingBg {
+        background: var(--primary-500-base, #434343);
+      }
     }
 
     .section+.section {
@@ -109,4 +114,22 @@
     }
 
   }
+}
+
+
+.dotting { display: inline-block; width: 10px; min-height: 2px;
+          padding-right: 2px;
+          border-left: 2px solid currentColor; border-right: 2px solid currentColor;
+          background-color: currentColor; background-clip: content-box;
+          box-sizing: border-box;
+          -webkit-animation: dot 1.5s infinite step-start both;
+          animation: dot 1.5s infinite step-start both;
+      }
+.dotting::before { content: ''; }
+:root .dotting { margin-left: 2px; padding-left: 2px; }
+
+@keyframes dot {
+    25% { border-color: transparent; background-color: transparent; }
+    50% { border-right-color: transparent; background-color: transparent; }
+    75% { border-right-color: transparent; }
 }

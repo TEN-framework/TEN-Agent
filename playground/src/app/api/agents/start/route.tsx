@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import axios from 'axios';
 
 /**
  * Handles the POST request to start an agent.
@@ -27,22 +28,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Send a POST request to start the agent
-    const response = await fetch(`${AGENT_SERVER_URL}/start`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        request_id,
-        channel_name,
-        user_uid,
-        graph_name,
-        // Get the graph properties based on the graph name, language, and voice type
-        properties: properties,
-      }),
+    const response = await axios.post(`${AGENT_SERVER_URL}/start`, {
+      request_id,
+      channel_name,
+      user_uid,
+      graph_name,
+      // Get the graph properties based on the graph name, language, and voice type
+      properties: properties,
     });
 
-    const responseData = await response.json();
+    const responseData = response.data;
 
     return NextResponse.json(responseData, { status: response.status });
   } catch (error) {
