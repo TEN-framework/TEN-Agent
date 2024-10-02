@@ -2186,7 +2186,7 @@
                         "addon": "openai_v2v_python",
                         "name": "openai_v2v_python",
                         "property": {
-                            "api_key": "${env:OPENAI_API_KEY}",
+                            "api_key": "${env:OPENAI_REALTIME_API_KEY}",
                             "temperature": 0.9,
                             "model": "gpt-4o-realtime-preview",
                             "max_tokens": 2048,
