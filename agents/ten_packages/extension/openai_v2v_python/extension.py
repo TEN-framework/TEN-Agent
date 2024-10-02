@@ -165,7 +165,7 @@ class OpenAIV2VExtension(Extension):
                         case SessionCreated():
                             logger.info(
                                 f"Session is created: {message.session}")
-                            self.session_id = message.session["id"]
+                            self.session_id = message.session.id
                             self.session = message.session
                             update_msg = self._update_session()
                             await self.conn.send_request(update_msg)
@@ -183,12 +183,12 @@ class OpenAIV2VExtension(Extension):
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
                         case ResponseCreated():
-                            response_id = message.response["id"]
+                            response_id = message.response.id
                             logger.info(
                                 f"On response created {response_id}")
                         case ResponseDone():
-                            id  = message.response["id"]
-                            status = message.response["status"]
+                            id  = message.response.id
+                            status = message.response.status
                             logger.info(
                                 f"On response done {id} {status}")
                             if id == response_id:
