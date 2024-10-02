@@ -5,7 +5,7 @@ from dataclasses import dataclass, asdict, field, is_dataclass
 from typing import Any, Dict, Literal, Optional, List, Set, Union
 from enum import Enum
 
-def generate_client_event_id() -> str:
+def generate_event_id() -> str:
     return str(uuid.uuid4())
 
 # Enums
@@ -521,15 +521,12 @@ ServerToClientMessages = Union[
 # Base class for all ClientToServerMessages
 @dataclass
 class ClientToServerMessage:
-    event_id: str
-
-    def __init__(self):
-        self.event_id = generate_client_event_id()
+    event_id: str = field(default_factory=generate_event_id)
 
 
 @dataclass
 class InputAudioBufferAppend(ClientToServerMessage):
-    audio: str  # Non-default argument (no default value)
+    audio: Optional[str] = field(default=None)
     type: str = EventType.INPUT_AUDIO_BUFFER_APPEND  # Default argument (has a default value)
 
 @dataclass
@@ -544,22 +541,22 @@ class InputAudioBufferClear(ClientToServerMessage):
 
 @dataclass
 class ItemCreate(ClientToServerMessage):
-    item: ItemParam  # Assuming `ItemParam` is already defined
+    item: Optional[ItemParam] = field(default=None)  # Assuming `ItemParam` is already defined
     type: str = EventType.ITEM_CREATE
     previous_item_id: Optional[str] = None
 
 
 @dataclass
 class ItemTruncate(ClientToServerMessage):
-    item_id: str
-    content_index: int
-    audio_end_ms: int
+    item_id: Optional[str] = field(default=None)
+    content_index: Optional[int] = field(default=None)
+    audio_end_ms: Optional[int] = field(default=None)
     type: str = EventType.ITEM_TRUNCATE
 
 
 @dataclass
 class ItemDelete(ClientToServerMessage):
-    item_id: str
+    item_id: Optional[str] = field(default=None)
     type: str = EventType.ITEM_DELETE
     
 @dataclass
@@ -607,7 +604,7 @@ class UpdateConversationConfig(ClientToServerMessage):
 
 @dataclass
 class SessionUpdate(ClientToServerMessage):
-    session: SessionUpdateParams  # Assuming `SessionUpdateParams` is defined
+    session: Optional[SessionUpdateParams] = field(default=None)  # Assuming `SessionUpdateParams` is defined
     type: str = EventType.SESSION_UPDATE
 
 
