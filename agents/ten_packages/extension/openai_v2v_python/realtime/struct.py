@@ -1,9 +1,10 @@
 import json
-import uuid
 
 from dataclasses import dataclass, asdict, field, is_dataclass
 from typing import Any, Dict, Literal, Optional, List, Set, Union
 from enum import Enum
+import uuid
+
 
 def generate_event_id() -> str:
     return str(uuid.uuid4())
@@ -444,7 +445,7 @@ class ResponseOutputItemAdded(ServerToClientMessage):
     response_id: str  # The ID of the response
     output_index: int  # Index of the output item in the response
     item: Union[ItemParam, None]  # The added item (can be a message, function call, etc.)
-    type: str = "response.output_item.added"  # Fixed event type
+    type: str = EventType.RESPONSE_OUTPUT_ITEM_ADDED  # Fixed event type
 
 @dataclass
 class ResponseContentPartAdded(ServerToClientMessage):
@@ -453,7 +454,7 @@ class ResponseContentPartAdded(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The added content part
-    type: str = "response.content_part.added"  # Fixed event type
+    type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
 
 @dataclass
 class ResponseContentPartDone(ServerToClientMessage):
@@ -462,28 +463,28 @@ class ResponseContentPartDone(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The content part that was completed
-    type: str = "response.content_part.done"  # Fixed event type
+    type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
 
 @dataclass
 class ResponseOutputItemDone(ServerToClientMessage):
     response_id: str  # The ID of the response
     output_index: int  # Index of the output item in the response
     item: Union[ItemParam, None]  # The output item that was completed
-    type: str = "response.output_item.done"  # Fixed event type
+    type: str = EventType.RESPONSE_OUTPUT_ITEM_DONE  # Fixed event type
 
 @dataclass
 class ItemInputAudioTranscriptionCompleted(ServerToClientMessage):
     item_id: str  # The ID of the item for which transcription was completed
     content_index: int  # Index of the content part that was transcribed
     transcript: str  # The transcribed text
-    type: str = "conversation.item.input_audio_transcription.completed"  # Fixed event type
+    type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED  # Fixed event type
 
 @dataclass
 class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
     item_id: str  # The ID of the item for which transcription failed
     content_index: int  # Index of the content part that failed to transcribe
     error: ResponseError  # Error details explaining the failure
-    type: str = "conversation.item.input_audio_transcription.failed"  # Fixed event type
+    type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED  # Fixed event type
 
 # Union of all server-to-client message types
 ServerToClientMessages = Union[
@@ -717,8 +718,13 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
         return from_dict(ResponseContentPartDone, data)
     elif data["type"] == EventType.RESPONSE_OUTPUT_ITEM_DONE:
         return from_dict(ResponseOutputItemDone, data)
+    elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED:
+        return from_dict(ItemInputAudioTranscriptionCompleted, data)
+    elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED:
+        return from_dict(ItemInputAudioTranscriptionFailed, data)
 
     raise ValueError(f"Unknown message type: {data['type']}")
     
 def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
-    return json.dumps(asdict(obj))
+    # ignore none value
+    return json.dumps(asdict(obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}))
