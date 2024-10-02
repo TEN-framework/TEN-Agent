@@ -22,9 +22,9 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
-from .conf import RealtimeApiConfig
-from realtime.connection import RealtimeApiConnection
-from realtime.struct import *
+from .conf import RealtimeApiConfig, BASIC_PROMPT
+from .realtime.connection import RealtimeApiConnection
+from .realtime.struct import *
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
@@ -165,7 +165,7 @@ class OpenAIV2VExtension(Extension):
                         case SessionCreated():
                             logger.info(
                                 f"Session is created: {message.session}")
-                            self.session_id = message.session.id
+                            self.session_id = message.session["id"]
                             self.session = message.session
                             update_msg = self._update_session()
                             await self.conn.send_request(update_msg)
@@ -183,13 +183,15 @@ class OpenAIV2VExtension(Extension):
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
                         case ResponseCreated():
+                            response_id = message.response["id"]
                             logger.info(
-                                f"On response created {message.response.id}")
-                            response_id = message.response.id
+                                f"On response created {response_id}")
                         case ResponseDone():
+                            id  = message.response["id"]
+                            status = message.response["status"]
                             logger.info(
-                                f"On response done {message.response.id} {message.response.status}")
-                            if message.response.id == response_id:
+                                f"On response done {id} {status}")
+                            if id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
                             logger.info(
@@ -288,7 +290,7 @@ class OpenAIV2VExtension(Extension):
             system_message = ten_env.get_property_string(
                 PROPERTY_SYSTEM_MESSAGE)
             if system_message:
-                self.config.system_message = system_message
+                self.config.instruction = BASIC_PROMPT + "\n" + system_message
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_SYSTEM_MESSAGE} error: {err}")

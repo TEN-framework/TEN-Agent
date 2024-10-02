@@ -11,9 +11,6 @@ from ..log import logger
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
-def generate_client_event_id() -> str:
-    return str(uuid.uuid4())
-
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
     try:
@@ -40,7 +37,7 @@ class RealtimeApiConnection:
         path: str = "/v1/realtime",
         verbose: bool = False,
     ):
-        self.url = f"wss://{base_uri}{path}"
+        self.url = f"{base_uri}{path}"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.websocket: aiohttp.ClientWebSocketResponse | None = None
@@ -52,7 +49,7 @@ class RealtimeApiConnection:
         return self
 
     async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> bool:
-        await self.shutdown()
+        await self.close()
         return False
 
     async def connect(self):
@@ -74,8 +71,6 @@ class RealtimeApiConnection:
 
     async def send_request(self, message: ClientToServerMessage):
         assert self.websocket is not None
-        if message.event_id is None:
-            message.event_id = generate_client_event_id()
         message_str = to_json(message)
         if self.verbose:
             logger.info(f"-> {smart_str(message_str)}")

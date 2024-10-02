@@ -1,8 +1,12 @@
 import json
+import uuid
 
 from dataclasses import dataclass, asdict, field
 from typing import Any, Dict, Literal, Optional, List, Set, Union
 from enum import Enum
+
+def generate_client_event_id() -> str:
+    return str(uuid.uuid4())
 
 # Enums
 class Voices(str, Enum):
@@ -40,8 +44,8 @@ class ContentType(str, Enum):
 
 @dataclass
 class FunctionToolChoice:
-    type: str = "function"  # Fixed value for type
     name: str  # Name of the function
+    type: str = "function"  # Fixed value for type
 
 # ToolChoice can be either a literal string or FunctionToolChoice
 ToolChoice = Union[str, FunctionToolChoice]  # "none", "auto", "required", or FunctionToolChoice
@@ -49,8 +53,8 @@ ToolChoice = Union[str, FunctionToolChoice]  # "none", "auto", "required", or Fu
 @dataclass
 class RealtimeError:
     type: str  # The type of the error
-    code: Optional[str] = None  # Optional error code
     message: str  # The error message
+    code: Optional[str] = None  # Optional error code
     param: Optional[str] = None  # Optional parameter related to the error
     event_id: Optional[str] = None  # Optional event ID for tracing
 
@@ -60,10 +64,28 @@ class InputAudioTranscription:
 
 @dataclass
 class ServerVADUpdateParams:
-    type: str = "server_vad"  # Fixed value for VAD type
     threshold: Optional[float] = None  # Threshold for voice activity detection
     prefix_padding_ms: Optional[int] = None  # Amount of padding before the voice starts (in milliseconds)
     silence_duration_ms: Optional[int] = None  # Duration of silence before considering speech stopped (in milliseconds)
+    type: str = "server_vad"  # Fixed value for VAD type
+@dataclass
+class Session:
+    id: str  # The unique identifier for the session
+    model: str  # The model associated with the session (e.g., "gpt-3")
+    expires_at: int  # Expiration time of the session in seconds since the epoch (UNIX timestamp)
+    object: str = "realtime.session"  # Fixed value indicating the object type
+    modalities: Set[str] = field(default_factory=lambda: {"text", "audio"})  # Set of allowed modalities (e.g., "text", "audio")
+    instructions: Optional[str] = None  # Instructions or guidance for the session
+    voice: Voices = Voices.Alloy  # Voice configuration for audio responses, defaulting to "Alloy"
+    turn_detection: Optional[ServerVADUpdateParams] = None  # Voice activity detection (VAD) settings
+    input_audio_format: AudioFormats = AudioFormats.PCM16  # Audio format for input (e.g., "pcm16")
+    output_audio_format: AudioFormats = AudioFormats.PCM16  # Audio format for output (e.g., "pcm16")
+    input_audio_transcription: Optional[InputAudioTranscription] = None  # Audio transcription model settings (e.g., "whisper-1")
+    tools: List[Dict[str, Union[str, Any]]] = field(default_factory=list)  # List of tools available during the session
+    tool_choice: Literal["auto", "none", "required"] = "auto"  # How tools should be used in the session
+    temperature: float = 0.8  # Temperature setting for model creativity
+    max_response_output_tokens: Union[int, Literal["inf"]] = "inf"  # Maximum number of tokens in the response, or "inf" for unlimited
+    
 
 @dataclass
 class SessionUpdateParams:
@@ -80,46 +102,47 @@ class SessionUpdateParams:
     temperature: Optional[float] = None  # Optional temperature for response generation
     max_response_output_tokens: Optional[Union[int, str]] = None  # Max response tokens, "inf" for infinite
 
+
 # Define individual message item param types
 @dataclass
 class SystemMessageItemParam:
-    id: Optional[str] = None
-    type: str = "message"
-    status: Optional[str] = None
-    role: str = "system"
     content: List[dict]  # This can be more specific based on content structure
+    id: Optional[str] = None
+    status: Optional[str] = None
+    type: str = "message"
+    role: str = "system"
 
 @dataclass
 class UserMessageItemParam:
-    id: Optional[str] = None
-    type: str = "message"
-    status: Optional[str] = None
-    role: str = "user"
     content: List[dict]  # Similarly, content can be more specific
+    id: Optional[str] = None
+    status: Optional[str] = None
+    type: str = "message"
+    role: str = "user"
 
 @dataclass
 class AssistantMessageItemParam:
-    id: Optional[str] = None
-    type: str = "message"
-    status: Optional[str] = None
-    role: str = "assistant"
     content: List[dict]  # Content structure here depends on your schema
+    id: Optional[str] = None
+    status: Optional[str] = None
+    type: str = "message"
+    role: str = "assistant"
 
 @dataclass
 class FunctionCallItemParam:
-    id: Optional[str] = None
-    type: str = "function_call"
-    status: Optional[str] = None
     name: str
     call_id: str
     arguments: str
+    type: str = "function_call"
+    id: Optional[str] = None
+    status: Optional[str] = None
 
 @dataclass
 class FunctionCallOutputItemParam:
-    id: Optional[str] = None
-    type: str = "function_call_output"
     call_id: str
     output: str
+    id: Optional[str] = None
+    type: str = "function_call_output"
 
 # Union of all possible item types
 ItemParam = Union[
@@ -185,27 +208,27 @@ class ServerToClientMessage:
 
 @dataclass
 class ErrorMessage(ServerToClientMessage):
-    type: str = EventType.ERROR
     error: RealtimeError
+    type: str = EventType.ERROR
 
 
 @dataclass
 class SessionCreated(ServerToClientMessage):
+    session: Session
     type: str = EventType.SESSION_CREATED
-    session: SessionUpdateParams
 
 
 @dataclass
 class SessionUpdated(ServerToClientMessage):
+    session: Session
     type: str = EventType.SESSION_UPDATED
-    session: SessionUpdateParams
 
 
 @dataclass
 class InputAudioBufferCommitted(ServerToClientMessage):
+    item_id: str
     type: str = EventType.INPUT_AUDIO_BUFFER_COMMITTED
     previous_item_id: Optional[str] = None
-    item_id: str
 
 
 @dataclass
@@ -215,37 +238,37 @@ class InputAudioBufferCleared(ServerToClientMessage):
 
 @dataclass
 class InputAudioBufferSpeechStarted(ServerToClientMessage):
-    type: str = EventType.INPUT_AUDIO_BUFFER_SPEECH_STARTED
     audio_start_ms: int
     item_id: str
+    type: str = EventType.INPUT_AUDIO_BUFFER_SPEECH_STARTED
 
 
 @dataclass
 class InputAudioBufferSpeechStopped(ServerToClientMessage):
-    type: str = EventType.INPUT_AUDIO_BUFFER_SPEECH_STOPPED
     audio_end_ms: int
+    type: str = EventType.INPUT_AUDIO_BUFFER_SPEECH_STOPPED
     item_id: Optional[str] = None
 
 
 @dataclass
 class ItemCreated(ServerToClientMessage):
+    item: ItemParam
     type: str = EventType.ITEM_CREATED
     previous_item_id: Optional[str] = None
-    item: ItemParam
 
 
 @dataclass
 class ItemTruncated(ServerToClientMessage):
-    type: str = EventType.ITEM_TRUNCATED
     item_id: str
     content_index: int
     audio_end_ms: int
+    type: str = EventType.ITEM_TRUNCATED
 
 
 @dataclass
 class ItemDeleted(ServerToClientMessage):
-    type: str = EventType.ITEM_DELETED
     item_id: str
+    type: str = EventType.ITEM_DELETED
 
 
 # Assuming the necessary enums, ItemParam, and other classes are defined above
@@ -257,24 +280,24 @@ ResponseStatus = Union[str, Literal["in_progress", "completed", "cancelled", "in
 # Define status detail classes
 @dataclass
 class ResponseCancelledDetails:
-    type: str = "cancelled"
     reason: str  # e.g., "turn_detected", "client_cancelled"
+    type: str = "cancelled"
 
 @dataclass
 class ResponseIncompleteDetails:
-    type: str = "incomplete"
     reason: str  # e.g., "max_output_tokens", "content_filter"
+    type: str = "incomplete"
 
 @dataclass
 class ResponseError:
     type: str  # The type of the error, e.g., "validation_error", "server_error"
-    code: Optional[str] = None  # Optional error code, e.g., HTTP status code, API error code
     message: str  # The error message describing what went wrong
+    code: Optional[str] = None  # Optional error code, e.g., HTTP status code, API error code
 
 @dataclass
 class ResponseFailedDetails:
-    type: str = "failed"
     error: ResponseError  # Assuming ResponseError is already defined
+    type: str = "failed"
 
 # Union of possible status details
 ResponseStatusDetails = Union[ResponseCancelledDetails, ResponseIncompleteDetails, ResponseFailedDetails]
@@ -302,105 +325,105 @@ class Usage:
 # The Response dataclass definition
 @dataclass
 class Response:
-    object: str = "realtime.response"  # Fixed value for object type
     id: str  # Unique ID for the response
+    output: List[ItemParam] = field(default_factory=list)  # List of items in the response
+    object: str = "realtime.response"  # Fixed value for object type
     status: ResponseStatus = "in_progress"  # Status of the response
     status_details: Optional[ResponseStatusDetails] = None  # Additional details based on status
-    output: List[ItemParam] = field(default_factory=list)  # List of items in the response
     usage: Optional[Usage] = None  # Token usage information
 
 
 
 @dataclass
 class ResponseCreated(ServerToClientMessage):
-    type: str = EventType.RESPONSE_CREATED
     response: Response
+    type: str = EventType.RESPONSE_CREATED
 
 
 @dataclass
 class ResponseDone(ServerToClientMessage):
-    type: str = EventType.RESPONSE_DONE
     response: Response
+    type: str = EventType.RESPONSE_DONE
 
 
 @dataclass
 class ResponseTextDelta(ServerToClientMessage):
-    type: str = EventType.RESPONSE_TEXT_DELTA
     response_id: str
     item_id: str
     output_index: int
     content_index: int
     delta: str
+    type: str = EventType.RESPONSE_TEXT_DELTA
 
 
 @dataclass
 class ResponseTextDone(ServerToClientMessage):
-    type: str = EventType.RESPONSE_TEXT_DONE
     response_id: str
     item_id: str
     output_index: int
     content_index: int
     text: str
+    type: str = EventType.RESPONSE_TEXT_DONE
 
 
 @dataclass
 class ResponseAudioTranscriptDelta(ServerToClientMessage):
-    type: str = EventType.RESPONSE_AUDIO_TRANSCRIPT_DELTA
     response_id: str
     item_id: str
     output_index: int
     content_index: int
     delta: str
+    type: str = EventType.RESPONSE_AUDIO_TRANSCRIPT_DELTA
 
 
 @dataclass
 class ResponseAudioTranscriptDone(ServerToClientMessage):
-    type: str = EventType.RESPONSE_AUDIO_TRANSCRIPT_DONE
     response_id: str
     item_id: str
     output_index: int
     content_index: int
     transcript: str
+    type: str = EventType.RESPONSE_AUDIO_TRANSCRIPT_DONE
 
 
 @dataclass
 class ResponseAudioDelta(ServerToClientMessage):
-    type: str = EventType.RESPONSE_AUDIO_DELTA
     response_id: str
     item_id: str
     output_index: int
     content_index: int
     delta: str
+    type: str = EventType.RESPONSE_AUDIO_DELTA
 
 
 @dataclass
 class ResponseAudioDone(ServerToClientMessage):
-    type: str = EventType.RESPONSE_AUDIO_DONE
     response_id: str
     item_id: str
     output_index: int
     content_index: int
+    type: str = EventType.RESPONSE_AUDIO_DONE
 
 
 @dataclass
 class ResponseFunctionCallArgumentsDelta(ServerToClientMessage):
-    type: str = EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA
     response_id: str
     item_id: str
     output_index: int
     call_id: str
     delta: str
+    type: str = EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA
 
 
 @dataclass
 class ResponseFunctionCallArgumentsDone(ServerToClientMessage):
-    type: str = EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE
     response_id: str
     item_id: str
     output_index: int
     call_id: str
     name: str
     arguments: str
+    type: str = EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE
 
 
 @dataclass
@@ -412,55 +435,55 @@ class RateLimitDetails:
 
 @dataclass
 class RateLimitsUpdated(ServerToClientMessage):
-    type: str = EventType.RATE_LIMITS_UPDATED
     rate_limits: List[RateLimitDetails]
+    type: str = EventType.RATE_LIMITS_UPDATED
 
 
 @dataclass
 class ResponseOutputItemAdded(ServerToClientMessage):
-    type: str = "response.output_item.added"  # Fixed event type
     response_id: str  # The ID of the response
     output_index: int  # Index of the output item in the response
     item: Union[ItemParam, None]  # The added item (can be a message, function call, etc.)
+    type: str = "response.output_item.added"  # Fixed event type
 
 @dataclass
 class ResponseContentPartAdded(ServerToClientMessage):
-    type: str = "response.content_part.added"  # Fixed event type
     response_id: str  # The ID of the response
     item_id: str  # The ID of the item to which the content part was added
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The added content part
+    type: str = "response.content_part.added"  # Fixed event type
 
 @dataclass
 class ResponseContentPartDone(ServerToClientMessage):
-    type: str = "response.content_part.done"  # Fixed event type
     response_id: str  # The ID of the response
     item_id: str  # The ID of the item to which the content part belongs
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The content part that was completed
+    type: str = "response.content_part.done"  # Fixed event type
 
 @dataclass
 class ResponseOutputItemDone(ServerToClientMessage):
-    type: str = "response.output_item.done"  # Fixed event type
     response_id: str  # The ID of the response
     output_index: int  # Index of the output item in the response
     item: Union[ItemParam, None]  # The output item that was completed
+    type: str = "response.output_item.done"  # Fixed event type
 
 @dataclass
 class ItemInputAudioTranscriptionCompleted(ServerToClientMessage):
-    type: str = "conversation.item.input_audio_transcription.completed"  # Fixed event type
     item_id: str  # The ID of the item for which transcription was completed
     content_index: int  # Index of the content part that was transcribed
     transcript: str  # The transcribed text
+    type: str = "conversation.item.input_audio_transcription.completed"  # Fixed event type
 
 @dataclass
 class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
-    type: str = "conversation.item.input_audio_transcription.failed"  # Fixed event type
     item_id: str  # The ID of the item for which transcription failed
     content_index: int  # Index of the content part that failed to transcribe
     error: ResponseError  # Error details explaining the failure
+    type: str = "conversation.item.input_audio_transcription.failed"  # Fixed event type
 
 # Union of all server-to-client message types
 ServerToClientMessages = Union[
@@ -498,14 +521,16 @@ ServerToClientMessages = Union[
 # Base class for all ClientToServerMessages
 @dataclass
 class ClientToServerMessage:
-    event_id: Optional[str] = None  # Optional since some messages may not need it
+    event_id: str
+
+    def __init__(self):
+        self.event_id = generate_client_event_id()
 
 
 @dataclass
 class InputAudioBufferAppend(ClientToServerMessage):
-    type: str = EventType.INPUT_AUDIO_BUFFER_APPEND
-    audio: str
-
+    type: str = EventType.INPUT_AUDIO_BUFFER_APPEND  # Default argument (has a default value)
+    audio: str  # Non-default argument (no default value)
 
 @dataclass
 class InputAudioBufferCommit(ClientToServerMessage):
@@ -519,23 +544,23 @@ class InputAudioBufferClear(ClientToServerMessage):
 
 @dataclass
 class ItemCreate(ClientToServerMessage):
+    item: ItemParam  # Assuming `ItemParam` is already defined
     type: str = EventType.ITEM_CREATE
     previous_item_id: Optional[str] = None
-    item: ItemParam  # Assuming `ItemParam` is already defined
 
 
 @dataclass
 class ItemTruncate(ClientToServerMessage):
-    type: str = EventType.ITEM_TRUNCATE
     item_id: str
     content_index: int
     audio_end_ms: int
+    type: str = EventType.ITEM_TRUNCATE
 
 
 @dataclass
 class ItemDelete(ClientToServerMessage):
-    type: str = EventType.ITEM_DELETE
     item_id: str
+    type: str = EventType.ITEM_DELETE
     
 @dataclass
 class ResponseCreateParams:
@@ -582,8 +607,8 @@ class UpdateConversationConfig(ClientToServerMessage):
 
 @dataclass
 class SessionUpdate(ClientToServerMessage):
-    type: str = EventType.SESSION_UPDATE
     session: SessionUpdateParams  # Assuming `SessionUpdateParams` is defined
+    type: str = EventType.SESSION_UPDATE
 
 
 # Union of all client-to-server message types

@@ -1,5 +1,5 @@
 
-from realtime.struct import Voices
+from .realtime.struct import Voices
 
 DEFAULT_MODEL = "gpt-4o-realtime-preview"
 
