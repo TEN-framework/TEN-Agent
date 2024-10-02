@@ -10,6 +10,8 @@ from . import messages
 
 from .log import logger
 
+DEFAULT_MODEL = "gpt-4o-realtime-preview"
+
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
     try:
@@ -38,7 +40,7 @@ class RealtimeApiConfig:
             api_key: str | None = None,
             path: str = "/v1/realtime",
             verbose: bool = False,
-            model: str="gpt-4o-realtime-preview-2024-10-01",
+            model: str=DEFAULT_MODEL,
             language: str = "en-US",
             system_message: str="You are a helpful assistant, you are professional but lively and friendly. User's input will mainly be {language}, and your response must be {language}.",
             temperature: float =0.5,
@@ -69,7 +71,7 @@ class RealtimeApiClient:
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
-        model: str = "gpt-4o-realtime-preview-2024-10-01",
+        model: str = DEFAULT_MODEL,
         verbose: bool = False,
         session: aiohttp.ClientSession | None = None,
     ):

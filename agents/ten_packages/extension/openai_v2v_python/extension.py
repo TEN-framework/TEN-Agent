@@ -351,6 +351,7 @@ class OpenAIV2VExtension(Extension):
         #prompt = self._replace(self.config.system_message)
         return SessionUpdate(session=SessionUpdateParams(
             #instructions=prompt,
+            model=self.config.model,
             voice=self.config.voice,
             input_audio_transcription=InputAudioTranscription(
                 model="whisper-1")
