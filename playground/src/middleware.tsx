@@ -1,5 +1,6 @@
 // middleware.js
 import { NextRequest, NextResponse } from 'next/server';
+import { startAgent } from './apis/routes';
 
 
 const { AGENT_SERVER_URL, TEN_DEV_SERVER_URL } = process.env;
@@ -15,12 +16,11 @@ if (!TEN_DEV_SERVER_URL) {
 
 export function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
+    const url = req.nextUrl.clone();
 
-    if (pathname.startsWith('/api/agents/')) {
+    if (pathname.startsWith(`/api/agents/`)) {
         if (!pathname.startsWith('/api/agents/start')) {
-
             // Proxy all other agents API requests
-            const url = req.nextUrl.clone();
             url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/agents/', '/')}`;
 
             // console.log(`Rewriting request to ${url.href}`);
@@ -28,17 +28,15 @@ export function middleware(req: NextRequest) {
         } else {
             return NextResponse.next();
         }
-    } else if (pathname.startsWith('/api/vector/')) {
+    } else if (pathname.startsWith(`/api/vector/`)) {
 
         // Proxy all other documents requests
-        const url = req.nextUrl.clone();
         url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/vector/', '/vector/')}`;
 
         // console.log(`Rewriting request to ${url.href}`);
         return NextResponse.rewrite(url);
-    } else if (pathname.startsWith('/api/token/')) {
+    } else if (pathname.startsWith(`/api/token/`)) {
         // Proxy all other documents requests
-        const url = req.nextUrl.clone();
         url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/token/', '/token/')}`;
 
         // console.log(`Rewriting request to ${url.href}`);
