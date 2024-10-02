@@ -35,9 +35,12 @@ class RealtimeApiConnection:
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
+        model: str = DEFAULT_VIRTUAL_MODEL,
         verbose: bool = False,
     ):
         self.url = f"{base_uri}{path}"
+        if "model=" not in self.url:
+            self.url += f"?model={model}"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.websocket: aiohttp.ClientWebSocketResponse | None = None

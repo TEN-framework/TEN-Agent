@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict, field, is_dataclass
 from typing import Any, Dict, Literal, Optional, List, Set, Union
 from enum import Enum
 
@@ -529,8 +529,8 @@ class ClientToServerMessage:
 
 @dataclass
 class InputAudioBufferAppend(ClientToServerMessage):
-    type: str = EventType.INPUT_AUDIO_BUFFER_APPEND  # Default argument (has a default value)
     audio: str  # Non-default argument (no default value)
+    type: str = EventType.INPUT_AUDIO_BUFFER_APPEND  # Default argument (has a default value)
 
 @dataclass
 class InputAudioBufferCommit(ClientToServerMessage):
@@ -625,30 +625,40 @@ ClientToServerMessages = Union[
     SessionUpdate
 ]
 
+def from_dict(data_class, data):
+    """Recursively convert a dictionary to a dataclass instance."""
+    if is_dataclass(data_class):  # Check if the target class is a dataclass
+        fieldtypes = {f.name: f.type for f in data_class.__dataclass_fields__.values()}
+        return data_class(**{f: from_dict(fieldtypes[f], data[f]) for f in data})
+    elif isinstance(data, list):  # Handle lists of nested dataclass objects
+        return [from_dict(data_class.__args__[0], item) for item in data]
+    else:  # For primitive types (str, int, float, etc.), return the value as-is
+        return data
 
 def parse_client_message(unparsed_string: str) -> ClientToServerMessage:
     data = json.loads(unparsed_string)
     
+    # Dynamically select the correct message class based on the `type` field, using from_dict
     if data["type"] == EventType.INPUT_AUDIO_BUFFER_APPEND:
-        return InputAudioBufferAppend(**data)
+        return from_dict(InputAudioBufferAppend, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_COMMIT:
-        return InputAudioBufferCommit(**data)
+        return from_dict(InputAudioBufferCommit, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_CLEAR:
-        return InputAudioBufferClear(**data)
+        return from_dict(InputAudioBufferClear, data)
     elif data["type"] == EventType.ITEM_CREATE:
-        return ItemCreate(**data)
+        return from_dict(ItemCreate, data)
     elif data["type"] == EventType.ITEM_TRUNCATE:
-        return ItemTruncate(**data)
+        return from_dict(ItemTruncate, data)
     elif data["type"] == EventType.ITEM_DELETE:
-        return ItemDelete(**data)
+        return from_dict(ItemDelete, data)
     elif data["type"] == EventType.RESPONSE_CREATE:
-        return ResponseCreate(**data)
+        return from_dict(ResponseCreate, data)
     elif data["type"] == EventType.RESPONSE_CANCEL:
-        return ResponseCancel(**data)
+        return from_dict(ResponseCancel, data)
     elif data["type"] == EventType.UPDATE_CONVERSATION_CONFIG:
-        return UpdateConversationConfig(**data)
+        return from_dict(UpdateConversationConfig, data)
     elif data["type"] == EventType.SESSION_UPDATE:
-        return SessionUpdate(**data)
+        return from_dict(SessionUpdate, data)
     
     raise ValueError(f"Unknown message type: {data['type']}")
 
@@ -659,49 +669,57 @@ def parse_client_message(unparsed_string: str) -> ClientToServerMessage:
 def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     data = json.loads(unparsed_string)
 
-    # Dynamically select the correct message class based on the `type` field
+    # Dynamically select the correct message class based on the `type` field, using from_dict
     if data["type"] == EventType.ERROR:
-        return ErrorMessage(**data)
+        return from_dict(ErrorMessage, data)
     elif data["type"] == EventType.SESSION_CREATED:
-        return SessionCreated(**data)
+        return from_dict(SessionCreated, data)
     elif data["type"] == EventType.SESSION_UPDATED:
-        return SessionUpdated(**data)
+        return from_dict(SessionUpdated, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_COMMITTED:
-        return InputAudioBufferCommitted(**data)
+        return from_dict(InputAudioBufferCommitted, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_CLEARED:
-        return InputAudioBufferCleared(**data)
+        return from_dict(InputAudioBufferCleared, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_SPEECH_STARTED:
-        return InputAudioBufferSpeechStarted(**data)
+        return from_dict(InputAudioBufferSpeechStarted, data)
     elif data["type"] == EventType.INPUT_AUDIO_BUFFER_SPEECH_STOPPED:
-        return InputAudioBufferSpeechStopped(**data)
+        return from_dict(InputAudioBufferSpeechStopped, data)
     elif data["type"] == EventType.ITEM_CREATED:
-        return ItemCreated(**data)
+        return from_dict(ItemCreated, data)
     elif data["type"] == EventType.ITEM_TRUNCATED:
-        return ItemTruncated(**data)
+        return from_dict(ItemTruncated, data)
     elif data["type"] == EventType.ITEM_DELETED:
-        return ItemDeleted(**data)
+        return from_dict(ItemDeleted, data)
     elif data["type"] == EventType.RESPONSE_CREATED:
-        return ResponseCreated(**data)
+        return from_dict(ResponseCreated, data)
     elif data["type"] == EventType.RESPONSE_DONE:
-        return ResponseDone(**data)
+        return from_dict(ResponseDone, data)
     elif data["type"] == EventType.RESPONSE_TEXT_DELTA:
-        return ResponseTextDelta(**data)
+        return from_dict(ResponseTextDelta, data)
     elif data["type"] == EventType.RESPONSE_TEXT_DONE:
-        return ResponseTextDone(**data)
+        return from_dict(ResponseTextDone, data)
     elif data["type"] == EventType.RESPONSE_AUDIO_TRANSCRIPT_DELTA:
-        return ResponseAudioTranscriptDelta(**data)
+        return from_dict(ResponseAudioTranscriptDelta, data)
     elif data["type"] == EventType.RESPONSE_AUDIO_TRANSCRIPT_DONE:
-        return ResponseAudioTranscriptDone(**data)
+        return from_dict(ResponseAudioTranscriptDone, data)
     elif data["type"] == EventType.RESPONSE_AUDIO_DELTA:
-        return ResponseAudioDelta(**data)
+        return from_dict(ResponseAudioDelta, data)
     elif data["type"] == EventType.RESPONSE_AUDIO_DONE:
-        return ResponseAudioDone(**data)
+        return from_dict(ResponseAudioDone, data)
     elif data["type"] == EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA:
-        return ResponseFunctionCallArgumentsDelta(**data)
+        return from_dict(ResponseFunctionCallArgumentsDelta, data)
     elif data["type"] == EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE:
-        return ResponseFunctionCallArgumentsDone(**data)
+        return from_dict(ResponseFunctionCallArgumentsDone, data)
     elif data["type"] == EventType.RATE_LIMITS_UPDATED:
-        return RateLimitsUpdated(**data)
+        return from_dict(RateLimitsUpdated, data)
+    elif data["type"] == EventType.RESPONSE_OUTPUT_ITEM_ADDED:
+        return from_dict(ResponseOutputItemAdded, data)
+    elif data["type"] == EventType.RESPONSE_CONTENT_PART_ADDED:
+        return from_dict(ResponseContentPartAdded, data)
+    elif data["type"] == EventType.RESPONSE_CONTENT_PART_DONE:
+        return from_dict(ResponseContentPartDone, data)
+    elif data["type"] == EventType.RESPONSE_OUTPUT_ITEM_DONE:
+        return from_dict(ResponseOutputItemDone, data)
 
     raise ValueError(f"Unknown message type: {data['type']}")
     

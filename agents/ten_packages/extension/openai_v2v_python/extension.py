@@ -138,7 +138,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, api_key=self.config.api_key, verbose=True)
+                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
