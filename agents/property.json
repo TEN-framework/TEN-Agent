@@ -46,7 +46,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -245,7 +245,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -608,7 +608,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -1417,7 +1417,7 @@
                             "model": "gpt-4o",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
