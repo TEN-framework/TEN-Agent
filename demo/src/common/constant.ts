@@ -39,7 +39,7 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va.qwen.rag"
   },
   {
-    label: "Voice Agent with Open Realtime API (Alpha)",
+    label: "Voice Agent with OpenAI Realtime API (Beta)",
     value: "va.openai.v2v"
   }
 ]
