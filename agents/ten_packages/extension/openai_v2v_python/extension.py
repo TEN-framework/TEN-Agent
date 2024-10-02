@@ -24,6 +24,7 @@ from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
 from .client import RealtimeApiClient, RealtimeApiConfig
 from .messages import *
+from .tools import ToolRegistry
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
@@ -60,7 +61,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx: dict = {}
 
         # audo related
-        self.sample_rate: int = 24000
+        self.sample_rate: int = 16000
         self.out_audio_buff: bytearray = b''
         self.audio_len_threshold: int = 10240
         self.transcript: str = ''
@@ -69,6 +70,7 @@ class OpenAIV2VExtension(Extension):
         self.remote_stream_id: int = 0
         self.channel_name: str = ""
         self.dump: bool = False
+        self.registry = ToolRegistry()
 
     def on_start(self, ten_env: TenEnv) -> None:
         logger.info("OpenAIV2VExtension on_start")
@@ -83,6 +85,8 @@ class OpenAIV2VExtension(Extension):
         self.thread = threading.Thread(
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
+        
+        self._register_local_tools()
 
         asyncio.run_coroutine_threadsafe(self._init_client(), self.loop)
 
@@ -245,6 +249,26 @@ class OpenAIV2VExtension(Extension):
                             relative_start_ms = get_time_ms() - message.audio_end_ms
                             logger.info(
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}")
+                        case ResponseOutputItemDone():
+                            match message.item:
+                                case FunctionCallItem(): #TODO
+                                    tool_call_id = message.item.call_id
+                                    response = {"order_success": True}
+                                    response_str = json.dumps(response)
+
+                                    config_msg = messages.SessionUpdate(
+                                        session=messages.SessionUpdateParams(tool_choice="none")
+                                    )
+                                    await client.send_message(config_msg)
+                                    tool_response = messages.ItemCreate(
+                                        item=messages.FunctionCallOutputItemParam(
+                                            call_id=tool_call_id,
+                                            output=response_str,
+                                        )
+                                    )
+
+                                    await client.send_message(tool_response)
+                                    await client.send_message(messages.ResponseCreate())
                         case ErrorMessage():
                             logger.error(
                                 f"Error message received: {message.error}")
@@ -354,7 +378,9 @@ class OpenAIV2VExtension(Extension):
             model=self.config.model,
             voice=self.config.voice,
             input_audio_transcription=InputAudioTranscription(
-                model="whisper-1")
+                model="whisper-1"),
+            tool_choice="auto",
+            tools=self.registry.get_tools()
             ))
 
     def _update_conversation(self) -> UpdateConversationConfig:
@@ -420,3 +446,27 @@ class OpenAIV2VExtension(Extension):
 
         with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
             dump_file.write(buf)
+
+    def _register_local_tools(self) -> None:
+        self.registry.register(
+            name="weather", description="This is a weather check func, if the user is asking about the weather. you need to summarize location and time information from the context as parameters. if the information is lack, please ask for more detail before calling.",
+            callback=self.weather_check,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The location or region for the weather check.",
+                    },
+                    "datetime": {
+                        "type": "string",
+                        "description": "The date and time for the weather check. The datetime should use format like 2024-10-01T16:42:00.",
+                    }
+                },
+                "required": ["location"],
+            })
+        self.ctx["tools"] = self.registry.to_prompt()
+
+    # Tools
+    def weather_check(self, location:str = "", datetime:str = ""):
+        logger.info(f"on weather check {location}, {datetime}")

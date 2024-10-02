@@ -12,6 +12,11 @@ from .log import logger
 
 DEFAULT_MODEL = "gpt-4o-realtime-preview"
 
+DEFAULT_INSTRUCTION = '''
+You are a helpful voice assistant, user can see transcription through the chat box. Your name is TEN Agent. You are built by TEN Framework which is a powerful realtime multimodal agent framework. User's input will mainly be {language}, and your response must be {language}.
+{tools}
+'''
+
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
     try:
@@ -42,7 +47,7 @@ class RealtimeApiConfig:
             verbose: bool = False,
             model: str=DEFAULT_MODEL,
             language: str = "en-US",
-            system_message: str="You are a helpful assistant, you are professional but lively and friendly. User's input will mainly be {language}, and your response must be {language}.",
+            system_message: str=DEFAULT_INSTRUCTION,
             temperature: float =0.5,
             max_tokens: int =1024,
             voice: messages.Voices = messages.Voices.Alloy,
