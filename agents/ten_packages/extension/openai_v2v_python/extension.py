@@ -29,6 +29,7 @@ from .tools import ToolRegistry
 from .conf import RealtimeApiConfig, BASIC_PROMPT
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import *
+from .tools import ToolRegistry
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
@@ -76,7 +77,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx: dict = {}
 
         # audo related
-        self.sample_rate: int = 24000
+        self.sample_rate: int = 16000
         self.out_audio_buff: bytearray = b''
         self.audio_len_threshold: int = 10240
         self.transcript: str = ''
@@ -526,4 +527,28 @@ class OpenAIV2VExtension(Extension):
         elif self.config.language == "ko-KR":
             text = "안녕하세요"
         return text
+
+    def _register_local_tools(self) -> None:
+        self.registry.register(
+            name="weather", description="This is a weather check func, if the user is asking about the weather. you need to summarize location and time information from the context as parameters. if the information is lack, please ask for more detail before calling.",
+            callback=self.weather_check,
+            parameters={
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The location or region for the weather check.",
+                    },
+                    "datetime": {
+                        "type": "string",
+                        "description": "The date and time for the weather check. The datetime should use format like 2024-10-01T16:42:00.",
+                    }
+                },
+                "required": ["location"],
+            })
+        self.ctx["tools"] = self.registry.to_prompt()
+
+    # Tools
+    def weather_check(self, location:str = "", datetime:str = ""):
+        logger.info(f"on weather check {location}, {datetime}")
 
