@@ -39,5 +39,6 @@ class RealtimeApiConfig:
     
     def build_ctx(self) -> dict:
         return {
-            "language": self.language
+            "language": self.language,
+            "model": self.model,
         }
