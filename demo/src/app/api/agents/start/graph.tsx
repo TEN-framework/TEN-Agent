@@ -100,7 +100,7 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
     } else if (graphName == "va.openai.v2v") {
         return {
             "openai_v2v_python": {
-                "model": "gpt-4o-realtime-preview-2024-10-01",
+                "model": "gpt-4o-realtime-preview",
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
                 ...localizationOptions
