@@ -1,14 +1,24 @@
 {
   "type": "extension",
   "name": "openai_chatgpt_python",
-  "version": "0.4.0",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.1"
+      "version": "0.2"
     }
   ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
   "api": {
     "property": {
       "api_key": {

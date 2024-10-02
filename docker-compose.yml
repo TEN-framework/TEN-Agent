@@ -1,6 +1,6 @@
 services:
     astra_agents_dev:
-        image: ghcr.io/ten-framework/astra_agents_build:0.4.0
+        image: ghcr.io/ten-framework/ten_agent_build:0.1.0
         container_name: astra_agents_dev
         platform: linux/amd64
         tty: true
@@ -19,11 +19,22 @@ services:
         networks:
             - astra_network
     astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.4.1-2-gb324bcd
+        image: ghcr.io/ten-framework/astra_playground:v0.4.1-9-g09a1df2
         container_name: astra_playground
         restart: always
         ports:
             - "3000:3000"
+        networks:
+            - astra_network
+        environment:
+            - AGENT_SERVER_URL=http://astra_agents_dev:8080
+            - TEN_DEV_SERVER_URL=http://astra_agents_dev:49483
+    agent_demo_ui:
+        image: ghcr.io/ten-framework/agent_demo:v0.4.1-9-g09a1df2
+        container_name: agent_demo_ui
+        restart: always
+        ports:
+            - "3002:3000"
         networks:
             - astra_network
         environment:

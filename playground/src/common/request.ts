@@ -1,5 +1,6 @@
 import { genUUID } from "./utils"
 import { Language } from "@/types"
+import axios from "axios"
 
 interface StartRequestConfig {
   channel: string
@@ -7,6 +8,7 @@ interface StartRequestConfig {
   graphName: string,
   language: Language,
   voiceType: "male" | "female"
+  properties: Record<string, any>
 }
 
 interface GenAgoraDataConfig {
@@ -23,37 +25,26 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
     uid: userId,
     channel_name: channel
   }
-  let resp: any = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.post(url, data)
+  resp = (resp.data) || {}
   return resp
 }
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
   // look at app/apis/route.tsx for the server-side implementation
   const url = `/api/agents/start`
-  const { channel, userId, graphName, language, voiceType } = config
+  const { channel, userId, graphName, language, voiceType, properties } = config
   const data = {
     request_id: genUUID(),
     channel_name: channel,
     user_uid: userId,
     graph_name: graphName,
     language,
-    voice_type: voiceType
+    voice_type: voiceType,
+    properties
   }
-  let resp: any = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.post(url, data)
+  resp = (resp.data) || {}
   return resp
 }
 
@@ -64,27 +55,16 @@ export const apiStopService = async (channel: string) => {
     request_id: genUUID(),
     channel_name: channel
   }
-  let resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.post(url, data)
+  resp = (resp.data) || {}
   return resp
 }
 
 export const apiGetDocumentList = async () => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/vector/document/preset/list`
-  let resp: any = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.get(url)
+  resp = (resp.data) || {}
   if (resp.code !== "0") {
     throw new Error(resp.msg)
   }
@@ -101,14 +81,8 @@ export const apiUpdateDocument = async (options: { channel: string, collection: 
     collection: collection,
     file_name: fileName
   }
-  let resp: any = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.post(url, data)
+  resp = (resp.data) || {}
   return resp
 }
 
@@ -121,13 +95,31 @@ export const apiPing = async (channel: string) => {
     request_id: genUUID(),
     channel_name: channel
   }
-  let resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-  resp = (await resp.json()) || {}
+  let resp: any = await axios.post(url, data)
+  resp = (resp.data) || {}
+  return resp
+}
+
+export const apiGetGraphs = async () => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/graphs`
+  let resp: any = await axios.get(url)
+  resp = (resp.data) || {}
+  return resp
+}
+
+export const apiGetExtensionMetadata = async () => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/addons/extensions`
+  let resp: any = await axios.get(url)
+  resp = (resp.data) || {}
+  return resp
+}
+
+export const apiGetNodes = async (graphName: string) => {
+  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  const url = `/api/dev/v1/graphs/${graphName}/nodes`
+  let resp: any = await axios.get(url)
+  resp = (resp.data) || {}
   return resp
 }

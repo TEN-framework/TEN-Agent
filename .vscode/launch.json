@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug go",
+            "type": "go",
+            "request": "launch",
+            "mode": "exec",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agents/bin/worker",
+            "env": {
+                "LD_LIBRARY_PATH": "${workspaceFolder}/agents/ten_packages/system/ten_runtime_go/lib:${workspaceFolder}/agents/ten_packages/system/agora_rtc_sdk/lib:${workspaceFolder}/agents/ten_packages/system/azure_speech_sdk/lib",
+                "TEN_APP_BASE_DIR": "${workspaceFolder}/agents"
+            }
+        },
+        {
+            "name": "debug python",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "preLaunchTask": "start app"
+        },
+        {
+            "name": "debug cpp",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/agents/bin/worker",
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/agents/ten_packages/system/agora_rtc_sdk/lib:${workspaceFolder}/agents/ten_packages/system/azure_speech_sdk/lib"
+                },
+                {
+                    "name": "CGO_LDFLAGS",
+                    "value": "-L${workspaceFolder}/agents/ten_packages/system/ten_runtime_go/lib -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+                }
+            ]
+        }
+    ]
+}

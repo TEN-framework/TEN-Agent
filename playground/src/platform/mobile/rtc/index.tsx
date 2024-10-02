@@ -115,7 +115,6 @@ const Rtc = () => {
     <Agent audioTrack={remoteuser?.audioTrack}></Agent>
     {/* you */}
     <div className={styles.you}>
-      <div className={styles.title}>You</div>
       {/* microphone */}
       <MicSection audioTrack={audioTrack}></MicSection>
       {/* camera */}

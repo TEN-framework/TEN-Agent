@@ -1,6 +1,6 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
-  DESCRIPTION, useAppDispatch, useAppSelector, apiPing, genUUID,
+  useAppDispatch, useAppSelector, apiPing, genUUID,
   apiStartService, apiStopService
 } from "@/common"
 import { message } from "antd"
@@ -50,7 +50,8 @@ const Description = () => {
         userId,
         graphName,
         language,
-        voiceType
+        voiceType,
+        properties: {}
       })
       const { code, msg } = res || {}
       if (code != 0) {

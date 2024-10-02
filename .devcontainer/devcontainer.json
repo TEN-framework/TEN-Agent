@@ -2,11 +2,12 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
     "name": "astra",
-    "image": "ghcr.io/ten-framework/astra_agents_build:0.4.0",
+    "image": "ghcr.io/ten-framework/ten_agent_build:0.1.0",
     "customizations": {
         "vscode": {
             "extensions": [
-                "golang.go"
+                "golang.go",
+                "ms-vscode.cpptools"
             ]
         }
     },
@@ -19,6 +20,7 @@
     ],
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
-        "ghcr.io/devcontainers/features/git:1": {}
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/python:1": {}
     }
 }

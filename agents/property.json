@@ -4,7 +4,7 @@
         "predefined_graphs": [
             {
                 "name": "va.openai.azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -12,7 +12,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -23,8 +23,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -41,7 +41,7 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "$OPENAI_API_KEY",
+                            "api_key": "${env:OPENAI_API_KEY}",
                             "frequency_penalty": 0.9,
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
@@ -57,8 +57,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "$AZURE_TTS_KEY",
-                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                            "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -211,7 +211,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -222,8 +222,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -240,7 +240,7 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "$OPENAI_API_KEY",
+                            "api_key": "${env:OPENAI_API_KEY}",
                             "frequency_penalty": 0.9,
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
@@ -256,7 +256,7 @@
                         "addon": "elevenlabs_tts",
                         "name": "elevenlabs_tts",
                         "property": {
-                            "api_key": "$ELEVENLABS_TTS_KEY",
+                            "api_key": "${env:ELEVENLABS_TTS_KEY}",
                             "model_id": "eleven_multilingual_v2",
                             "optimize_streaming_latency": 0,
                             "request_timeout_seconds": 30,
@@ -416,7 +416,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -427,8 +427,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -439,8 +439,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -454,8 +454,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "$AZURE_TTS_KEY",
-                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                            "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -580,7 +580,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -591,8 +591,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -603,7 +603,7 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "$OPENAI_API_KEY",
+                            "api_key": "${env:OPENAI_API_KEY}",
                             "frequency_penalty": 0.9,
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
@@ -619,7 +619,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "$QWEN_API_KEY",
+                            "api_key": "${env:QWEN_API_KEY}",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -780,7 +780,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -791,8 +791,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -802,7 +802,7 @@
                         "addon": "qwen_llm_python",
                         "name": "qwen_llm",
                         "property": {
-                            "api_key": "$QWEN_API_KEY",
+                            "api_key": "${env:QWEN_API_KEY}",
                             "model": "qwen-max",
                             "max_tokens": 512,
                             "prompt": "",
@@ -815,7 +815,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "$QWEN_API_KEY",
+                            "api_key": "${env:QWEN_API_KEY}",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -983,7 +983,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -994,8 +994,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1006,8 +1006,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -1022,8 +1022,8 @@
                         "name": "polly_tts",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "engine": "generative",
                             "voice": "Ruth",
                             "sample_rate": "16000",
@@ -1151,7 +1151,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1162,8 +1162,8 @@
                             "enable_agora_asr": false,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1174,8 +1174,8 @@
                         "name": "transcribe_asr",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "sample_rate": "16000",
                             "lang_code": "en-US"
                         }
@@ -1187,8 +1187,8 @@
                         "name": "bedrock_llm",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
@@ -1203,8 +1203,8 @@
                         "name": "polly_tts",
                         "property": {
                             "region": "us-east-1",
-                            "access_key": "$AWS_ACCESS_KEY_ID",
-                            "secret_key": "$AWS_SECRET_ACCESS_KEY",
+                            "access_key": "${env:AWS_ACCESS_KEY_ID}",
+                            "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
                             "engine": "generative",
                             "voice": "Ruth",
                             "sample_rate": "16000",
@@ -1381,7 +1381,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1393,8 +1393,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf",
                             "subscribe_video_pix_fmt": 4
                         }
@@ -1412,7 +1412,7 @@
                         "name": "openai_chatgpt",
                         "property": {
                             "base_url": "",
-                            "api_key": "$OPENAI_API_KEY",
+                            "api_key": "${env:OPENAI_API_KEY}",
                             "frequency_penalty": 0.9,
                             "model": "gpt-4o",
                             "max_tokens": 512,
@@ -1430,8 +1430,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "$AZURE_TTS_KEY",
-                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                            "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -1587,7 +1587,7 @@
             },
             {
                 "name": "va.gemini.azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1595,7 +1595,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1606,8 +1606,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1640,8 +1640,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "$AZURE_TTS_KEY",
-                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                            "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -1786,7 +1786,7 @@
             },
             {
                 "name": "va.qwen.rag",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1794,7 +1794,7 @@
                         "addon": "agora_rtc",
                         "name": "agora_rtc",
                         "property": {
-                            "app_id": "$AGORA_APP_ID",
+                            "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
                             "channel": "astra_agents_test",
                             "stream_id": 1234,
@@ -1805,8 +1805,8 @@
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
                             "agora_asr_language": "en-US",
-                            "agora_asr_vendor_key": "$AZURE_STT_KEY",
-                            "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
@@ -1816,7 +1816,7 @@
                         "addon": "qwen_llm_python",
                         "name": "qwen_llm",
                         "property": {
-                            "api_key": "$QWEN_API_KEY",
+                            "api_key": "${env:QWEN_API_KEY}",
                             "model": "qwen-max",
                             "max_tokens": 512,
                             "prompt": "",
@@ -1829,7 +1829,7 @@
                         "addon": "cosy_tts",
                         "name": "cosy_tts",
                         "property": {
-                            "api_key": "$QWEN_API_KEY",
+                            "api_key": "${env:QWEN_API_KEY}",
                             "model": "cosyvoice-v1",
                             "voice": "longxiaochun",
                             "sample_rate": 16000
@@ -1841,8 +1841,8 @@
                         "addon": "azure_tts",
                         "name": "azure_tts",
                         "property": {
-                            "azure_subscription_key": "$AZURE_TTS_KEY",
-                            "azure_subscription_region": "$AZURE_TTS_REGION",
+                            "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+                            "azure_subscription_region": "${env:AZURE_TTS_REGION}",
                             "azure_synthesis_voice_name": "en-US-JaneNeural"
                         }
                     },
@@ -1874,7 +1874,7 @@
                         "addon": "aliyun_text_embedding",
                         "name": "aliyun_text_embedding",
                         "property": {
-                            "api_key": "$ALIYUN_TEXT_EMBEDDING_API_KEY",
+                            "api_key": "${env:ALIYUN_TEXT_EMBEDDING_API_KEY}",
                             "model": "text-embedding-v3"
                         }
                     },
@@ -1884,14 +1884,14 @@
                         "addon": "aliyun_analyticdb_vector_storage",
                         "name": "aliyun_analyticdb_vector_storage",
                         "property": {
-                            "alibaba_cloud_access_key_id": "$ALIBABA_CLOUD_ACCESS_KEY_ID",
-                            "alibaba_cloud_access_key_secret": "$ALIBABA_CLOUD_ACCESS_KEY_SECRET",
-                            "adbpg_instance_id": "$ALIYUN_ANALYTICDB_INSTANCE_ID",
-                            "adbpg_instance_region": "$ALIYUN_ANALYTICDB_INSTANCE_REGION",
-                            "adbpg_account": "$ALIYUN_ANALYTICDB_ACCOUNT",
-                            "adbpg_account_password": "$ALIYUN_ANALYTICDB_ACCOUNT_PASSWORD",
-                            "adbpg_namespace": "$ALIYUN_ANALYTICDB_NAMESPACE",
-                            "adbpg_namespace_password": "$ALIYUN_ANALYTICDB_NAMESPACE_PASSWORD"
+                            "alibaba_cloud_access_key_id": "${env:ALIBABA_CLOUD_ACCESS_KEY_ID}",
+                            "alibaba_cloud_access_key_secret": "${env:ALIBABA_CLOUD_ACCESS_KEY_SECRET}",
+                            "adbpg_instance_id": "${env:ALIYUN_ANALYTICDB_INSTANCE_ID}",
+                            "adbpg_instance_region": "${env:ALIYUN_ANALYTICDB_INSTANCE_REGION}",
+                            "adbpg_account": "${env:ALIYUN_ANALYTICDB_ACCOUNT}",
+                            "adbpg_account_password": "${env:ALIYUN_ANALYTICDB_ACCOUNT_PASSWORD}",
+                            "adbpg_namespace": "${env:ALIYUN_ANALYTICDB_NAMESPACE}",
+                            "adbpg_namespace_password": "${env:ALIYUN_ANALYTICDB_NAMESPACE_PASSWORD}"
                         }
                     },
                     {

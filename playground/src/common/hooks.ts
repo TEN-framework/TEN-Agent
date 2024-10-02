@@ -129,3 +129,16 @@ export const usePrevious = (value: any) => {
 };
 
 
+export const useGraphExtensions = () => {
+  const graphName = useAppSelector(state => state.global.graphName);
+  const nodes = useAppSelector(state => state.global.extensions);
+  const [graphExtensions, setGraphExtensions] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (nodes && nodes[graphName]) {
+      setGraphExtensions(nodes[graphName]);
+    }
+  }, [graphName, nodes]);
+
+  return graphExtensions;
+};

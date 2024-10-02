@@ -50,7 +50,6 @@ func startAppBlocking(cfg *appConfig) {
 
 	appInstance.Run(true)
 	appInstance.Wait()
-	ten.UnloadAllAddons()
 
 	ten.EnsureCleanupWhenProcessExit()
 }

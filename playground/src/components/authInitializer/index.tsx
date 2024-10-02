@@ -1,7 +1,7 @@
 "use client"
 
 import { ReactNode, useEffect } from "react"
-import { useAppDispatch, getOptionsFromLocal } from "@/common"
+import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId } from "@/common"
 import { setOptions, reset } from "@/store/reducers/global"
 
 interface AuthInitializerProps {
@@ -15,9 +15,15 @@ const AuthInitializer = (props: AuthInitializerProps) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal()
-      if (options) {
+      if (options && options.channel) {
         dispatch(reset())
         dispatch(setOptions(options))
+      } else {
+        dispatch(reset())
+        dispatch(setOptions({ 
+          channel: getRandomChannel(),
+          userId: getRandomUserId(),
+        }))
       }
     }
   }, [dispatch])

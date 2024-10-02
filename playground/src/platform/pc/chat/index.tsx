@@ -7,38 +7,68 @@ import {
   LANGUAGE_OPTIONS, useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
+  apiGetGraphs,
+  apiGetNodes,
+  useGraphExtensions,
+  apiGetExtensionMetadata,
 } from "@/common"
-import { setGraphName, setLanguage } from "@/store/reducers/global"
-import { Select, } from 'antd';
+import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions } from "@/store/reducers/global"
+import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
 import styles from "./index.module.scss"
-
-
+import { SettingOutlined } from "@ant-design/icons"
+import EditableTable from "./table"
 
 
 const Chat = () => {
   const dispatch = useAppDispatch()
-  const chatItems = useAppSelector(state => state.global.chatItems)
-  const language = useAppSelector(state => state.global.language)
+  const graphs = useAppSelector(state => state.global.graphs)
+  const extensions = useAppSelector(state => state.global.extensions)
   const graphName = useAppSelector(state => state.global.graphName)
+  const chatItems = useAppSelector(state => state.global.chatItems)
   const agentConnected = useAppSelector(state => state.global.agentConnected)
+  const [modal2Open, setModal2Open] = useState(false)
+  const graphExtensions = useGraphExtensions()
+  const extensionMetadata = useAppSelector(state => state.global.extensionMetadata)
+
 
   // const chatItems = genRandomChatList(10)
   const chatRef = useRef(null)
 
+  useEffect(() => {
+    apiGetGraphs().then((res: any) => {
+      let graphs = res["data"].map((item: any) => item["name"])
+      dispatch(setGraphs(graphs))
+    })
+    apiGetExtensionMetadata().then((res: any) => {
+      let metadata = res["data"]
+      let metadataMap: Record<string, any> = {}
+      metadata.forEach((item: any) => {
+        metadataMap[item["name"]] = item
+      })
+      dispatch(setExtensionMetadata(metadataMap))
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!extensions[graphName]) {
+      apiGetNodes(graphName).then((res: any) => {
+        let nodes = res["data"]
+        let nodesMap: Record<string, any> = {}
+        nodes.forEach((item: any) => {
+          nodesMap[item["name"]] = item
+        })
+        dispatch(setExtensions({ graphName, nodesMap }))
+      })
+    }
+  }, [graphName])
 
   useAutoScroll(chatRef)
-
-
-  const onLanguageChange = (val: any) => {
-    dispatch(setLanguage(val))
-  }
 
   const onGraphNameChange = (val: any) => {
     dispatch(setGraphName(val))
   }
-
 
   return <section className={styles.chat}>
     <div className={styles.header}>
@@ -46,11 +76,9 @@ const Chat = () => {
       </span>
       <span className={styles.right}>
         <Select className={styles.graphName}
-          disabled={agentConnected} options={GRAPH_OPTIONS}
+          disabled={agentConnected} options={graphs.map((item) => { return { label: item, value: item } })}
           value={graphName} onChange={onGraphNameChange}></Select>
-        <Select className={styles.languageSelect}
-          disabled={agentConnected} options={LANGUAGE_OPTIONS}
-          value={language} onChange={onLanguageChange}></Select>
+        <Button icon={<SettingOutlined />} type="primary" onClick={() => { setModal2Open(true) }}></Button>
         {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
       </span>
     </div>
@@ -59,6 +87,36 @@ const Chat = () => {
         return <ChatItem data={item} key={index} ></ChatItem>
       })}
     </div>
+    <Modal
+      title="Properties Override"
+      centered
+      open={modal2Open}
+      onCancel={() => setModal2Open(false)}
+      footer={
+        <Button type="primary" onClick={() => setModal2Open(false)}>
+          Close
+        </Button>
+      }
+    >
+      <p>You can adjust extension properties here, the values will be overridden when the agent starts using "Connect." Note that this won't modify the property.json file.</p>
+      <Tabs defaultActiveKey="1" items={Object.keys(graphExtensions).map((key) => {
+        let node = graphExtensions[key]
+        let addon = node["addon"]
+        let metadata = extensionMetadata[addon]
+        return {
+          key: node["name"], label: node["name"], children: <EditableTable
+            key={`${graphName}-${node["name"]}`}
+            initialData={node["property"] || {}}
+            metadata={metadata ? metadata.api.property : {}}
+            onUpdate={(data) => {
+              let nodesMap = JSON.parse(JSON.stringify(graphExtensions))
+              nodesMap[key]["property"] = data
+              dispatch(setExtensions({ graphName, nodesMap }))
+            }}
+          ></EditableTable>
+        }
+      })} />
+    </Modal>
   </section >
 }
 
