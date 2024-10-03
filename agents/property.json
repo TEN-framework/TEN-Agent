@@ -46,7 +46,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -245,7 +245,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -608,7 +608,7 @@
                             "model": "gpt-4o-mini",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
@@ -1417,7 +1417,7 @@
                             "model": "gpt-4o",
                             "max_tokens": 512,
                             "prompt": "",
-                            "proxy_url": "$OPENAI_PROXY_URL",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
                             "greeting": "TEN Agent connected. How can I help you today?",
                             "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
@@ -2152,6 +2152,120 @@
                                     {
                                         "extension_group": "llama_index",
                                         "extension": "llama_index"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "va.openai.v2v",
+                "auto_start": false,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "rtc",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "${env:AGORA_APP_ID}",
+                            "token": "",
+                            "channel": "astra_agents_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "subscribe_audio_sample_rate": 24000
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "llm",
+                        "addon": "openai_v2v_python",
+                        "name": "openai_v2v_python",
+                        "property": {
+                            "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+                            "temperature": 0.9,
+                            "model": "gpt-4o-realtime-preview",
+                            "max_tokens": 2048,
+                            "voice": "alloy",
+                            "language": "en-US",
+                            "server_vad": true,
+                            "dump": true
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "rtc",
+                        "extension": "agora_rtc",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "llm",
+                        "extension": "openai_v2v_python",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
                                     }
                                 ]
                             }

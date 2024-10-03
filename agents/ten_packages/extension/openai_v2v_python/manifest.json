@@ -1,0 +1,75 @@
+{
+  "type": "extension",
+  "name": "openai_v2v_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.2"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "realtime/**.tent",
+      "realtime/**.py"
+    ]
+  },
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "temperature": {
+        "type": "float64"
+      },
+      "model": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int64"
+      },
+      "system_message": {
+        "type": "string"
+      },
+      "voice": {
+        "type": "string"
+      },
+      "server_vad": {
+        "type": "bool"
+      },
+      "language": {
+        "type": "string"
+      },
+      "dump": {
+        "type": "bool"
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}

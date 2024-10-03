@@ -49,6 +49,14 @@ export function middleware(req: NextRequest) {
 
         // console.log(`Rewriting request to ${url.href}`);
         return NextResponse.rewrite(url);
+    } else if (pathname.startsWith('/api/dev/')) {
+
+        // Proxy all other documents requests
+        const url = req.nextUrl.clone();
+        url.href = `${TEN_DEV_SERVER_URL}${pathname.replace('/api/dev/', '/api/dev-server/')}`;
+
+        // console.log(`Rewriting request to ${url.href}`);
+        return NextResponse.rewrite(url);
     } else {
         return NextResponse.next();
     }

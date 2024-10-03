@@ -55,8 +55,8 @@ const LoginCard = () => {
     </section>
     <section className={styles.content}>
       <div className={styles.title}>
-        <LogoIcon transform="scale(1.5 1.5)"></LogoIcon>
-        <span className={styles.text}>Astra - a multimodal interactive agent</span>
+        <span className={styles.title}>TEN Agent</span>
+        <span className={styles.text}>The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)</span>
       </div>
       <div className={styles.section}>
         <input placeholder="User Name" value={userName} onChange={onUserNameChange} ></input>

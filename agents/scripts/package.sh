@@ -45,6 +45,9 @@ copy_package() {
     if [[ -d ten_packages/${package_type}/${package_name}/src ]]; then
         cp -r ten_packages/${package_type}/${package_name}/src .release/ten_packages/${package_type}/${package_name}/
     fi
+    if [[ -d ten_packages/${package_type}/${package_name}/realtime ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/realtime .release/ten_packages/${package_type}/${package_name}/
+    fi
 }
 
 cp -r bin .release

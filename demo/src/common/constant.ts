@@ -1,12 +1,12 @@
 import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphOptionItem } from "@/types"
-export const GITHUB_URL = "https://github.com/TEN-framework/ASTRA.ai"
+export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
 export const OPTIONS_KEY = "__options__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
   userId: 0
 }
-export const DESCRIPTION = "This is an AI voice assistant powered by ASTRA.ai framework, Agora, Azure and ChatGPT."
+export const DESCRIPTION = "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",
@@ -34,10 +34,14 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
     value: "camera.va.openai.azure"
   },
+  // {
+  //   label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
+  //   value: "va.qwen.rag"
+  // },
   {
-    label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
-    value: "va.qwen.rag"
-  },
+    label: "Voice Agent with OpenAI Realtime API (Beta)",
+    value: "va.openai.v2v"
+  }
 ]
 
 export const isRagGraph = (graphName: string) => {
