@@ -37,6 +37,7 @@ PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 PROPERTY_DUMP = "dump"
+PROPERTY_GREETING = "greeting"
 
 DEFAULT_VOICE = Voices.Alloy
 
@@ -169,6 +170,10 @@ class OpenAIV2VExtension(Extension):
                             self.session = message.session
                             update_msg = self._update_session()
                             await self.conn.send_request(update_msg)
+
+                            text = self._greeting_text()
+                            await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
+                            await self.conn.send_request(ResponseCreate(response=ResponseCreateParams()))
 
                             # update_conversation = self.update_conversation()
                             # await self.conn.send_request(update_conversation)
@@ -333,6 +338,14 @@ class OpenAIV2VExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
+        
+        try:
+            greeting = ten_env.get_property_string(PROPERTY_GREETING)
+            if greeting:
+                self.greeting = greeting
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_GREETING} error: {err}")
 
         try:
             server_vad = ten_env.get_property_bool(PROPERTY_SERVER_VAD)
@@ -425,3 +438,13 @@ class OpenAIV2VExtension(Extension):
 
         with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
             dump_file.write(buf)
+
+    def _greeting_text(self) -> str:
+        text = "Hi, there."
+        if self.config.language == "zh-CN":
+            text = "你好。"
+        elif self.config.language == "ja-JP":
+            text = "こんにちは"
+        elif self.config.language == "ko-KR":
+            text = "안녕하세요"
+        return text
