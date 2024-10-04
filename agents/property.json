@@ -1382,10 +1382,10 @@
                         "name": "agora_rtc",
                         "property": {
                             "app_id": "${env:AGORA_APP_ID}",
-                            "token": "<agora_token>",
-                            "channel": "astra_agents_test",
+                            "token": "007eJxSYEiPibs5dc7O8gfMYgrStmcOLHF2k588aT1H7/GrV53U4ucrMCRZpBgapxinGqammJsYm5gnGRmmJpubphiaG6RamKcmTsj5n9YQyMiwvvoaAyMUgvg8DInp+UWJ8eYmeQVmqQwMgAAAAP//QDsidw==",
+                            "channel": "agora_74np6e",
                             "stream_id": 1234,
-                            "remote_stream_id": 123,
+                            "remote_stream_id": 121511,
                             "subscribe_audio": true,
                             "subscribe_video": true,
                             "publish_audio": true,
