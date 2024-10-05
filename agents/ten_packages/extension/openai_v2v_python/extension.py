@@ -9,6 +9,7 @@ import asyncio
 import threading
 import base64
 from datetime import datetime
+from typing import Awaitable
 
 from ten import (
     AudioFrame,
@@ -22,9 +23,11 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
-from .client import RealtimeApiClient, RealtimeApiConfig
-from .messages import *
+
 from .tools import ToolRegistry
+from .conf import RealtimeApiConfig, BASIC_PROMPT
+from .realtime.connection import RealtimeApiConnection
+from .realtime.struct import *
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
@@ -37,12 +40,22 @@ PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 PROPERTY_DUMP = "dump"
+PROPERTY_GREETING = "greeting"
 
+DEFAULT_VOICE = Voices.Alloy
+
+CMD_TOOL_REGISTER = "tool_register"
+CMD_TOOL_CALL = "tool_call"
+CMD_PROPERTY_NAME = "name"
+CMD_PROPERTY_ARGS = "args"
+
+TOOL_REGISTER_PROPERTY_NAME = "name"
+TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
+TOOL_REGISTER_PROPERTY_PARAMETERS = "parameters"
 
 class Role(str, Enum):
     User = "user"
     Assistant = "assistant"
-
 
 class OpenAIV2VExtension(Extension):
     def __init__(self, name: str):
@@ -54,10 +67,11 @@ class OpenAIV2VExtension(Extension):
 
         # openai related
         self.config: RealtimeApiConfig = RealtimeApiConfig()
-        self.client: RealtimeApiClient = None
+        self.conn: RealtimeApiConnection = None
         self.connected: bool = False
         self.session_id: str = ""
-        self.session: Session = None
+        self.session: SessionUpdateParams = None
+        self.last_updated = None
         self.ctx: dict = {}
 
         # audo related
@@ -88,7 +102,7 @@ class OpenAIV2VExtension(Extension):
         
         self._register_local_tools()
 
-        asyncio.run_coroutine_threadsafe(self._init_client(), self.loop)
+        asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
 
         ten_env.on_start_done()
 
@@ -107,7 +121,7 @@ class OpenAIV2VExtension(Extension):
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         try:
             stream_id = audio_frame.get_property_int("stream_id")
-            # logger.debug(f"on_audio_frame {stream_id}")
+            logger.debug(f"on_audio_frame {stream_id}")
             if self.channel_name == "":
                 self.channel_name = audio_frame.get_property_string("channel")
 
@@ -131,6 +145,11 @@ class OpenAIV2VExtension(Extension):
 
     # Should not be here
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+        cmd_name = cmd.get_name()
+
+        if cmd_name == CMD_TOOL_REGISTER:
+            self._on_tool_register(cmd)
+
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
 
@@ -138,11 +157,15 @@ class OpenAIV2VExtension(Extension):
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         pass
 
-    async def _init_client(self):
+    def on_config_changed(self) -> None:
+        # update session again
+        return
+
+    async def _init_connection(self):
         try:
-            self.client = RealtimeApiClient(
+            self.conn = RealtimeApiConnection(
                 base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
-            logger.info(f"Finish init client {self.config} {self.client}")
+            logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
 
@@ -152,7 +175,7 @@ class OpenAIV2VExtension(Extension):
             return current_time.microsecond // 1000
 
         try:
-            await self.client.connect()
+            await self.conn.connect()
             self.connected = True
             item_id = ""  # For truncate
             response_id = ""
@@ -161,7 +184,7 @@ class OpenAIV2VExtension(Extension):
             flushed = set()
 
             logger.info("Client loop started")
-            async for message in self.client.listen():
+            async for message in self.conn.listen():
                 try:
                     logger.info(f"Received message: {message.type}")
                     match message:
@@ -171,10 +194,14 @@ class OpenAIV2VExtension(Extension):
                             self.session_id = message.session.id
                             self.session = message.session
                             update_msg = self._update_session()
-                            await self.client.send_message(update_msg)
+                            await self.conn.send_request(update_msg)
+
+                            text = self._greeting_text()
+                            await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
+                            await self.conn.send_request(ResponseCreate())
 
                             # update_conversation = self.update_conversation()
-                            # await self.client.send_message(update_conversation)
+                            # await self.conn.send_request(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
                             logger.info(
                                 f"On request transript {message.transcript}")
@@ -186,13 +213,15 @@ class OpenAIV2VExtension(Extension):
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
                         case ResponseCreated():
-                            logger.info(
-                                f"On response created {message.response.id}")
                             response_id = message.response.id
-                        case ResponseDone():
                             logger.info(
-                                f"On response done {message.response.id} {message.response.status}")
-                            if message.response.id == response_id:
+                                f"On response created {response_id}")
+                        case ResponseDone():
+                            id  = message.response.id
+                            status = message.response.status
+                            logger.info(
+                                f"On response done {id} {status}")
+                            if id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
                             logger.info(
@@ -235,7 +264,7 @@ class OpenAIV2VExtension(Extension):
                             if item_id:
                                 truncate = ItemTruncate(
                                     item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
-                                await self.client.send_message(truncate)
+                                await self.conn.send_request(truncate)
                             self._flush(ten_env)
                             if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
@@ -250,25 +279,14 @@ class OpenAIV2VExtension(Extension):
                             logger.info(
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}")
                         case ResponseOutputItemDone():
-                            match message.item:
-                                case FunctionCallItem(): #TODO
-                                    tool_call_id = message.item.call_id
-                                    response = {"order_success": True}
-                                    response_str = json.dumps(response)
-
-                                    config_msg = messages.SessionUpdate(
-                                        session=messages.SessionUpdateParams(tool_choice="none")
-                                    )
-                                    await client.send_message(config_msg)
-                                    tool_response = messages.ItemCreate(
-                                        item=messages.FunctionCallOutputItemParam(
-                                            call_id=tool_call_id,
-                                            output=response_str,
-                                        )
-                                    )
-
-                                    await client.send_message(tool_response)
-                                    await client.send_message(messages.ResponseCreate())
+                            item = message.item
+                            match item:
+                                case FunctionCallItemParam():
+                                    tool_call_id = item.call_id
+                                    name = item.name
+                                    arguments = item.arguments
+                                    logger.info(f"need to call func {name}")
+                                    await self.registry.on_func_call(tool_call_id, name, arguments, self._on_tool_output) # TODO rebuild this into async, or it will block the thread
                         case ErrorMessage():
                             logger.error(
                                 f"Error message received: {message.error}")
@@ -286,7 +304,7 @@ class OpenAIV2VExtension(Extension):
         self.out_audio_buff += buff
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
-            await self.client.send_audio_data(self.out_audio_buff)
+            await self.conn.send_audio_data(self.out_audio_buff)
             logger.info(
                 f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
@@ -311,7 +329,7 @@ class OpenAIV2VExtension(Extension):
             system_message = ten_env.get_property_string(
                 PROPERTY_SYSTEM_MESSAGE)
             if system_message:
-                self.config.system_message = system_message
+                self.config.instruction = BASIC_PROMPT + "\n" + system_message
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_SYSTEM_MESSAGE} error: {err}")
@@ -354,6 +372,14 @@ class OpenAIV2VExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
+        
+        try:
+            greeting = ten_env.get_property_string(PROPERTY_GREETING)
+            if greeting:
+                self.greeting = greeting
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_GREETING} error: {err}")
 
         try:
             server_vad = ten_env.get_property_bool(PROPERTY_SERVER_VAD)
@@ -372,9 +398,10 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
 
     def _update_session(self) -> SessionUpdate:
-        #prompt = self._replace(self.config.system_message)
+        prompt = self._replace(self.config.instruction)
+        self.last_updated = datetime.now()
         return SessionUpdate(session=SessionUpdateParams(
-            #instructions=prompt,
+            instructions=prompt,
             model=self.config.model,
             voice=self.config.voice,
             input_audio_transcription=InputAudioTranscription(
@@ -383,6 +410,7 @@ class OpenAIV2VExtension(Extension):
             tools=self.registry.get_tools()
             ))
 
+    '''
     def _update_conversation(self) -> UpdateConversationConfig:
         prompt = self._replace(self.config.system_message)
         conf = UpdateConversationConfig()
@@ -393,6 +421,7 @@ class OpenAIV2VExtension(Extension):
         conf.disable_audio = False
         conf.output_audio_format = AudioFormats.PCM16
         return conf
+    '''
 
     def _replace(self, prompt: str) -> str:
         result = prompt
@@ -448,25 +477,48 @@ class OpenAIV2VExtension(Extension):
             dump_file.write(buf)
 
     def _register_local_tools(self) -> None:
-        self.registry.register(
-            name="weather", description="This is a weather check func, if the user is asking about the weather. you need to summarize location and time information from the context as parameters. if the information is lack, please ask for more detail before calling.",
-            callback=self.weather_check,
-            parameters={
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "The location or region for the weather check.",
-                    },
-                    "datetime": {
-                        "type": "string",
-                        "description": "The date and time for the weather check. The datetime should use format like 2024-10-01T16:42:00.",
-                    }
-                },
-                "required": ["location"],
-            })
         self.ctx["tools"] = self.registry.to_prompt()
 
-    # Tools
-    def weather_check(self, location:str = "", datetime:str = ""):
-        logger.info(f"on weather check {location}, {datetime}")
+    def _on_tool_register(self, cmd: Cmd):
+        try:
+            name = cmd.get_property_string(TOOL_REGISTER_PROPERTY_NAME)
+            description = cmd.get_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON)
+            pstr = cmd.get_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS)
+            parameters = json.loads(pstr)
+            self.registry.register(
+                name=name, description=description,
+                callback=self._remote_tool_call,
+                parameters=parameters)
+            logger.info(f"on tool register {name} {description}")
+            self.on_config_changed()
+        except:
+            logger.exception(f"Failed to register")
+
+    async def _remote_tool_call(self, ten_env: TenEnv, name:str, args: str, callback: Awaitable):
+        c = Cmd.create(CMD_TOOL_CALL)
+        c.set_property_string(CMD_PROPERTY_NAME, name)
+        c.set_property_string(CMD_PROPERTY_ARGS, args)
+        ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
+                callback(result.get_property_string("response"), self.loop)))
+    
+    async def _on_tool_output(self, tool_call_id:str,  result: str):
+        tool_response = ItemCreate(
+            item=FunctionCallOutputItemParam(
+                call_id=tool_call_id,
+                output=result,
+            )
+        )
+
+        await self.conn.send_message(tool_response)
+        await self.conn.send_request(ResponseCreate())
+
+    def _greeting_text(self) -> str:
+        text = "Hi, there."
+        if self.config.language == "zh-CN":
+            text = "你好。"
+        elif self.config.language == "ja-JP":
+            text = "こんにちは"
+        elif self.config.language == "ko-KR":
+            text = "안녕하세요"
+        return text
+

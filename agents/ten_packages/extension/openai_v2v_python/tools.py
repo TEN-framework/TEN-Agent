@@ -1,8 +1,8 @@
-import json
 import copy
 from typing import Dict, Any
+from functools import partial
 
-from log import logger
+from .log import logger
 
 class ToolRegistry:
     tools: Dict[str, dict[str, Any]] = {}
@@ -40,14 +40,14 @@ class ToolRegistry:
             result.append(info)
         return result
     
-    def on_func_call(self, name, args, callback):
+    async def on_func_call(self, call_id: str, name: str, args: str, callback):
         try:
             if name in self.tools:
                 t = self.tools[name]
                 # FIXME add args check
                 if t.get("callback"):
-                    result = t["callback"](**args)
-                    callback(result)
+                    p = partial(callback, call_id)
+                    await t["callback"](name, args, p)
             else:
                 logger.warning(f"Failed to find func {name}")
         except:

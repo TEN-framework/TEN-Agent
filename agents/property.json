@@ -47,7 +47,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -246,7 +246,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -444,7 +444,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -609,7 +609,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1011,7 +1011,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1192,7 +1192,7 @@
                             "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                             "max_tokens": 512,
                             "prompt": "",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -1418,7 +1418,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
                             "max_memory_length": 10,
                             "enable_tools": true
@@ -1623,8 +1623,8 @@
                         "addon": "gemini_llm_python",
                         "name": "gemini_llm",
                         "property": {
-                            "api_key": "${env:GEMINI_API_KEY}",
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "api_key": "$GEMINI_API_KEY",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10,
                             "max_output_tokens": 512,
                             "model": "gemini-1.5-flash",
@@ -1907,7 +1907,7 @@
                         "addon": "llama_index_chat_engine",
                         "name": "llama_index",
                         "property": {
-                            "greeting": "ASTRA agent connected. How can i help you today?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "chat_memory_token_limit": 3000
                         }
                     }
@@ -2186,7 +2186,7 @@
                         "addon": "openai_v2v_python",
                         "name": "openai_v2v_python",
                         "property": {
-                            "api_key": "${env:OPENAI_API_KEY}",
+                            "api_key": "${env:OPENAI_REALTIME_API_KEY}",
                             "temperature": 0.9,
                             "model": "gpt-4o-realtime-preview",
                             "max_tokens": 2048,
@@ -2251,6 +2251,153 @@
                                     {
                                         "extension_group": "rtc",
                                         "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "va.openai.v2v.tools",
+                "auto_start": false,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "rtc",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "${env:AGORA_APP_ID}",
+                            "token": "",
+                            "channel": "astra_agents_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "subscribe_audio_sample_rate": 24000
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "llm",
+                        "addon": "openai_v2v_python",
+                        "name": "openai_v2v_python",
+                        "property": {
+                            "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+                            "temperature": 0.9,
+                            "model": "gpt-4o-realtime-preview",
+                            "max_tokens": 2048,
+                            "voice": "alloy",
+                            "language": "en-US",
+                            "server_vad": true,
+                            "dump": true
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tools",
+                        "addon": "weatherapi_tool_python",
+                        "name": "weatherapi_tool_python",
+                        "property": {
+                            "api_key": "${env:WEATHERAPI_API_KEY}"
+                        }
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "rtc",
+                        "extension": "agora_rtc",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tools",
+                        "extension": "weatherapi_tool_python",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "llm",
+                        "extension": "openai_v2v_python",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python"
                                     }
                                 ]
                             }
