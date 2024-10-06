@@ -2201,6 +2201,15 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tools",
+                        "addon": "weatherapi_tool_python",
+                        "name": "weatherapi_tool_python",
+                        "property": {
+                            "api_key": "${env:WEATHERAPI_API_KEY}"
+                        }
                     }
                 ],
                 "connections": [
@@ -2210,6 +2219,21 @@
                         "audio_frame": [
                             {
                                 "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tools",
+                        "extension": "weatherapi_tool_python",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
                                 "dest": [
                                     {
                                         "extension_group": "llm",
@@ -2251,6 +2275,15 @@
                                     {
                                         "extension_group": "rtc",
                                         "extension": "agora_rtc"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python"
                                     }
                                 ]
                             }
