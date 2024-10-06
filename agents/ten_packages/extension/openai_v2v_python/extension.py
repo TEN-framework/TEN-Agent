@@ -527,28 +527,3 @@ class OpenAIV2VExtension(Extension):
         elif self.config.language == "ko-KR":
             text = "안녕하세요"
         return text
-
-    def _register_local_tools(self) -> None:
-        self.registry.register(
-            name="weather", description="This is a weather check func, if the user is asking about the weather. you need to summarize location and time information from the context as parameters. if the information is lack, please ask for more detail before calling.",
-            callback=self.weather_check,
-            parameters={
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "The location or region for the weather check.",
-                    },
-                    "datetime": {
-                        "type": "string",
-                        "description": "The date and time for the weather check. The datetime should use format like 2024-10-01T16:42:00.",
-                    }
-                },
-                "required": ["location"],
-            })
-        self.ctx["tools"] = self.registry.to_prompt()
-
-    # Tools
-    def weather_check(self, location:str = "", datetime:str = ""):
-        logger.info(f"on weather check {location}, {datetime}")
-
