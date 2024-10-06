@@ -77,7 +77,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx: dict = {}
 
         # audo related
-        self.sample_rate: int = 16000
+        self.sample_rate: int = 24000
         self.out_audio_buff: bytearray = b''
         self.audio_len_threshold: int = 10240
         self.transcript: str = ''
