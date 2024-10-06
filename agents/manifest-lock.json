@@ -141,7 +141,8 @@
       "type": "system",
       "name": "nlohmann_json",
       "version": "3.11.2",
-      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19"
+      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
+      "supports": []
     },
     {
       "type": "system",
