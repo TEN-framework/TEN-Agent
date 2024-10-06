@@ -67,11 +67,11 @@ class WeatherToolExtension(Extension):
             return
 
         # Register func
-        #c = Cmd.create(CMD_TOOL_REGISTER)
-        #c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, TOOL_NAME)
-        #c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, TOOL_DESCRIPTION)
-        #c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(TOOL_PARAMETERS))
-        #ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
+        c = Cmd.create(CMD_TOOL_REGISTER)
+        c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, TOOL_NAME)
+        c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, TOOL_DESCRIPTION)
+        c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(TOOL_PARAMETERS))
+        ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
 
         ten_env.on_start_done()
 
@@ -86,7 +86,7 @@ class WeatherToolExtension(Extension):
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        logger.info("on_cmd name {}".format(cmd_name))
+        logger.info(f"on_cmd name {cmd_name} {cmd.to_json()}")
 
         try:
             name = cmd.get_property_string(CMD_PROPERTY_NAME)
@@ -95,23 +95,31 @@ class WeatherToolExtension(Extension):
                     args = cmd.get_property_string(CMD_PROPERTY_ARGS)
                     arg_dict = json.loads(args)
                     if "location" in arg_dict:
+                        logger.info(f"before get current weather {name}")
                         resp = self._get_current_weather(arg_dict["location"])
+                        logger.info(f"after get current weather {resp}")
                         cmd_result = CmdResult.create(StatusCode.OK)
                         cmd_result.set_property_string("response", json.dumps(resp))
                         ten_env.return_result(cmd_result, cmd)
+                        return
                     else:
+                        logger.error(f"no location in args {args}")
                         cmd_result = CmdResult.create(StatusCode.ERROR)
                         ten_env.return_result(cmd_result, cmd)
+                        return
                 except:
-                    logger.exception(f"Failed to get weather")
+                    logger.exception("Failed to get weather")
                     cmd_result = CmdResult.create(StatusCode.ERROR)
                     ten_env.return_result(cmd_result, cmd)
+                    return
+            else:
+                logger.error(f"unknown tool name {name}")
         except:
-            logger.exception(f"Failed to get tool name")
+            logger.exception("Failed to get tool name")
             cmd_result = CmdResult.create(StatusCode.ERROR)
             ten_env.return_result(cmd_result, cmd)
+            return
             
-
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
 
