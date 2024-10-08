@@ -3,7 +3,6 @@
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
-![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
@@ -30,11 +29,19 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
-
-
 </div>
 
-**TEN Agent**, powered by the world’s first real-time multimodal framework. It is open-source, with the ability to speak, see, and access a knowledge base. By taking advantage of TEN Framework, TEN Agent has the following features:
+<br>
+<h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
+
+OpenAI Realtime API provides ultra-low latency, and RTC offers AI noise suppression. TEN Agent has both. Feel free to try it out at [agent.theten.ai](https://agent.theten.ai).
+
+![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
+
+<br>
+<h2>TEN Features</h2>
+
+Aside from being world's the first agent to integrate the OpenAI Realtime API and RTC, TEN Agent also offers the following features:
 
 1. **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
@@ -58,14 +65,19 @@ Before we get started, be sure to star our repository and get instant notificati
 
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
-<br>
+<!-- <br>
 <h2>TEN Agent</h2>
 
 [TEN Agent](https://agent.theten.ai)
 
 TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
 
+And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be available.
+
+
 [![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
+<br> -->
+
 <br>
 <h2>How to build TEN Agent locally
 
@@ -143,13 +155,13 @@ make run-server
 #### TEN Agent
 Open up http://localhost:3000 in browser to play and test the TEN Agent.
 
-#### Graph Designer
+#### TEN Graph Designer
 
 Open up another tab go to http://localhost:3001, and use Graph Designer to create, connect and edit extensions on canvas.
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
-<br>
+<!-- <br>
 <h2>TEN Agent Comparison</h2>
 
 <div align="center">
@@ -166,7 +178,7 @@ Open up another tab go to http://localhost:3001, and use Graph Designer to creat
 | **Python support for extension**          |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
 | **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
 
-</div>
+</div> -->
 
 <br>
 
