@@ -1,55 +1,79 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
+![Banner de TEN Agent](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
-![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
-[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/astra.ai/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/astra.ai/graphs/commit-activity)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ASTRA.ai/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ASTRA.ai/pulls)
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ASTRA.ai/blob/main/LICENSE)
+[![Seguir en X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
+![Producto gratuito](https://img.shields.io/badge/precio-gratuito-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
+[![Publicaciones en discusiones](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
+[![Issues cerrados](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20cerrados&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
+[![PRs Bienvenidos](https://img.shields.io/badge/PRs-bienvenidos-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-agent/pulls)
+[![Licencia GitHub](https://img.shields.io/badge/Licencia-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-agent/blob/main/LICENSE)
 
-[![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
+[![Comunidad TEN en Discord](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/astra.ai?style=social&label=Watch)](https://GitHub.com/TEN-framework/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
-[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/astra.ai?style=social&label=Fork)](https://GitHub.com/TEN-framework/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
-[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/astra.ai?style=social&label=Star)](https://GitHub.com/TEN-framework/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
+[![Observadores de GitHub](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
+[![Forks de GitHub](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
+[![Estrellas de GitHub](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Star)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
 
-<a href="https://github.com/TEN-framework/ASTRA.ai/blob/main/README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-KR.md"><img alt="README in 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/README.md"><img alt="README en Inglés" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-KR.md"><img alt="README en 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README en Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-
-[Documentación](https://doc.theten.ai)
+[Comenzar](https://doc.theten.ai/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Empezando](https://doc.theten.ai/getting-started/quickstart)
+[Crear Extensiones](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Tutoriales](https://doc.theten.ai/getting-started/create-a-hello-world-extension)
-
+[Repositorio del Framework TEN](https://github.com/TEN-framework/ten_framework)
 
 </div>
 
+**TEN Agent**, impulsado por el primer framework multimodal en tiempo real del mundo. Es de código abierto, con la capacidad de hablar, ver y acceder a una base de conocimientos. Aprovechando el Framework TEN, TEN Agent tiene las siguientes características:
+
+1. **Interacciones Multimodales en Tiempo Real de Alto Rendimiento**:
+Ofrece soluciones de alto rendimiento y baja latencia para aplicaciones complejas de IA audiovisual.
+
+2. **Soporte Multi-Idioma y Multi-Plataforma**:
+Soporta desarrollo de extensiones en C++, Go, Python, etc. Se ejecuta en Windows, Mac, Linux y dispositivos móviles.
+
+3. **Integración Edge-Cloud**:
+Combina de manera flexible extensiones desplegadas en el borde y en la nube, equilibrando privacidad, costo y rendimiento.
+
+4. **Flexibilidad Más Allá de las Limitaciones del Modelo**:
+Construye fácilmente aplicaciones complejas de IA mediante programación simple de arrastrar y soltar, integrando herramientas audiovisuales, bases de datos, RAG y más.
+
+5. **Gestión de Estado del Agente en Tiempo Real**:
+Gestiona y ajusta el comportamiento del agente en tiempo real para una respuesta dinámica.
+
 <br>
-<h2>Astra - un agente multimodal</h2>
+<h2>Mantente Atento</h2>
 
-[Astra multimodal agent](https://theastra.ai)
+Antes de comenzar, asegúrate de marcar con una estrella nuestro repositorio y recibir notificaciones instantáneas de todos los nuevos lanzamientos.
 
-Astra es un agente multimodal impulsado por [TEN](https://doc.theten.ai), que demuestra sus capacidades en habla, visión y razonamiento a través de RAG a partir de la documentación local.
+![GIF de TEN danos una estrella](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
-[![Demostración del agente multimodal Astra](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
 <br>
-<h2>Cómo construir Astra localmente
+<h2>TEN Agent</h2>
 
-### Requisitos previos
+[TEN Agent](https://agent.theten.ai)
+
+TEN Agent es un agente multimodal impulsado por [TEN](https://theten.ai), que demuestra sus capacidades en habla, visión y razonamiento a través de RAG desde documentación local.
+
+[![Demostración del agente multimodal TEN](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
+
+<br>
+<h2>Cómo construir TEN Agent localmente</h2>
+
+### Prerrequisitos
 
 #### Claves
-- ID de aplicación y certificado de aplicación de Agora ([lea aquí cómo](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web))
-- Claves de API de [speech-to-text](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) y [text-to-speech](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) de Azure
-- Clave de API de [OpenAI](https://openai.com/index/openai-api/)
+- Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) y [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (el certificado no es obligatorio)
+- Claves API de Azure [SST](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) y [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) (siéntete libre de usar otro proveedor)
+- Clave API de [OpenAI](https://openai.com/index/openai-api/)
 
 #### Instalación
   - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
@@ -60,26 +84,26 @@ Astra es un agente multimodal impulsado por [TEN](https://doc.theten.ai), que de
   - RAM >= 4 GB
 
 #### Configuración de Docker en Apple Silicon
-Si está utilizando Apple Silicon, deberá desmarcar la opción "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" en Docker, de lo contrario, el servidor no funcionará.
+Necesitarás desmarcar la opción "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" en Docker si estás en Apple Silicon, de lo contrario el servidor no funcionará.
 
 ![Configuración de Docker](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### Siguiente paso
 
 #### 1. Modificar archivos de configuración
-En la raíz del proyecto, usa el siguiente comando para crear .env a partir del ejemplo.
+En la raíz del proyecto, usa el comando `cp` para crear `.env` a partir del ejemplo.
 
-Se utilizarán para almacenar información para `docker compose` más adelante.
+Se utilizará para almacenar información para `docker compose` más adelante.
 ```bash
 cp ./.env.example ./.env
 ```
 
-#### 2. Configurar claves de API
-Abre el archivo `.env` y completa las secciones `keys` y `regions`. Aquí también puedes elegir usar diferentes `extensions`:
+#### 2. Configurar claves API
+Abre el archivo `.env` y completa las `claves` y `regiones`. Aquí también puedes elegir usar cualquier `extensión` diferente:
 ```bash
 # Agora App ID y Agora App Certificate
 AGORA_APP_ID=
-# Deja en blanco a menos que hayas habilitado el certificado dentro de la cuenta de Agora.
+# Dejar vacío a menos que hayas habilitado el certificado en la cuenta de Agora.
 AGORA_APP_CERTIFICATE=
 
 # Clave y región de Azure STT
@@ -90,7 +114,7 @@ AZURE_STT_REGION=
 AZURE_TTS_KEY=
 AZURE_TTS_REGION=
 
-# Clave de API de OpenAI
+# Clave API de OpenAI
 OPENAI_API_KEY=
 ```
 
@@ -100,80 +124,68 @@ En el mismo directorio, ejecuta el comando `docker compose up` para componer los
 docker compose up
 ```
 
-#### 4. Ingresar al contenedor y construir el agente
-Abre una ventana de terminal separada, ingresa al contenedor y construye el agente:
+#### 4. Entrar al contenedor y construir el agente
+Abre una nueva ventana de terminal, entra al contenedor y construye el agente:
 ```bash
 docker exec -it astra_agents_dev bash
 make build
 ```
 
 #### 5. Iniciar el servidor
-Una vez que se haya completado la construcción, ejecuta `make run-server` en el puerto `8080`:
+Una vez que la construcción esté completa, ejecuta `make run-server` en el puerto `8080`:
 ```bash
 make run-server
 ```
 
-### ¡Finaliza y verifica 🎉
+### Finalizar y verificar 🎉
 
-#### Agente multimodal Astra
-Abre http://localhost:3000 en el navegador para probar el agente multimodal Astra.
+#### TEN Agent
+Abre http://localhost:3000 en el navegador para jugar y probar TEN Agent.
 
-#### Diseñador de gráficos
+#### Diseñador de Gráficos
 
-Abre otra pestaña e ingresa a http://localhost:3001, y utiliza el diseñador de gráficos para editar el flujo y las propiedades de cualquier extensión.
+Abre otra pestaña y ve a http://localhost:3001, y usa el Diseñador de Gráficos para crear, conectar y editar extensiones en el lienzo.
 
-![Diseñador de gráficos TEN](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
-
-<br>
-<h2>Plataforma TEN</h2>
-
-Ahora que has creado tu primer agente de IA, la creatividad no se detiene aquí. Para desarrollar agentes más sorprendentes, necesitarás una comprensión avanzada de cómo funciona el servicio TEN en el fondo. Consulta la [documentación de la plataforma TEN](https://doc.theten.ai).
+![Diseñador de Gráficos TEN](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 
 <br>
-<h2>Comparación de características de TEN</h2>
+<h2>Comparación de TEN Agent</h2>
 
 <div align="center">
 
-| **Características**                      | **TEN** | **Dify** | **LangChain** | **Flowise** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:-----------:|
-| **Agente multimodal de código abierto**  |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Python, Go y C++ para extensiones**    |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Gestor de paquetes todo en uno**       |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Transporte RTC**                       |   ✅    |    ❌    |      ❌       |      ❌     |
-| **Tienda de extensiones**                |   ✅    |    ✅    |      ❌       |      ❌     |
-| **RAG**                                  |   ✅    |    ✅    |      ✅       |      ✅     |
-| **Constructor de flujo de trabajo**      |   ✅    |    ✅    |      ✅       |      ✅     |
-| **Implementación local**                 |   ✅    |    ✅    |      ✅       |      ✅     |
+| **Características**                      | **TEN Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
+|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
+| **Visión**                               |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
+| **Rico soporte TTS para diferentes idiomas** |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
+| **Soporte Go para extensiones**           |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **Soporte C++ para extensiones**          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **Soporte RAG**                          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
+| **Constructor de flujos de trabajo para extensiones** |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
+| **Rico soporte LLM**                      |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
+| **Soporte Python para extensiones**       |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
+| **Código abierto**                       |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
 
 </div>
 
 <br>
-<h2>Mantente informado</h2>
+<h2>Únete a la Comunidad</h2>
 
-Antes de continuar, ¡asegúrate de marcar nuestro repositorio como favorito y recibir notificaciones instantáneas sobre todas las nuevas versiones!
-
-![TEN marcar repositorio gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
-
-<br>
-<h2>Únete a la comunidad</h2>
-
-- [Discord](https://discord.gg/VnPftUzAMJ): Ideal para compartir tus aplicaciones y participar en la comunidad.
-- [Discusión en GitHub](https://github.com/TEN-framework/astra.ai/discussions): Perfecto para brindar comentarios y hacer preguntas.
-- [Informar problemas en GitHub](https://github.com/TEN-framework/astra.ai/issues): Lo mejor para informar errores y proponer nuevas características. Consulta nuestras [pautas de contribución](./docs/code-of-conduct/contributing.md) para obtener más detalles.
-- [X (anteriormente Twitter)](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5): Genial para compartir tus agentes e interactuar con la comunidad.
+- [Discord](https://discord.gg/VnPftUzAMJ): Ideal para compartir tus aplicaciones e interactuar con la comunidad.
+- [Discusiones de GitHub](https://github.com/TEN-framework/ten-agent/discussions): Perfecto para proporcionar comentarios y hacer preguntas.
+- [Issues de GitHub](https://github.com/TEN-framework/ten-agent/issues): Mejor para reportar errores y proponer nuevas características. Consulta nuestras [pautas de contribución](./docs/code-of-conduct/contributing.md) para más detalles.
+- [X (anteriormente Twitter)](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Excelente para compartir tus agentes e interactuar con la comunidad.
 
 <br>
-<h2>Contribuyentes de código</h2>
+<h2>Contribuidores de Código</h2>
 
-[![TEN](https://contrib.rocks/image?repo=TEN-framework/astra.ai)](https://github.com/TEN-framework/astra.ai/graphs/contributors)
+[![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <br>
-<h2>Pautas de contribución</h2>
+<h2>Pautas de Contribución</h2>
 
 ¡Las contribuciones son bienvenidas! Por favor, lee primero las [pautas de contribución](./docs/code-of-conduct/contributing.md).
 
 <br>
 <h2>Licencia</h2>
 
-Este proyecto está licenciado bajo la Licencia Apache 2.0. Consulta el archivo [LICENSE](LICENSE) para obtener más detalles.
-
+Este proyecto está licenciado bajo la Licencia Apache 2.0 - consulta el archivo [LICENSE](LICENSE) para más detalles.

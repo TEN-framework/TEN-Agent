@@ -1,28 +1,29 @@
-![Astra banner image](https://github.com/TEN-framework/docs/blob/main/assets/jpg/astra_banner.jpg?raw=true)
+![Banner de TEN Agent](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+
 <div align="center">
 
-[![Follow on X](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=AstraAIAgent)
+[![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
 ![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
-[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/astra.ai?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/astra.ai/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/astra.ai?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/astra.ai/graphs/commit-activity)
-[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Fastra.ai%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ASTRA.ai/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ASTRA.ai/pulls)
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/TEN-framework/ASTRA.ai/blob/main/LICENSE)
-[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/TEN-framework/ASTRA.ai/discussions/170)
+[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-agent/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)](https://github.com/TEN-framework/ten-agent/blob/main/LICENSE)
+[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/TEN-framework/ten-agent/discussions/170)
 
 [![Discord](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/astra.ai?style=social&label=Watch)](https://GitHub.com/TEN-framework/astra.ai/watchers/?WT.mc_id=academic-105485-koreyst)
-[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/astra.ai?style=social&label=Fork)](https://GitHub.com/TEN-framework/astra.ai/network/?WT.mc_id=academic-105485-koreyst)
-[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/astra.ai?style=social&label=Star)](https://GitHub.com/TEN-framework/astra.ai/stargazers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Star)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
 
-<a href="https://github.com/TEN-framework/ASTRA.ai/blob/main/README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-KR.md"><img alt="README in 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
-<a href="https://github.com/ten-framework/astra.ai/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-KR.md"><img alt="README in 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
 </div>
 
@@ -32,21 +33,46 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [快速开始](https://doc.theten.ai/getting-started/quickstart)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[教程](https://doc.theten.ai/getting-started/create-a-hello-world-extension)
+[TEN Framework 仓库](https://github.com/TEN-framework/ten_framework)
 
 
 </div>
 
+**TEN Agent**，由世界首个实时多模态框架驱动。它是开源的，具有说话、视觉和访问知识库的能力。通过利用 TEN 框架，TEN Agent 具有以下特点：
+
+1. **高性能实时多模态交互**：
+为复杂的音视频 AI 应用提供高性能、低延迟的解决方案。
+
+2. **多语言和多平台支持**：
+支持 C++、Go、Python 等语言的扩展开发。可在 Windows、Mac、Linux 和移动设备上运行。
+
+3. **边缘-云集成**：
+灵活结合边缘和云部署的扩展，平衡隐私、成本和性能。
+
+4. **超越模型限制的灵活性**：
+通过简单的拖放编程，轻松构建复杂的 AI 应用，集成音视频工具、数据库、RAG 等。
+
+5. **实时代理状态管理**：
+实时管理和调整代理行为，实现动态响应。
+
 <br>
 
-## Astra agent
+<h2>点星收藏</h2>
 
-[Astra agent](https://theastra.ai) 是通过 TEN 搭建出来的 multimodal AI agent, 展示了其多模态，低延迟的能力。
+我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
 
-[![Showcase Astra agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/astra_voice_agent.gif?raw=true)](https://theastra.ai)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
-<h2>如何本地搭建 Astra agent</h2>
+<h2>TEN Agent</h2>
+
+[TEN Agent](https://agent.theten.ai)
+
+TEN Agent 是一个由 [TEN](https://theten.ai) 驱动的多模态代理，展示了其在语音、视觉和通过本地文档 RAG 进行推理方面的能力。
+
+[![展示 TEN 多模态代理](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
+<br>
+<h2>如何在本地构建 TEN Agent
 
 ### 先决条件
 #### Keys 
@@ -146,39 +172,29 @@ make run-server
 
 走到这里就本地构建完成了，简单 5 步，上手体验拉满！
 
-#### 验证 Astra agent 
+#### 验证 TEN Agent 
 
-现在可以打开浏览器 http://localhost:3000 体验 Astra agent
+现在可以打开浏览器 http://localhost:3000 体验 TEN Agent
 
-#### 验证 Graph designer
+#### 验证 Graph Designer
 
-同时可以再开一个 tab 在 http://localhost:3001 体验 Graph Designer (beta)，通过简单拖拽和动态节点连接轻松定制 Astra agent。
+同时可以再开一个 tab 在 http://localhost:3001 体验 Graph Designer，通过简单拖拽和动态节点连接轻松定制 TEN Agent。
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
-
-<br>
-<h2>点星收藏</h2>
-
-我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
-
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_the_repo_confetti_higher_quality.gif?raw=true)
-
-
 
 <br>
 <h2>加入社区</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ)：非常适合分享您的应用程序并与社区互动。
-- [WeChat Group](https://github.com/TEN-framework/ASTRA.ai/discussions/170): 如果喜欢用微信群的社区，欢迎加入。
-- [Github Discussion](https://github.com/TEN-framework/astra.ai/discussions)：非常适合提供反馈和提问。
-- [GitHub Issues](https://github.com/TEN-framework/astra.ai/issues)：最适合报告错误和提出新功能。有关更多详细信息，请参阅我们的[贡献指南](./docs/code-of-conduct/contributing.md)。
-- [X（以前的Twitter）](https://img.shields.io/twitter/follow/AstraAIAgent?logo=X&color=%20%23f5f5f5)：非常适合分享您的代理并与社区互动。
-
+- [WeChat Group](https://github.com/TEN-framework/ten-agent/discussions/170): 如果喜欢用微信群的社区，欢迎加入。
+- [Github Discussion](https://github.com/TEN-framework/ten-agent/discussions)：非常适合提供反馈和提问。
+- [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues)：最适合报告错误和提出新功能。有关更多详细信息，请参阅我们的[贡献指南](./docs/code-of-conduct/contributing.md)。
+- [X/Twitter](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)：非常适合分享您的代理并与社区互动。
 
 <br>
  <h2>代码贡献者</h2>
 
-[![ASTRA](https://contrib.rocks/image?repo=TEN-framework/astra.ai)](https://github.com/TEN-framework/astra.ai/graphs/contributors)
+[![TEN Agent](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <br>
 <h2>欢迎贡献</h2>
