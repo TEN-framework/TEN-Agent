@@ -27,8 +27,8 @@ from datetime import datetime
 import time
 
 
-APP_ID = "25358c4d6ed54fbaaecfd9ffe8d45058"
-CHANNEL = "astra_agents_test"
+APP_ID = ""
+CHANNEL = ""
 STREAM_ID = "0"
 TOKEN = ""
 
