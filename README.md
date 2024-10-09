@@ -99,7 +99,7 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
 #### Docker setting on Apple Silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/png/docker_setting.png?raw=true)
 
 ### Next step
 
@@ -150,16 +150,16 @@ Once the build is done, `make run-server` on port `8080`:
 make run-server
 ```
 
-### Finish and verify 🎉
+### Finish and verify
 
 #### TEN Agent
-Open up http://localhost:3000 in browser to play and test the TEN Agent.
+Open up [localhost:3000]( http://localhost:3000 ) in browser to play and test the TEN Agent.
 
 #### TEN Graph Designer
 
-Open up another tab go to http://localhost:3001, and use Graph Designer to create, connect and edit extensions on canvas.
+Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Graph Designer to create, connect and edit extensions on canvas.
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
+![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
 <!-- <br>
 <h2>TEN Agent Comparison</h2>
