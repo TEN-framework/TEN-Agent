@@ -500,23 +500,38 @@ class OpenAIV2VExtension(Extension):
         c.set_property_string(CMD_PROPERTY_NAME, name)
         c.set_property_string(CMD_PROPERTY_ARGS, args)
         ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
-                callback(result.get_property_string("response")), self.loop))
+                callback(result), self.loop))
         logger.info(f"_remote_tool_call finish {name} {args}")
     
-    async def _on_tool_output(self, tool_call_id:str,  result: str):
-        logger.info(f"_on_tool_output {tool_call_id} {result}")
-        try:
+    async def _on_tool_output(self, tool_call_id:str,  result:CmdResult):
+        state = result.get_status_code()
+        if state == StatusCode.OK:
+            try:
+                response = result.get_property_string("response")
+                logger.info(f"_on_tool_output {tool_call_id} {response}")
+            
+                tool_response = ItemCreate(
+                    item=FunctionCallOutputItemParam(
+                        call_id=tool_call_id,
+                        output=response,
+                    )
+                )
+
+                await self.conn.send_request(tool_response)
+                await self.conn.send_request(ResponseCreate())
+            except:
+                logger.exception("Failed to handle tool output")
+        else:
+            logger.error(f"Failed to call function {tool_call_id}")
             tool_response = ItemCreate(
                 item=FunctionCallOutputItemParam(
                     call_id=tool_call_id,
-                    output=result,
+                    output="{\"success\":false}",
                 )
             )
 
             await self.conn.send_request(tool_response)
             await self.conn.send_request(ResponseCreate())
-        except:
-            logger.exception("Failed to handle tool output")
 
     def _greeting_text(self) -> str:
         text = "Hi, there."
