@@ -39,7 +39,7 @@ OpenAI Realtime API provides ultra-low latency, and RTC offers AI noise suppress
 ![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
 
 <br>
-<h2>TEN Features</h2>
+<h2>TEN Agent Features</h2>
 
 Aside from being world's the first agent to integrate the OpenAI Realtime API and RTC, TEN Agent also offers the following features:
 
