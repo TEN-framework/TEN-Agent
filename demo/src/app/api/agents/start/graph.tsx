@@ -119,6 +119,20 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va.minimax.azure") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "openai_chatgpt": {
+                "base_url": "https://api.minimax.chat/v1",
+                "model": "abab6.5s-chat",
+                ...localizationOptions
+            },
+            "azure_tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     } else if (graphName == "va.qwen.rag") {
         return {
             "agora_rtc": {
