@@ -505,8 +505,14 @@ class OpenAIV2VExtension(Extension):
     
     async def _on_tool_output(self, tool_call_id:str,  result:CmdResult):
         state = result.get_status_code()
-        if state == StatusCode.OK:
-            try:
+        tool_response = ItemCreate(
+            item=FunctionCallOutputItemParam(
+                call_id=tool_call_id,
+                output="{\"success\":false}",
+            )
+        )
+        try:
+            if state == StatusCode.OK:
                 response = result.get_property_string("response")
                 logger.info(f"_on_tool_output {tool_call_id} {response}")
             
@@ -516,22 +522,13 @@ class OpenAIV2VExtension(Extension):
                         output=response,
                     )
                 )
-
-                await self.conn.send_request(tool_response)
-                await self.conn.send_request(ResponseCreate())
-            except:
-                logger.exception("Failed to handle tool output")
-        else:
-            logger.error(f"Failed to call function {tool_call_id}")
-            tool_response = ItemCreate(
-                item=FunctionCallOutputItemParam(
-                    call_id=tool_call_id,
-                    output="{\"success\":false}",
-                )
-            )
-
+            else:
+                logger.error(f"Failed to call function {tool_call_id}")
+                
             await self.conn.send_request(tool_response)
             await self.conn.send_request(ResponseCreate())
+        except:
+            logger.exception("Failed to handle tool output")
 
     def _greeting_text(self) -> str:
         text = "Hi, there."
