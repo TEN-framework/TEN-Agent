@@ -690,6 +690,15 @@
                                         "extension": "openai_chatgpt"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "on_user_left",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
+                                    }
+                                ]
                             }
                         ]
                     },
@@ -1510,6 +1519,15 @@
                         "cmd": [
                             {
                                 "name": "on_user_joined",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "on_user_left",
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",

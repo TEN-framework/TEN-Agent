@@ -27,6 +27,7 @@ from .log import logger
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
+CMD_IN_ON_USER_LEFT = "on_user_left"
 CMD_OUT_FLUSH = "flush"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
@@ -140,6 +141,7 @@ class OpenAIChatGPTExtension(Extension):
             except Exception as err:
                 logger.info(
                     f"Error parsing {PROPERTY_CHECKING_VISION_TEXT_ITEMS}: {err}")
+        self.users_count = 0
 
         # Create instance
         try:
@@ -172,8 +174,9 @@ class OpenAIChatGPTExtension(Extension):
             logger.info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
         elif cmd_name == CMD_IN_ON_USER_JOINED:
-            # Send greeting if available
-            if self.greeting:
+            self.users_count += 1
+            # Send greeting when first user joined
+            if self.greeting and self.users_count == 1:
                 try:
                     output_data = Data.create("text_data")
                     output_data.set_property_string(
@@ -186,6 +189,9 @@ class OpenAIChatGPTExtension(Extension):
                     logger.info(
                         f"Failed to send greeting [{self.greeting}]: {err}")
 
+            status_code, detail = StatusCode.OK, "success"
+        elif cmd_name == CMD_IN_ON_USER_LEFT:
+            self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
         else:
             logger.info(f"on_cmd unknown cmd: {cmd_name}")
