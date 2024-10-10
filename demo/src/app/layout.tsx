@@ -1,9 +1,7 @@
 import { ConfigProvider } from "antd"
 import { StoreProvider } from "@/store";
 import type { Metadata, Viewport } from "next";
-
 import './global.css'
-
 
 export const metadata: Metadata = {
   title: "TEN Agent",
@@ -22,9 +20,6 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
 }
-
-
-
 
 export default function RootLayout({
   children,
