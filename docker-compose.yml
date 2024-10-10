@@ -19,7 +19,7 @@ services:
         networks:
             - astra_network
     astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.4.1-9-g09a1df2
+        image: ghcr.io/ten-framework/astra_playground:v0.4.1-103-g391e0d0
         container_name: astra_playground
         restart: always
         ports:
