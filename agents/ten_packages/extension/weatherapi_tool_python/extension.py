@@ -1,7 +1,7 @@
 #
 #
 # Agora Real Time Engagement
-# Created by Wei Hu in 2024-08.
+# Created by Tomas Liu in 2024-08.
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
@@ -31,10 +31,11 @@ CMD_PROPERTY_ARGS = "args"
 TOOL_REGISTER_PROPERTY_NAME = "name"
 TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
 TOOL_REGISTER_PROPERTY_PARAMETERS = "parameters"
+TOOL_CALLBACK = "callback"
 
-TOOL_NAME = "get_current_weather"
-TOOL_DESCRIPTION = "Determine weather in my location"
-TOOL_PARAMETERS = {
+CURRENT_TOOL_NAME = "get_current_weather"
+CURRENT_TOOL_DESCRIPTION = "Determine current weather in user's location."
+CURRENT_TOOL_PARAMETERS = {
         "type": "object",
         "properties": {
             "location": {
@@ -45,13 +46,68 @@ TOOL_PARAMETERS = {
         "required": ["location"],
     }
 
+# for free key, only 7 days before, see more in https://www.weatherapi.com/pricing.aspx
+HISTORY_TOOL_NAME = "get_past_weather"
+HISTORY_TOOL_DESCRIPTION = "Determine weather within past 7 days in user's location." 
+HISTORY_TOOL_PARAMETERS = {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "The city and state e.g. San Francisco, CA"
+            },
+            "datetime": {
+                "type": "string",
+                "description": "The datetime user is referring in date format e.g. 2024-10-09"
+            }
+        },
+        "required": ["location", "datetime"],
+}
+
+# for free key, only 3 days after, see more in https://www.weatherapi.com/pricing.aspx
+FORCAST_TOOL_NAME = "get_future_weather"
+FORCAST_TOOL_DESCRIPTION = "Determine weather in next 3 days in user's location." 
+FORCAST_TOOL_PARAMETERS = {
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "The city and state e.g. San Francisco, CA"
+            }
+        },
+        "required": ["location"],
+}
+
 PROPERTY_API_KEY = "api_key"  # Required
 
 class WeatherToolExtension(Extension):
     api_key: str = ""
+    tools: dict = {}
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("WeatherToolExtension on_init")
+
+        self.tools = {
+            CURRENT_TOOL_NAME: {
+                TOOL_REGISTER_PROPERTY_NAME: CURRENT_TOOL_NAME,
+                TOOL_REGISTER_PROPERTY_DESCRIPTON: CURRENT_TOOL_DESCRIPTION,
+                TOOL_REGISTER_PROPERTY_PARAMETERS: CURRENT_TOOL_PARAMETERS,
+                TOOL_CALLBACK: self._get_current_weather
+            },
+            HISTORY_TOOL_NAME: {
+                TOOL_REGISTER_PROPERTY_NAME: HISTORY_TOOL_NAME,
+                TOOL_REGISTER_PROPERTY_DESCRIPTON: HISTORY_TOOL_DESCRIPTION,
+                TOOL_REGISTER_PROPERTY_PARAMETERS: HISTORY_TOOL_PARAMETERS,
+                TOOL_CALLBACK: self._get_past_weather
+            },
+            FORCAST_TOOL_NAME: {
+                TOOL_REGISTER_PROPERTY_NAME: FORCAST_TOOL_NAME,
+                TOOL_REGISTER_PROPERTY_DESCRIPTON: FORCAST_TOOL_DESCRIPTION,
+                TOOL_REGISTER_PROPERTY_PARAMETERS: FORCAST_TOOL_PARAMETERS,
+                TOOL_CALLBACK: self._get_future_weather
+            },
+            # TODO other tools
+        }
 
         ten_env.on_init_done()
 
@@ -67,11 +123,12 @@ class WeatherToolExtension(Extension):
             return
 
         # Register func
-        c = Cmd.create(CMD_TOOL_REGISTER)
-        c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, TOOL_NAME)
-        c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, TOOL_DESCRIPTION)
-        c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(TOOL_PARAMETERS))
-        ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
+        for name, tool in self.tools.items():
+            c = Cmd.create(CMD_TOOL_REGISTER)
+            c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, name)
+            c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, tool[TOOL_REGISTER_PROPERTY_DESCRIPTON])
+            c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(tool[TOOL_REGISTER_PROPERTY_PARAMETERS]))
+            ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
 
         ten_env.on_start_done()
 
@@ -88,27 +145,23 @@ class WeatherToolExtension(Extension):
         cmd_name = cmd.get_name()
         logger.info(f"on_cmd name {cmd_name} {cmd.to_json()}")
 
+        # FIXME need to handle async
         try:
             name = cmd.get_property_string(CMD_PROPERTY_NAME)
-            if name == TOOL_NAME:
+            if name in self.tools:
                 try:
+                    tool = self.tools[name]
                     args = cmd.get_property_string(CMD_PROPERTY_ARGS)
                     arg_dict = json.loads(args)
-                    if "location" in arg_dict:
-                        logger.info(f"before get current weather {name}")
-                        resp = self._get_current_weather(arg_dict["location"])
-                        logger.info(f"after get current weather {resp}")
-                        cmd_result = CmdResult.create(StatusCode.OK)
-                        cmd_result.set_property_string("response", json.dumps(resp))
-                        ten_env.return_result(cmd_result, cmd)
-                        return
-                    else:
-                        logger.error(f"no location in args {args}")
-                        cmd_result = CmdResult.create(StatusCode.ERROR)
-                        ten_env.return_result(cmd_result, cmd)
-                        return
+                    logger.info(f"before callback {name}")
+                    resp = tool[TOOL_CALLBACK](arg_dict)
+                    logger.info(f"after callback {resp}")
+                    cmd_result = CmdResult.create(StatusCode.OK)
+                    cmd_result.set_property_string("response", json.dumps(resp))
+                    ten_env.return_result(cmd_result, cmd)
+                    return
                 except:
-                    logger.exception("Failed to get weather")
+                    logger.exception("Failed to callback")
                     cmd_result = CmdResult.create(StatusCode.ERROR)
                     ten_env.return_result(cmd_result, cmd)
                     return
@@ -132,8 +185,40 @@ class WeatherToolExtension(Extension):
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
         pass
 
-    def _get_current_weather(self, location:str) -> Any:
+    def _get_current_weather(self, args:dict) -> Any:
+        if "location" not in args:
+            raise Exception("Failed to get property")
+        
+        location = args["location"]
         url = f"http://api.weatherapi.com/v1/current.json?key={self.api_key}&q={location}&aqi=no"
         response = requests.get(url)
         result = response.json()
+        return result
+    
+    def _get_past_weather(self, args:dict) -> Any:
+        if "location" not in args or "datetime" not in args:
+            raise Exception("Failed to get property")
+        
+        location = args["location"]
+        datetime = args["datetime"]
+        url = f"http://api.weatherapi.com/v1/history.json?key={self.api_key}&q={location}&dt={datetime}"
+        response = requests.get(url)
+        result = response.json()
+        # remove all hourly data
+        del result["forecast"]["forecastday"][0]["hour"]
+        return result
+    
+    def _get_future_weather(self, args:dict) -> Any:
+        if "location" not in args:
+            raise Exception("Failed to get property")
+        
+        location = args["location"]
+        url = f"http://api.weatherapi.com/v1/forecast.json?key={self.api_key}&q={location}&days=3&aqi=no&alerts=no"
+        response = requests.get(url)
+        result = response.json()
+        logger.info(f"get result {result}")
+        # remove all hourly data
+        for d in result["forecast"]["forecastday"]:
+            del d["hour"]
+        del result["current"]
         return result
