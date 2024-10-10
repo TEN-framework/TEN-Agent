@@ -87,6 +87,12 @@
     "cmd_in": [
       {
         "name": "flush"
+      },
+      {
+        "name": "on_user_joined"
+      },
+      {
+        "name": "on_user_left"
       }
     ],
     "cmd_out": [
