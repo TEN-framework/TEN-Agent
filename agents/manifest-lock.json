@@ -100,8 +100,8 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "0.4.0",
-      "hash": "c8f838754aaae7ed4598e99fb94b6e251382ade08fa23dbf85e91e9864d018ef",
+      "version": "0.4.2",
+      "hash": "f1f3e58bd67ff45d537703690fe15f37f37b1e5754c29c483e74f15ee8fde7c8",
       "dependencies": [
         {
           "type": "system",
@@ -111,7 +111,8 @@
           "type": "system",
           "name": "azure_speech_sdk"
         }
-      ]
+      ],
+      "supports": []
     },
     {
       "type": "system",
