@@ -120,6 +120,7 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
             }
         }
     } else if (graphName == "va.minimax.azure") {
+
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
