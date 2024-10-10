@@ -5,10 +5,10 @@ export default function Login() {
 
   return (
     <main className={styles.login}>
-      <div className={styles.starts}></div>
-      <div className={styles.starts2}></div>
-      <div className={styles.starts3}></div>
-      <LoginCard></LoginCard>
+      <div className={styles.starts} />
+      <div className={styles.starts2} />
+      <div className={styles.starts3} />
+      <LoginCard />
     </main>
   );
 }

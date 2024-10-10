@@ -94,6 +94,16 @@
           font-weight: 500;
           line-height: 24px;
         }
+
+        .btnLoadingBg {
+          background: var(--primary-500-base, #434343);
+        }
+      }
+
+      &.btnDisabled {
+        background-color: #808080; // Gray color
+        cursor: not-allowed;
+        opacity: 0.7; // Optional: reduces opacity to further indicate disabled state
       }
     }
 
@@ -108,5 +118,26 @@
       line-height: 22px;
     }
 
+  }
+  .success {
+    background: var(--primary-500-base, #434343);
+  }
+  
+  .dotting { 
+    display: inline-block; width: 10px; min-height: 2px;
+    padding-right: 2px;
+    border-left: 2px solid currentColor; border-right: 2px solid currentColor;
+    background-color: currentColor; background-clip: content-box;
+    box-sizing: border-box;
+    -webkit-animation: dot 1.5s infinite step-start both;
+    animation: dot 1.5s infinite step-start both;
+  }
+  .dotting::before { content: ''; }
+  :root .dotting { margin-left: 2px; padding-left: 2px; }
+  
+  @keyframes dot {
+  25% { border-color: transparent; background-color: transparent; }
+  50% { border-right-color: transparent; background-color: transparent; }
+  75% { border-right-color: transparent; }
   }
 }
