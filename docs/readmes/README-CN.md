@@ -158,6 +158,7 @@ docker compose up
 再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建 agent 服务：
 ```bash
 #  进入容器创建 agent
+
 docker exec -it ten_agent_dev bash
 
 make build

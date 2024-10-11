@@ -16,9 +16,9 @@ on:
   workflow_dispatch:
 
 env:
-  SERVER_IMAGE_NAME: astra_agents_server
-  PLAYGROUND_IMAGE_NAME: astra_playground
-  DEMO_IMAGE_NAME: agent_demo
+  SERVER_IMAGE_NAME: ten_agent_server
+  PLAYGROUND_IMAGE_NAME: ten_agent_playground
+  DEMO_IMAGE_NAME: ten_agent_demo
 
 jobs:
   build:

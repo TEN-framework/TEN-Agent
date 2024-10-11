@@ -99,7 +99,7 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
 #### Docker setting on Apple Silicon
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/png/docker_setting.png?raw=true)
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 ### Next step
 
@@ -140,7 +140,9 @@ docker compose up
 #### 4. Enter container and build agent
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
+
 docker exec -it ten_agent_dev bash
+
 make build
 ```
 

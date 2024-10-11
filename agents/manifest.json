@@ -1,6 +1,6 @@
 {
   "type": "app",
-  "name": "astra_agents",
+  "name": "ten_agent",
   "version": "0.4.0",
   "dependencies": [
     {
