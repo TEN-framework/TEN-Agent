@@ -128,7 +128,7 @@ docker compose up
 #### 4. コンテナに入りエージェントをビルド
 別のターミナルウィンドウを開き、コンテナに入ってエージェントをビルドします：
 ```bash
-docker exec -it ten_agent_server bash
+docker exec -it ten_agent_dev bash
 make build
 ```
 

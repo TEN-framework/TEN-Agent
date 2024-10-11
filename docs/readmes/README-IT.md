@@ -126,7 +126,7 @@ docker compose up
 #### 4. Entra nel container e costruisci l'agente
 Apri una finestra di terminale separata, entra nel container e costruisci l'agente:
 ```bash
-docker exec -it ten_agent_server bash
+docker exec -it ten_agent_dev bash
 make build
 ```
 
