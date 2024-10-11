@@ -2233,7 +2233,8 @@
                             "voice": "alloy",
                             "language": "en-US",
                             "server_vad": true,
-                            "dump": true
+                            "dump": true,
+                            "history": 10
                         }
                     },
                     {
