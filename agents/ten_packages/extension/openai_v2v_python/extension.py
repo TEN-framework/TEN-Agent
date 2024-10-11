@@ -504,7 +504,7 @@ class OpenAIV2VExtension(Extension):
 
     async def _remote_tool_call(self, ten_env: TenEnv, name: str, args: str, callback: Awaitable):
         logger.info(f"_remote_tool_call {name} {args}")
-        c = Cmd.create(CMD_TOOL_CALL)
+        c = Cmd.create(f"{CMD_TOOL_CALL}_{name}")
         c.set_property_string(CMD_PROPERTY_NAME, name)
         c.set_property_string(CMD_PROPERTY_ARGS, args)
         ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
