@@ -24,22 +24,19 @@ import queue
 import websockets
 import threading
 from datetime import datetime
-import time
-
-
-APP_ID = ""
-CHANNEL = ""
-STREAM_ID = "0"
-TOKEN = ""
 
 class FashionAIExtension(Extension):
 
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("FASHION_AI on_init *********************************************************")
+        self.app_id = ""
+        self.token = ""
+        self.channel = ""
+        self.stream_id = ""
         self.stopped = False
-        self.queue = queue.Queue()
-        self.client = WebSocketClient("wss://ingress.service.fasionai.com/websocket/node7/server1")
+        self.queue = asyncio.Queue()
+        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1")
 
         ten_env.on_init_done()
 
@@ -47,29 +44,31 @@ class FashionAIExtension(Extension):
         logger.info("FASHION_AI on_start *********************************************************")
 
         # TODO: read properties, initialize resources
-        APP_ID = ten_env.get_property_string("app_id")
-        TOKEN = ten_env.get_property_string("token")
-        CHANNEL = ten_env.get_property_string("channel")
-        STREAM_ID = str(ten_env.get_property_int("stream_id"))
-        if len(TOKEN) > 0 :
-            APP_ID = TOKEN
-        logger.info(f"FASHION_AI on_start: app_id = {APP_ID}, token = {TOKEN}, channel = {CHANNEL}, stream_id = {STREAM_ID}")
+        self.app_id = ten_env.get_property_string("app_id")
+        self.token = ten_env.get_property_string("token")
+        self.channel = ten_env.get_property_string("channel")
+        self.stream_id = str(ten_env.get_property_int("stream_id"))
+        if len(self.token) > 0 :
+            self.app_id = self.token
+        logger.info(f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}")
 
-        new_loop = asyncio.new_event_loop()
+        loop = asyncio.new_event_loop()
 
-        self.threadWebsocket = threading.Thread(target=self.thread_target, args=(new_loop,ten_env,APP_ID ,CHANNEL,STREAM_ID))
+        def thread_target():
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(self.init_fashionai(ten_env, self.app_id, self.channel, self.stream_id))
+
+        self.threadWebsocket = threading.Thread(target=thread_target)
         self.threadWebsocket.start()
-
-        threading.Thread(target=self.async_polly_handler, args=[ten_env]).start()
 
         ten_env.on_start_done()
 
     def on_stop(self, ten_env: TenEnv) -> None:
         logger.info("FASHION_AI on_stop")
         self.stopped = True
-        self.queue.put(None)
+        asyncio.run(self.queue.put(None))
         self.flush()
-        self.thread.join()
+        self.threadWebsocket.join()
 
         # TODO: clean up resources
 
@@ -86,7 +85,7 @@ class FashionAIExtension(Extension):
         # TODO: process cmd
         if cmd_name == "flush":
             self.outdate_ts = datetime.now()
-            self.flush()
+            asyncio.run(self.flush())
             cmd_out = Cmd.create("flush")
             ten_env.send_cmd(cmd_out, lambda ten, result: logger.info("send_cmd flush done"))
         else:
@@ -103,7 +102,7 @@ class FashionAIExtension(Extension):
             return
 
         logger.info("FASHION_AI on data %s", inputText)
-        self.queue.put((inputText, datetime.now()))
+        asyncio.run(self.queue.put((inputText, datetime.now())))
         # asyncio.get_event_loop().run_until_complete(self.client.send_inputText(inputText))
         logger.info("FASHION_AI send_inputText %s", inputText)
 
@@ -127,13 +126,9 @@ class FashionAIExtension(Extension):
         while True:
             await self.async_polly_handler()
 
-    def thread_target(self, loop, ten_env: TenEnv, app_id, channel, stream_id):
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.init_fashionai(ten_env, app_id, channel, stream_id))
-
         
     async def async_polly_handler(self):
-        value = self.queue.get()
+        value = await self.queue.get()  # 从队列中获取值
         logger.info(f"async_polly_handler: loop fashion ai polly.{value}")
 
         inputText, ts = value
@@ -143,13 +138,14 @@ class FashionAIExtension(Extension):
             except Exception as e:
                 logger.exception(e)
 
-    def flush(self):
+    async def flush(self):
         logger.info("FASHION_AI flush")
         while not self.queue.empty():
-            self.queue.get()
+            value = await self.queue.get()
+            logger.info(f"Flushing value: {value}")
 
 
-class WebSocketClient:
+class FashionAIClient:
     def __init__(self, uri):
         self.uri = uri
         self.websocket = None
@@ -204,20 +200,6 @@ class WebSocketClient:
                 logger.info("FASHION_AI Timeout waiting for response")
         else:
             logger.info("FASHION_AI WebSocket is not connected.")
-
-    async def receive_message(self):
-        if self.websocket is not None:
-            try:
-                response = await self.websocket.recv()
-                logger.info(f"FASHION_AI Received: {response}")
-                return response
-            except websockets.exceptions.ConnectionClosedError as e:
-                logger.info(f"FASHION_AI Connection closed with error: {e}")
-                await self.reconnect()
-                return None
-        else:
-            logger.info("FASHION_AI WebSocket is not connected.")
-            return None
 
     async def close(self):
         if self.websocket is not None:
