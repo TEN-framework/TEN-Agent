@@ -49,6 +49,12 @@
       },
       "dump": {
         "type": "bool"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "history": {
+        "type": "int64"
       }
     },
     "audio_frame_in": [

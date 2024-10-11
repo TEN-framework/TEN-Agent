@@ -26,7 +26,7 @@ from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
 
 from .tools import ToolRegistry
-from .conf import RealtimeApiConfig, BASIC_PROMPT
+from .conf import RealtimeApiConfig, BASIC_PROMPT, DEFAULT_GREETING
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import *
 from .tools import ToolRegistry
@@ -43,6 +43,7 @@ PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 PROPERTY_DUMP = "dump"
 PROPERTY_GREETING = "greeting"
+PROPERTY_HISTORY = "history"
 
 DEFAULT_VOICE = Voices.Alloy
 
@@ -85,6 +86,10 @@ class OpenAIV2VExtension(Extension):
         self.transcript: str = ''
 
         # misc.
+        self.greeting = DEFAULT_GREETING
+        # max history store in context
+        self.max_history = 0
+        self.history = []
         self.remote_stream_id: int = 0
         self.channel_name: str = ""
         self.dump: bool = False
@@ -216,6 +221,9 @@ class OpenAIV2VExtension(Extension):
                                 f"On request transcript failed {message.item_id} {message.error}")
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
+                            if self.max_history and message.item["status"] == "completed":
+                                # need maintain the history
+                                await self._append_history(message.item)
                         case ResponseCreated():
                             response_id = message.response.id
                             logger.info(
@@ -225,6 +233,8 @@ class OpenAIV2VExtension(Extension):
                             status = message.response.status
                             logger.info(
                                 f"On response done {id} {status}")
+                            for item in message.response.output:
+                                await self._append_history(item)
                             if id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
@@ -305,6 +315,15 @@ class OpenAIV2VExtension(Extension):
         # clear so that new session can be triggered
         self.connected = False
         self.remote_stream_id = 0
+    
+    async def _append_history(self, item: ItemParam) -> None:
+        logger.info(f"append item {item}")
+        self.history.append(item["id"])
+        if len(self.history) > self.max_history:
+            to_remove = self.history[0]
+            logger.info(f"remove history {to_remove}")
+            await self.conn.send_request(ItemDelete(item_id=to_remove))
+            self.history = self.history[1:]
 
     async def _on_audio(self, buff: bytearray):
         self.out_audio_buff += buff
@@ -400,8 +419,17 @@ class OpenAIV2VExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_DUMP} error: {err}")
+        
+        try:
+            history = ten_env.get_property_int(PROPERTY_HISTORY)
+            if history:
+                self.max_history = history
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_HISTORY} error: {err}")
 
         self.ctx = self.config.build_ctx()
+        self.ctx["greeting"] = self.greeting
 
     def _update_session(self) -> SessionUpdate:
         prompt = self._replace(self.config.instruction)
