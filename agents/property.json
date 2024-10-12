@@ -3,6 +3,223 @@
         "log_level": 3,
         "predefined_graphs": [
             {
+              "auto_start": true,
+              "connections": [
+                {
+                  "app": "localhost",
+                  "data": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "interrupt_detector",
+                          "extension_group": "default"
+                        },
+                        {
+                          "app": "localhost",
+                          "extension": "openai_chatgpt",
+                          "extension_group": "chatgpt"
+                        },
+                        {
+                          "app": "localhost",
+                          "extension": "message_collector",
+                          "extension_group": "transcriber"
+                        }
+                      ],
+                      "name": "text_data"
+                    }
+                  ],
+                  "extension": "agora_rtc",
+                  "extension_group": "default"
+                },
+                {
+                  "app": "localhost",
+                  "cmd": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "azure_tts",
+                          "extension_group": "tts"
+                        },
+                        {
+                          "app": "localhost",
+                          "extension": "fashionai",
+                          "extension_group": "default"
+                        }
+                      ],
+                      "name": "flush"
+                    }
+                  ],
+                  "data": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "message_collector",
+                          "extension_group": "transcriber"
+                        },
+                        {
+                          "app": "localhost",
+                          "extension": "fashionai",
+                          "extension_group": "default"
+                        }
+                      ],
+                      "name": "text_data"
+                    }
+                  ],
+                  "extension": "openai_chatgpt",
+                  "extension_group": "chatgpt"
+                },
+                {
+                  "app": "localhost",
+                  "audio_frame": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "agora_rtc",
+                          "extension_group": "default"
+                        }
+                      ],
+                      "name": "pcm_frame"
+                    }
+                  ],
+                  "cmd": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "agora_rtc",
+                          "extension_group": "default"
+                        }
+                      ],
+                      "name": "flush"
+                    }
+                  ],
+                  "extension": "azure_tts",
+                  "extension_group": "tts"
+                },
+                {
+                  "app": "localhost",
+                  "data": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "agora_rtc",
+                          "extension_group": "default"
+                        }
+                      ],
+                      "name": "data"
+                    }
+                  ],
+                  "extension": "message_collector",
+                  "extension_group": "transcriber"
+                },
+                {
+                  "app": "localhost",
+                  "cmd": [
+                    {
+                      "dest": [
+                        {
+                          "app": "localhost",
+                          "extension": "openai_chatgpt",
+                          "extension_group": "chatgpt"
+                        }
+                      ],
+                      "name": "flush"
+                    }
+                  ],
+                  "extension": "interrupt_detector",
+                  "extension_group": "default"
+                }
+              ],
+              "name": "va.openai.azure.fashionai",
+              "nodes": [
+                {
+                  "addon": "agora_rtc",
+                  "app": "localhost",
+                  "extension_group": "default",
+                  "name": "agora_rtc",
+                  "property": {
+                    "agora_asr_language": "en-US",
+                    "agora_asr_session_control_file_path": "session_control.conf",
+                    "agora_asr_vendor_key": "$AZURE_STT_KEY",
+                    "agora_asr_vendor_name": "microsoft",
+                    "agora_asr_vendor_region": "$AZURE_STT_REGION",
+                    "app_id": "$AGORA_APP_ID",
+                    "channel": "astra_agents_test",
+                    "enable_agora_asr": true,
+                    "publish_audio": true,
+                    "publish_data": true,
+                    "remote_stream_id": 123,
+                    "stream_id": 1234,
+                    "subscribe_audio": true,
+                    "token": "<agora_token>"
+                  },
+                  "type": "extension"
+                },
+                {
+                  "addon": "interrupt_detector",
+                  "app": "localhost",
+                  "extension_group": "default",
+                  "name": "interrupt_detector",
+                  "type": "extension"
+                },
+                {
+                  "addon": "openai_chatgpt",
+                  "app": "localhost",
+                  "extension_group": "chatgpt",
+                  "name": "openai_chatgpt",
+                  "property": {
+                    "api_key": "$OPENAI_API_KEY",
+                    "base_url": "",
+                    "frequency_penalty": 0.9,
+                    "greeting": "TEN Agent connected. How can I help you today?",
+                    "max_memory_length": 10,
+                    "max_tokens": 512,
+                    "model": "gpt-4o-mini",
+                    "prompt": "",
+                    "proxy_url": "$OPENAI_PROXY_URL"
+                  },
+                  "type": "extension"
+                },
+                {
+                  "addon": "azure_tts",
+                  "app": "localhost",
+                  "extension_group": "tts",
+                  "name": "azure_tts",
+                  "property": {
+                    "azure_subscription_key": "$AZURE_TTS_KEY",
+                    "azure_subscription_region": "$AZURE_TTS_REGION",
+                    "azure_synthesis_voice_name": "en-US-JaneNeural"
+                  },
+                  "type": "extension"
+                },
+                {
+                  "addon": "message_collector",
+                  "app": "localhost",
+                  "extension_group": "transcriber",
+                  "name": "message_collector",
+                  "type": "extension"
+                },
+                {
+                  "addon": "fashionai",
+                  "app": "localhost",
+                  "extension_group": "default",
+                  "name": "fashionai",
+                  "property": {
+                    "app_id": "$AGORA_APP_ID",
+                    "channel": "astra_agents_test",
+                    "stream_id": 12345,
+                    "token": ""
+                  },
+                  "type": "extension"
+                }
+              ]
+            },
+            {
                 "name": "va.openai.azure",
                 "auto_start": false,
                 "nodes": [
