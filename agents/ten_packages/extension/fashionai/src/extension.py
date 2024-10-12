@@ -111,11 +111,8 @@ class FashionAIExtension(Extension):
                     self.queue.put((inputText, datetime.now())), self.loop
             ).result(timeout=0.1)
         except Exception as e:
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR))
-        # asyncio.get_event_loop().run_until_complete(self.client.send_inputText(inputText))
+            logger.warning(f"FASHION_AI put inputText={inputText} queue err: {e}")
         logger.info("FASHION_AI send_inputText %s", inputText)
-
-        # self.queue.put((inputText, datetime.now()))
 
         pass
 
@@ -130,12 +127,10 @@ class FashionAIExtension(Extension):
     async def init_fashionai(self, ten_env: TenEnv, app_id, channel, stream_id):
         await self.client.connect()
         await self.client.stream_start(app_id, channel, stream_id)
-        # asyncio.create_task(self.client.heartbeat(10))
         await self.client.render_start()
-        await self.async_polly_handler()
-
+        await self.create_task()
         
-    async def async_polly_handler(self):
+    async def create_task(self):
         while True:
             value = await self.queue.get()  # 从队列中获取值
             logger.info(f"async_polly_handler: loop fashion ai polly.{value}")
