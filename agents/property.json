@@ -2251,6 +2251,15 @@
                         "property": {
                             "api_key": "${env:WEATHERAPI_API_KEY}"
                         }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tools",
+                        "addon": "bingsearch_tool_python",
+                        "name": "bingsearch_tool_python",
+                        "property": {
+                            "api_key": "${env:BING_API_KEY}"
+                        }
                     }
                 ],
                 "connections": [
@@ -2272,6 +2281,21 @@
                     {
                         "extension_group": "tools",
                         "extension": "weatherapi_tool_python",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tools",
+                        "extension": "bingsearch_tool_python",
                         "cmd": [
                             {
                                 "name": "tool_register",
@@ -2320,11 +2344,82 @@
                                 ]
                             },
                             {
-                                "name": "tool_call",
+                                "name": "tool_call_get_current_weather",
                                 "dest": [
                                     {
                                         "extension_group": "tools",
-                                        "extension": "weatherapi_tool_python"
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_get_past_weather",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_get_future_weather",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_bing_search",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "bingsearch_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
                                     }
                                 ]
                             }
