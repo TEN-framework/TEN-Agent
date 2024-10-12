@@ -127,10 +127,10 @@ class FashionAIExtension(Extension):
         await self.client.stream_start(app_id, channel, stream_id)
         # asyncio.create_task(self.client.heartbeat(10))
         await self.client.render_start()
-        await self.async_polly_handler()
+        await self.create_task()
 
         
-    async def async_polly_handler(self):
+    async def create_task(self):
         while True:
             value = await self.queue.get()  # 从队列中获取值
             logger.info(f"async_polly_handler: loop fashion ai polly.{value}")
