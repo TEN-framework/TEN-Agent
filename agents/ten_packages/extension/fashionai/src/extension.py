@@ -128,9 +128,9 @@ class FashionAIExtension(Extension):
         await self.client.connect()
         await self.client.stream_start(app_id, channel, stream_id)
         await self.client.render_start()
-        await self.create_task()
+        await self.async_polly_handler()
         
-    async def create_task(self):
+    async def async_polly_handler(self):
         while True:
             value = await self.queue.get()  # 从队列中获取值
             logger.info(f"async_polly_handler: loop fashion ai polly.{value}")
