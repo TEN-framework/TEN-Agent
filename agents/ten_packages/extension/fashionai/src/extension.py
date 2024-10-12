@@ -35,8 +35,10 @@ class FashionAIExtension(Extension):
         self.channel = ""
         self.stream_id = ""
         self.stopped = False
-        self.queue = asyncio.Queue()
+        self.queue = asyncio.Queue(maxsize=3000)
         self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1")
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
 
         ten_env.on_init_done()
 
@@ -52,11 +54,8 @@ class FashionAIExtension(Extension):
             self.app_id = self.token
         logger.info(f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}")
 
-        loop = asyncio.new_event_loop()
-
         def thread_target():
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(self.init_fashionai(ten_env, self.app_id, self.channel, self.stream_id))
+            self.loop.run_until_complete(self.init_fashionai(ten_env, self.app_id, self.channel, self.stream_id))
 
         self.threadWebsocket = threading.Thread(target=thread_target)
         self.threadWebsocket.start()
@@ -85,7 +84,9 @@ class FashionAIExtension(Extension):
         # TODO: process cmd
         if cmd_name == "flush":
             self.outdate_ts = datetime.now()
-            asyncio.run(self.flush())
+            asyncio.run_coroutine_threadsafe(
+                self.flush(), self.loop
+            ).result(timeout=0.1)
             cmd_out = Cmd.create("flush")
             ten_env.send_cmd(cmd_out, lambda ten, result: logger.info("send_cmd flush done"))
         else:
@@ -102,7 +103,10 @@ class FashionAIExtension(Extension):
             return
 
         logger.info("FASHION_AI on data %s", inputText)
-        asyncio.run(self.queue.put((inputText, datetime.now())))
+        asyncio.run_coroutine_threadsafe(
+                self.queue.put((inputText, datetime.now())), self.loop
+        ).result(timeout=0.1)
+
         # asyncio.get_event_loop().run_until_complete(self.client.send_inputText(inputText))
         logger.info("FASHION_AI send_inputText %s", inputText)
 
