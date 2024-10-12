@@ -33,6 +33,9 @@ from .tools import ToolRegistry
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
+PROPERTY_BASE_URI = "base_uri"  # Optional
+PROPERTY_PATH = "path"  # Optional
+PROPERTY_AZURE_STYLE = "azure_style"  # Optional
 PROPERTY_MODEL = "model"  # Optional
 PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
@@ -86,7 +89,8 @@ class OpenAIV2VExtension(Extension):
         self.transcript: str = ''
 
         # misc.
-        self.greeting = DEFAULT_GREETING
+        self.greeting : str = DEFAULT_GREETING
+        self.azure_style: bool = False
         # max history store in context
         self.max_history = 0
         self.history = []
@@ -173,7 +177,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, azure_style=self.azure_style, verbose=True)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -342,6 +346,25 @@ class OpenAIV2VExtension(Extension):
             logger.info(
                 f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
             return
+
+        try:
+            base_uri = ten_env.get_property_string(PROPERTY_BASE_URI)
+            if base_uri:
+                self.config.base_uri = base_uri
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_BASE_URI} error: {err}")
+        
+        try:
+            path = ten_env.get_property_string(PROPERTY_PATH)
+            if path:
+                self.config.path = path
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_PATH} error: {err}")
+        
+        try:
+            self.azure_style = ten_env.get_property_bool(PROPERTY_AZURE_STYLE)
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_AZURE_STYLE} error: {err}") 
 
         try:
             model = ten_env.get_property_string(PROPERTY_MODEL)

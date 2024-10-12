@@ -36,10 +36,12 @@ class RealtimeApiConnection:
         api_key: str | None = None,
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
+        azure_style: bool = False,
         verbose: bool = False,
     ):
+        self.azure_style = azure_style
         self.url = f"{base_uri}{path}"
-        if "model=" not in self.url:
+        if not azure_style and "model=" not in self.url:
             self.url += f"?model={model}"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
@@ -56,9 +58,13 @@ class RealtimeApiConnection:
         return False
 
     async def connect(self):
-        auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-
-        headers = {"OpenAI-Beta": "realtime=v1"}
+        headers = {}
+        auth = None
+        if self.azure_style:
+            headers = {"api-key": self.api_key}
+        else:
+            auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
+            headers = {"OpenAI-Beta": "realtime=v1"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
@@ -98,8 +104,8 @@ class RealtimeApiConnection:
     def handle_server_message(self, message: str) -> ServerToClientMessage:
         try:
             return parse_server_message(message)
-        except Exception as e:
-            logger.error("Error handling message: " + str(e))
+        except:
+            logger.exception("Error handling message")
 
     async def close(self):
         # Close the websocket connection if it exists
