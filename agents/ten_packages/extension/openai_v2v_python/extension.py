@@ -33,6 +33,9 @@ from .tools import ToolRegistry
 
 # properties
 PROPERTY_API_KEY = "api_key"  # Required
+PROPERTY_BASE_URI = "base_uri"  # Optional
+PROPERTY_PATH = "path"  # Optional
+PROPERTY_PLATFORM = "platform"  # Optional
 PROPERTY_MODEL = "model"  # Optional
 PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
@@ -86,7 +89,8 @@ class OpenAIV2VExtension(Extension):
         self.transcript: str = ''
 
         # misc.
-        self.greeting = DEFAULT_GREETING
+        self.greeting : str = DEFAULT_GREETING
+        self.platform: str = ""
         # max history store in context
         self.max_history = 0
         self.history = []
@@ -109,7 +113,7 @@ class OpenAIV2VExtension(Extension):
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
-        self._register_local_tools()
+        # self._register_local_tools()
 
         asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
 
@@ -173,7 +177,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, api_key=self.config.api_key, model=self.config.model, verbose=True)
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, platform=self.platform, verbose=True)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -221,7 +225,8 @@ class OpenAIV2VExtension(Extension):
                                 f"On request transcript failed {message.item_id} {message.error}")
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
-                            if self.max_history and message.item["status"] == "completed":
+
+                            if self.max_history and ("status" not in message.item or message.item["status"] == "completed"):
                                 # need maintain the history
                                 await self._append_history(message.item)
                         case ResponseCreated():
@@ -344,6 +349,25 @@ class OpenAIV2VExtension(Extension):
             return
 
         try:
+            base_uri = ten_env.get_property_string(PROPERTY_BASE_URI)
+            if base_uri:
+                self.config.base_uri = base_uri
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_BASE_URI} error: {err}")
+        
+        try:
+            path = ten_env.get_property_string(PROPERTY_PATH)
+            if path:
+                self.config.path = path
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_PATH} error: {err}")
+        
+        try:
+            self.platform = ten_env.get_property_string(PROPERTY_PLATFORM)
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_PLATFORM} error: {err}") 
+
+        try:
             model = ten_env.get_property_string(PROPERTY_MODEL)
             if model:
                 self.config.model = model
@@ -432,6 +456,7 @@ class OpenAIV2VExtension(Extension):
         self.ctx["greeting"] = self.greeting
 
     def _update_session(self) -> SessionUpdate:
+        self.ctx["tools"] = self.registry.to_prompt()
         prompt = self._replace(self.config.instruction)
         self.last_updated = datetime.now()
         return SessionUpdate(session=SessionUpdateParams(
@@ -510,8 +535,8 @@ class OpenAIV2VExtension(Extension):
         with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
             dump_file.write(buf)
 
-    def _register_local_tools(self) -> None:
-        self.ctx["tools"] = self.registry.to_prompt()
+    #def _register_local_tools(self) -> None:
+    #    self.ctx["tools"] = self.registry.to_prompt()
 
     def _on_tool_register(self, ten_env: TenEnv, cmd: Cmd):
         try:
