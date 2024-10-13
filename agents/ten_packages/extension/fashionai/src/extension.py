@@ -33,9 +33,7 @@ class FashionAIExtension(Extension):
         self.stopped = False
         self.queue = asyncio.Queue(maxsize=3000)
         self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1")
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
+        self.threadWebsocketLoop = None
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
@@ -47,14 +45,17 @@ class FashionAIExtension(Extension):
             self.token = ten_env.get_property_string("token")
             self.channel = ten_env.get_property_string("channel")
             self.stream_id = str(ten_env.get_property_int("stream_id"))
-            if len(self.token) > 0 :
-                self.app_id = self.token
             logger.info(f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}")
         except Exception as e:
             logger.warning(f"get_property err: {e}")
 
+        if len(self.token) > 0 :
+            self.app_id = self.token
+
         def thread_target():
-            self.loop.run_until_complete(self.init_fashionai(ten_env, self.app_id, self.channel, self.stream_id))
+            self.threadWebsocketLoop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.threadWebsocketLoop)
+            self.threadWebsocketLoop.run_until_complete(self.init_fashionai(self.app_id, self.channel, self.stream_id))
 
         self.threadWebsocket = threading.Thread(target=thread_target)
         self.threadWebsocket.start()
@@ -64,11 +65,10 @@ class FashionAIExtension(Extension):
     def on_stop(self, ten_env: TenEnv) -> None:
         logger.info("FASHION_AI on_stop")
         self.stopped = True
-        asyncio.run(self.queue.put(None))
-        self.flush()
-        self.threadWebsocket.join()
+        asyncio.run_coroutine_threadsafe(self.queue.put(None), self.threadWebsocketLoop)
+        asyncio.run_coroutine_threadsafe(self.flush(), self.threadWebsocketLoop)
 
-        # TODO: clean up resources
+        self.threadWebsocket.join()
 
         ten_env.on_stop_done()
 
@@ -85,7 +85,7 @@ class FashionAIExtension(Extension):
             self.outdate_ts = datetime.now()
             try:
                 asyncio.run_coroutine_threadsafe(
-                    self.flush(), self.loop
+                    self.flush(), self.threadWebsocketLoop
                 ).result(timeout=0.1)
             except Exception as e:
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
@@ -106,10 +106,13 @@ class FashionAIExtension(Extension):
             return
 
         logger.info("FASHION_AI on data %s", inputText)
-        try:        
-            asyncio.run_coroutine_threadsafe(
-                    self.queue.put((inputText, datetime.now())), self.loop
-            ).result(timeout=0.1)
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                self.queue.put(inputText), self.threadWebsocketLoop
+            )
+            future.result(timeout=0.1)
+        except asyncio.TimeoutError:
+            logger.warning(f"FASHION_AI put inputText={inputText} queue timed out")
         except Exception as e:
             logger.warning(f"FASHION_AI put inputText={inputText} queue err: {e}")
         logger.info("FASHION_AI send_inputText %s", inputText)
@@ -122,20 +125,23 @@ class FashionAIExtension(Extension):
 
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
         # TODO: process image frame
-        pass            
+        pass
 
-    async def init_fashionai(self, ten_env: TenEnv, app_id, channel, stream_id):
+    async def init_fashionai(self, app_id, channel, stream_id):
         await self.client.connect()
         await self.client.stream_start(app_id, channel, stream_id)
         await self.client.render_start()
         await self.async_polly_handler()
-        
+
     async def async_polly_handler(self):
         while True:
-            value = await self.queue.get()  # 从队列中获取值
-            logger.info(f"async_polly_handler: loop fashion ai polly.{value}")
+            inputText = await self.queue.get()
+            if inputText is None:
+                logger.info("Stopping async_polly_handler...")
+                break
 
-            inputText, ts = value
+            logger.info(f"async_polly_handler: loop fashion ai polly.{inputText}")
+
             if len(inputText) > 0:
                 try:
                     await self.client.send_inputText(inputText)
@@ -146,4 +152,6 @@ class FashionAIExtension(Extension):
         logger.info("FASHION_AI flush")
         while not self.queue.empty():
             value = await self.queue.get()
+            if value is None:
+                break
             logger.info(f"Flushing value: {value}")
