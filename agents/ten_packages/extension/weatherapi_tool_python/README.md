@@ -1,29 +1,21 @@
 # weatherapi_tool_python
 
-<!-- brief introduction for the extension -->
+This is the tool demo for weather query.
 
 ## Features
 
-<!-- main features introduction -->
-
-- xxx feature
+- Fetch today's weather.
+- Search for history weather.
+- Forcast weather in 3 days.
 
 ## API
 
 Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
 
-<!-- Additional API.md can be referred to if extra introduction needed -->
+### Out:
 
-## Development
+- `tool_register`: auto register tool to llm
 
-### Build
+### In:
 
-<!-- build dependencies and steps -->
-
-### Unit test
-
-<!-- how to do unit test for the extension -->
-
-## Misc
-
-<!-- others if applicable -->
+- `tool_call`: sync cmd to fetch weather

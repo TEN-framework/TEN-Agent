@@ -1,4 +1,4 @@
-PROJECT_NAME := astra
+PROJECT_NAME := ten_agent
 PROJECT_VERSION ?= "0.1."$(shell date -u +'%Y%m%d%H')
 REGISTRY ?= agoraio/
 
@@ -35,7 +35,7 @@ docker-build-playground:
 
 docker-build-server:
 	@echo ">> docker build server"
-	docker build -t $(REGISTRY)$(PROJECT_NAME)_agents_server:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
+	docker build -t $(REGISTRY)$(PROJECT_NAME)_server:$(PROJECT_VERSION) --platform linux/amd64 -f Dockerfile .
 	@echo ">> done"
 
 run-gd-server:

@@ -35,6 +35,10 @@ build_cxx_extensions() {
   local out="out/$OS/$CPU"
   for extension in $out/ten_packages/extension/*; do
     local extension_name=$(basename $extension)
+    if [[ $extension_name == "*" ]]; then
+      echo "No cxx extension, nothing to copy."
+      break
+    fi
     if [[ ! -d $extension/lib ]]; then
       echo "No output for extension $extension_name."
       exit 1

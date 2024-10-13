@@ -26,7 +26,7 @@ from ten.audio_frame import AudioFrameDataFmt
 from .log import logger
 
 from .tools import ToolRegistry
-from .conf import RealtimeApiConfig, BASIC_PROMPT
+from .conf import RealtimeApiConfig, BASIC_PROMPT, DEFAULT_GREETING
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import *
 from .tools import ToolRegistry
@@ -43,6 +43,7 @@ PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
 PROPERTY_DUMP = "dump"
 PROPERTY_GREETING = "greeting"
+PROPERTY_HISTORY = "history"
 
 DEFAULT_VOICE = Voices.Alloy
 
@@ -55,9 +56,11 @@ TOOL_REGISTER_PROPERTY_NAME = "name"
 TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
 TOOL_REGISTER_PROPERTY_PARAMETERS = "parameters"
 
+
 class Role(str, Enum):
     User = "user"
     Assistant = "assistant"
+
 
 class OpenAIV2VExtension(Extension):
     def __init__(self, name: str):
@@ -83,6 +86,10 @@ class OpenAIV2VExtension(Extension):
         self.transcript: str = ''
 
         # misc.
+        self.greeting = DEFAULT_GREETING
+        # max history store in context
+        self.max_history = 0
+        self.history = []
         self.remote_stream_id: int = 0
         self.channel_name: str = ""
         self.dump: bool = False
@@ -101,7 +108,7 @@ class OpenAIV2VExtension(Extension):
         self.thread = threading.Thread(
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
-        
+
         self._register_local_tools()
 
         asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
@@ -123,7 +130,7 @@ class OpenAIV2VExtension(Extension):
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         try:
             stream_id = audio_frame.get_property_int("stream_id")
-            #logger.debug(f"on_audio_frame {stream_id}")
+            # logger.debug(f"on_audio_frame {stream_id}")
             if self.channel_name == "":
                 self.channel_name = audio_frame.get_property_string("channel")
 
@@ -206,41 +213,46 @@ class OpenAIV2VExtension(Extension):
                             # await self.conn.send_request(update_conversation)
                         case ItemInputAudioTranscriptionCompleted():
                             logger.info(
-                                f"On request transript {message.transcript}")
+                                f"On request transcript {message.transcript}")
                             self._send_transcript(
                                 ten_env, message.transcript, Role.User, True)
                         case ItemInputAudioTranscriptionFailed():
                             logger.warning(
-                                f"On request transript failed {message.item_id} {message.error}")
+                                f"On request transcript failed {message.item_id} {message.error}")
                         case ItemCreated():
                             logger.info(f"On item created {message.item}")
+                            if self.max_history and message.item["status"] == "completed":
+                                # need maintain the history
+                                await self._append_history(message.item)
                         case ResponseCreated():
                             response_id = message.response.id
                             logger.info(
                                 f"On response created {response_id}")
                         case ResponseDone():
-                            id  = message.response.id
+                            id = message.response.id
                             status = message.response.status
                             logger.info(
                                 f"On response done {id} {status}")
+                            for item in message.response.output:
+                                await self._append_history(item)
                             if id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
                             logger.info(
-                                f"On response transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                                f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                             if message.response_id in flushed:
                                 logger.warning(
-                                    f"On flushed transript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                                    f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
                             self.transcript += message.delta
                             self._send_transcript(
                                 ten_env, self.transcript, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
                             logger.info(
-                                f"On response transript done {message.output_index} {message.content_index} {message.transcript}")
+                                f"On response transcript done {message.output_index} {message.content_index} {message.transcript}")
                             if message.response_id in flushed:
                                 logger.warning(
-                                    f"On flushed transript done {message.response_id}")
+                                    f"On flushed transcript done {message.response_id}")
                                 continue
                             self.transcript = ""
                             self._send_transcript(
@@ -285,7 +297,8 @@ class OpenAIV2VExtension(Extension):
                             name = message.name
                             arguments = message.arguments
                             logger.info(f"need to call func {name}")
-                            await self.registry.on_func_call(tool_call_id, name, arguments, self._on_tool_output) # TODO rebuild this into async, or it will block the thread
+                            # TODO rebuild this into async, or it will block the thread
+                            await self.registry.on_func_call(tool_call_id, name, arguments, self._on_tool_output)
                         case ErrorMessage():
                             logger.error(
                                 f"Error message received: {message.error}")
@@ -298,6 +311,19 @@ class OpenAIV2VExtension(Extension):
             logger.info("Client loop finished")
         except:
             logger.exception(f"Failed to handle loop")
+
+        # clear so that new session can be triggered
+        self.connected = False
+        self.remote_stream_id = 0
+    
+    async def _append_history(self, item: ItemParam) -> None:
+        logger.info(f"append item {item}")
+        self.history.append(item["id"])
+        if len(self.history) > self.max_history:
+            to_remove = self.history[0]
+            logger.info(f"remove history {to_remove}")
+            await self.conn.send_request(ItemDelete(item_id=to_remove))
+            self.history = self.history[1:]
 
     async def _on_audio(self, buff: bytearray):
         self.out_audio_buff += buff
@@ -371,7 +397,7 @@ class OpenAIV2VExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
-        
+
         try:
             greeting = ten_env.get_property_string(PROPERTY_GREETING)
             if greeting:
@@ -393,8 +419,17 @@ class OpenAIV2VExtension(Extension):
         except Exception as err:
             logger.info(
                 f"GetProperty optional {PROPERTY_DUMP} error: {err}")
+        
+        try:
+            history = ten_env.get_property_int(PROPERTY_HISTORY)
+            if history:
+                self.max_history = history
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_HISTORY} error: {err}")
 
         self.ctx = self.config.build_ctx()
+        self.ctx["greeting"] = self.greeting
 
     def _update_session(self) -> SessionUpdate:
         prompt = self._replace(self.config.instruction)
@@ -407,7 +442,7 @@ class OpenAIV2VExtension(Extension):
                 model="whisper-1"),
             tool_choice="auto",
             tools=self.registry.get_tools()
-            ))
+        ))
 
     '''
     def _update_conversation(self) -> UpdateConversationConfig:
@@ -481,7 +516,8 @@ class OpenAIV2VExtension(Extension):
     def _on_tool_register(self, ten_env: TenEnv, cmd: Cmd):
         try:
             name = cmd.get_property_string(TOOL_REGISTER_PROPERTY_NAME)
-            description = cmd.get_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON)
+            description = cmd.get_property_string(
+                TOOL_REGISTER_PROPERTY_DESCRIPTON)
             pstr = cmd.get_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS)
             parameters = json.loads(pstr)
             p = partial(self._remote_tool_call, ten_env)
@@ -494,25 +530,37 @@ class OpenAIV2VExtension(Extension):
         except:
             logger.exception(f"Failed to register")
 
-    async def _remote_tool_call(self, ten_env: TenEnv, name:str, args: str, callback: Awaitable):
+    async def _remote_tool_call(self, ten_env: TenEnv, name: str, args: str, callback: Awaitable):
         logger.info(f"_remote_tool_call {name} {args}")
-        c = Cmd.create(CMD_TOOL_CALL)
+        c = Cmd.create(f"{CMD_TOOL_CALL}_{name}")
         c.set_property_string(CMD_PROPERTY_NAME, name)
         c.set_property_string(CMD_PROPERTY_ARGS, args)
         ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
-                callback(result.get_property_string("response")), self.loop))
+                callback(result), self.loop))
         logger.info(f"_remote_tool_call finish {name} {args}")
     
-    async def _on_tool_output(self, tool_call_id:str,  result: str):
-        logger.info(f"_on_tool_output {tool_call_id} {result}")
-        try:
-            tool_response = ItemCreate(
-                item=FunctionCallOutputItemParam(
-                    call_id=tool_call_id,
-                    output=result,
-                )
+    async def _on_tool_output(self, tool_call_id:str,  result:CmdResult):
+        state = result.get_status_code()
+        tool_response = ItemCreate(
+            item=FunctionCallOutputItemParam(
+                call_id=tool_call_id,
+                output="{\"success\":false}",
             )
-
+        )
+        try:
+            if state == StatusCode.OK:
+                response = result.get_property_string("response")
+                logger.info(f"_on_tool_output {tool_call_id} {response}")
+            
+                tool_response = ItemCreate(
+                    item=FunctionCallOutputItemParam(
+                        call_id=tool_call_id,
+                        output=response,
+                    )
+                )
+            else:
+                logger.error(f"Failed to call function {tool_call_id}")
+                
             await self.conn.send_request(tool_response)
             await self.conn.send_request(ResponseCreate())
         except:

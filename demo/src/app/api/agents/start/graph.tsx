@@ -63,23 +63,23 @@ export const voiceNameMap: LanguageMap = {
 // This is the place where you can customize the properties for different graphs to override default property.json
 export const getGraphProperties = (graphName: string, language: string, voiceType: string) => {
     let localizationOptions = {
-        "greeting": "Hey, I\'m TEN Agent with OpenAI Realtime API Beta， anything I can help you with?",
+        "greeting": "Hey, I\'m TEN Agent, I can speak, see, and reason from a knowledge base, ask me anything!",
         "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
     }
 
     if (language === "zh-CN") {
         localizationOptions = {
-            "greeting": "TEN Agent 已连接，需要我为您提供什么帮助?",
+            "greeting": "嗨，我是 TEN Agent，我可以说话、看东西，还能从知识库中推理，问我任何问题吧！",
             "checking_vision_text_items": "[\"让我看看你的摄像头...\",\"让我看一下...\",\"我看一下，请稍候...\"]",
         }
     } else if (language === "ja-JP") {
         localizationOptions = {
-            "greeting": "TEN Agent に接続されました。今日は何をお手伝いしましょうか?",
+            "greeting": "こんにちは、TEN Agentです。私は話したり、見たり、知識ベースから推論したりできます。何でも聞いてください！",
             "checking_vision_text_items": "[\"ちょっと見てみます...\",\"カメラをチェックします...\",\"少々お待ちください...\"]",
         }
     } else if (language === "ko-KR") {
         localizationOptions = {
-            "greeting": "TEN Agent 에이전트에 연결되었습니다. 오늘은 무엇을 도와드릴까요?",
+            "greeting": "안녕하세요, 저는 TEN Agent입니다. 말하고, 보고, 지식 베이스에서 추론할 수 있어요. 무엇이든 물어보세요!",
             "checking_vision_text_items": "[\"조금만 기다려 주세요...\",\"카메라를 확인해 보겠습니다...\",\"잠시만 기다려 주세요...\"]",
         }
     }

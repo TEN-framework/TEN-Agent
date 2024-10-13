@@ -1,7 +1,7 @@
 services:
-    astra_agents_dev:
+    ten_agent_dev:
         image: ghcr.io/ten-framework/ten_agent_build:0.1.0
-        container_name: astra_agents_dev
+        container_name: ten_agent_dev
         platform: linux/amd64
         tty: true
         stdin_open: true
@@ -17,33 +17,33 @@ services:
         env_file:
             - .env
         networks:
-            - astra_network
-    astra_playground:
-        image: ghcr.io/ten-framework/astra_playground:v0.4.1-9-g09a1df2
-        container_name: astra_playground
+            - ten_agent_network
+    ten_agent_playground:
+        image: ghcr.io/ten-framework/ten_agent_playground
+        container_name: ten_agent_playground
         restart: always
         ports:
             - "3000:3000"
         networks:
-            - astra_network
+            - ten_agent_network
         environment:
-            - AGENT_SERVER_URL=http://astra_agents_dev:8080
-            - TEN_DEV_SERVER_URL=http://astra_agents_dev:49483
-    agent_demo_ui:
-        image: ghcr.io/ten-framework/agent_demo:v0.4.1-9-g09a1df2
-        container_name: agent_demo_ui
+            - AGENT_SERVER_URL=http://ten_agent_dev:8080
+            - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
+    ten_agent_demo:
+        image: ghcr.io/ten-framework/agent_demo
+        container_name: ten_agent_demo
         restart: always
         ports:
             - "3002:3000"
         networks:
-            - astra_network
+            - ten_agent_network
         environment:
-            - AGENT_SERVER_URL=http://astra_agents_dev:8080
+            - AGENT_SERVER_URL=http://ten_agent_dev:8080
 
     # use this when you want to run the playground in local development mode
-    # astra_playground_dev:
+    # ten_agent_playground_dev:
     #     image: node:20-alpine
-    #     container_name: astra_playground_dev
+    #     container_name: ten_agent_playground_dev
     #     restart: always
     #     command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
     #     ports:
@@ -57,9 +57,9 @@ services:
         ports:
             - "3001:3000"
         networks:
-            - astra_network
+            - ten_agent_network
         environment:
-            - TEN_DEV_SERVER_URL=http://astra_agents_dev:49483
+            - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
 networks:
-  astra_network:
+  ten_agent_network:
     driver: bridge

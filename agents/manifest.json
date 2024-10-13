@@ -1,6 +1,6 @@
 {
   "type": "app",
-  "name": "astra_agents",
+  "name": "ten_agent",
   "version": "0.4.0",
   "dependencies": [
     {
@@ -31,7 +31,7 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.4.0"
+      "version": "0.4.2"
     }
   ]
 }

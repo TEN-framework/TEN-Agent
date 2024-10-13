@@ -55,14 +55,16 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
             const row = await form.validateFields();
             const newData = [...dataSource];
             const index = newData.findIndex((item) => key === item.key);
-
+    
             if (index > -1) {
                 const item = newData[index];
                 const valueType = metadata[key]?.type || 'string';
-                newData.splice(index, 1, { ...item, ...row, value: convertToType(row.value, valueType) });
+                const updatedValue = row.value === '' ? null : convertToType(row.value, valueType); // Set to null if empty
+    
+                newData.splice(index, 1, { ...item, value: updatedValue });
                 setDataSource(newData);
                 setEditingKey('');
-
+    
                 // Notify the parent component of the update
                 const updatedData = Object.fromEntries(newData.map(({ key, value }) => [key, value]));
                 onUpdate(updatedData);
@@ -70,7 +72,8 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
         } catch (errInfo) {
             console.log('Validation Failed:', errInfo);
         }
-    };
+    };    
+    
 
     // Toggle the checkbox for boolean values directly in the table cell
     const handleCheckboxChange = (key: string, checked: boolean) => {
@@ -108,7 +111,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
             key: 'value',
             render: (_, record: DataType) => {
                 const valueType = metadata[record.key]?.type || 'string';
-
+        
                 // Always display the checkbox for boolean values
                 if (valueType === 'bool') {
                     return (
@@ -118,14 +121,13 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
                         />
                     );
                 }
-
+        
                 // Inline editing for other types (string, number)
                 const editable = isEditing(record);
                 return editable ? (
                     <Form.Item
                         name="value"
                         style={{ margin: 0 }}
-                        rules={[{ required: true, message: 'Please input the value!' }]}
                     >
                         <Input
                             ref={inputRef} // Attach input ref to control focus
@@ -134,14 +136,14 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
                         />
                     </Form.Item>
                 ) : (
-                    <div onClick={() => edit(record)}>
-                        {record.value !== null && record.value !== undefined
+                    <div onClick={() => edit(record)} style={{ cursor: 'pointer' }}>
+                        {record.value !== null && record.value !== undefined && record.value !== ''
                             ? record.value
-                            : 'Click to edit'}
-                    </div> // Display placeholder for empty values
+                            : <span style={{ color: 'gray' }}>Click to edit</span>}
+                    </div>
                 );
             },
-        },
+        },        
     ];
 
     return (
