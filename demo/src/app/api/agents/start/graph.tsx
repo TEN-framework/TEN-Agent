@@ -21,8 +21,8 @@ export const voiceNameMap: LanguageMap = {
     },
     "en-US": {
         azure: {
-            male: "en-US-BrianNeural",
-            female: "en-US-AndrewMultilingualNeural",
+            male: "en-US-AndrewMultilingualNeural",
+            female: "en-US-AvaMultilingualNeural",
         },
         elevenlabs: {
             male: "pNInz6obpgDQGcFmaJgB", // Adam
