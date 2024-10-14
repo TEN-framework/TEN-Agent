@@ -26,6 +26,15 @@
       "api_key": {
         "type": "string"
       },
+      "base_uri": {
+        "type": "string"
+      },
+      "path": {
+        "type": "string"
+      },
+      "vendor": {
+        "type": "string"
+      },
       "temperature": {
         "type": "float64"
       },
