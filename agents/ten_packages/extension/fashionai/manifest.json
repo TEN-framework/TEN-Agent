@@ -34,6 +34,9 @@
       },
       "stream_id": {
         "type": "uint32"
+      },
+      "service_id": {
+        "type": "string"
       }
     },
     "data_in": [

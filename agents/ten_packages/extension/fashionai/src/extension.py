@@ -27,13 +27,14 @@ class FashionAIExtension(Extension):
     token = ""
     channel = ""
     stream_id = 0
+    service_id = "agora"
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("FASHION_AI on_init *********************************************************")
         self.stopped = False
         self.queue = asyncio.Queue(maxsize=3000)
-        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1")
         self.threadWebsocketLoop = None
+
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
@@ -45,16 +46,19 @@ class FashionAIExtension(Extension):
             self.token = ten_env.get_property_string("token")
             self.channel = ten_env.get_property_string("channel")
             self.stream_id = str(ten_env.get_property_int("stream_id"))
-            logger.info(f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}")
+            self.service_id = ten_env.get_property_string("service_id")
+
+            logger.info(f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}, service_id = {self.service_id}")
         except Exception as e:
             logger.warning(f"get_property err: {e}")
 
-        if len(self.token) > 0 :
+        if len(self.token) > 0:
             self.app_id = self.token
+        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1", self.service_id)
 
         def thread_target():
-            self.threadWebsocketLoop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.threadWebsocketLoop)
+            self.threadWebsocketLoop = asyncio.new_event_loop() 
+            asyncio.set_event_loop(self.threadWebsocketLoop)   
             self.threadWebsocketLoop.run_until_complete(self.init_fashionai(self.app_id, self.channel, self.stream_id))
 
         self.threadWebsocket = threading.Thread(target=thread_target)
@@ -125,17 +129,17 @@ class FashionAIExtension(Extension):
 
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
         # TODO: process image frame
-        pass
+        pass            
 
     async def init_fashionai(self, app_id, channel, stream_id):
         await self.client.connect()
         await self.client.stream_start(app_id, channel, stream_id)
         await self.client.render_start()
         await self.async_polly_handler()
-
+        
     async def async_polly_handler(self):
         while True:
-            inputText = await self.queue.get()
+            inputText = await self.queue.get() 
             if inputText is None:
                 logger.info("Stopping async_polly_handler...")
                 break

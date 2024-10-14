@@ -1,5 +1,6 @@
 import json
 import ssl
+import uuid
 
 import websockets
 import asyncio
@@ -8,9 +9,10 @@ from .log import logger
 
 
 class FashionAIClient:
-    def __init__(self, uri):
+    def __init__(self, uri, service_id):
         self.uri = uri
         self.websocket = None
+        self.service_id = service_id
 
     async def connect(self):
         ssl_context = ssl._create_unverified_context()
@@ -19,8 +21,8 @@ class FashionAIClient:
     async def stream_start(self, app_id, channel, stream_id):
         await self.send_message(
                 {
-                    "request_id": "1",
-                    "service_id": "agora",
+                    "request_id": str(uuid.uuid4()),
+                    "service_id": self.service_id,
                     "token": app_id,
                     "channel_id": channel,
                     "user_id": stream_id,
@@ -31,8 +33,8 @@ class FashionAIClient:
     async def render_start(self):
         await self.send_message(
             {
-                "request_id": "3",
-                "service_id": "agora",
+                "request_id": str(uuid.uuid4()),
+                "service_id": self.service_id,
                 "signal": "RENDER_START",
             }
         )
@@ -40,8 +42,8 @@ class FashionAIClient:
     async def send_inputText(self, inputText):
         await self.send_message(
            {
-                "request_id": "4",
-                "service_id": "agora",
+                "request_id": str(uuid.uuid4()),
+                "service_id": self.service_id,
                 "signal": "RENDER_CONTENT",
                 "text": inputText,
             }
