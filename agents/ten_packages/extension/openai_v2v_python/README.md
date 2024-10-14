@@ -48,3 +48,18 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 | **Name**         | **Description**                           |
 |------------------|-------------------------------------------|
 | `pcm_frame`    | Audio frame output after voice processing    |
+
+
+### Azure Support
+
+This extension also support Azure OpenAI Service, the propoerty settings are as follow:
+
+``` json
+{
+    "base_uri": "wss://xxx.openai.azure.com",
+    "path": "/openai/realtime?api-version=xxx&deployment=xxx",
+    "api_key": "xxx",
+    "model": "gpt-4o-realtime-preview",
+    "vendor": "azure"
+}
+```

@@ -276,7 +276,7 @@
                         "property": {
                             "azure_subscription_key": "${env:AZURE_TTS_KEY}",
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                            "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
                         }
                     },
                     {
@@ -673,7 +673,7 @@
                         "property": {
                             "azure_subscription_key": "${env:AZURE_TTS_KEY}",
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                            "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
                         }
                     },
                     {
@@ -1669,7 +1669,7 @@
                         "property": {
                             "azure_subscription_key": "${env:AZURE_TTS_KEY}",
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                            "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
                         }
                     },
                     {
@@ -1899,7 +1899,7 @@
                         "property": {
                             "azure_subscription_key": "${env:AZURE_TTS_KEY}",
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                            "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
                         }
                     },
                     {
@@ -2100,7 +2100,7 @@
                         "property": {
                             "azure_subscription_key": "${env:AZURE_TTS_KEY}",
                             "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-                            "azure_synthesis_voice_name": "en-US-JaneNeural"
+                            "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
                         }
                     },
                     {

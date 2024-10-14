@@ -11,6 +11,8 @@ from ..log import logger
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
+VENDOR_AZURE = "azure"
+
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
     try:
@@ -36,10 +38,12 @@ class RealtimeApiConnection:
         api_key: str | None = None,
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
+        vendor: str = "",
         verbose: bool = False,
     ):
+        self.vendor = vendor
         self.url = f"{base_uri}{path}"
-        if "model=" not in self.url:
+        if not self.vendor and "model=" not in self.url:
             self.url += f"?model={model}"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
@@ -56,9 +60,13 @@ class RealtimeApiConnection:
         return False
 
     async def connect(self):
-        auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-
-        headers = {"OpenAI-Beta": "realtime=v1"}
+        headers = {}
+        auth = None
+        if self.vendor == VENDOR_AZURE:
+            headers = {"api-key": self.api_key}
+        elif not self.vendor:
+            auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
+            headers = {"OpenAI-Beta": "realtime=v1"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
@@ -98,8 +106,8 @@ class RealtimeApiConnection:
     def handle_server_message(self, message: str) -> ServerToClientMessage:
         try:
             return parse_server_message(message)
-        except Exception as e:
-            logger.error("Error handling message: " + str(e))
+        except:
+            logger.exception("Error handling message")
 
     async def close(self):
         # Close the websocket connection if it exists
