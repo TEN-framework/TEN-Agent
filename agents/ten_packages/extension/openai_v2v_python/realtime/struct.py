@@ -454,6 +454,7 @@ class ResponseContentPartAdded(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The added content part
+    content: Union[ItemParam, None] = None # The added content part for azure
     type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
 
 @dataclass
@@ -463,6 +464,7 @@ class ResponseContentPartDone(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The content part that was completed
+    content: Union[ItemParam, None] = None # The added content part for azure
     type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
 
 @dataclass
