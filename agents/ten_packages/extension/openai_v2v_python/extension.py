@@ -172,6 +172,9 @@ class OpenAIV2VExtension(Extension):
 
     def on_config_changed(self) -> None:
         # update session again
+        if self._update_session:
+            logger.info("update session after config changed")
+            self._update_session()
         return
 
     async def _init_connection(self):

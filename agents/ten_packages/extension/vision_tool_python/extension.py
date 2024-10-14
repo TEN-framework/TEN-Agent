@@ -8,9 +8,10 @@
 import json
 import functools
 
+from datetime import datetime
 from queue import Queue
 from threading import Event, Thread
-from typing import Any
+from typing import Any, List, Tuple, Union
 from PIL import Image
 from io import BytesIO
 from base64 import b64encode
@@ -26,6 +27,10 @@ from ten import (
     Data,
 )
 from .log import logger
+
+PROPERTY_HISTORY = "history"
+PROPERTY_FREQUENCY_MS = "frequency_ms"
+PROPERTY_USE_LLM = "use_llm"
 
 CMD_TOOL_REGISTER = "tool_register"
 CMD_TOOL_CALL = "tool_call"
@@ -52,6 +57,8 @@ SINGLE_FRAME_TOOL_PARAMETERS = {
         },
         "required": ["query"],
 }
+
+SINGLE_FRAME_TOOL_NON_LLM_PARAMETERS = {}
 
 def resize_image_keep_aspect(image, max_size=512):
     """
@@ -85,7 +92,7 @@ def resize_image_keep_aspect(image, max_size=512):
 
     return resized_image
 
-def rgb2base64jpeg(rgb_data, width, height):
+def rgb2base64jpeg(rgb_data: bytes, width: int, height: int, raw: bool = False) -> Union[bytes, str]:
     # Convert the RGB image to a PIL Image
     pil_image = Image.frombytes("RGBA", (width, height), bytes(rgb_data))
     pil_image = pil_image.convert("RGB")
@@ -100,6 +107,8 @@ def rgb2base64jpeg(rgb_data, width, height):
 
     # Get the byte data of the JPEG image
     jpeg_image_data = buffered.getvalue()
+    if raw:
+        return jpeg_image_data
 
     # Convert the JPEG byte data to a Base64 encoded string
     base64_encoded_image = b64encode(jpeg_image_data).decode("utf-8")
@@ -111,8 +120,14 @@ def rgb2base64jpeg(rgb_data, width, height):
 
 class VisionToolExtension(Extension):
     max_history: int = 1
+    frequency_ms: int = 60
+    use_llm: bool = True
+
     history: list = []
     queue: Queue = Queue()
+    last_capture: datetime = None
+    llm_tools = {}
+    tools = {}
 
     thread: Thread = None
     stopped: bool = False
@@ -122,12 +137,22 @@ class VisionToolExtension(Extension):
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("VisionToolExtension on_init")
 
+        # Change tool!
         self.tools = {
             SINGLE_FRAME_TOOL_NAME: {
                 TOOL_REGISTER_PROPERTY_NAME: SINGLE_FRAME_TOOL_NAME,
                 TOOL_REGISTER_PROPERTY_DESCRIPTON: SINGLE_FRAME_TOOL_DESCRIPTION,
+                TOOL_REGISTER_PROPERTY_PARAMETERS: SINGLE_FRAME_TOOL_NON_LLM_PARAMETERS,
+                TOOL_CALLBACK: functools.partial(self._ask_to_latest_frames, 1)
+            }
+        }
+
+        self.llm_tools = {
+            SINGLE_FRAME_TOOL_NAME: {
+                TOOL_REGISTER_PROPERTY_NAME: SINGLE_FRAME_TOOL_NAME,
+                TOOL_REGISTER_PROPERTY_DESCRIPTON: SINGLE_FRAME_TOOL_DESCRIPTION,
                 TOOL_REGISTER_PROPERTY_PARAMETERS: SINGLE_FRAME_TOOL_PARAMETERS,
-                TOOL_CALLBACK: self._ask_to_single_frame
+                TOOL_CALLBACK: functools.partial(self._ask_to_latest_frames, 1)
             }
         }
 
@@ -141,13 +166,20 @@ class VisionToolExtension(Extension):
         self.thread = Thread(target=self.loop)
         self.thread.start()
 
-        # Register func
-        for name, tool in self.tools.items():
-            c = Cmd.create(CMD_TOOL_REGISTER)
-            c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, name)
-            c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, tool[TOOL_REGISTER_PROPERTY_DESCRIPTON])
-            c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(tool[TOOL_REGISTER_PROPERTY_PARAMETERS]))
-            ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
+        try:
+            self.max_history = ten_env.get_property_string(PROPERTY_HISTORY)
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_HISTORY} error: {err}")
+        
+        try:
+            self.frequency_ms = ten_env.get_property_int(PROPERTY_FREQUENCY_MS)
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_FREQUENCY_MS} error: {err}")
+        
+        try:
+            self.use_llm = ten_env.get_property_bool(PROPERTY_USE_LLM)
+        except Exception as err:
+            logger.info(f"GetProperty optional {PROPERTY_USE_LLM} error: {err}")
 
         ten_env.on_start_done()
 
@@ -223,46 +255,54 @@ class VisionToolExtension(Extension):
         pass
 
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
-        self.history.append((video_frame.get_buf(), video_frame.get_width(), video_frame.get_height()))
-        diff = len(self.history) > self.max_history
-        if diff > 0:
-            self.history = self.history[diff:]
+        if self.last_capture is None:
+            # Register func after video is captured
+            tool_targets = self.tools
+            if self.use_llm:
+                tool_targets = self.llm_tools
 
-    def _get_latest_frame(self, args:dict) -> Any:
-        return None
-    
-    def _get_multi_frame(self, args:dict) -> Any:
-        return None
-    
-    # TODO async
-    def _ask_to_single_frame(self, args:dict) -> Any:
-        if "query" not in args:
-            raise Exception("Failed to get property")
+            for name, tool in tool_targets.items():
+                c = Cmd.create(CMD_TOOL_REGISTER)
+                c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, name)
+                c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, tool[TOOL_REGISTER_PROPERTY_DESCRIPTON])
+                c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(tool[TOOL_REGISTER_PROPERTY_PARAMETERS]))
+                ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
+
+        now = datetime.now()
+        if self.frequency_ms and (not self.last_capture or (now - self.last_capture).total_seconds() * 1000 > self.frequency_ms):
+            self.history.append((now, video_frame.get_buf(), video_frame.get_width(), video_frame.get_height()))
+            self.last_capture = now
+            
+            diff = len(self.history) > self.max_history
+            if diff > 0:
+                self.history = self.history[diff:]
+
+    def _get_latest_frames(self, count:int = 3, raw: bool = False) -> Tuple[datetime, List[Union[bytes, str]]]:
+        start = len(self.history) - count
+        if start < 0:
+            start = 0
         
+        result = []
+        min_ts = None
+        for i in range(start, len(self.history)):
+            ts, buff, width, height = self.history[i]
+            if not min_ts or ts < min_ts:
+                min_ts = ts
+            result.append(rgb2base64jpeg(buff, width, height, raw = raw))
+        
+        return min_ts, result
+    
+    def _ask_to_latest_frames(self, count:int, args:dict = {}) -> Any:
         if not self.history:
             raise Exception("Failed to get frames")
-
-        query = args["query"]
-        buff, width, height = self.history[len(self.history) - 1]
-        logger.info(f"get frame ok {width} {height} for {query}")
-
-        url = rgb2base64jpeg(buff, width, height)
-        messages = [{
-            "role": "system",
-            "content": "You need to describe all the object in this image first, and then focus on the user's query. Keep your response short and simple unless the query ask you to."
-        },{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": query},
-                {"type": "image_url", "image_url": {"url": url}},
-            ],
-        }]
-        # logger.debug(f"after prepare message: {messages}")
-        # Send message
-        cmd = Cmd.create("chat_completion")
-        cmd.set_property_string("messages", json.dumps(messages))
-        cmd.set_property_bool("stream", False) # this is function call, we need to have complete result
-        # cmd.set_property_bool("json", True)
+        
+        if self.use_llm:
+            min_ts, frames = self._get_latest_frames(count=count)
+            ts = min_ts.strftime("%Y-%m-%d %H:%M:%S")
+            cmd = self._chat_completion(args, frames, ts)
+        else:
+            _, frames = self._get_latest_frames(count=1, raw=True)
+            cmd = self._analyze_frame(frames[0])
         
         e = Event()
         rst = None
@@ -289,6 +329,34 @@ class VisionToolExtension(Extension):
             raise Exception("Failed to get resp")
         else:
             return rst
+        
+    def _analyze_frame(self, frame: bytes) -> Cmd:
+        cmd = Cmd.create("image_analyze")
+        cmd.set_property_buf("image_data", frame)
+        # TODO What to analyze
+        return cmd
+    
+    def _chat_completion(self, args:dict, frames: List[str], ts: datetime) -> Cmd:
+        if "query" not in args:
+            raise Exception("Failed to get property")
 
-    def _ask_to_multi_frame(self, args:dict) -> Any:
-        return None
+        query = args["query"]
+        contents = [{"type": "text", "text": f"This is the image captured within {self.frequency_ms} ms at {ts}. {query}"}]
+        for f in frames:
+            contents.append({"type": "image_url", "image_url": {"url": f}})
+
+        messages = [{
+            "role": "system",
+            "content": "You need to describe all the object in this image first, and then focus on the user's query. Keep your response short and simple unless the query ask you to."
+        },{
+            "role": "user",
+            "content": contents,
+        }]
+
+        # logger.debug(f"after prepare message: {messages}")
+        # Send message
+        cmd = Cmd.create("chat_completion")
+        cmd.set_property_string("messages", json.dumps(messages))
+        cmd.set_property_bool("stream", False) # this is function call, we need to have complete result
+        # cmd.set_property_bool("json", True)
+        return cmd
