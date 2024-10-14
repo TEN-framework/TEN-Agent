@@ -10,6 +10,9 @@ import json
 import random
 import threading
 import traceback
+import functools
+
+from typing import List, Callable
 
 from .helper import AsyncEventEmitter, AsyncQueue, get_current_time, get_property_bool, get_property_float, get_property_int, get_property_string, parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -29,6 +32,7 @@ CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
 CMD_IN_ON_USER_LEFT = "on_user_left"
 CMD_OUT_FLUSH = "flush"
+CMD_IN_CHAT_COMPLETION = "chat_completion"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
@@ -52,7 +56,7 @@ PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
 
 TASK_TYPE_CHAT_COMPLETION = "chat_completion"
 TASK_TYPE_CHAT_COMPLETION_WITH_VISION = "chat_completion_with_vision"
-
+TASK_TYPE_CHAT_COMPLETION_CMD = "chat_completion_cmd"
 
 class OpenAIChatGPTExtension(Extension):
     memory = []
@@ -193,6 +197,24 @@ class OpenAIChatGPTExtension(Extension):
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
+        elif cmd_name == CMD_IN_CHAT_COMPLETION:
+            m_str = cmd.get_property_string("messages")
+            messages = json.loads(m_str)
+            stream = False
+            is_json = False
+            try:
+                stream = cmd.get_property_bool("stream")
+            except:
+                pass
+            
+            try:
+                is_json = cmd.get_property_bool("json")
+            except:
+                pass
+            
+            asyncio.run_coroutine_threadsafe(self.queue.put(
+                [TASK_TYPE_CHAT_COMPLETION_CMD, (messages, stream, is_json, cmd)]), self.loop)
+            return
         else:
             logger.info(f"on_cmd unknown cmd: {cmd_name}")
             status_code, detail = StatusCode.ERROR, "unknown cmd"
@@ -237,11 +259,30 @@ class OpenAIChatGPTExtension(Extension):
             [task_type, message] = await self.queue.get()
             try:
                 # Create a new task for the new message
-                self.current_task = asyncio.create_task(
-                    self._run_chatflow(ten_env, task_type, message, self.memory))
+                if task_type == TASK_TYPE_CHAT_COMPLETION_CMD:
+                    logger.info("on chat completion cmd")
+                    messages, stream, is_json, cmd = message
+                    logger.info(f"on chat completion cmd with params {messages}, {stream}, {is_json}")
+                    def callback(ten_env: TenEnv, cmd: Cmd, delta: str, is_final: bool, status_code = StatusCode.OK) -> None:
+                        logger.info(f"on callback of chat completion {delta} {is_final} {status_code}")
+                        cmd_result = CmdResult.create(status_code)
+                        cmd_result.set_property_string("response", delta)
+                        if is_final:
+                            cmd_result.set_is_final(True)  # end of streaming return
+                        else:
+                            cmd_result.set_is_final(False)  # keep streaming return
+                        ten_env.return_result(cmd_result, cmd)
+
+                    self.current_task = asyncio.create_task(
+                        self._run_chat_completion_cmd(ten_env, messages, stream, is_json, functools.partial(callback, ten_env, cmd)))
+                else:
+                    self.current_task = asyncio.create_task(
+                        self._run_chatflow(ten_env, task_type, message, self.memory))
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 logger.info(f"Task cancelled: {message}")
+            except:
+                logger.exception(f"failed to handle queue")
 
     async def _flush_queue(self):
         """Flushes the self.queue and cancels the current task."""
@@ -252,6 +293,45 @@ class OpenAIChatGPTExtension(Extension):
         if self.current_task:
             logger.info("Cancelling the current task during flush.")
             self.current_task.cancel()
+
+    async def _run_chat_completion_cmd(self, ten_env: TenEnv, messages: List, stream: bool, is_json: bool, callback: Callable) -> None:
+        # Create an asyncio.Event to signal when content is finished
+        content_finished_event = asyncio.Event()
+
+        async def handle_stream_content_update(content: str):
+            nonlocal callback
+            callback(content, False)
+
+        async def handle_stream_content_finished(full_content: str):
+            nonlocal callback
+            callback("", True)
+            content_finished_event.set()
+
+        async def handle_content_finished(full_content: str):
+            nonlocal callback
+            logger.info(f"handle_content_finished {full_content}")
+            callback(full_content, True)
+            content_finished_event.set()
+        
+        async def handle_refusal(refusal: str):
+            nonlocal callback
+            logger.info(f"handle_refusal {refusal}")
+            callback(refusal, True, StatusCode.ERROR)
+            content_finished_event.set()
+
+        listener = AsyncEventEmitter()
+        if stream:
+            listener.on("content_update", handle_stream_content_update)
+            listener.on("content_finished", handle_stream_content_finished)
+        else:
+            listener.on("content_finished", handle_content_finished)
+            listener.on("on_refusal", handle_refusal)
+
+        # Make an async API call to get chat completions
+        await self.openai_chatgpt.get_chat_completions(messages=messages, stream=stream, is_json=is_json, listener=listener)
+
+        # Wait for the content to be finished
+        await content_finished_event.wait()
 
     async def _run_chatflow(self, ten_env: TenEnv, task_type: str, input_text: str, memory):
         """Run the chatflow asynchronously."""

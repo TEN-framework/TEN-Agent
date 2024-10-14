@@ -72,6 +72,73 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
+    async def get_chat_completions(self, messages, tools = None, stream = False, is_json = False, listener = None):
+        req = {
+            "model": self.config.model,
+            "messages": messages,
+            "tools": tools,
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "presence_penalty": self.config.presence_penalty,
+            "frequency_penalty": self.config.frequency_penalty,
+            "max_tokens": self.config.max_tokens,
+            "seed": self.config.seed,
+            "stream": stream,
+        }
+        if is_json:
+            req["messages"] = [{"role": "system", "content": "You need to response in json format."}, *messages]
+            req["response_format"] = { "type": "json_object" }
+
+        # logger.info(f"before request {req}")
+        try:
+            response = await self.client.chat.completions.create(**req)
+        except Exception as e:
+            raise Exception(f"CreateChatCompletionStream failed, err: {e}")
+        
+        full_content = ""
+
+        if stream:
+            async for chat_completion in response:
+                choice = chat_completion.choices[0]
+                delta = choice.delta
+
+                content = delta.content if delta and delta.content else ""
+
+                # Emit content update event (fire-and-forget)
+                if listener and content:
+                    listener.emit('content_update', content)
+
+                full_content += content
+
+                # Check for tool calls
+                if delta.tool_calls:
+                    for tool_call in delta.tool_calls:
+                        logger.info(f"tool_call: {tool_call}")
+
+                        # Emit tool call event (fire-and-forget)
+                        if listener:
+                            listener.emit('tool_call', tool_call)
+        else:
+            choice = response.choices[0]
+            logger.info(f"on response {response}")
+            if choice.message.refusal and listener:
+                listener.emit('on_refusal', choice.message.refusal)
+                return
+            
+            full_content = choice.message.content
+
+            if choice.message.tool_calls:
+                for tool_call in choice.message.tool_calls:
+                    logger.info(f"tool_call: {tool_call}")
+
+                    # Emit tool call event (fire-and-forget)
+                    if listener:
+                        listener.emit('tool_call', tool_call)
+
+        # Emit content finished event after the loop completes
+        if listener:
+            listener.emit('content_finished', full_content)
+
     async def get_chat_completions_stream(self, messages, tools = None, listener = None):
         req = {
             "model": self.config.model,
