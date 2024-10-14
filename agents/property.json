@@ -3,6 +3,7 @@
         "log_level": 3,
         "predefined_graphs": [
             {
+                "name": "va.openai.azure.fashionai",
                 "auto_start": true,
                 "connections": [
                     {
@@ -135,7 +136,6 @@
                         "extension_group": "default"
                     }
                 ],
-                "name": "va.openai.azure.fashionai",
                 "nodes": [
                     {
                         "addon": "agora_rtc",
