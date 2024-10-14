@@ -32,7 +32,7 @@
       "path": {
         "type": "string"
       },
-      "platform": {
+      "vendor": {
         "type": "string"
       },
       "temperature": {

@@ -35,7 +35,7 @@ from .tools import ToolRegistry
 PROPERTY_API_KEY = "api_key"  # Required
 PROPERTY_BASE_URI = "base_uri"  # Optional
 PROPERTY_PATH = "path"  # Optional
-PROPERTY_PLATFORM = "platform"  # Optional
+PROPERTY_VENDOR = "vendor"  # Optional
 PROPERTY_MODEL = "model"  # Optional
 PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
@@ -90,7 +90,7 @@ class OpenAIV2VExtension(Extension):
 
         # misc.
         self.greeting : str = DEFAULT_GREETING
-        self.platform: str = ""
+        self.vendor: str = ""
         # max history store in context
         self.max_history = 0
         self.history = []
@@ -177,7 +177,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, platform=self.platform, verbose=True)
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=True)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -363,9 +363,9 @@ class OpenAIV2VExtension(Extension):
             logger.info(f"GetProperty optional {PROPERTY_PATH} error: {err}")
         
         try:
-            self.platform = ten_env.get_property_string(PROPERTY_PLATFORM)
+            self.vendor = ten_env.get_property_string(PROPERTY_VENDOR)
         except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_PLATFORM} error: {err}") 
+            logger.info(f"GetProperty optional {PROPERTY_VENDOR} error: {err}") 
 
         try:
             model = ten_env.get_property_string(PROPERTY_MODEL)

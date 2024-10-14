@@ -60,6 +60,6 @@ This extension also support Azure OpenAI Service, the propoerty settings are as 
     "path": "/openai/realtime?api-version=xxx&deployment=xxx",
     "api_key": "xxx",
     "model": "gpt-4o-realtime-preview",
-    "platform": "azure"
+    "vendor": "azure"
 }
 ```

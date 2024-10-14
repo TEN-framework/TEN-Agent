@@ -11,7 +11,7 @@ from ..log import logger
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
-PLATFORM_AZURE = "azure"
+VENDOR_AZURE = "azure"
 
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
@@ -38,12 +38,12 @@ class RealtimeApiConnection:
         api_key: str | None = None,
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
-        platform: str = "",
+        vendor: str = "",
         verbose: bool = False,
     ):
-        self.platform = platform
+        self.vendor = vendor
         self.url = f"{base_uri}{path}"
-        if not self.platform and "model=" not in self.url:
+        if not self.vendor and "model=" not in self.url:
             self.url += f"?model={model}"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
@@ -62,9 +62,9 @@ class RealtimeApiConnection:
     async def connect(self):
         headers = {}
         auth = None
-        if self.platform == PLATFORM_AZURE:
+        if self.vendor == VENDOR_AZURE:
             headers = {"api-key": self.api_key}
-        elif not self.platform:
+        elif not self.vendor:
             auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
             headers = {"OpenAI-Beta": "realtime=v1"}
 
