@@ -60,13 +60,14 @@ func newFishAudioTTS(config fishAudioTTSConfig) (*fishAudioTTS, error) {
 }
 
 func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
-	latency := "balanced"
+	latency := "normal"
 
 	// Create the payload
 	payload := map[string]interface{}{
 		"text":         text,
 		"chunk_length": 100,
 		"latency":      latency,
+		"reference_id": e.config.VoiceId,
 		"format":       "pcm", // 44100/ 1ch/ 16bit
 	}
 
