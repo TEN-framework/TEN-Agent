@@ -32,6 +32,7 @@ COPY --from=builder /app/agents/.release/ agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
+COPY --from=builder /usr/local/bin/tman /usr/local/bin/
 
 EXPOSE 8080
 
