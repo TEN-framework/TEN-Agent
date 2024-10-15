@@ -19,5 +19,34 @@
       "README.md"
     ]
   },
-  "api": {}
+  "api": {
+    "property": {
+      "key": {
+        "type": "string"
+      },
+      "endpoint": {
+        "type": "string"
+      }
+    }
+  },
+  "cmd_in": [
+    {
+      "name": "analyze_image",
+      "property": {
+        "image_data": {
+          "type": "buf"
+        }
+      },
+      "required": [
+        "image_data"
+      ],
+      "result": {
+        "property": {
+          "response": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
 }

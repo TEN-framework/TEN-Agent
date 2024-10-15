@@ -1,29 +1,26 @@
 # bingsearch_tool_python
 
-<!-- brief introduction for the extension -->
+This is tool for bing search, the document link is as follow: https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/python
+
+It is built using TEN Tool Call Protocol (Beta).
 
 ## Features
 
-<!-- main features introduction -->
+It is the bing search tool that will auto register to any llm extension.
 
-- xxx feature
+The tool description is as follow: 
+
+*Use Bing.com to search for latest information. Call this function if you are not sure about the answer.*
 
 ## API
 
 Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
 
-<!-- Additional API.md can be referred to if extra introduction needed -->
-
-## Development
-
-### Build
-
-<!-- build dependencies and steps -->
-
-### Unit test
-
-<!-- how to do unit test for the extension -->
+- out: tool_register
+- in: tool_call
 
 ## Misc
 
-<!-- others if applicable -->
+- use Tool Call Protocol Standard
+- support async call
+- apply asyncio template

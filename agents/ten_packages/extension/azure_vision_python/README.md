@@ -1,29 +1,44 @@
 # azure_vision_python
 
-<!-- brief introduction for the extension -->
+This is the extension calling azure ai vision.
+
+The document is as follow: https://learn.microsoft.com/zh-cn/azure/ai-services/computer-vision/overview
+
+## Properties
+
+- key 
+- endpoint
 
 ## Features
 
-<!-- main features introduction -->
-
-- xxx feature
+- Only support one frame of image
+- No customization for feature
+- By default will include `TAGS`, `CAPTION`, `READ`, `PEOPLE`, `OBJECTS`
 
 ## API
 
 Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
 
-<!-- Additional API.md can be referred to if extra introduction needed -->
+Other extensions can call `analyze_image` cmd and will get all analyze result from result in `response` property, the result will looks like this:
 
-## Development
-
-### Build
-
-<!-- build dependencies and steps -->
-
-### Unit test
-
-<!-- how to do unit test for the extension -->
+``` json
+{
+    "modelVersion": "2023-10-01",
+    "captionResult": {
+        "text": "a group of toys on a table",
+        "confidence": 0.7558467388153076
+    },
+    "metadata": {
+        "width": 320,
+        "height": 240
+    },
+    "objectsResult": {},
+    "readResult": {},
+    "peopleResult": {}
+}
+```
 
 ## Misc
 
-<!-- others if applicable -->
+- Video analyze
+- Multi-frame analyze
