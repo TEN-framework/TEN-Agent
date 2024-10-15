@@ -22,8 +22,8 @@ const CamSection = (props: CamSectionProps) => {
   }, [xs])
 
   useEffect(() => {
-    videoTrack?.setMuted(videoMute)
-  }, [videoTrack, videoMute])
+    videoTrack?.setEnabled(!videoMute);
+  }, [videoTrack, videoMute]);
 
   const onClickMute = () => {
     setVideoMute(!videoMute)
