@@ -24,6 +24,11 @@
       "version": "=0.7.0-rc2"
     },
     {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "0.1.1"
+    },
+    {
       "type": "system",
       "name": "azure_speech_sdk",
       "version": "1.38.0"
