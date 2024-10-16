@@ -84,8 +84,8 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
 ### Prerequisites
 
 #### Keys
-- Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate is not required)
-- Azure [SST](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys (feel  free to use another provider)
+- Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate only required if enabled in the Agora Console)
+- Azure [SST(ASR)](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
 
 #### Installation
@@ -112,11 +112,11 @@ cp ./.env.example ./.env
 ```
 
 #### 2. Setup API keys
-Open the `.env` file and fill in the `keys` and `regions`. This is also where you can choose to use any different `extensions`:
+Open the `.env` file and fill in the `keys` and `regions`. 
 ```bash
-# Agora App ID and Agora App Certificate
+# Agora App ID 
+# Agora App Certificate(only required if enabled in the Agora Console)
 AGORA_APP_ID=
-# Leave empty unless you have enabled the certificate within the Agora account.
 AGORA_APP_CERTIFICATE=
 
 # Azure STT key and region
@@ -140,7 +140,6 @@ docker compose up
 #### 4. Enter container and build agent
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
-
 docker exec -it ten_agent_dev bash
 
 make build
@@ -155,7 +154,10 @@ make run-server
 ### Finish and verify
 
 #### TEN Agent
-Open up [localhost:3000]( http://localhost:3000 ) in browser to play and test the TEN Agent.
+Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
+
+#### TEN Agent with OpenAI Realtime API
+Open up [localhost:3002]( http://localhost:3002 ) in browser to play the TEN Agent with OpenAI Realtime API.
 
 #### TEN Graph Designer
 
