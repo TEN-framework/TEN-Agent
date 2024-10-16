@@ -116,6 +116,7 @@ def rgb2base64jpeg(rgb_data: bytes, width: int, height: int, raw: bool = False) 
     # Create the data URL
     mime_type = "image/jpeg"
     base64_url = f"data:{mime_type};base64,{base64_encoded_image}"
+
     return base64_url
 
 class VisionToolExtension(Extension):
@@ -341,14 +342,14 @@ class VisionToolExtension(Extension):
             raise Exception("Failed to get property")
 
         query = args["query"]
-        contents = [{"type": "text", "text": f"This is the image captured within {self.frequency_ms} ms at {ts}. {query}"}]
+        contents = [
+            {"type": "text", "text": "You need to describe all the object in this image first, and then focus on the user's query. Keep your response short and simple unless the query ask you to."},
+            {"type": "text", "text": f"This is the image captured within {self.frequency_ms} ms at {ts}. {query}"}
+        ]
         for f in frames:
             contents.append({"type": "image_url", "image_url": {"url": f}})
 
         messages = [{
-            "role": "system",
-            "content": "You need to describe all the object in this image first, and then focus on the user's query. Keep your response short and simple unless the query ask you to."
-        },{
             "role": "user",
             "content": contents,
         }]

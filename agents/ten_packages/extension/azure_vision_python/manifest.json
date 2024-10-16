@@ -27,26 +27,26 @@
       "endpoint": {
         "type": "string"
       }
-    }
-  },
-  "cmd_in": [
-    {
-      "name": "analyze_image",
-      "property": {
-        "image_data": {
-          "type": "buf"
-        }
-      },
-      "required": [
-        "image_data"
-      ],
-      "result": {
+    },
+    "cmd_in": [
+      {
+        "name": "analyze_image",
         "property": {
-          "response": {
-            "type": "string"
+          "image_data": {
+            "type": "buf"
+          }
+        },
+        "required": [
+          "image_data"
+        ],
+        "result": {
+          "property": {
+            "response": {
+              "type": "string"
+            }
           }
         }
       }
-    }
-  ]
+    ]
+  }
 }

@@ -1,4 +1,6 @@
 import boto3
+
+from typing import List, Any
 from .log import logger
 
 class BedrockLLMConfig:
@@ -70,6 +72,32 @@ class BedrockLLM:
 
         try:
             response = self.client.converse_stream(**bedrock_req_params)
+            return response
+        except Exception as e:
+            raise Exception(f"GetConverseStream failed, err: {e}")
+        
+    def chat_completion_cmd(self, messages: List[Any], stream: bool, is_json: bool):
+        bedrock_req_params = {
+            "modelId": self.config.model,
+            "messages": messages,
+            "inferenceConfig": {
+                "temperature": self.config.temperature,
+                "maxTokens": self.config.max_tokens,
+                "topP": self.config.top_p,
+                # "stopSequences": [],
+            },
+            # "additionalModelRequestFields": additional_model_fields,
+        }
+
+        logger.info(f"before chat {bedrock_req_params}")
+
+        f = self.client.converse_stream
+        if not stream:
+            f = self.client.converse
+
+        try:
+            response = f(**bedrock_req_params)
+            logger.info(f"after chat {response}")
             return response
         except Exception as e:
             raise Exception(f"GetConverseStream failed, err: {e}")

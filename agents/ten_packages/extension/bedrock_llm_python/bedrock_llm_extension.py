@@ -1,6 +1,14 @@
-from .bedrock_llm import BedrockLLM, BedrockLLMConfig
+
+import json
+import copy
+
 from datetime import datetime
 from threading import Thread
+from queue import Queue
+from threading import Thread
+from typing import List, Any, AnyStr
+from base64 import b64decode
+
 from ten import (
     Addon,
     Extension,
@@ -12,6 +20,7 @@ from ten import (
     CmdResult,
 )
 from .log import logger
+from .bedrock_llm import BedrockLLM, BedrockLLMConfig
 
 
 CMD_IN_FLUSH = "flush"
@@ -20,6 +29,8 @@ DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
+
+CMD_IN_CHAT_COMPLETION = "chat_completion"
 
 PROPERTY_REGION = "region"  # Optional
 PROPERTY_ACCESS_KEY = "access_key"  # Optional
@@ -68,10 +79,17 @@ class BedrockLLMExtension(Extension):
     max_memory_length = 10
     outdate_ts = 0
     bedrock_llm = None
+    greeting = ""
+
+    stopped: bool = False
+    cmd_queue = Queue()
+    thread: Thread = None
+    ten_env: TenEnv = None
 
     def on_start(self, ten: TenEnv) -> None:
         logger.info("BedrockLLMExtension on_start")
         # Prepare configuration
+        self.ten_env = ten
         bedrock_llm_config = BedrockLLMConfig.default_config()
 
         for optional_str_param in [
@@ -110,7 +128,7 @@ class BedrockLLMExtension(Extension):
             )
 
         try:
-            greeting = ten.get_property_string(PROPERTY_GREETING)
+            self.greeting = ten.get_property_string(PROPERTY_GREETING)
         except Exception as err:
             logger.debug(
                 f"GetProperty optional {PROPERTY_GREETING} failed, err: {err}."
@@ -134,24 +152,30 @@ class BedrockLLMExtension(Extension):
         except Exception as err:
             logger.exception(f"newBedrockLLM failed, err: {err}")
 
+        self.thread = Thread(target=self.loop)
+        self.thread.start()
+
         # Send greeting if available
-        if greeting:
+        if self.greeting:
             try:
                 output_data = Data.create("text_data")
                 output_data.set_property_string(
-                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting
+                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, self.greeting
                 )
                 output_data.set_property_bool(
                     DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
                 )
                 ten.send_data(output_data)
-                logger.info(f"greeting [{greeting}] sent")
+                logger.info(f"greeting [{self.greeting}] sent")
             except Exception as err:
-                logger.info(f"greeting [{greeting}] send failed, err: {err}")
+                logger.info(f"greeting [{self.greeting}] send failed, err: {err}")
         ten.on_start_done()
 
     def on_stop(self, ten: TenEnv) -> None:
         logger.info("BedrockLLMExtension on_stop")
+        self.stopped = True
+        self.cmd_queue.put(None)
+        self.thread.join()
         ten.on_stop_done()
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
@@ -166,6 +190,23 @@ class BedrockLLMExtension(Extension):
             cmd_out = Cmd.create(CMD_OUT_FLUSH)
             ten.send_cmd(cmd_out, None)
             logger.info(f"BedrockLLMExtension on_cmd sent flush")
+        elif cmd_name == CMD_IN_CHAT_COMPLETION:
+            m_str = cmd.get_property_string("messages")
+            messages = json.loads(m_str)
+            stream = False
+            is_json = False
+            try:
+                stream = cmd.get_property_bool("stream")
+            except:
+                pass
+            
+            try:
+                is_json = cmd.get_property_bool("json")
+            except:
+                pass
+            
+            self.cmd_queue.put((messages, stream, is_json, cmd))
+            return
         else:
             logger.info(f"BedrockLLMExtension on_cmd unknown cmd: {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
@@ -365,6 +406,92 @@ class BedrockLLMExtension(Extension):
         thread.start()
         logger.info(f"BedrockLLMExtension on_data end")
 
+    def loop(self):
+        logger.info(f"starting loop {self.stopped}")
+        while not self.stopped:
+            c = self.cmd_queue.get()
+            if c is None:
+                break
+            
+            try:
+                messages, stream, is_json, cmd = c
+                try:
+                    messages = self._convert_messages(messages)
+                    logger.info(f"after convert {messages}")
+                    resp = self.bedrock_llm.chat_completion_cmd(messages=messages, stream=stream, is_json=is_json)
+                    if not stream:
+                        output_message = resp['output']['message']
+                        cmd_result = CmdResult.create(StatusCode.OK)
+                        cmd_result.set_property_string("response", output_message)
+                        self.ten_env.return_result(cmd_result, cmd)
+                    else:
+                        stream = resp.get("stream")
+                        status_code = StatusCode.OK
+                        for event in stream:
+                            if "contentBlockDelta" in event:
+                                delta_types = event["contentBlockDelta"]["delta"].keys()
+                                # ignore other types of content: e.g toolUse
+                                if "text" in delta_types:
+                                    content = event["contentBlockDelta"]["delta"]["text"]
+                                    cmd_result = CmdResult.create(StatusCode.OK)
+                                    cmd_result.set_property_string("response", content)
+                                    cmd_result.set_is_final(False)
+                                    self.ten_env.return_result(cmd_result, cmd)
+                            elif (
+                                "internalServerException" in event
+                                or "modelStreamErrorException" in event
+                                or "throttlingException" in event
+                                or "validationException" in event
+                            ):
+                                logger.error(f"GetConverseStream Error occured: {event}")
+                                status_code = StatusCode.ERROR
+                                break
+                            else:
+                                # ingore other events
+                                continue
+                        
+                        cmd_result = CmdResult.create(status_code)
+                        cmd_result.set_property_string("response", "")
+                        cmd_result.set_is_final(True)
+                        self.ten_env.return_result(cmd_result, cmd)
+                except:
+                    logger.exception("Failed to handle queue")
+            except:
+                logger.exception("failed")
+        
+    def _convert_messages(self, messages: List[Any]):
+        result = []
+        logger.info(f"_convert_messages {messages}")
+        for message in messages:
+            parts = []
+            #if message["role"] == "system":
+            #    result.append(message)
+            #    continue
+            content = message["content"]
+            if type(content) == list:
+                for part in content:
+                    if part["type"] == "image_url":
+                        # rewrite image
+                        # part["type"] = "image"
+                        origin = part["image_url"]["url"]
+                        del part["image_url"]
+                        partial = str(origin[23:])
+                        part["image"] = {
+                            "format": "jpeg",
+                            "source": {
+                                "bytes": b64decode(partial.encode('utf-8'))
+                            }
+                        }
+                    del part["type"]
+                    parts.append(part)
+            elif type(content) == str:
+                parts.append({"text": content})
+                    
+            del message["content"]
+            message["content"] = parts
+            result.append(message)
+        logger.info(f"after _convert_messages {result}")
+        return result
 
 @register_addon_as_extension("bedrock_llm_python")
 class BedrockLLMExtensionAddon(Addon):
