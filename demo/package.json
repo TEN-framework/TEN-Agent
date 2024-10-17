@@ -10,7 +10,6 @@
     "proto": "pbjs -t json-module -w commonjs -o src/protobuf/SttMessage.js src/protobuf/SttMessage.proto"
   },
   "dependencies": {
-    "@ant-design/dark-theme": "^2.0.2",
     "@ant-design/icons": "^5.3.7",
     "@reduxjs/toolkit": "^2.2.3",
     "agora-rtc-sdk-ng": "^4.21.0",
