@@ -29,6 +29,7 @@ type fishAudioTTSConfig struct {
 	ModelId                  string
 	OptimizeStreamingLatency bool
 	RequestTimeoutSeconds    int
+	BaseUrl                  string
 }
 
 func defaultFishAudioTTSConfig() fishAudioTTSConfig {
@@ -37,6 +38,7 @@ func defaultFishAudioTTSConfig() fishAudioTTSConfig {
 		ModelId:                  "d8639b5cc95548f5afbcfe22d3ba5ce5",
 		OptimizeStreamingLatency: true,
 		RequestTimeoutSeconds:    30,
+		BaseUrl:                  "https://api.fish.audio",
 	}
 }
 
@@ -44,7 +46,12 @@ func newFishAudioTTS(config fishAudioTTSConfig) (*fishAudioTTS, error) {
 	return &fishAudioTTS{
 		config: config,
 		client: &http.Client{
-			Timeout: time.Second * 10,
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 10,
+				// Keep-Alive connection never expires
+				IdleConnTimeout: time.Second * 0,
+			},
+			Timeout: time.Second * time.Duration(config.RequestTimeoutSeconds),
 		},
 	}, nil
 }
@@ -71,7 +78,7 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 	}
 
 	// Create a new POST request
-	req, err := http.NewRequest("POST", "https://api.fish.audio/v1/tts", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", e.config.BaseUrl + "/v1/tts", bytes.NewBuffer(body))
 	if err != nil {
 		panic(err)
 	}

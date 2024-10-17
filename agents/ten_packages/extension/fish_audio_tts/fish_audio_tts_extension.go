@@ -28,6 +28,7 @@ const (
 	propertyModelId                  = "model_id"                   // Optional
 	propertyOptimizeStreamingLatency = "optimize_streaming_latency" // Optional
 	propertyRequestTimeoutSeconds    = "request_timeout_seconds"    // Optional
+	propertyBaseUrl                  = "base_url"                   // Optional
 )
 
 const (
@@ -63,6 +64,7 @@ func newFishAudioTTSExtension(name string) ten.Extension {
 //   - model_id
 //   - optimize_streaming_latency
 //   - request_timeout_seconds
+//   - base_url
 func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 	slog.Info("OnStart", logTag)
 
@@ -95,6 +97,14 @@ func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 	} else {
 		if requestTimeoutSeconds > 0 {
 			fishAudioTTSConfig.RequestTimeoutSeconds = int(requestTimeoutSeconds)
+		}
+	}
+
+	if baseUrl, err := ten.GetPropertyString(propertyBaseUrl); err != nil {
+		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyBaseUrl, err), logTag)
+	} else {
+		if len(baseUrl) > 0 {
+			fishAudioTTSConfig.BaseUrl = baseUrl
 		}
 	}
 

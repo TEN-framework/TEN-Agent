@@ -22,6 +22,9 @@
             },
             "optimize_streaming_latency": {
                 "type": "bool"
+            },
+            "base_url": {
+                "type": "string"
             }
         },
         "data_in": [

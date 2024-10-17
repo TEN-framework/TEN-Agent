@@ -682,7 +682,8 @@
                             "api_key": "${env:FISH_AUDIO_TTS_KEY}",
                             "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
                             "optimize_streaming_latency": true,
-                            "request_timeout_seconds": 30
+                            "request_timeout_seconds": 30,
+                            "base_url": "https://api.fish.audio"
                         }
                     },
                     {
