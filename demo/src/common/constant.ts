@@ -1,11 +1,18 @@
 import { IOptions, ColorItem, LanguageOptionItem, VoiceOptionItem, GraphOptionItem } from "@/types"
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
 export const OPTIONS_KEY = "__options__"
+export const AGENT_SETTINGS_KEY = "__agent_settings__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
   userId: 0
 }
+
+export const DEFAULT_AGENT_SETTINGS = {
+  greeting: "",
+  prompt: ""
+}
+
 export const DESCRIPTION = "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {

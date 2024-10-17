@@ -26,9 +26,9 @@ export default function Home() {
 
   return (
     mobile === null ? <></> :
-    <AuthInitializer>
-      {mobile ? <MobileEntry></MobileEntry> : <PCEntry></PCEntry>}
-    </AuthInitializer >
+      <AuthInitializer>
+        {mobile ? <MobileEntry></MobileEntry> : <PCEntry></PCEntry>}
+      </AuthInitializer >
   );
 }
 

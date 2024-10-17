@@ -1,6 +1,6 @@
-import { IOptions, IChatItem, Language, VoiceType } from "@/types"
+import { IOptions, IChatItem, Language, VoiceType, IAgentSettings } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList } from "@/common"
+import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, DEFAULT_AGENT_SETTINGS, setAgentSettingsToLocal } from "@/common"
 
 export interface InitialState {
   options: IOptions
@@ -10,7 +10,8 @@ export interface InitialState {
   language: Language
   voiceType: VoiceType
   chatItems: IChatItem[],
-  graphName: string
+  graphName: string,
+  agentSettings: IAgentSettings
 }
 
 const getInitialState = (): InitialState => {
@@ -22,7 +23,8 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "va.openai.v2v"
+    graphName: "va.openai.v2v",
+    agentSettings: DEFAULT_AGENT_SETTINGS,
   }
 }
 
@@ -87,6 +89,10 @@ export const globalSlice = createSlice({
     setGraphName: (state, action: PayloadAction<string>) => {
       state.graphName = action.payload
     },
+    setAgentSettings: (state: { agentSettings: any }, action: PayloadAction<Record<string, any>>) => {
+      state.agentSettings = { ...state.agentSettings, ...action.payload }
+      setAgentSettingsToLocal(state.agentSettings)
+    },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
     },
@@ -99,7 +105,7 @@ export const globalSlice = createSlice({
 
 export const { reset, setOptions,
   setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage, setGraphName } =
+  addChatItem, setThemeColor, setLanguage, setGraphName, setAgentSettings } =
   globalSlice.actions
 
 export default globalSlice.reducer

@@ -8,6 +8,8 @@ interface StartRequestConfig {
   graphName: string,
   language: Language,
   voiceType: "male" | "female"
+  prompt?: string,
+  greeting?: string,
 }
 
 interface GenAgoraDataConfig {
@@ -32,14 +34,16 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
   // look at app/api/agents/start/route.tsx for the server-side implementation
   const url = `/api/agents/start`
-  const { channel, userId, graphName, language, voiceType } = config
+  const { channel, userId, graphName, language, voiceType, greeting, prompt } = config
   const data = {
     request_id: genUUID(),
     channel_name: channel,
     user_uid: userId,
     graph_name: graphName,
     language,
-    voice_type: voiceType
+    voice_type: voiceType,
+    greeting,
+    prompt
   }
   let resp: any = await axios.post(url, data)
   resp = (resp.data) || {}

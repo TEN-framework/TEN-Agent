@@ -45,6 +45,11 @@
     caret-color: transparent;
     box-sizing: border-box;
 
+    &.btnSetting {
+      background: #181A1D;
+      border: 1px solid #272A2F;
+    }
+
     .btnText {
       width: 100px;
       text-align: center;

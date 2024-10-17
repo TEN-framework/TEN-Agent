@@ -13,6 +13,11 @@ export interface IOptions {
   userId: number
 }
 
+export interface IAgentSettings {
+  prompt: string,
+  greeting: string
+}
+
 
 export interface IChatItem {
   userId: number | string,
