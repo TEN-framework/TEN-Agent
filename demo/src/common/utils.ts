@@ -1,3 +1,5 @@
+import { LanguageOptionItem } from "@/types"
+
 export const genRandomString = (length: number = 10) => {
   let result = '';
   const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -57,3 +59,31 @@ export const genUUID = () => {
 export const isMobile = () => {
   return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
 }
+
+
+export const getBrowserLanguage = (): LanguageOptionItem => {
+  const lang = navigator.language;
+
+  switch (true) {
+    case lang.startsWith("zh"):
+      return {
+        label: "Chinese",
+        value: "zh-CN"
+      };
+    case lang.startsWith("ko"):
+      return {
+        label: "Korean",
+        value: "ko-KR"
+      };
+    case lang.startsWith("ja"):
+      return {
+        label: "Japanese",
+        value: "ja-JP"
+      };
+    default:
+      return {
+        label: "English",
+        value: "en-US"
+      };
+  }
+};
