@@ -66,7 +66,6 @@ const FormModal: React.FC = () => {
                         form={form}
                         layout="vertical"
                         name="form_in_modal"
-                        value={agentSettings}
                     >
                         <Form.Item
                             name="greeting"
