@@ -28,11 +28,6 @@ const (
 	propertyModelId                  = "model_id"                   // Optional
 	propertyOptimizeStreamingLatency = "optimize_streaming_latency" // Optional
 	propertyRequestTimeoutSeconds    = "request_timeout_seconds"    // Optional
-	propertySimilarityBoost          = "similarity_boost"           // Optional
-	propertySpeakerBoost             = "speaker_boost"              // Optional
-	propertyStability                = "stability"                  // Optional
-	propertyStyle                    = "style"                      // Optional
-	propertyVoiceId                  = "voice_id"                   // Optional
 )
 
 const (
@@ -68,11 +63,6 @@ func newFishAudioTTSExtension(name string) ten.Extension {
 //   - model_id
 //   - optimize_streaming_latency
 //   - request_timeout_seconds
-//   - similarity_boost
-//   - speaker_boost
-//   - stability
-//   - style
-//   - voice_id
 func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 	slog.Info("OnStart", logTag)
 
@@ -94,12 +84,10 @@ func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 		}
 	}
 
-	if optimizeStreamingLatency, err := ten.GetPropertyInt64(propertyOptimizeStreamingLatency); err != nil {
+	if optimizeStreamingLatency, err := ten.GetPropertyBool(propertyOptimizeStreamingLatency); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyOptimizeStreamingLatency, err), logTag)
 	} else {
-		if optimizeStreamingLatency > 0 {
-			fishAudioTTSConfig.OptimizeStreamingLatency = int(optimizeStreamingLatency)
-		}
+		fishAudioTTSConfig.OptimizeStreamingLatency = optimizeStreamingLatency
 	}
 
 	if requestTimeoutSeconds, err := ten.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
@@ -110,38 +98,6 @@ func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 		}
 	}
 
-	if similarityBoost, err := ten.GetPropertyFloat64(propertySimilarityBoost); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySimilarityBoost, err), logTag)
-	} else {
-		fishAudioTTSConfig.SimilarityBoost = float32(similarityBoost)
-	}
-
-	if speakerBoost, err := ten.GetPropertyBool(propertySpeakerBoost); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySpeakerBoost, err), logTag)
-	} else {
-		fishAudioTTSConfig.SpeakerBoost = speakerBoost
-	}
-
-	if stability, err := ten.GetPropertyFloat64(propertyStability); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStability, err), logTag)
-	} else {
-		fishAudioTTSConfig.Stability = float32(stability)
-	}
-
-	if style, err := ten.GetPropertyFloat64(propertyStyle); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStyle, err), logTag)
-	} else {
-		fishAudioTTSConfig.Style = float32(style)
-	}
-
-	if voiceId, err := ten.GetPropertyString(propertyVoiceId); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err), logTag)
-	} else {
-		if len(voiceId) > 0 {
-			fishAudioTTSConfig.VoiceId = voiceId
-		}
-	}
-
 	// create fishAudioTTS instance
 	fishAudioTTS, err := newFishAudioTTS(fishAudioTTSConfig)
 	if err != nil {
@@ -149,8 +105,8 @@ func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 		return
 	}
 
-	slog.Info(fmt.Sprintf("newFishAudioTTS succeed with ModelId: %s, VoiceId: %s",
-	fishAudioTTSConfig.ModelId, fishAudioTTSConfig.VoiceId), logTag)
+	slog.Info(fmt.Sprintf("newFishAudioTTS succeed with ModelId: %s",
+	fishAudioTTSConfig.ModelId), logTag)
 
 	// set fishAudio instance
 	e.fishAudioTTS = fishAudioTTS

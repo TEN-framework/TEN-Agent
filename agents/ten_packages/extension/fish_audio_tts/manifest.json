@@ -20,23 +20,8 @@
             "request_timeout_seconds": {
                 "type": "int64"
             },
-            "similarity_boost": {
-                "type": "float64"
-            },
-            "speaker_boost": {
-                "type": "bool"
-            },
-            "stability": {
-                "type": "float64"
-            },
-            "style": {
-                "type": "float64"
-            },
             "optimize_streaming_latency": {
-                "type": "int64"
-            },
-            "voice_id": {
-                "type": "string"
+                "type": "bool"
             }
         },
         "data_in": [

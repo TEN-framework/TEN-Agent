@@ -27,26 +27,16 @@ type fishAudioTTS struct {
 type fishAudioTTSConfig struct {
 	ApiKey                   string
 	ModelId                  string
-	OptimizeStreamingLatency int
+	OptimizeStreamingLatency bool
 	RequestTimeoutSeconds    int
-	SimilarityBoost          float32
-	SpeakerBoost             bool
-	Stability                float32
-	Style                    float32
-	VoiceId                  string
 }
 
 func defaultFishAudioTTSConfig() fishAudioTTSConfig {
 	return fishAudioTTSConfig{
 		ApiKey:                   "",
-		ModelId:                  "fish_streaming",
-		OptimizeStreamingLatency: 0,
+		ModelId:                  "d8639b5cc95548f5afbcfe22d3ba5ce5",
+		OptimizeStreamingLatency: true,
 		RequestTimeoutSeconds:    30,
-		SimilarityBoost:          0.75,
-		SpeakerBoost:             false,
-		Stability:                0.5,
-		Style:                    0.0,
-		VoiceId:                  "f1527b3c6be0415489e9728b5565a3ec",
 	}
 }
 
@@ -61,13 +51,16 @@ func newFishAudioTTS(config fishAudioTTSConfig) (*fishAudioTTS, error) {
 
 func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
 	latency := "normal"
+	if e.config.OptimizeStreamingLatency {
+		latency = "balanced"
+	}
 
 	// Create the payload
 	payload := map[string]interface{}{
 		"text":         text,
 		"chunk_length": 100,
 		"latency":      latency,
-		"reference_id": e.config.VoiceId,
+		"reference_id": e.config.ModelId,
 		"format":       "pcm", // 44100/ 1ch/ 16bit
 	}
 

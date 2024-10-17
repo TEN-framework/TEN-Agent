@@ -644,7 +644,7 @@
                             "publish_data": true,
                             "enable_agora_asr": true,
                             "agora_asr_vendor_name": "microsoft",
-                            "agora_asr_language": "ja-JP",
+                            "agora_asr_language": "en-US",
                             "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
                             "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
                             "agora_asr_session_control_file_path": "session_control.conf"
@@ -669,7 +669,7 @@
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
-                            "greeting": "TEN Agent エージェントに接続されました。今日は何をお手伝いしましょうか?",
+                            "greeting": "TEN Agent connected. How can I help you today?",
                             "max_memory_length": 10
                         }
                     },
@@ -680,14 +680,9 @@
                         "name": "fish_audio_tts",
                         "property": {
                             "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-                            "model_id": "fish_streaming",
-                            "optimize_streaming_latency": 0,
-                            "request_timeout_seconds": 30,
-                            "similarity_boost": 0.75,
-                            "speaker_boost": false,
-                            "stability": 0.5,
-                            "style": 0.0,
-                            "voice_id": "f1527b3c6be0415489e9728b5565a3ec"
+                            "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+                            "optimize_streaming_latency": true,
+                            "request_timeout_seconds": 30
                         }
                     },
                     {
