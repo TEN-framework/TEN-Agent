@@ -42,8 +42,8 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     graph_name: graphName,
     language,
     voice_type: voiceType,
-    greeting,
-    prompt
+    greeting: greeting ? greeting : undefined,
+    prompt: prompt ? prompt : undefined
   }
   let resp: any = await axios.post(url, data)
   resp = (resp.data) || {}
