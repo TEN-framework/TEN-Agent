@@ -6,17 +6,12 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.2"
+      "version": "0.3"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.2"
-    },
-    {
-      "type": "extension_group",
-      "name": "default_extension_group",
-      "version": "0.2"
+      "version": "0.3"
     },
     {
       "type": "extension",
