@@ -69,6 +69,7 @@ class OpenAIChatGPT:
                 "http": config.proxy_url,
                 "https": config.proxy_url,
             }
+            logger.info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
