@@ -5,7 +5,7 @@ import {
 } from "@/common"
 import { Select, Button, message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"
-import { LoadingOutlined, UploadOutlined } from "@ant-design/icons"
+import { LoadingOutlined, SettingFilled } from "@ant-design/icons"
 import styles from "./index.module.scss"
 
 let intervalId: any
@@ -18,6 +18,7 @@ const Description = () => {
   const language = useAppSelector(state => state.global.language)
   const voiceType = useAppSelector(state => state.global.voiceType)
   const graphName = useAppSelector(state => state.global.graphName)
+  const agentSettings = useAppSelector(state => state.global.agentSettings)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -50,7 +51,9 @@ const Description = () => {
         userId,
         graphName,
         language,
-        voiceType
+        voiceType,
+        greeting: agentSettings.greeting,
+        prompt: agentSettings.prompt
       })
       const { code, msg } = res || {}
       if (code != 0) {

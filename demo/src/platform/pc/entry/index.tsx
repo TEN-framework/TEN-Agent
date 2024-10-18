@@ -4,6 +4,9 @@ import Rtc from "../rtc"
 import Header from "../header"
 
 import styles from "./index.module.scss"
+import { FloatButton, Form } from "antd"
+import { SettingOutlined } from "@ant-design/icons"
+import FormModal from "@/components/settings"
 
 const PCEntry = () => {
   return <div className={styles.entry}>
@@ -19,6 +22,7 @@ const PCEntry = () => {
         </div>
       </div>
     </div>
+    <FormModal></FormModal>
   </div>
 }
 

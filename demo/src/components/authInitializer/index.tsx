@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react"
 import { useAppDispatch, getOptionsFromLocal } from "@/common"
-import { setOptions, reset } from "@/store/reducers/global"
+import { setOptions, reset, setAgentSettings } from "@/store/reducers/global"
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -14,10 +14,11 @@ const AuthInitializer = (props: AuthInitializerProps) => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const options = getOptionsFromLocal()
-      if (options) {
+      const data = getOptionsFromLocal()
+      if (data) {
         dispatch(reset())
-        dispatch(setOptions(options))
+        dispatch(setOptions(data.options))
+        dispatch(setAgentSettings(data.settings))
       }
     }
   }, [dispatch])

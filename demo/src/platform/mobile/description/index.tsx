@@ -18,6 +18,7 @@ const Description = () => {
   const language = useAppSelector(state => state.global.language)
   const voiceType = useAppSelector(state => state.global.voiceType)
   const graphName = useAppSelector(state => state.global.graphName)
+  const agentSettings = useAppSelector(state => state.global.agentSettings)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -50,7 +51,9 @@ const Description = () => {
         userId,
         graphName,
         language,
-        voiceType
+        voiceType,
+        greeting: agentSettings.greeting,
+        prompt: agentSettings.prompt
       })
       const { code, msg } = res || {}
       if (code != 0) {
