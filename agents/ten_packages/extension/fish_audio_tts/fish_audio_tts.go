@@ -9,13 +9,13 @@
 package extension
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
-	"time"
-	"bytes"
 	"net/http"
-	
+	"time"
+
 	"github.com/vmihailenco/msgpack/v5"
 )
 
@@ -78,13 +78,13 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 	}
 
 	// Create a new POST request
-	req, err := http.NewRequest("POST", e.config.BaseUrl + "/v1/tts", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", e.config.BaseUrl+"/v1/tts", bytes.NewBuffer(body))
 	if err != nil {
 		panic(err)
 	}
 
 	// Set the headers
-	req.Header.Add("Authorization", "Bearer " + e.config.ApiKey)
+	req.Header.Add("Authorization", "Bearer "+e.config.ApiKey)
 	req.Header.Set("Content-Type", "application/msgpack")
 
 	// Create a client and send the request
@@ -99,30 +99,30 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 		return fmt.Errorf("TextToSpeechStream failed, err: %v", err)
 	}
 
-// Check the response status code
-if resp.StatusCode != http.StatusOK {
-	slog.Error("Unexpected response status", "status", resp.StatusCode)
-	return fmt.Errorf("unexpected response status: %d", resp.StatusCode)
-}
-
-// Write the returned PCM data to streamWriter
-buffer := make([]byte, 4096) // 4KB buffer size
-for {
-	n, err := resp.Body.Read(buffer)
-	if err != nil && err != io.EOF {
-		slog.Error("Failed to read from response body", "error", err)
-		return fmt.Errorf("failed to read from response body: %w", err)
-	}
-	if n == 0 {
-		break // end of the stream
+	// Check the response status code
+	if resp.StatusCode != http.StatusOK {
+		slog.Error("Unexpected response status", "status", resp.StatusCode)
+		return fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
 
-	_, writeErr := streamWriter.Write(buffer[:n])
-	if writeErr != nil {
-		slog.Error("Failed to write to streamWriter", "error", writeErr)
-		return fmt.Errorf("failed to write to streamWriter: %w", writeErr)
+	// Write the returned PCM data to streamWriter
+	buffer := make([]byte, 4096) // 4KB buffer size
+	for {
+		n, err := resp.Body.Read(buffer)
+		if err != nil && err != io.EOF {
+			slog.Error("Failed to read from response body", "error", err)
+			return fmt.Errorf("failed to read from response body: %w", err)
+		}
+		if n == 0 {
+			break // end of the stream
+		}
+
+		_, writeErr := streamWriter.Write(buffer[:n])
+		if writeErr != nil {
+			slog.Error("Failed to write to streamWriter", "error", writeErr)
+			return fmt.Errorf("failed to write to streamWriter: %w", writeErr)
+		}
 	}
-}
 
 	return nil
 }

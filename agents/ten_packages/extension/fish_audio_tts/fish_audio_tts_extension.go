@@ -116,7 +116,7 @@ func (e *fishAudioTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	slog.Info(fmt.Sprintf("newFishAudioTTS succeed with ModelId: %s",
-	fishAudioTTSConfig.ModelId), logTag)
+		fishAudioTTSConfig.ModelId), logTag)
 
 	// set fishAudio instance
 	e.fishAudioTTS = fishAudioTTS
