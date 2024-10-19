@@ -39,6 +39,9 @@ RETRIEVE_CMD = "retrieve"
 CMD_OUT_PROPERTY_RESPONSE = "response"
 DOC_EXPIRE_PATH = "expireAt"
 DOC_CONTENTS_PATH = "contents"
+CONTENT_ID_PATH = "id"
+CONTENT_TS_PATH = "ts"
+CONTENT_INPUT_PATH = "input"
 
 def get_current_time():
     # Get the current time
@@ -51,10 +54,10 @@ def order_by_ts(contents: List[str]) -> List[str]:
     tmp = []
     for c in contents:
         tmp.append(json.loads(c))
-    sorted_contents = sorted(tmp, key=lambda x: x["ts"])
+    sorted_contents = sorted(tmp, key=lambda x: x[CONTENT_TS_PATH])
     res = []
     for sc in sorted_contents:
-        res.append(json.dumps({"id": sc["id"], "input": sc["input"]}))
+        res.append(json.dumps({CONTENT_ID_PATH: sc[CONTENT_ID_PATH], CONTENT_INPUT_PATH: sc[CONTENT_INPUT_PATH]}))
     return res
 
 @firestore.transactional
@@ -143,7 +146,7 @@ class TSDBFirestoreExtension(Extension):
                     logger.info("exit handle loop")
                     break
                 ts, input, id = value
-                msg = {"id": id, "input": input, "ts": ts}
+                msg = {g}
                 self.insert(ten_env, json.dumps(msg))
             except Exception as e:
                 logger.exception("Failed to store chat contents")
