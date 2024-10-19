@@ -20,6 +20,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 import datetime
+import asyncio
 import queue
 import threading
 import json
@@ -30,7 +31,7 @@ DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
 
-PROPERTY_CREDENTIALS_PATH = "credentials_path"
+PROPERTY_CREDENTIALS = "credentials"
 PROPERTY_CHANNEL_NAME = "channel_name"
 PROPERTY_COLLECTION_NAME = "collection_name"
 PROPERTY_TTL = "ttl"
@@ -42,6 +43,7 @@ DOC_CONTENTS_PATH = "contents"
 CONTENT_ID_PATH = "id"
 CONTENT_TS_PATH = "ts"
 CONTENT_INPUT_PATH = "input"
+DEFAULT_TTL = 1 # days
 
 def get_current_time():
     # Get the current time
@@ -77,11 +79,24 @@ class TSDBFirestoreExtension(Extension):
         self.stopped = False
         self.thread = None
         self.queue = queue.Queue()
-        self.credentials_path = ""
+        self.stopEvent = asyncio.Event()
+        self.cmd_thread = None
+        self.loop = None
+        self.credentials = None
         self.channel_name = ""
         self.collection_name = ""
+        self.ttl = DEFAULT_TTL
         self.client = None
         self.document_ref = None
+
+    async def __thread_routine(self, ten_env: TenEnv):
+        logger.info("__thread_routine start")
+        self.loop = asyncio.get_running_loop()
+        ten_env.on_start_done()
+        await self.stopEvent.wait()
+
+    async def stop_thread(self):
+        self.stopEvent.set()
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("TSDBFirestoreExtension on_init")
@@ -91,33 +106,31 @@ class TSDBFirestoreExtension(Extension):
         logger.info("TSDBFirestoreExtension on_start")
 
         try:
-            self.credentials_path = ten_env.get_property_string(PROPERTY_CREDENTIALS_PATH)
+            self.credentials = ten_env.get_property_to_json(PROPERTY_CREDENTIALS)
         except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_CREDENTIALS_PATH} failed, err: {err}")
+            logger.error(f"GetProperty required {PROPERTY_CREDENTIALS} failed, err: {err}")
+            return 
         
         try:
             self.channel_name = ten_env.get_property_string(PROPERTY_CHANNEL_NAME)
         except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_CHANNEL_NAME} failed, err: {err}")
+            logger.error(f"GetProperty required {PROPERTY_CHANNEL_NAME} failed, err: {err}")
+            return 
 
         try:
             self.collection_name = ten_env.get_property_string(PROPERTY_COLLECTION_NAME)
         except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_COLLECTION_NAME} failed, err: {err}")
-
-        try:
-            self.ttl = ten_env.get_property_int(PROPERTY_TTL)
-        except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_TTL} failed, err: {err}")  
+            logger.error(f"GetProperty required {PROPERTY_COLLECTION_NAME} failed, err: {err}")
+            return
 
         # start firestore db
-        cred = credentials.Certificate(self.credentials_path)
+        cred = credentials.Certificate(self.credentials)
         firebase_admin.initialize_app(cred)
         self.client = firestore.client()
 
         self.document_ref = self.client.collection(self.collection_name).document(self.channel_name)
         # update ttl
-        expiration_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=self.ttl)
+        expiration_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=self.ttl)
         exists = self.document_ref.get().exists
         if exists:
             self.document_ref.update(
@@ -125,6 +138,7 @@ class TSDBFirestoreExtension(Extension):
                     DOC_EXPIRE_PATH: expiration_time
                 }
             )
+            logger.info(f"reset document ttl, {self.ttl} day(s), for the channel {self.channel_name}")
         else:
             # not exists yet, set to create one
             self.document_ref.set(
@@ -132,11 +146,17 @@ class TSDBFirestoreExtension(Extension):
                     DOC_EXPIRE_PATH: expiration_time
                 }
             )
+            logger.info(f"create new document and set ttl, {self.ttl} day(s), for the channel {self.channel_name}")
 
+        # start the loop to handle data in 
         self.thread = threading.Thread(target=self.async_handle, args=[ten_env])
         self.thread.start()
 
-        ten_env.on_start_done()
+        # start the loop to handle cmd in
+        self.cmd_thread = threading.Thread(
+            target=asyncio.run, args=(self.__thread_routine(ten_env),)
+        )
+        self.cmd_thread.start()
 
     def async_handle(self, ten_env: TenEnv) -> None:
         while not self.stopped:
@@ -146,13 +166,22 @@ class TSDBFirestoreExtension(Extension):
                     logger.info("exit handle loop")
                     break
                 ts, input, id = value
-                msg = {g}
-                self.insert(ten_env, json.dumps(msg))
+                content_str = json.dumps({CONTENT_ID_PATH: id, CONTENT_INPUT_PATH: input, CONTENT_TS_PATH: ts})
+                update_in_transaction(
+                    self.client.transaction(),
+                    self.document_ref, 
+                    {
+                        DOC_CONTENTS_PATH: firestore.ArrayUnion([content_str])
+                    }
+                )
+                logger.info(f"append {content_str} to firestore document {self.channel_name}")
             except Exception as e:
                 logger.exception("Failed to store chat contents")
 
     def on_stop(self, ten_env: TenEnv) -> None:
         logger.info("TSDBFirestoreExtension on_stop")
+        
+        # clear the queue and stop the thread to process data in
         self.stopped = True
         while not self.queue.empty():
             self.queue.get()
@@ -160,7 +189,13 @@ class TSDBFirestoreExtension(Extension):
         if self.thread is not None:
             self.thread.join()
             self.thread = None
-        
+
+        # stop the thread to process cmd in
+        if self.cmd_thread is not None and self.cmd_thread.is_alive():
+            asyncio.run_coroutine_threadsafe(self.stop_thread(), self.loop)
+            self.cmd_thread.join()
+            self.cmd_thread = None
+
         ten_env.on_stop_done()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
@@ -172,7 +207,9 @@ class TSDBFirestoreExtension(Extension):
             cmd_name = cmd.get_name()
             logger.info("on_cmd name {}".format(cmd_name))
             if cmd_name == RETRIEVE_CMD:
-               self.retrieve(ten_env, cmd)
+                asyncio.run_coroutine_threadsafe(
+                    self.retrieve(ten_env, cmd), self.loop
+                )
             else:
                 logger.info("unknown cmd name {}".format(cmd_name))
                 cmd_result = CmdResult.create(StatusCode.ERROR)
@@ -180,8 +217,7 @@ class TSDBFirestoreExtension(Extension):
         except Exception as e:
             ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         
-
-    def retrieve(self, ten_env: TenEnv, cmd: Cmd):
+    async def retrieve(self, ten_env: TenEnv, cmd: Cmd):
         doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
         if doc_dict is not None:
             if DOC_CONTENTS_PATH in doc_dict:
@@ -194,22 +230,12 @@ class TSDBFirestoreExtension(Extension):
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         else:
             logger.info(f"no corresponding document found for the channel {self.channel_name}")
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
-    
-    def insert(self, ten_env: TenEnv, content: str):
-        update_in_transaction(
-            self.client.transaction(),
-            self.document_ref, 
-            {
-                DOC_CONTENTS_PATH: firestore.ArrayUnion([content])
-            }
-        )
-        logger.info(f"append {content} to firestore document {self.channel_name}")
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)      
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         logger.info(f"TSDBFirestoreExtension on_data")
 
-        # Assume 'data' is an object from which we can get properties
+        # assume 'data' is an object from which we can get properties
         try:
             is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
             if not is_final:
@@ -220,8 +246,7 @@ class TSDBFirestoreExtension(Extension):
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
             return
-
-        # Get input text
+        # get input text
         try:
             input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
             if not input_text:
@@ -233,8 +258,7 @@ class TSDBFirestoreExtension(Extension):
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
             )
             return
-        
-        # Get input text
+        # get stream id
         try:
             stream_id = data.get_property_int(DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID)
             if not stream_id:
@@ -246,7 +270,7 @@ class TSDBFirestoreExtension(Extension):
             )
             return
 
-        ts = get_current_time
+        ts = get_current_time()
         self.queue.put((ts, input_text, stream_id))
     
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:

@@ -1,29 +1,8 @@
-# tsdb_firestore
+## Firestore TSDB Extension
 
-<!-- brief introduction for the extension -->
+### Configurations
 
-## Features
-
-<!-- main features introduction -->
-
-- xxx feature
-
-## API
-
-Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
-
-<!-- Additional API.md can be referred to if extra introduction needed -->
-
-## Development
-
-### Build
-
-<!-- build dependencies and steps -->
-
-### Unit test
-
-<!-- how to do unit test for the extension -->
-
-## Misc
-
-<!-- others if applicable -->
+You can config this extension by providing following environments:
+1.credentials: a dict, represents the contents of certificate, which is from Google service account
+2.collection_name: a string, denotes the collection to store chat contents
+3.channel_name: a string, used to fetch the corresponding document in storage
