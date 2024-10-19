@@ -1,4 +1,149 @@
 {
   "version": 1,
-  "packages": []
+  "packages": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.3.0",
+      "hash": "3d073994635eb61d3c4b4342790eba2b4f4b1fc32cd1dabc2da9409c08fbe2d8",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "py_init_extension_cpp",
+      "version": "0.3.0",
+      "hash": "d7086730602cb4da51725d20ad1fed1948635dbbfd382ad8b748da63b0615e8f",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "0.8.0-rc1",
+      "hash": "0508d420702e2c57807c765c2652e05c45852d6a3c56ec62ee22e5880d9ed78c",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "agora_rtc_sdk"
+        },
+        {
+          "type": "system",
+          "name": "nlohmann_json"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "azure_speech_sdk",
+      "version": "1.38.0",
+      "hash": "66a50ef361f8190fa0595d8298c135e13b73796d57174a0802631263a8f15806",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "azure_tts",
+      "version": "0.5.0-rc1",
+      "hash": "0e17adca6775423b6d06589d1d52eba7f9b4143df44635f17fa420334dfabcc8",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "azure_speech_sdk"
+        }
+      ],
+      "supports": []
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.3.0",
+      "hash": "ec88716a1d32c8db4cc2feb9aa83c4e6df075a1444b502efb6813baed135abf4",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "agora_rtc_sdk",
+      "version": "4.1.38+build376742",
+      "hash": "c57acf53d90fbee04d06aa3fd48b0425dd4cca1bee62666c5c01699044b43288",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "nlohmann_json",
+      "version": "3.11.2",
+      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
+      "supports": []
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.3.0",
+      "hash": "7ce2273c3409646e31c5f2850b6ef4f414b4fe4d99679225f5e609af6363d1de",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    }
+  ]
 }
