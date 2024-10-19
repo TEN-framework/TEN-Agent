@@ -2,6 +2,19 @@
   "version": 1,
   "packages": [
     {
+      "type": "extension",
+      "name": "default_extension_python",
+      "version": "0.2.0",
+      "hash": "e9a45737eb95cd9deca485f6d4274b46533a8346d59edf1e1b7c8cd29754a15b",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "supports": []
+    },
+    {
       "type": "system",
       "name": "ten_runtime_go",
       "version": "0.2.0",
