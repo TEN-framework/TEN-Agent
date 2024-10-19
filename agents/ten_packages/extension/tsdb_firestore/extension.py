@@ -29,16 +29,18 @@ from typing import List, Any
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
+
 PROPERTY_CREDENTIALS_PATH = "credentials_path"
 PROPERTY_CHANNEL_NAME = "channel_name"
 PROPERTY_COLLECTION_NAME = "collection_name"
 PROPERTY_TTL = "ttl"
 
 RETRIEVE_CMD = "retrieve"
+CMD_OUT_PROPERTY_RESPONSE = "response"
 DOC_EXPIRE_PATH = "expireAt"
 DOC_CONTENTS_PATH = "contents"
 
-def get_current_time():
+def get_current_time(tz=""):
     # Get the current time
     start_time = datetime.datetime.now()
     # Get the number of microseconds since the Unix epoch
@@ -102,11 +104,20 @@ class TSDBFirestoreExtension(Extension):
         self.document_ref = self.client.collection(self.collection_name).document(self.channel_name)
         # update ttl
         expiration_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=self.ttl)
-        self.document_ref.update(
-            {
-                DOC_EXPIRE_PATH: expiration_time
-            }
-        )
+        exists = self.document_ref.get().exists
+        if exists:
+            self.document_ref.update(
+                {
+                    DOC_EXPIRE_PATH: expiration_time
+                }
+            )
+        else:
+            # not exists yet, set to create one
+            self.document_ref.set(
+                {
+                    DOC_EXPIRE_PATH: expiration_time
+                }
+            )
 
         self.thread = threading.Thread(target=self.async_handle, args=[ten_env])
         self.thread.start()
@@ -163,7 +174,7 @@ class TSDBFirestoreExtension(Extension):
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ret = CmdResult.create(StatusCode.OK)
-                ret.set_property_from_json("response", order_by_ts(contents))
+                ret.set_property_from_json(CMD_OUT_PROPERTY_RESPONSE, order_by_ts(contents))
                 ten_env.return_result(ret, cmd)
             else:
                 logger.info(f"no contents for the channel {self.channel_name}")
@@ -220,8 +231,6 @@ class TSDBFirestoreExtension(Extension):
 
         ts = get_current_time
         self.queue.put((ts, input_text, stream_id))
-
-    
     
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         pass
