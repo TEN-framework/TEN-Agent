@@ -34,8 +34,8 @@ const MicSection = (props: MicSectionProps) => {
   }, [audioTrack])
 
   useEffect(() => {
-    audioTrack?.setMuted(audioMute)
-  }, [audioTrack, audioMute])
+    audioTrack?.setEnabled(!audioMute);
+  }, [audioTrack, audioMute]);
 
   const subscribedVolumes = useMultibandTrackVolume(mediaStreamTrack, 20);
 

@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       graph_name,
       language,
       voice_type,
+      prompt,
+      greeting,
     } = body;
 
     console.log(`Starting agent for request ID: ${JSON.stringify({
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
       user_uid,
       graph_name,
       // Get the graph properties based on the graph name, language, and voice type
-      properties: getGraphProperties(graph_name, language, voice_type),
+      properties: getGraphProperties(graph_name, language, voice_type, prompt, greeting),
     })}`);
 
     console.log(`AGENT_SERVER_URL: ${AGENT_SERVER_URL}/start`);
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
       user_uid,
       graph_name,
       // Get the graph properties based on the graph name, language, and voice type
-      properties: getGraphProperties(graph_name, language, voice_type),
+      properties: getGraphProperties(graph_name, language, voice_type, prompt, greeting),
     });
 
     const responseData = response.data;

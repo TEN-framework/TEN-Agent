@@ -4,6 +4,7 @@ import Rtc from "../rtc"
 import Header from "../header"
 import Menu, { IMenuData } from "../menu"
 import styles from "./index.module.scss"
+import FormModal from "@/components/settings"
 
 
 const MenuData: IMenuData[] = [{
@@ -23,6 +24,7 @@ const MobileEntry = () => {
     <div className={styles.content}>
       <Menu data={MenuData}></Menu>
     </div>
+    <FormModal></FormModal>
   </div>
 }
 

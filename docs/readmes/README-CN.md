@@ -3,7 +3,6 @@
 <div align="center">
 
 [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
-![Product fee](https://img.shields.io/badge/pricing-free-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
@@ -38,6 +37,16 @@
 
 </div>
 
+<br>
+<h2>🎉 TEN Agent 兼容了 OpenAI Realtime API 和 RTC</h2>
+
+OpenAI Realtime API 提供超低延迟，而 RTC 提供 AI 噪声抑制。TEN Agent 两者兼备。欢迎在 [agent.theten.ai](https://agent.theten.ai) 上体验。
+
+![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
+
+<br>
+<h2>TEN Agent 特性</h2>
+
 **TEN Agent**，由世界首个实时多模态框架驱动。它是开源的，具有说话、视觉和访问知识库的能力。通过利用 TEN 框架，TEN Agent 具有以下特点：
 
 1. **高性能实时多模态交互**：
@@ -63,14 +72,6 @@
 
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
-<br>
-<h2>TEN Agent</h2>
-
-[TEN Agent](https://agent.theten.ai)
-
-TEN Agent 是一个由 [TEN](https://theten.ai) 驱动的多模态代理，展示了其在语音、视觉和通过本地文档 RAG 进行推理方面的能力。
-
-[![展示 TEN 多模态代理](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
 <br>
 <h2>如何在本地构建 TEN Agent
 
@@ -128,12 +129,11 @@ cp ./.env.example ./.env
 ```
 
 #### 2. 绑定 extension 的 keys 
-打开 `.env` 文件，绑定对应的 `keys`，这里也可以通过配置不同的 `keys` 选用不用的 `extensions`：
+打开 `.env` 文件，绑定对应的 `keys`:
 ```
-# Agora app ID
+# Agora App ID
+# Agora App Certificate 非必须，只有在申请 Agora app ID 的时候开通了才需要填
 AGORA_APP_ID=
-# Certificate 非必须，只有在申请 Agora app ID 的时候申请了才需要填
-# 如果不知道 certificate 是什么, 请留空
 AGORA_APP_CERTIFICATE=
 
 # Azure STT key and region
@@ -175,11 +175,15 @@ make run-server
 
 #### 验证 TEN Agent 
 
-现在可以打开浏览器 http://localhost:3000 体验 TEN Agent
+现在可以打开浏览器 [localhost:3000]( http://localhost:3000 ) 体验 TEN Agent。
+
+#### 验证 TEN Agent 和 OpenAI Realtime API
+
+现在可以打开浏览器 [localhost:3002]( http://localhost:3002 ) 体验 TEN Agent 和 OpenAI Realtime API。
 
 #### 验证 Graph Designer
 
-同时可以再开一个 tab 在 http://localhost:3001 体验 Graph Designer，通过简单拖拽和动态节点连接轻松定制 TEN Agent。
+同时可以再开一个 tab 在 [localhost:3001]( http://localhost:3001 ) 体验 Graph Designer，通过简单拖拽和动态节点连接轻松定制 TEN Agent。
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
 

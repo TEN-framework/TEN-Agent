@@ -1,14 +1,19 @@
-import { IOptions } from "@/types"
-import { OPTIONS_KEY, DEFAULT_OPTIONS } from "./constant"
+import { IAgentSettings, IOptions } from "@/types"
+import { OPTIONS_KEY, DEFAULT_OPTIONS, AGENT_SETTINGS_KEY, DEFAULT_AGENT_SETTINGS } from "./constant"
 
-export const getOptionsFromLocal = () => {
+export const getOptionsFromLocal = (): {options:IOptions, settings: IAgentSettings} => {
+  let data = {options: DEFAULT_OPTIONS, settings: DEFAULT_AGENT_SETTINGS}
   if (typeof window !== "undefined") {
-    const data = localStorage.getItem(OPTIONS_KEY)
-    if (data) {
-      return JSON.parse(data)
+    const options = localStorage.getItem(OPTIONS_KEY)
+    if (options) {
+      data.options = JSON.parse(options)
+    }
+    const settings = localStorage.getItem(AGENT_SETTINGS_KEY)
+    if (settings) {
+      data.settings = JSON.parse(settings)
     }
   }
-  return DEFAULT_OPTIONS
+  return data
 }
 
 
@@ -18,4 +23,8 @@ export const setOptionsToLocal = (options: IOptions) => {
   }
 }
 
-
+export const setAgentSettingsToLocal = (settings: IAgentSettings) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(AGENT_SETTINGS_KEY, JSON.stringify(settings))
+  }
+}

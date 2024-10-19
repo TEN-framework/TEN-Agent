@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,8 +23,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gogf/gf/crypto/gmd5"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 type HttpServer struct {
@@ -387,7 +386,13 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		return
 	}
 
-	propertyJson := string(content)
+	// Unmarshal the JSON content into a map
+	var propertyJson map[string]interface{}
+	err = json.Unmarshal(content, &propertyJson)
+	if err != nil {
+		slog.Error("handlerStart unmarshal property.json failed", "err", err, "requestId", req.RequestId, logTag)
+		return
+	}
 
 	// Get graph name
 	graphName := req.GraphName
@@ -406,15 +411,24 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
-	graph := fmt.Sprintf(`_ten.predefined_graphs.#(name=="%s")`, graphName)
+	// Locate the predefined graphs array
+	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	if !ok {
+		slog.Error("Invalid format: _ten section missing", "requestId", req.RequestId, logTag)
+		return
+	}
 
-	// Get the array of graphs
-	graphs := gjson.Get(propertyJson, "_ten.predefined_graphs").Array()
+	predefinedGraphs, ok := tenSection["predefined_graphs"].([]interface{})
+	if !ok {
+		slog.Error("Invalid format: predefined_graphs missing or not an array", "requestId", req.RequestId, logTag)
+		return
+	}
 
-	// Create a new array for graphs that match the name
-	var newGraphs []gjson.Result
-	for _, graph := range graphs {
-		if graph.Get("name").String() == graphName {
+	// Filter the graph with the matching name
+	var newGraphs []interface{}
+	for _, graph := range predefinedGraphs {
+		graphMap, ok := graph.(map[string]interface{})
+		if ok && graphMap["name"] == graphName {
 			newGraphs = append(newGraphs, graph)
 		}
 	}
@@ -425,27 +439,30 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		return
 	}
 
-	// Set the array of graphs directly using sjson.Set
-	graphData := make([]interface{}, len(newGraphs))
-	for i, graph := range newGraphs {
-		graphData[i] = graph.Value() // Convert gjson.Result to interface{}
-	}
-
 	// Replace the predefined_graphs array with the filtered array
-	propertyJson, _ = sjson.Set(propertyJson, "_ten.predefined_graphs", graphData)
+	tenSection["predefined_graphs"] = newGraphs
 
 	// Automatically start on launch
-	propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.auto_start`, graph), true)
+	for _, graph := range newGraphs {
+		graphMap, _ := graph.(map[string]interface{})
+		graphMap["auto_start"] = true
+	}
 
 	// Set additional properties to property.json
 	for extensionName, props := range req.Properties {
-		if extKey := extensionName; extKey != "" {
+		if extensionName != "" {
 			for prop, val := range props {
-				// Construct the path
-				path := fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, extKey, prop)
-				propertyJson, err = sjson.Set(propertyJson, path, val)
-				if err != nil {
-					slog.Error("handlerStart set property failed", "err", err, "graph", graphName, "extensionName", extensionName, "prop", prop, "val", val, "requestId", req.RequestId, logTag)
+				// Construct the path in the nested graph structure
+				for _, graph := range newGraphs {
+					graphMap, _ := graph.(map[string]interface{})
+					nodes, _ := graphMap["nodes"].([]interface{})
+					for _, node := range nodes {
+						nodeMap, _ := node.(map[string]interface{})
+						if nodeMap["name"] == extensionName {
+							properties := nodeMap["property"].(map[string]interface{})
+							properties[prop] = val
+						}
+					}
 				}
 			}
 		}
@@ -453,18 +470,36 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 
 	// Set start parameters to property.json
 	for key, props := range startPropMap {
-		if val := getFieldValue(req, key); val != "" {
+		val := getFieldValue(req, key)
+		if val != "" {
 			for _, prop := range props {
-				propertyJson, _ = sjson.Set(propertyJson, fmt.Sprintf(`%s.nodes.#(name=="%s").property.%s`, graph, prop.ExtensionName, prop.Property), val)
+				// Set each start parameter to the appropriate graph and property
+				for _, graph := range newGraphs {
+					graphMap, _ := graph.(map[string]interface{})
+					nodes, _ := graphMap["nodes"].([]interface{})
+					for _, node := range nodes {
+						nodeMap, _ := node.(map[string]interface{})
+						if nodeMap["name"] == prop.ExtensionName {
+							properties := nodeMap["property"].(map[string]interface{})
+							properties[prop.Property] = val
+						}
+					}
+				}
 			}
 		}
 	}
 
-	channelNameMd5 := gmd5.MustEncryptString(req.ChannelName)
-	ts := time.Now().UnixNano()
-	propertyJsonFile = fmt.Sprintf("%s/property-%s-%d.json", s.config.LogPath, channelNameMd5, ts)
-	logFile = fmt.Sprintf("%s/app-%s-%d.log", s.config.LogPath, channelNameMd5, ts)
-	os.WriteFile(propertyJsonFile, []byte(propertyJson), 0644)
+	// Marshal the modified JSON back to a string
+	modifiedPropertyJson, err := json.MarshalIndent(propertyJson, "", "  ")
+	if err != nil {
+		slog.Error("handlerStart marshal modified JSON failed", "err", err, "requestId", req.RequestId, logTag)
+		return
+	}
+
+	ts := time.Now().Format("20060102_150405_000")
+	propertyJsonFile = fmt.Sprintf("%s/property-%s-%s.json", s.config.LogPath, url.QueryEscape(req.ChannelName), ts)
+	logFile = fmt.Sprintf("%s/app-%s-%s.log", s.config.LogPath, url.QueryEscape(req.ChannelName), ts)
+	os.WriteFile(propertyJsonFile, []byte(modifiedPropertyJson), 0644)
 
 	return
 }

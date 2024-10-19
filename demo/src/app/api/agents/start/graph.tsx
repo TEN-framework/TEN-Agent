@@ -21,8 +21,8 @@ export const voiceNameMap: LanguageMap = {
     },
     "en-US": {
         azure: {
-            male: "en-US-BrianNeural",
-            female: "en-US-JaneNeural",
+            male: "en-US-AndrewMultilingualNeural",
+            female: "en-US-AvaMultilingualNeural",
         },
         elevenlabs: {
             male: "pNInz6obpgDQGcFmaJgB", // Adam
@@ -61,7 +61,13 @@ export const voiceNameMap: LanguageMap = {
 
 // Get the graph properties based on the graph name, language, and voice type
 // This is the place where you can customize the properties for different graphs to override default property.json
-export const getGraphProperties = (graphName: string, language: string, voiceType: string) => {
+export const getGraphProperties = (
+    graphName: string,
+    language: string,
+    voiceType: string,
+    prompt: string | undefined,
+    greeting: string | undefined
+) => {
     let localizationOptions = {
         "greeting": "Hey, I\'m TEN Agent, I can speak, see, and reason from a knowledge base, ask me anything!",
         "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
@@ -91,7 +97,9 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
             },
             "openai_chatgpt": {
                 "model": "gpt-4o",
-                ...localizationOptions
+                ...localizationOptions,
+                "prompt": prompt,
+                "greeting": greeting,
             },
             "azure_tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
@@ -103,7 +111,9 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
                 "model": "gpt-4o-realtime-preview",
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
-                ...localizationOptions
+                ...localizationOptions,
+                "system_message": prompt,
+                "greeting": greeting,
             }
         }
     } else if (graphName == "va.openai.azure") {
@@ -113,7 +123,9 @@ export const getGraphProperties = (graphName: string, language: string, voiceTyp
             },
             "openai_chatgpt": {
                 "model": "gpt-4o-mini",
-                ...localizationOptions
+                ...localizationOptions,
+                "prompt": prompt,
+                "greeting": greeting,
             },
             "azure_tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]

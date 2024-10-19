@@ -1,11 +1,11 @@
 "use client"
 
-import type React from 'react'; 
+import type React from 'react';
 import { useRouter } from 'next/navigation'
 import { message } from "antd"
 import { useState, useEffect } from "react"
 import { GITHUB_URL, getRandomUserId, useAppDispatch, getRandomChannel } from "@/common"
-import { setOptions } from "@/store/reducers/global"
+import { setAgentSettings, setOptions } from "@/store/reducers/global"
 import styles from "./index.module.scss"
 
 import { GithubIcon } from "../icons"
@@ -60,8 +60,8 @@ const LoginCard = () => {
 
   return <div className={styles.card}>
     <section className={styles.top}>
-      <span 
-        className={styles.github} 
+      <span
+        className={styles.github}
         onClick={onClickGithub}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -84,8 +84,8 @@ const LoginCard = () => {
         <input placeholder="User Name" value={userName} onChange={onUserNameChange} />
       </div>
       <div className={styles.section}>
-        <div 
-          className={`${styles.btn} ${!isLoadingSuccess && styles.btnLoadingBg}`} 
+        <div
+          className={`${styles.btn} ${!isLoadingSuccess && styles.btnLoadingBg}`}
           onClick={onClickJoin}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
