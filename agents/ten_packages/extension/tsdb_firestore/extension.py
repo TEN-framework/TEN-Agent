@@ -69,9 +69,7 @@ def update_in_transaction(transaction, doc_ref, content):
 @firestore.transactional
 def read_in_transaction(transaction, doc_ref):
     doc = doc_ref.get(transaction=transaction)
-    if doc.exists:
-        return doc.to_dict()
-    return None
+    return doc.to_dict()
 
 class TSDBFirestoreExtension(Extension):
     def __init__(self, name: str):
@@ -218,19 +216,19 @@ class TSDBFirestoreExtension(Extension):
             ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         
     async def retrieve(self, ten_env: TenEnv, cmd: Cmd):
-        doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
-        if doc_dict is not None:
+        try:
+            doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ret = CmdResult.create(StatusCode.OK)
                 ret.set_property_from_json(CMD_OUT_PROPERTY_RESPONSE, order_by_ts(contents))
                 ten_env.return_result(ret, cmd)
             else:
-                logger.info(f"no contents for the channel {self.channel_name}")
-                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
-        else:
-            logger.info(f"no corresponding document found for the channel {self.channel_name}")
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)      
+                logger.info(f"no contents for the channel {self.channel_name} yet")
+                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)  
+        except Exception as e:
+            logger.info(f"Failed to read the document for the channel {self.channel_name}")
+            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)  
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
         logger.info(f"TSDBFirestoreExtension on_data")
