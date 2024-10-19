@@ -24,7 +24,7 @@ import queue
 import threading
 import json
 from .log import logger
-from typing import List, Any
+from typing import List
 
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
@@ -40,7 +40,7 @@ CMD_OUT_PROPERTY_RESPONSE = "response"
 DOC_EXPIRE_PATH = "expireAt"
 DOC_CONTENTS_PATH = "contents"
 
-def get_current_time(tz=""):
+def get_current_time():
     # Get the current time
     start_time = datetime.datetime.now()
     # Get the number of microseconds since the Unix epoch
@@ -56,7 +56,18 @@ def order_by_ts(contents: List[str]) -> List[str]:
     for sc in sorted_contents:
         res.append(json.dumps({"id": sc["id"], "input": sc["input"]}))
     return res
-    
+
+@firestore.transactional
+def update_in_transaction(transaction, doc_ref, content):
+    transaction.update(doc_ref, content)
+
+@firestore.transactional
+def read_in_transaction(transaction, doc_ref):
+    doc = doc_ref.get(transaction=transaction)
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
 class TSDBFirestoreExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -168,9 +179,8 @@ class TSDBFirestoreExtension(Extension):
         
 
     def retrieve(self, ten_env: TenEnv, cmd: Cmd):
-        doc = self.document_ref.get()
-        if doc.exists:
-            doc_dict = doc.to_dict()
+        doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
+        if doc_dict is not None:
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
                 ret = CmdResult.create(StatusCode.OK)
@@ -184,9 +194,13 @@ class TSDBFirestoreExtension(Extension):
             ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
     
     def insert(self, ten_env: TenEnv, content: str):
-        self.document_ref.update({
-            DOC_CONTENTS_PATH: firestore.ArrayUnion([content])
-        })
+        update_in_transaction(
+            self.client.transaction(),
+            self.document_ref, 
+            {
+                DOC_CONTENTS_PATH: firestore.ArrayUnion([content])
+            }
+        )
         logger.info(f"append {content} to firestore document {self.channel_name}")
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
