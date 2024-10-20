@@ -22,9 +22,15 @@
   "api": {
     "data_in": [
       {
-        "name": "text_data",
+        "name": "append",
         "property": {
           "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          },
+          "role": {
             "type": "string"
           }
         }
@@ -35,12 +41,7 @@
         "name": "retrieve",
         "result": {
           "property": {
-            "response": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
+            "response": {}
           }
         }
       }
