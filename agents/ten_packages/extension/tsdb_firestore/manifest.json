@@ -41,7 +41,9 @@
         "name": "retrieve",
         "result": {
           "property": {
-            "response": {}
+            "response": {
+              "type": "string"
+            }
           }
         }
       }
