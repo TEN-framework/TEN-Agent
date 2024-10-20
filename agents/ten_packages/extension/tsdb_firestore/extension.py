@@ -25,11 +25,11 @@ import queue
 import threading
 import json
 from .log import logger
-from typing import List
+from typing import List, Any
 
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
-DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
+DATA_IN_TEXT_DATA_PROPERTY_ROLE = "role"
 
 PROPERTY_CREDENTIALS = "credentials"
 PROPERTY_CHANNEL_NAME = "channel_name"
@@ -40,7 +40,7 @@ RETRIEVE_CMD = "retrieve"
 CMD_OUT_PROPERTY_RESPONSE = "response"
 DOC_EXPIRE_PATH = "expireAt"
 DOC_CONTENTS_PATH = "contents"
-CONTENT_ID_PATH = "id"
+CONTENT_ROLE_PATH = "role"
 CONTENT_TS_PATH = "ts"
 CONTENT_INPUT_PATH = "input"
 DEFAULT_TTL = 1 # days
@@ -52,14 +52,14 @@ def get_current_time():
     unix_microseconds = int(start_time.timestamp() * 1_000_000)
     return unix_microseconds
 
-def order_by_ts(contents: List[str]) -> List[str]:
+def order_by_ts(contents: List[str]) -> List[Any]:
     tmp = []
     for c in contents:
         tmp.append(json.loads(c))
     sorted_contents = sorted(tmp, key=lambda x: x[CONTENT_TS_PATH])
     res = []
     for sc in sorted_contents:
-        res.append(json.dumps({CONTENT_ID_PATH: sc[CONTENT_ID_PATH], CONTENT_INPUT_PATH: sc[CONTENT_INPUT_PATH]}))
+        res.append({CONTENT_ROLE_PATH: sc[CONTENT_ROLE_PATH], CONTENT_INPUT_PATH: sc[CONTENT_INPUT_PATH]})
     return res
 
 @firestore.transactional
@@ -122,13 +122,13 @@ class TSDBFirestoreExtension(Extension):
             return
 
         # start firestore db
-        cred = credentials.Certificate(self.credentials)
+        cred = credentials.Certificate(json.loads(self.credentials))
         firebase_admin.initialize_app(cred)
         self.client = firestore.client()
 
         self.document_ref = self.client.collection(self.collection_name).document(self.channel_name)
         # update ttl
-        expiration_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=self.ttl)
+        expiration_time = datetime.datetime.now() + datetime.timedelta(days=self.ttl)
         exists = self.document_ref.get().exists
         if exists:
             self.document_ref.update(
@@ -163,8 +163,8 @@ class TSDBFirestoreExtension(Extension):
                 if value is None:
                     logger.info("exit handle loop")
                     break
-                ts, input, id = value
-                content_str = json.dumps({CONTENT_ID_PATH: id, CONTENT_INPUT_PATH: input, CONTENT_TS_PATH: ts})
+                ts, input, role = value
+                content_str = json.dumps({CONTENT_ROLE_PATH: role, CONTENT_INPUT_PATH: input, CONTENT_TS_PATH: ts})
                 update_in_transaction(
                     self.client.transaction(),
                     self.document_ref, 
@@ -220,14 +220,15 @@ class TSDBFirestoreExtension(Extension):
             doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
+                logger.info(f"after retrieve {contents}")
                 ret = CmdResult.create(StatusCode.OK)
-                ret.set_property_from_json(CMD_OUT_PROPERTY_RESPONSE, order_by_ts(contents))
+                ret.set_property_string(CMD_OUT_PROPERTY_RESPONSE, json.dumps(order_by_ts(contents)))
                 ten_env.return_result(ret, cmd)
             else:
                 logger.info(f"no contents for the channel {self.channel_name} yet")
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)  
         except Exception as e:
-            logger.info(f"Failed to read the document for the channel {self.channel_name}")
+            logger.exception(f"Failed to read the document for the channel {self.channel_name}")
             ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)  
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
@@ -258,18 +259,18 @@ class TSDBFirestoreExtension(Extension):
             return
         # get stream id
         try:
-            stream_id = data.get_property_int(DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID)
-            if not stream_id:
-                logger.warning("ignore empty stream_id")
+            role = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_ROLE)
+            if not role:
+                logger.warning("ignore empty role")
                 return
         except Exception as err:
             logger.info(
-                f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID} failed, err: {err}"
+                f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_ROLE} failed, err: {err}"
             )
             return
 
         ts = get_current_time()
-        self.queue.put((ts, input_text, stream_id))
+        self.queue.put((ts, input_text, role))
     
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         pass
