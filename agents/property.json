@@ -2879,7 +2879,13 @@
                             "subscribe_audio": true,
                             "publish_audio": true,
                             "publish_data": true,
-                            "subscribe_audio_sample_rate": 24000
+                            "subscribe_audio_sample_rate": 24000,
+                            "enable_agora_asr": true,
+                            "agora_asr_vendor_name": "microsoft",
+                            "agora_asr_language": "en-US",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+                            "agora_asr_session_control_file_path": "session_control.conf"
                         }
                     },
                     {

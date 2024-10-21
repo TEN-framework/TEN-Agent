@@ -42,6 +42,7 @@ PROPERTY_TEMPERATURE = "temperature"  # Optional
 PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
 PROPERTY_VOICE = "voice"  # Optional
 PROPERTY_AUDIO_OUT = "audio_out"  # Optional
+PROPERTY_INPUT_TRANSCRIPT = "input_transcript"
 PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
@@ -419,6 +420,14 @@ class OpenAIV2VExtension(Extension):
             )
 
         try:
+            input_transcript = ten_env.get_property_bool(PROPERTY_INPUT_TRANSCRIPT)
+            self.config.input_transcript = input_transcript
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_INPUT_TRANSCRIPT} failed, err: {err}"
+            )
+
+        try:
             max_tokens = ten_env.get_property_int(PROPERTY_MAX_TOKENS)
             if max_tokens > 0:
                 self.config.max_tokens = int(max_tokens)
@@ -486,25 +495,21 @@ class OpenAIV2VExtension(Extension):
         self.ctx["tools"] = self.registry.to_prompt()
         prompt = self._replace(self.config.instruction)
         self.last_updated = datetime.now()
+        su = SessionUpdate(session=SessionUpdateParams(
+                instructions=prompt,
+                model=self.config.model,
+                tool_choice="auto",
+                tools=self.registry.get_tools()
+            ))
         if self.config.audio_out:
-            return SessionUpdate(session=SessionUpdateParams(
-                instructions=prompt,
-                model=self.config.model,
-                voice=self.config.voice,
-                input_audio_transcription=InputAudioTranscription(
-                    model="whisper-1"),
-                tool_choice="auto",
-                tools=self.registry.get_tools()
-            ))
+            su.session.voice=self.config.voice
         else:
-            return SessionUpdate(session=SessionUpdateParams(
-                instructions=prompt,
-                model=self.config.model,
-                modalities=["text"],
-                # input_audio_transcription=InputAudioTranscription(model="whisper-1"), disable transcript for now.
-                tool_choice="auto",
-                tools=self.registry.get_tools()
-            ))
+            su.session.modalities=["text"]
+        
+        if self.config.input_transcript:
+            su.session.input_audio_transcription=InputAudioTranscription(
+                    model="whisper-1")
+        return su
 
     '''
     def _update_conversation(self) -> UpdateConversationConfig:
