@@ -2957,6 +2957,17 @@
                                     }
                                 ]
                             }
+                        ],
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
                         ]
                     },
                     {
