@@ -3023,8 +3023,8 @@
                                 "name": "flush",
                                 "dest": [
                                     {
-                                        "extension_group": "rtc",
-                                        "extension": "agora_rtc"
+                                        "extension_group": "tts",
+                                        "extension": "fish_audio_tts"
                                     }
                                 ]
                             },
@@ -3116,6 +3116,17 @@
                         "audio_frame": [
                             {
                                 "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
                                 "dest": [
                                     {
                                         "extension_group": "rtc",
