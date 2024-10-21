@@ -2899,6 +2899,7 @@
                             "model": "gpt-4o-realtime-preview",
                             "max_tokens": 2048,
                             "audio_out": false,
+                            "input_transcript": false,
                             "language": "en-US",
                             "server_vad": true,
                             "dump": true,
