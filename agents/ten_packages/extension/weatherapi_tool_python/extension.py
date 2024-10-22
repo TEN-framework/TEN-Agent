@@ -40,7 +40,7 @@ CURRENT_TOOL_PARAMETERS = {
         "properties": {
             "location": {
                 "type": "string",
-                "description": "The city and state e.g. San Francisco, CA"
+                "description": "The city and state (use only English) e.g. San Francisco, CA"
             }
         },
         "required": ["location"],
@@ -54,7 +54,7 @@ HISTORY_TOOL_PARAMETERS = {
         "properties": {
             "location": {
                 "type": "string",
-                "description": "The city and state e.g. San Francisco, CA"
+                "description": "The city and state (use only English) e.g. San Francisco, CA"
             },
             "datetime": {
                 "type": "string",
@@ -72,7 +72,7 @@ FORCAST_TOOL_PARAMETERS = {
         "properties": {
             "location": {
                 "type": "string",
-                "description": "The city and state e.g. San Francisco, CA"
+                "description": "The city and state (use only English) e.g. San Francisco, CA"
             }
         },
         "required": ["location"],
