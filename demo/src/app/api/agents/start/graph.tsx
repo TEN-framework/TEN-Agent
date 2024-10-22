@@ -17,6 +17,10 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "alloy",
             female: "shimmer"
+        },
+        minimax: {
+            male: "junlang_nanyou",
+            female: "female-yujie"
         }
     },
     "en-US": {
@@ -35,6 +39,10 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "alloy",
             female: "shimmer"
+        },
+        minimax: {
+            male: "junlang_nanyou",
+            female: "female-yujie"
         }
     },
     "ja-JP": {
@@ -45,6 +53,10 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "alloy",
             female: "shimmer"
+        },
+        minimax: {
+            male: "junlang_nanyou",
+            female: "female-yujie"
         }
     },
     "ko-KR": {
@@ -55,6 +67,10 @@ export const voiceNameMap: LanguageMap = {
         openai: {
             male: "alloy",
             female: "shimmer"
+        },
+        minimax: {
+            male: "junlang_nanyou",
+            female: "female-yujie"
         }
     },
 };
@@ -125,6 +141,17 @@ export const getGraphProperties = (
                 ...localizationOptions,
                 "system_message": prompt,
                 "greeting": greeting,
+            },
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+        }
+    } else if (graphName == "va.minimax.azure") {
+        return {
+            "minimax_v2v_python": {
+                "voice_id": voiceNameMap[language]["minimax"][voiceType],
+                ...localizationOptions,
+                "system_message": prompt,
             },
             "agora_rtc": {
                 "agora_asr_language": language,

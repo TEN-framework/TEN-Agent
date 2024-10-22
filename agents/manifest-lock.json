@@ -99,20 +99,21 @@
     },
     {
       "type": "extension",
-      "name": "azure_tts",
-      "version": "0.4.2",
-      "hash": "f1f3e58bd67ff45d537703690fe15f37f37b1e5754c29c483e74f15ee8fde7c8",
+      "name": "agora_sess_ctrl",
+      "version": "0.1.0",
+      "hash": "b789ec4864976c9c0ce512c118a3daedd4bb327cba00898816c546b6be4f8176",
       "dependencies": [
         {
           "type": "system",
           "name": "ten_runtime"
-        },
-        {
-          "type": "system",
-          "name": "azure_speech_sdk"
         }
       ],
-      "supports": []
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
     },
     {
       "type": "system",
