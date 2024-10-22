@@ -96,6 +96,7 @@ class OpenAIV2VExtension(Extension):
         # max history store in context
         self.max_history = 0
         self.history = []
+        self.retrieved = []
         self.remote_stream_id: int = 0
         self.channel_name: str = ""
         self.dump: bool = False
@@ -115,6 +116,9 @@ class OpenAIV2VExtension(Extension):
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
+        r = Cmd.create("retrieve")
+        ten_env.send_cmd(r, self.on_retrieved)
+
         # self._register_local_tools()
 
         asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
@@ -132,6 +136,23 @@ class OpenAIV2VExtension(Extension):
             self.thread = None
 
         ten_env.on_stop_done()
+
+    def on_retrieved(self, ten_env:TenEnv, result:CmdResult) -> None:
+        if result.get_status_code() == StatusCode.OK:
+            try:
+                history = json.loads(result.get_property_string("response"))
+                if not self.last_updated:
+                    # cache the history
+                    # FIXME need to have json
+                    if self.max_history and len(history) > self.max_history:
+                        self.retrieved = history[len(history) - self.max_history:]
+                    else:
+                        self.retrieved = history
+                logger.info(f"on retrieve context {history} {self.retrieved}")
+            except:
+                logger.exception("Failed to handle retrieve result")
+        else:
+            logger.warning("Failed to retrieve content")
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         try:
@@ -210,6 +231,10 @@ class OpenAIV2VExtension(Extension):
                             self.session = message.session
                             update_msg = self._update_session()
                             await self.conn.send_request(update_msg)
+
+                            if self.retrieved:
+                                await self._append_retrieve()
+                                logger.info(f"after append retrieve: {len(self.retrieved)}")
 
                             text = self._greeting_text()
                             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
@@ -510,6 +535,14 @@ class OpenAIV2VExtension(Extension):
             su.session.input_audio_transcription=InputAudioTranscription(
                     model="whisper-1")
         return su
+    
+    async def _append_retrieve(self):
+        if self.retrieved:
+            for r in self.retrieved:
+                if r["role"] == MessageRole.User:
+                    await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
+                elif r["role"] == MessageRole.Assistant:
+                    await self.conn.send_request(ItemCreate(item=AssistantMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
 
     '''
     def _update_conversation(self) -> UpdateConversationConfig:
@@ -569,11 +602,12 @@ class OpenAIV2VExtension(Extension):
             remain = current_sentence  # Any remaining characters form the incomplete sentence
             return sentences, remain
         
-        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, is_final: bool):
+        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
             try:
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
                 d.set_property_bool("end_of_segment", is_final)
+                d.set_property_string("role", role)
                 d.set_property_int("stream_id", stream_id)
                 logger.info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
@@ -587,9 +621,9 @@ class OpenAIV2VExtension(Extension):
             if role == Role.Assistant and not is_final:
                 sentences, self.transcript = parse_sentences(self.transcript, content)
                 for s in sentences:
-                    send_data(ten_env, s, stream_id, is_final)
+                    send_data(ten_env, s, stream_id, role, is_final)
             else:
-                send_data(ten_env, content, stream_id, is_final)
+                send_data(ten_env, content, stream_id, role, is_final)
         except:
             logger.exception(f"Error send text data {role}: {content} {is_final}")
 

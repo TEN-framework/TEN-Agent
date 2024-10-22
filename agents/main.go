@@ -25,19 +25,19 @@ type defaultApp struct {
 	cfg *appConfig
 }
 
-func (p *defaultApp) OnInit(
+func (p *defaultApp) OnConfigure(
 	tenEnv ten.TenEnv,
 ) {
 	// Using the default property.json if not specified.
 	if len(p.cfg.PropertyFilePath) > 0 {
 		if b, err := os.ReadFile(p.cfg.PropertyFilePath); err != nil {
 			log.Fatalf("Failed to read property file %s, err %v\n", p.cfg.PropertyFilePath, err)
-		}else{
+		} else {
 			tenEnv.InitPropertyFromJSONBytes(b)
 		}
 	}
 
-	tenEnv.OnInitDone()
+	tenEnv.OnConfigureDone()
 }
 
 func startAppBlocking(cfg *appConfig) {
