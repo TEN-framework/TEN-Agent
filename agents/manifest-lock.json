@@ -44,8 +44,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.8.0-rc1",
-      "hash": "0508d420702e2c57807c765c2652e05c45852d6a3c56ec62ee22e5880d9ed78c",
+      "version": "0.8.0-rc2",
+      "hash": "7b43c050cbec4f14e01df2e08f4ad9a99ef7ac37879affbff07693136a19cd2d",
       "dependencies": [
         {
           "type": "system",
@@ -82,8 +82,8 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "0.5.0-rc1",
-      "hash": "0e17adca6775423b6d06589d1d52eba7f9b4143df44635f17fa420334dfabcc8",
+      "version": "0.5.1",
+      "hash": "3876cd46a618658d980a71704e475fc7e3019d85a8ce6012653a7b12ff006a5c",
       "dependencies": [
         {
           "type": "system",
