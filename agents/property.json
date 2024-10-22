@@ -613,6 +613,12 @@
                     },
                     {
                         "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    },
+                    {
+                        "type": "extension",
                         "extension_group": "tts",
                         "addon": "fish_audio_tts",
                         "name": "fish_audio_tts",
@@ -1634,7 +1640,7 @@
             },
             {
                 "name": "camera_va_openai_azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -2402,7 +2408,7 @@
             },
             {
                 "name": "va_openai_v2v",
-                "auto_start": false,
+                "auto_start": true,
                 "nodes": [
                     {
                         "type": "extension",
@@ -2411,8 +2417,8 @@
                         "name": "agora_rtc",
                         "property": {
                             "app_id": "${env:AGORA_APP_ID}",
-                            "token": "",
-                            "channel": "ten_agent_test",
+                            "token": "007eJxSYHh+a2cm9635zf6vNKpOrTy/yuSXWM0zj7LOnTV8q9ZzC1orMCRZpBgapxinGqammJsYm5gnGRmmJpubphiaG6RamKcm+vOLpzcEMjJUqm9mYWSAQBCfhyExPb8oMb48x6CszJyBARAAAP//qn4iSA==",
+                            "channel": "agora_wl0vv7",
                             "stream_id": 1234,
                             "remote_stream_id": 123,
                             "subscribe_audio": true,
