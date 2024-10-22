@@ -51,17 +51,11 @@
       "greeting": {
         "type": "string"
       },
-      "checking_vision_text_items": {
-        "type": "string"
-      },
       "proxy_url": {
         "type": "string"
       },
       "max_memory_length": {
         "type": "int64"
-      },
-      "enable_tools": {
-        "type": "bool"
       }
     },
     "data_in": [
