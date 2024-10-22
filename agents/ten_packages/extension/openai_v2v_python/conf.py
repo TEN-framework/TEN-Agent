@@ -26,7 +26,9 @@ class RealtimeApiConfig:
             temperature: float = 0.5,
             max_tokens: int = 1024,
             voice: Voices = Voices.Alloy,
-            server_vad:bool=True
+            server_vad: bool = True,
+            audio_out: bool = True,
+            input_transcript: bool = True
         ):
         self.base_uri = base_uri
         self.api_key = api_key
@@ -39,6 +41,8 @@ class RealtimeApiConfig:
         self.max_tokens = max_tokens
         self.voice = voice
         self.server_vad = server_vad
+        self.audio_out = audio_out
+        self.input_transcript = input_transcript
     
     def build_ctx(self) -> dict:
         return {

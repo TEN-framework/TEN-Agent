@@ -1,0 +1,56 @@
+{
+    "type": "extension",
+    "name": "fish_audio_tts",
+    "version": "0.4.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_go",
+            "version": "0.2"
+        }
+    ],
+    "api": {
+        "property": {
+            "api_key": {
+                "type": "string"
+            },
+            "model_id": {
+                "type": "string"
+            },
+            "request_timeout_seconds": {
+                "type": "int64"
+            },
+            "optimize_streaming_latency": {
+                "type": "bool"
+            },
+            "base_url": {
+                "type": "string"
+            }
+        },
+        "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "flush"
+            }
+        ],
+        "cmd_out": [
+            {
+                "name": "flush"
+            }
+        ],
+        "audio_frame_out": [
+            {
+                "name": "pcm_frame"
+            }
+        ]
+    }
+}

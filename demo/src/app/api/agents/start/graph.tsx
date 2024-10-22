@@ -116,6 +116,20 @@ export const getGraphProperties = (
                 "greeting": greeting,
             }
         }
+    } else if (graphName == "va_openai_v2v_fish") {
+        return {
+            "openai_v2v_python": {
+                "model": "gpt-4o-realtime-preview",
+                "voice": voiceNameMap[language]["openai"][voiceType],
+                "language": language,
+                ...localizationOptions,
+                "system_message": prompt,
+                "greeting": greeting,
+            },
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+        }
     } else if (graphName == "va_openai_azure") {
         return {
             "agora_rtc": {
