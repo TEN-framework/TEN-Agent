@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "ten_llm_base",
+  "name": "vision_tool_python",
   "version": "0.3.0",
   "dependencies": [
     {

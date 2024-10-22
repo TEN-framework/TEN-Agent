@@ -1,11 +1,13 @@
 #
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0.
-# See the LICENSE file for more information.
+#
+# Agora Real Time Engagement
+# Created by Wei Hu in 2024-08.
+# Copyright (c) 2024 Agora IO. All rights reserved.
+#
 #
 import logging
 
-logger = logging.getLogger("ten_llm_base")
+logger = logging.getLogger("ten_ai_base")
 logger.setLevel(logging.INFO)
 
 formatter_str = (

@@ -10,20 +10,18 @@ import json
 import traceback
 
 from ten.async_ten_env import AsyncTenEnv
-from ..ten_llm_base.helper import AsyncEventEmitter, AsyncQueue, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
+from ..ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
-    AudioFrame,
-    VideoFrame,
     TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
     Data,
 )
-from ..ten_llm_base.extension import TenLLMAudioCompletionArgs, TenLLMBaseExtension, TenLLMDataType, TenLLMTextCompletionArgs
+from ..ten_ai_base.extension import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, TenLLMAudioCompletionArgs, TenLLMBaseExtension, TenLLMDataType, TenLLMTextCompletionArgs, TenLLMToolResult
 
 from .log import logger
 
@@ -46,14 +44,8 @@ PROPERTY_TEMPERATURE = "temperature"  # Optional
 PROPERTY_TOP_P = "top_p"  # Optional
 PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
 PROPERTY_GREETING = "greeting"  # Optional
-PROPERTY_ENABLE_TOOLS = "enable_tools"  # Optional
 PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
-PROPERTY_CHECKING_VISION_TEXT_ITEMS = "checking_vision_text_items"  # Optional
-
-
-TASK_TYPE_CHAT_COMPLETION = "chat_completion"
-TASK_TYPE_CHAT_COMPLETION_WITH_VISION = "chat_completion_with_vision"
 
 
 class OpenAIChatGPTExtension(TenLLMBaseExtension):
@@ -65,24 +57,12 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
     image_height = 0
     sentence_fragment = ""
 
-    available_tools = [
-        {
-            "type": "function",
-            "function": {
-                # ensure you use gpt-4o or later model if you need image recognition, gpt-4o-mini does not work quite well in this case
-                "name": "get_vision_image",
-                "description": "Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
-            },
-            "strict": True,
-        }
-    ]
-
-    async def on_init(self, ten_env: TenEnv) -> None:
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_init")
         await super().on_init(ten_env)
         ten_env.on_init_done()
 
-    async def on_start(self, ten_env: TenEnv) -> None:
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_start")
         await super().on_start(ten_env)
 
@@ -120,52 +100,48 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
 
         ten_env.on_start_done()
 
-    async def on_stop(self, ten_env: TenEnv) -> None:
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_stop")
         await super().on_stop(ten_env)
         ten_env.on_stop_done()
 
-    async def on_deinit(self, ten_env: TenEnv) -> None:
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_deinit")
         await super().on_deinit(ten_env)
         ten_env.on_deinit_done()
 
-    async def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         ten_env.log_info(f"on_cmd name: {cmd_name}")
 
+
         if cmd_name == CMD_IN_FLUSH:
             await self.flush_input_items(ten_env)
-            ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH), None)
+            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
             ten_env.log_info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
+            cmd_result = CmdResult.create(status_code)
+            cmd_result.set_property_string("detail", detail)
+            ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
             if self.greeting and self.users_count == 1:
-                try:
-                    output_data = Data.create("text_data")
-                    output_data.set_property_string(
-                        DATA_OUT_TEXT_DATA_PROPERTY_TEXT, self.greeting)
-                    output_data.set_property_bool(
-                        DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True)
-                    ten_env.send_data(output_data)
-                    ten_env.log_info(f"Greeting [{self.greeting}] sent")
-                except Exception as err:
-                    ten_env.log_info(
-                        f"Failed to send greeting [{self.greeting}]: {err}")
+                self.send_text_output(ten_env, self.greeting, True)
 
             status_code, detail = StatusCode.OK, "success"
+            cmd_result = CmdResult.create(status_code)
+            cmd_result.set_property_string("detail", detail)
+            ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
+            cmd_result = CmdResult.create(status_code)
+            cmd_result.set_property_string("detail", detail)
+            ten_env.return_result(cmd_result, cmd)
         else:
-            ten_env.log_info(f"on_cmd unknown cmd: {cmd_name}")
-            status_code, detail = StatusCode.ERROR, "unknown cmd"
+            await super().on_cmd(ten_env, cmd)
 
-        cmd_result = CmdResult.create(status_code)
-        cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
@@ -190,10 +166,10 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
             "text": input_text,
         }])
 
-    async def on_audio_completion(self, ten_env: TenEnv, message: any, **kargs: TenLLMAudioCompletionArgs) -> None:
+    async def on_audio_completion(self, ten_env: AsyncTenEnv, message: any, **kargs: TenLLMAudioCompletionArgs) -> None:
         return await super().on_audio_completion(ten_env, message, **kargs)
 
-    async def on_text_completion(self, ten_env: TenEnv, content: any, **kargs: TenLLMTextCompletionArgs) -> None:
+    async def on_text_completion(self, ten_env: AsyncTenEnv, content: any, **kargs: TenLLMTextCompletionArgs) -> None:
         """Run the chatflow asynchronously."""
         memory_cache = []
         memory = self.memory
@@ -207,19 +183,51 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
             non_artifact_content = [item for item in content if item.get("type") == "text"]
             non_artifact_message = {"role": "user", "content": non_artifact_content}
             memory_cache = memory_cache + [non_artifact_message, {"role": "assistant", "content": ""}]
-            tools = self.available_tools if not no_tool else None
+            tools = [] if not no_tool and len(self.available_tools) > 0 else None
+            for tool in self.available_tools:
+                tools.append({
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                    },
+                    "strict": True
+                })
+
 
             self.sentence_fragment = ""
 
             # Create an asyncio.Event to signal when content is finished
             content_finished_event = asyncio.Event()
+            # Create a future to track the single tool call task
+            tool_task_future = None
 
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
                 ten_env.log_info(f"tool_call: {tool_call}")
-                if tool_call.function.name == "get_vision_image":
-                    # Append the vision image to the last assistant message
-                    pass
+                for tool in self.available_tools:
+                    if tool_call.function.name == tool.name:
+                        cmd:Cmd = Cmd.create(CMD_TOOL_CALL)
+                        cmd.set_property_string("name", tool.name)
+                        # cmd.set_property_from_json("arguments", json.dumps(tool_call.arguments))
+                        cmd.set_property_from_json("arguments", json.dumps([]))
+
+                        # Send the command and handle the result through the future
+                        result: CmdResult = await ten_env.send_cmd(cmd)
+                        if result.get_status_code() == StatusCode.OK:
+                            tool_result = TenLLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
+                            logger.info(f"tool_result: {tool_result}")
+                            content = []
+                            for item in tool_result.items:
+                                if item.type == "text":
+                                    content.append({"type": "text", "text": item.data})
+                                elif item.type == "image":
+                                    content.append({"type": "image_url", "image_url": {"url": item.data}})
+                                else:
+                                    logger.warning(f"Unknown tool result type: {item.type}")
+                            await self.queue_input_item(TenLLMDataType.TEXT, content, True)
+                        else:
+                            logger.error(f"Tool call failed: {result.get_property_to_json('error')}")
 
             async def handle_content_update(content: str):
                 # Append the content to the last assistant message
@@ -233,6 +241,9 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
                     self.send_text_output(ten_env, s, False)
 
             async def handle_content_finished(full_content: str):
+                # Wait for the single tool task to complete (if any)
+                if tool_task_future:
+                    await tool_task_future
                 content_finished_event.set()
 
             listener = AsyncEventEmitter()

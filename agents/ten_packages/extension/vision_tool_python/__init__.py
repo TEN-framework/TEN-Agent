@@ -6,4 +6,4 @@
 from . import addon
 from .log import logger
 
-logger.info("ten_llm_base extension loaded")
+logger.info("vision_tool_python extension loaded")
