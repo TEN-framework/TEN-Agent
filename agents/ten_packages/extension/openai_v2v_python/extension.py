@@ -41,6 +41,8 @@ PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
 PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
 PROPERTY_VOICE = "voice"  # Optional
+PROPERTY_AUDIO_OUT = "audio_out"  # Optional
+PROPERTY_INPUT_TRANSCRIPT = "input_transcript"
 PROPERTY_SERVER_VAD = "server_vad"  # Optional
 PROPERTY_STREAM_ID = "stream_id"
 PROPERTY_LANGUAGE = "language"
@@ -249,9 +251,17 @@ class OpenAIV2VExtension(Extension):
                                 logger.warning(
                                     f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
-                            self.transcript += message.delta
                             self._send_transcript(
-                                ten_env, self.transcript, Role.Assistant, False)
+                                ten_env, message.delta, Role.Assistant, False)
+                        case ResponseTextDelta():
+                            logger.info(
+                                f"On response text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                            if message.response_id in flushed:
+                                logger.warning(
+                                    f"On flushed text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
+                                continue
+                            self._send_transcript(
+                                ten_env, message.delta, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
                             logger.info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}")
@@ -261,7 +271,17 @@ class OpenAIV2VExtension(Extension):
                                 continue
                             self.transcript = ""
                             self._send_transcript(
-                                ten_env, message.transcript, Role.Assistant, True)
+                                ten_env, "", Role.Assistant, True)
+                        case ResponseTextDone():
+                            logger.info(
+                                f"On response text done {message.output_index} {message.content_index} {message.text}")
+                            if message.response_id in flushed:
+                                logger.warning(
+                                    f"On flushed text done {message.response_id}")
+                                continue
+                            self.transcript = ""
+                            self._send_transcript(
+                                ten_env, "", Role.Assistant, True)
                         case ResponseOutputItemDone():
                             logger.info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
@@ -392,6 +412,22 @@ class OpenAIV2VExtension(Extension):
             )
 
         try:
+            audio_out = ten_env.get_property_bool(PROPERTY_AUDIO_OUT)
+            self.config.audio_out = audio_out
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_AUDIO_OUT} failed, err: {err}"
+            )
+
+        try:
+            input_transcript = ten_env.get_property_bool(PROPERTY_INPUT_TRANSCRIPT)
+            self.config.input_transcript = input_transcript
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_INPUT_TRANSCRIPT} failed, err: {err}"
+            )
+
+        try:
             max_tokens = ten_env.get_property_int(PROPERTY_MAX_TOKENS)
             if max_tokens > 0:
                 self.config.max_tokens = int(max_tokens)
@@ -459,15 +495,21 @@ class OpenAIV2VExtension(Extension):
         self.ctx["tools"] = self.registry.to_prompt()
         prompt = self._replace(self.config.instruction)
         self.last_updated = datetime.now()
-        return SessionUpdate(session=SessionUpdateParams(
-            instructions=prompt,
-            model=self.config.model,
-            voice=self.config.voice,
-            input_audio_transcription=InputAudioTranscription(
-                model="whisper-1"),
-            tool_choice="auto",
-            tools=self.registry.get_tools()
-        ))
+        su = SessionUpdate(session=SessionUpdateParams(
+                instructions=prompt,
+                model=self.config.model,
+                tool_choice="auto",
+                tools=self.registry.get_tools()
+            ))
+        if self.config.audio_out:
+            su.session.voice=self.config.voice
+        else:
+            su.session.modalities=["text"]
+        
+        if self.config.input_transcript:
+            su.session.input_audio_transcription=InputAudioTranscription(
+                    model="whisper-1")
+        return su
 
     '''
     def _update_conversation(self) -> UpdateConversationConfig:
@@ -506,20 +548,50 @@ class OpenAIV2VExtension(Extension):
         f.unlock_buf(buff)
         ten_env.send_audio_frame(f)
 
-    def _send_transcript(self, ten_env: TenEnv, transcript: str, role: Role, is_final: bool) -> None:
+    def _send_transcript(self, ten_env: TenEnv, content: str, role: Role, is_final: bool) -> None:
+        def is_punctuation(char):
+            if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
+                return True
+            return False
+
+        def parse_sentences(sentence_fragment, content):
+            sentences = []
+            current_sentence = sentence_fragment
+            for char in content:
+                current_sentence += char
+                if is_punctuation(char):
+                    # Check if the current sentence contains non-punctuation characters
+                    stripped_sentence = current_sentence
+                    if any(c.isalnum() for c in stripped_sentence):
+                        sentences.append(stripped_sentence)
+                    current_sentence = ""  # Reset for the next sentence
+
+            remain = current_sentence  # Any remaining characters form the incomplete sentence
+            return sentences, remain
+        
+        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, is_final: bool):
+            try:
+                d = Data.create("text_data")
+                d.set_property_string("text", sentence)
+                d.set_property_bool("end_of_segment", is_final)
+                d.set_property_int("stream_id", stream_id)
+                logger.info(
+                    f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
+                ten_env.send_data(d)
+            except:
+                logger.exception(
+                    f"Error send text data {role}: {sentence} {is_final}")
+
+        stream_id = self.remote_stream_id if role == Role.User else 0
         try:
-            d = Data.create("text_data")
-            d.set_property_string("text", transcript)
-            d.set_property_bool("end_of_segment", is_final)
-            stream_id = self.remote_stream_id if role == Role.User else 0
-            d.set_property_int("stream_id", stream_id)
-            d.set_property_bool("is_final", is_final)
-            logger.debug(
-                f"send transcript text [{transcript}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
-            ten_env.send_data(d)
+            if role == Role.Assistant and not is_final:
+                sentences, self.transcript = parse_sentences(self.transcript, content)
+                for s in sentences:
+                    send_data(ten_env, s, stream_id, is_final)
+            else:
+                send_data(ten_env, content, stream_id, is_final)
         except:
-            logger.exception(
-                f"Error send text data {role}: {transcript} {is_final}")
+            logger.exception(f"Error send text data {role}: {content} {is_final}")
 
     def _flush(self, ten_env: TenEnv) -> None:
         try:
