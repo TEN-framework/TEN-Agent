@@ -4,6 +4,7 @@ ten_packages/extension/agora_rtc
 ten_packages/extension/azure_tts
 ten_packages/extension/py_init_extension_cpp
 ten_packages/system
+ten_packages/extension/agora_sess_ctrl
 .ten
 agoradns.dat
 agorareport.dat
