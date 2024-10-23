@@ -3196,7 +3196,7 @@
                         "addon": "minimax_v2v_python",
                         "name": "minimax_v2v_python",
                         "property": {
-                            "sample_rate": 16000,
+                            "in_sample_rate": 16000,
                             "token": "${env:MINIMAX_TOKEN}"
                         }
                     },

@@ -29,7 +29,8 @@ from .log import logger
 
 PROPERTY_TOKEN = "token"
 PROPERTY_PROMPT = "prompt"
-PROPERTY_SAMPLE_RATE = "sample_rate"
+PROPERTY_IN_SAMPLE_RATE = "in_sample_rate"
+PROPERTY_OUT_SAMPLE_RATE = "out_sample_rate"
 PROPERTY_MODEL = "model"
 PROPERTY_VOICE_MODEL = "voice_model"
 PROPERTY_VOICE_ID = "voice_id"
@@ -50,7 +51,8 @@ class MiniMaxExtension(Extension):
     voice_model:str = "speech-01-turbo-240228"
     voice_id:str = "female-tianmei"
     prompt:str = "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
-    sample_rate:int = 32000 # in and out sample rate
+    in_sample_rate:int = 16000
+    out_sample_rate:int = 32000
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("MiniMaxExtension on_init")
@@ -74,10 +76,16 @@ class MiniMaxExtension(Extension):
                 f"GetProperty required {PROPERTY_PROMPT} failed, err: {err}")
 
         try:
-            self.sample_rate = ten_env.get_property_int(PROPERTY_SAMPLE_RATE)
+            self.in_sample_rate = ten_env.get_property_int(PROPERTY_IN_SAMPLE_RATE)
         except Exception as err:
             logger.info(
-                f"GetProperty required {PROPERTY_SAMPLE_RATE} failed, err: {err}")
+                f"GetProperty required {PROPERTY_IN_SAMPLE_RATE} failed, err: {err}")
+
+        try:
+            self.out_sample_rate = ten_env.get_property_int(PROPERTY_OUT_SAMPLE_RATE)
+        except Exception as err:
+            logger.info(
+                f"GetProperty required {PROPERTY_OUT_SAMPLE_RATE} failed, err: {err}")
 
         try:
             self.model = ten_env.get_property_string(PROPERTY_MODEL)
@@ -177,7 +185,7 @@ class MiniMaxExtension(Extension):
                     "input_audio": {
                         "data": base64.b64encode(buff).decode("utf-8"),
                         "format": "pcm",
-                        "sample_rate": self.sample_rate,
+                        "sample_rate": self.in_sample_rate,
                         "bit_depth": 16,
                         "channel": 1,
                         "encode": "base64"
@@ -204,7 +212,7 @@ class MiniMaxExtension(Extension):
                 "voice_id": self.voice_id
             },
             "audio_setting": {
-                "sample_rate": self.sample_rate,
+                "sample_rate": self.out_sample_rate,
                 "format": "pcm",
                 "channel": 1,
                 "encode": "base64"
@@ -219,11 +227,13 @@ class MiniMaxExtension(Extension):
         self.transcript = ""
         for line in response.iter_lines(decode_unicode=True):
             if self._need_interrupt(ts):
+                logger.warning("interrupted")
                 self.transcript += "[interrupted]"
                 self._append_message("assistant", self.transcript)
                 return
 
             if not line.startswith("data:"):
+                logger.warning(f"ignore line {len(line)}")
                 continue
             resp = json.loads(line.strip("data:"))
             if resp.get("choices") and resp["choices"][0].get("delta"):
@@ -272,7 +282,7 @@ class MiniMaxExtension(Extension):
     def _send_audio_out(self, audio_data:bytearray) -> None:
         try:
             f = AudioFrame.create("pcm_frame")
-            f.set_sample_rate(self.sample_rate)
+            f.set_sample_rate(self.out_sample_rate)
             f.set_bytes_per_sample(2)
             f.set_number_of_channels(1)
             f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
