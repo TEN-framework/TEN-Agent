@@ -3247,6 +3247,28 @@
                                     }
                                 ]
                             }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "start_of_sentence",
+                                "dest": [
+                                    {
+                                        "extension_group": "llm",
+                                        "extension": "minimax_v2v_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "flush"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
                         ]
                     },
                     {

@@ -141,6 +141,15 @@ class MiniMaxExtension(Extension):
         cmd_name = cmd.get_name()
         logger.info("on_cmd name {}".format(cmd_name))
 
+        if cmd_name == "flush":
+            with self.mutex:
+                self.outdate_ts = datetime.now()
+
+            out_cmd = Cmd.create("flush")
+            ten_env.send_cmd(
+                out_cmd, lambda ten, result: logger.info("send_cmd flush done"),
+            )
+
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
 
@@ -151,20 +160,15 @@ class MiniMaxExtension(Extension):
         # Must be after vad
         try:
             ts = datetime.now()
-            with self.mutex:
-                self.outdate_ts = ts
 
             while not self.queue.empty():
                 self.queue.get()
             
             frame_buf = audio_frame.get_buf()
             logger.info(f"on audio frame {len(frame_buf)}")
+            self._dump_audio_if_need(frame_buf, "in")
             self.queue.put((ts, frame_buf))
 
-            cmd = Cmd.create("flush")
-            ten_env.send_cmd(
-                cmd, lambda ten, result: logger.info("send_cmd flush done"),
-            )
         except:
             logger.exception(f"MiniMaxExtension on audio frame failed")
 
@@ -280,6 +284,8 @@ class MiniMaxExtension(Extension):
             self.mutex.release()
 
     def _send_audio_out(self, audio_data:bytearray) -> None:
+        self._dump_audio_if_need(audio_data, "out")
+        
         try:
             f = AudioFrame.create("pcm_frame")
             f.set_sample_rate(self.out_sample_rate)
@@ -308,3 +314,11 @@ class MiniMaxExtension(Extension):
         except:
             logger.exception(
                 f"Error send text data {role}: {content} {is_final}")
+            
+    def _dump_audio_if_need(self, buf: bytearray, suffix: str) -> None:
+        # TODO: add dump property
+        # if not self.dump:
+        #     return
+
+        with open("{}_{}.pcm".format("minimax_v2v", suffix), "ab") as dump_file:
+            dump_file.write(buf)
