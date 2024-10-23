@@ -5,7 +5,9 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
+import base64
 import json
+import threading
 import time
 import uuid
 from ten import (
@@ -18,6 +20,7 @@ from ten import (
     CmdResult,
     Data,
 )
+import asyncio
 from .log import logger
 
 MAX_SIZE = 800  # 1 KB limit
@@ -32,9 +35,70 @@ TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 
 # record the cached text data for each stream id
 cached_text_map = {}
+MAX_CHUNK_SIZE_BYTES = 1024
 
+def _text_to_base64_chunks(text: str, msg_id: str) -> list:
+    # Ensure msg_id does not exceed 50 characters
+    if len(msg_id) > 36:
+        raise ValueError("msg_id cannot exceed 36 characters.")
+    
+    # Convert text to bytearray
+    byte_array = bytearray(text, 'utf-8')
+    
+    # Encode the bytearray into base64
+    base64_encoded = base64.b64encode(byte_array).decode('utf-8')
+    
+    # Initialize list to hold the final chunks
+    chunks = []
+    
+    # We'll split the base64 string dynamically based on the final byte size
+    part_index = 0
+    total_parts = None  # We'll calculate total parts once we know how many chunks we create
+
+    # Process the base64-encoded content in chunks
+    current_position = 0
+    total_length = len(base64_encoded)
+    
+    while current_position < total_length:
+        part_index += 1
+        
+        # Start guessing the chunk size by limiting the base64 content part
+        estimated_chunk_size = MAX_CHUNK_SIZE_BYTES  # We'll reduce this dynamically
+        content_chunk = ""
+        count = 0
+        while True:
+            # Create the content part of the chunk
+            content_chunk = base64_encoded[current_position:current_position + estimated_chunk_size]
+
+            # Format the chunk
+            formatted_chunk = f"{msg_id}|{part_index}|{total_parts if total_parts else '???'}|{content_chunk}"
+
+            # Check if the byte length of the formatted chunk exceeds the max allowed size
+            if len(bytearray(formatted_chunk, 'utf-8')) <= MAX_CHUNK_SIZE_BYTES:
+                break
+            else:
+                # Reduce the estimated chunk size if the formatted chunk is too large
+                estimated_chunk_size -= 100  # Reduce content size gradually
+                count += 1
+
+        logger.debug(f"chunk estimate guess: {count}")
+
+        # Add the current chunk to the list
+        chunks.append(formatted_chunk)
+        current_position += estimated_chunk_size  # Move to the next part of the content
+
+    # Now that we know the total number of parts, update the chunks with correct total_parts
+    total_parts = len(chunks)
+    updated_chunks = [
+        chunk.replace("???", str(total_parts)) for chunk in chunks
+    ]
+
+    return updated_chunks
 
 class MessageCollectorExtension(Extension):
+    # Create the queue for message processing
+    queue = asyncio.Queue()
+
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("MessageCollectorExtension on_init")
         ten_env.on_init_done()
@@ -43,6 +107,13 @@ class MessageCollectorExtension(Extension):
         logger.info("MessageCollectorExtension on_start")
 
         # TODO: read properties, initialize resources
+        self.loop = asyncio.new_event_loop()
+        def start_loop():
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_forever()
+        threading.Thread(target=start_loop, args=[]).start()
+
+        self.loop.create_task(self._process_queue(ten_env))
 
         ten_env.on_start_done()
 
@@ -123,7 +194,7 @@ class MessageCollectorExtension(Extension):
                 cached_text_map[stream_id] = text
 
         # Generate a unique message ID for this batch of parts
-        message_id = str(uuid.uuid4())
+        message_id = str(uuid.uuid4())[:8]
 
         # Prepare the main JSON structure without the text field
         base_msg_data = {
@@ -132,61 +203,13 @@ class MessageCollectorExtension(Extension):
             "message_id": message_id,  # Add message_id to identify the split message
             "data_type": "transcribe",
             "text_ts": int(time.time() * 1000),  # Convert to milliseconds
+            "text": text,
         }
 
         try:
-            # Convert the text to UTF-8 bytes
-            text_bytes = text.encode('utf-8')
-
-            # If the text + metadata fits within the size limit, send it directly
-            if len(text_bytes) + OVERHEAD_ESTIMATE <= MAX_SIZE:
-                base_msg_data["text"] = text
-                msg_data = json.dumps(base_msg_data)
-                ten_data = Data.create("data")
-                ten_data.set_property_buf("data", msg_data.encode())
-                ten_env.send_data(ten_data)
-            else:
-                # Split the text bytes into smaller chunks, ensuring safe UTF-8 splitting
-                max_text_size = MAX_SIZE - OVERHEAD_ESTIMATE
-                total_length = len(text_bytes)
-                total_parts = (total_length + max_text_size - 1) // max_text_size  # Calculate number of parts
-                
-                def get_valid_utf8_chunk(start, end):
-                    """Helper function to ensure valid UTF-8 chunks."""
-                    while end > start:
-                        try:
-                            # Decode to check if this chunk is valid UTF-8
-                            text_part = text_bytes[start:end].decode('utf-8')
-                            return text_part, end
-                        except UnicodeDecodeError:
-                            # Reduce the end point to avoid splitting in the middle of a character
-                            end -= 1
-                    # If no valid chunk is found (shouldn't happen with valid UTF-8 input), return an empty string
-                    return "", start
-
-                part_number = 0
-                start_index = 0
-                while start_index < total_length:
-                    part_number += 1
-                    # Get a valid UTF-8 chunk
-                    text_part, end_index = get_valid_utf8_chunk(start_index, min(start_index + max_text_size, total_length))
-                    
-                    # Prepare the part data with metadata
-                    part_data = base_msg_data.copy()
-                    part_data.update({
-                        "text": text_part,
-                        "part_number": part_number,
-                        "total_parts": total_parts,
-                    })
-                    
-                    # Send each part
-                    part_msg_data = json.dumps(part_data)
-                    ten_data = Data.create("data")
-                    ten_data.set_property_buf("data", part_msg_data.encode())
-                    ten_env.send_data(ten_data)
-
-                    # Move to the next chunk
-                    start_index = end_index
+            chunks = _text_to_base64_chunks(json.dumps(base_msg_data), message_id)
+            for chunk in chunks:
+                asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
 
         except Exception as e:
             logger.warning(f"on_data new_data error: {e}")
@@ -199,3 +222,19 @@ class MessageCollectorExtension(Extension):
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
         # TODO: process image frame
         pass
+
+
+    async def _queue_message(self, data: str):
+        await self.queue.put(data)
+
+    async def _process_queue(self, ten_env: TenEnv):
+        while True:
+            data = await self.queue.get()
+            if data is None:
+                break
+            # process data
+            ten_data = Data.create("data")
+            ten_data.set_property_buf("data", data.encode())
+            ten_env.send_data(ten_data)
+            self.queue.task_done()
+            await asyncio.sleep(0.04)
