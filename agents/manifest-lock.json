@@ -100,8 +100,8 @@
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "0.1.0",
-      "hash": "b789ec4864976c9c0ce512c118a3daedd4bb327cba00898816c546b6be4f8176",
+      "version": "0.1.0-rc1",
+      "hash": "5fe1da35222298edff37da816e24bb29b92437620e7a49d2e8d07b97df985b58",
       "dependencies": [
         {
           "type": "system",

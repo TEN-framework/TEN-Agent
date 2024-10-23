@@ -31,7 +31,7 @@
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "=0.1.0"
+      "version": "=0.1.0-rc1"
     }
   ]
 }
