@@ -249,6 +249,7 @@ class MiniMaxExtension(Extension):
             if not line.startswith("data:"):
                 logger.warning(f"ignore line {len(line)}")
                 continue
+            logger.debug(f"<-{line}")
             resp = json.loads(line.strip("data:"))
             if resp.get("choices") and resp["choices"][0].get("delta"):
                 delta = resp["choices"][0]["delta"]
