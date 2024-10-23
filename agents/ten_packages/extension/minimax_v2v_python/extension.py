@@ -239,6 +239,7 @@ class MiniMaxExtension(Extension):
         response = requests.post(url, headers=headers, json=payload, stream=True)
         logger.info(f"Get response, trace-id: {response.headers.get('Trace-Id')}")
         self.transcript = ""
+        i = 0
         for line in response.iter_lines(decode_unicode=True):
             if self._need_interrupt(ts):
                 logger.warning("interrupted")
@@ -249,7 +250,7 @@ class MiniMaxExtension(Extension):
             if not line.startswith("data:"):
                 logger.warning(f"ignore line {len(line)}")
                 continue
-            logger.debug(f"<-{line}")
+            i+=1
             resp = json.loads(line.strip("data:"))
             if resp.get("choices") and resp["choices"][0].get("delta"):
                 delta = resp["choices"][0]["delta"]
@@ -257,16 +258,20 @@ class MiniMaxExtension(Extension):
                     if delta.get("content"):
                         content = delta['content']
                         self.transcript += content
-                        logger.info(f"get transcript {content}")
+                        logger.info(f"[sse] data chunck-{i} get assistant transcript {content}")
                         self._send_transcript(content, "assistant", False)
-                    elif delta.get("audio_content") and delta["audio_content"] != "":
-                        buff = base64.b64decode(delta["audio_content"])
+                    if delta.get("audio_content") and delta["audio_content"] != "":
+                        logger.info(f"[sse] data chunck-{i} get audio_content")
+                        base64_str = delta["audio_content"]
+                        with open(f"minimax_v2v_data_{i}.txt", "a") as f:
+                            f.write(base64_str)
+                        buff = base64.b64decode(base64_str)
                         self._send_audio_out(buff)
-                    elif delta.get("tool_calls"):
+                    if delta.get("tool_calls"):
                         logger.info(f"ignore tool call {delta}")
                         continue
-                    else:
-                        logger.warning(f"unknown delta {delta}")
+                elif delta.get("role") == "user":
+                    self._send_transcript(delta['content'], "user", True)
 
         if self.transcript:
             self._append_message("assistant", self.transcript)
