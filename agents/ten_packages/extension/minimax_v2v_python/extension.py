@@ -253,6 +253,9 @@ class MiniMaxExtension(Extension):
         logger.info(f"start request, data len {len(buff)}")
         # response = requests.post(url, headers=headers, json=payload, stream=True, timeout=5)
         # logger.info(f"Get response, trace-id: {response.headers.get('Trace-Id')}, cost_time {self._duration_in_ms_since(start_time)}ms")
+        user_transcript_ttfb = None
+        assistant_transcript_ttfb = None
+        assistant_audio_ttfb = None
         self.transcript = ""
         i = 0
         with httpx.Client(timeout=httpx.Timeout(5)) as client:
@@ -285,6 +288,9 @@ class MiniMaxExtension(Extension):
                                     self.transcript += content
                                     logger.info(f"[sse] data chunck-{i} get assistant transcript {content}")
                                     self._send_transcript(content, "assistant", False)
+                                    if not assistant_transcript_ttfb:
+                                        assistant_transcript_ttfb = self._duration_in_ms_since(start_time)
+                                        logger.info(f"assistant_transcript_ttfb {assistant_transcript_ttfb}ms")
                                 if delta.get("audio_content") and delta["audio_content"] != "":
                                     logger.info(f"[sse] data chunck-{i} get audio_content")
                                     base64_str = delta["audio_content"]
@@ -292,11 +298,17 @@ class MiniMaxExtension(Extension):
                                     #     f.write(base64_str)
                                     buff = base64.b64decode(base64_str)
                                     self._send_audio_out(buff)
+                                    if not assistant_audio_ttfb:
+                                        assistant_audio_ttfb = self._duration_in_ms_since(start_time)
+                                        logger.info(f"assistant_audio_ttfb {assistant_audio_ttfb}ms")
                                 if delta.get("tool_calls"):
                                     logger.info(f"ignore tool call {delta}")
                                     continue
                             if delta.get("role") == "user":
                                 self._send_transcript(delta['content'], "user", True)
+                                if not user_transcript_ttfb:
+                                    user_transcript_ttfb = self._duration_in_ms_since(start_time)
+                                    logger.info(f"user_transcript_ttfb {user_transcript_ttfb}ms")
 
             except httpx.TimeoutException:
                 logger.warning("timeout")
