@@ -268,8 +268,8 @@ class MiniMaxExtension(Extension):
                     if delta.get("audio_content") and delta["audio_content"] != "":
                         logger.info(f"[sse] data chunck-{i} get audio_content")
                         base64_str = delta["audio_content"]
-                        with open(f"minimax_v2v_data_{i}.txt", "a") as f:
-                            f.write(base64_str)
+                        # with open(f"minimax_v2v_data_{i}.txt", "a") as f:
+                        #     f.write(base64_str)
                         buff = base64.b64decode(base64_str)
                         self._send_audio_out(buff)
                     if delta.get("tool_calls"):
