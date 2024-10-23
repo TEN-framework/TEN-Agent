@@ -252,6 +252,7 @@ class MiniMaxExtension(Extension):
                 continue
             i+=1
             # logger.info(f"[sse] data chunck-{i}")
+            # logger.info(f"<-{line}")
             resp = json.loads(line.strip("data:"))
             if resp.get("choices") and resp["choices"][0].get("delta"):
                 delta = resp["choices"][0]["delta"]
@@ -261,18 +262,24 @@ class MiniMaxExtension(Extension):
                         self.transcript += content
                         logger.info(f"[sse] data chunck-{i} get assistant transcript {content}")
                         self._send_transcript(content, "assistant", False)
-                    elif delta.get("audio_content") and delta["audio_content"] != "":
+                    if delta.get("audio_content") and delta["audio_content"] != "":
                         logger.info(f"[sse] data chunck-{i} get audio_content")
                         base64_str = delta["audio_content"]
                         with open(f"minimax_v2v_data_{i}.txt", "a") as f:
                             f.write(base64_str)
                         buff = base64.b64decode(base64_str)
                         self._send_audio_out(buff)
-                    elif delta.get("tool_calls"):
-                        logger.info(f"ignore tool call {delta}")
-                        continue
-                    else:
-                        logger.warning(f"unknown delta {delta}")
+                    # if delta.get("tool_calls"):
+                    #     logger.info(f"ignore tool call {delta}")
+                    #     continue
+                    # else:
+                    #     logger.warning(f"unknown delta {delta}")
+            if resp.get("choices") and resp["choices"][0].get("message"):
+                message = resp["choices"][0]["message"]
+                if message.get("role") == "assistant":
+                    if message.get("content"):
+                        content = message['content']
+                        self.transcript += content
 
         if self.transcript:
             self._append_message("assistant", self.transcript)
