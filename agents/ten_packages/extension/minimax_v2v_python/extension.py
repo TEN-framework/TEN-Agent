@@ -47,6 +47,8 @@ class MiniMaxExtension(Extension):
     mutex = threading.Lock()
     history: List[str] = []
     max_history: int = 10
+    remote_stream_id: int = 0
+    transcript: str = ""
 
     model:str = "abab6.5s-chat"
     voice_model:str = "speech-01-turbo-240228"
@@ -174,14 +176,16 @@ class MiniMaxExtension(Extension):
         try:
             ts = datetime.now()
 
+            stream_id = audio_frame.get_property_int("stream_id")
+            self.remote_stream_id = stream_id
+
             while not self.queue.empty():
                 self.queue.get()
             
             frame_buf = audio_frame.get_buf()
-            logger.info(f"on audio frame {len(frame_buf)}")
+            logger.info(f"on audio frame {len(frame_buf)} {stream_id}")
             self._dump_audio_if_need(frame_buf, "in")
             self.queue.put((ts, frame_buf))
-
         except:
             logger.exception(f"MiniMaxExtension on audio frame failed")
 
@@ -234,6 +238,11 @@ class MiniMaxExtension(Extension):
                 "channel": 1,
                 "encode": "base64"
             },
+            "tools":[
+                {
+                    "type":"web_search"
+                }
+            ],
             "max_tokens": 1024,
             "temperature": 0.8,
             "top_p": 0.95
@@ -246,9 +255,10 @@ class MiniMaxExtension(Extension):
         for line in response.iter_lines(decode_unicode=True):
             if self._need_interrupt(ts):
                 logger.warning("interrupted")
-                self.transcript += "[interrupted]"
-                self._append_message("assistant", self.transcript)
-                return
+                if self.transcript:
+                    self.transcript += "[interrupted]"
+                    self._append_message("assistant", self.transcript)
+                break
 
             if not line.startswith("data:"):
                 logger.warning(f"ignore line {len(line)}")
@@ -323,14 +333,15 @@ class MiniMaxExtension(Extension):
             logger.exception("Error send audio frame")
 
     def _send_transcript(self, content:str, role:str, is_final:bool) -> None:
+        stream_id = self.remote_stream_id if role == "user" else 0
         try:
             d = Data.create("text_data")
             d.set_property_string("text", content)
             d.set_property_bool("end_of_segment", is_final)
             d.set_property_string("role", role)
-            d.set_property_bool("is_final", is_final)
-            logger.debug(
-                f"send transcript text [{content}]  is_final {is_final} end_of_segment {is_final} role {role}")
+            d.set_property_int("stream_id", stream_id)
+            logger.info(
+                f"send transcript text [{content}] {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
             self.ten_env.send_data(d)
         except:
             logger.exception(
