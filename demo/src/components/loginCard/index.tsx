@@ -49,6 +49,12 @@ const LoginCard = () => {
       message.error("please enter a user name")
       return
     }
+
+    if (userName !== "agora.io") {
+      message.error("this is a internal environment protected by password, please contact the administrator");
+      return
+    }
+
     const userId = getRandomUserId()
     dispatch(setOptions({
       userName,
