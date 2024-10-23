@@ -154,6 +154,9 @@ class MiniMaxExtension(Extension):
         if cmd_name == "flush":
             with self.mutex:
                 self.outdate_ts = datetime.now()
+            
+            while not self.queue.empty():
+                self.queue.get()
 
             out_cmd = Cmd.create("flush")
             ten_env.send_cmd(
@@ -250,7 +253,7 @@ class MiniMaxExtension(Extension):
             if not line.startswith("data:"):
                 logger.warning(f"ignore line {len(line)}")
                 continue
-            
+
             i+=1
 
             resp = json.loads(line.strip("data:"))
