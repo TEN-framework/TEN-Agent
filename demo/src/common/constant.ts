@@ -13,7 +13,7 @@ export const DEFAULT_AGENT_SETTINGS = {
   prompt: ""
 }
 
-export const DESCRIPTION = "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)"
+export const DESCRIPTION = "Shengwang Conversational AI Agent"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",

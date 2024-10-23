@@ -5,7 +5,7 @@ import './global.css'
 
 export const metadata: Metadata = {
   title: "TEN Agent",
-  description: "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)",
+  description: "Shengwang Conversational AI Agent",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",

@@ -5,7 +5,8 @@ import Network from "./network"
 import InfoPopover from "./infoPopover"
 import StylePopover from "./stylePopover"
 import { GithubIcon, LogoIcon, InfoIcon, ColorPickerIcon } from "@/components/icons"
-
+import cnLogoSrc from "../../../assets/cnlogo.png"
+import Image from 'next/image'
 import styles from "./index.module.scss"
 
 const Header = () => {
@@ -24,7 +25,8 @@ const Header = () => {
 
   return <div className={styles.header}>
     <span className={styles.logoWrapper}>
-      <LogoIcon size="small"></LogoIcon>
+      {/* <LogoIcon size="small"></LogoIcon> */}
+      <Image src={cnLogoSrc} width={52} height={30} alt="logo"></Image>
     </span>
     <InfoPopover>
       <span className={styles.content}>

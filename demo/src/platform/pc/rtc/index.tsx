@@ -104,7 +104,7 @@ const Rtc = () => {
 
   return <section className={styles.rtc}>
     <div className={styles.header}>
-      <span className={styles.text}>Audio & Video</span>
+      <span className={styles.text}>Audio</span>
       <CustomSelect className={styles.voiceSelect}
         disabled={agentConnected}
         value={voiceType}
@@ -119,7 +119,7 @@ const Rtc = () => {
       {/* microphone */}
       <MicSection audioTrack={audioTrack}></MicSection>
       {/* camera */}
-      <CamSection videoTrack={videoTrack}></CamSection>
+      {/* <CamSection videoTrack={videoTrack}></CamSection> */}
     </div>
   </section>
 }
