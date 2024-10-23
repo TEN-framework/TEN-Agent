@@ -258,6 +258,7 @@ class MiniMaxExtension(Extension):
                 if self.transcript:
                     self.transcript += "[interrupted]"
                     self._append_message("assistant", self.transcript)
+                    self._send_transcript("", "assistant", True)
                 break
 
             if not line.startswith("data:"):
