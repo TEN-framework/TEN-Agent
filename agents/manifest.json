@@ -21,7 +21,7 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.7.0-rc2"
+      "version": "=0.7.1-rc1"
     },
     {
       "type": "system",
@@ -31,7 +31,7 @@
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "0.1.0"
+      "version": "=0.1.0"
     }
   ]
 }
