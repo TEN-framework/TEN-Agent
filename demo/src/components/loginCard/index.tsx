@@ -1,108 +1,120 @@
 "use client"
 
-import type React from 'react';
-import { useRouter } from 'next/navigation'
-import { message } from "antd"
+import type React from "react"
+import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { GITHUB_URL, getRandomUserId, useAppDispatch, getRandomChannel } from "@/common"
-import { setAgentSettings, setOptions } from "@/store/reducers/global"
-import styles from "./index.module.scss"
-
-import { GithubIcon } from "../icons"
+import {
+  GITHUB_URL,
+  getRandomUserId,
+  useAppDispatch,
+  getRandomChannel,
+} from "@/common"
+import { setOptions } from "@/store/reducers/global"
 import packageData from "../../../package.json"
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import NextLink from "next/link"
+import { GithubIcon, AnimatedSpinnerIcon } from "@/components/Icon"
+import { toast } from "sonner"
 
 const { version } = packageData
 
-const LoginCard = () => {
+export default function LoginCard() {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const [userName, setUserName] = useState("")
-  const [isLoadingSuccess, setIsLoadingSuccess] = useState(false);
-
-  const onClickGithub = () => {
-    if (typeof window !== "undefined") {
-      window.open(GITHUB_URL, "_blank")
-    }
-  }
+  const [isLoadingSuccess, setIsLoadingSuccess] = useState(false)
 
   const onUserNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value
-    value = value.replace(/\s/g, "");
+    value = value.replace(/\s/g, "")
     setUserName(value)
   }
 
   useEffect(() => {
     const onPageLoad = () => {
-      setIsLoadingSuccess(true);
-    };
-
-    if (document.readyState === 'complete') {
-      onPageLoad();
-    } else {
-      window.addEventListener('load', onPageLoad, false);
-      return () => window.removeEventListener('load', onPageLoad);
+      setIsLoadingSuccess(true)
     }
-  }, []);
+
+    if (document.readyState === "complete") {
+      onPageLoad()
+    } else {
+      window.addEventListener("load", onPageLoad, false)
+      return () => window.removeEventListener("load", onPageLoad)
+    }
+  }, [])
 
   const onClickJoin = () => {
     if (!userName) {
-      message.error("please enter a user name")
+      toast.error("please enter a user name")
       return
     }
     const userId = getRandomUserId()
-    dispatch(setOptions({
-      userName,
-      channel: getRandomChannel(),
-      userId
-    }))
+    dispatch(
+      setOptions({
+        userName,
+        channel: getRandomChannel(),
+        userId,
+      }),
+    )
     router.push("/home")
   }
 
-  return <div className={styles.card}>
-    <section className={styles.top}>
-      <span
-        className={styles.github}
-        onClick={onClickGithub}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            onClickGithub();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-      >
-        <GithubIcon />
-        <span className={styles.text}>GitHub</span>
-      </span>
-    </section>
-    <section className={styles.content}>
-      <div className={styles.title}>
-        <span className={styles.title}>TEN Agent</span>
-        <span className={styles.text}>The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)</span>
+  return (
+    <>
+      <div className="flex h-full w-full items-center justify-center overflow-y-auto p-4">
+        <Card className="w-full max-w-md rounded-xl border border-[#20272D] bg-transparent bg-gradient-to-br from-[rgba(31,69,141,0.16)] via-[rgba(31,69,141,0)] to-[#1F458D] shadow-[0px_3.999px_48.988px_0px_rgba(0,7,72,0.12)] backdrop-blur-[8.8px]">
+          <CardHeader>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="ml-auto w-fit rounded-full bg-transparent px-2 py-1"
+            >
+              <NextLink href={GITHUB_URL} target="_blank">
+                <GithubIcon className="h-4 w-4" />
+                <span className="">GitHub</span>
+              </NextLink>
+            </Button>
+            <CardTitle className="text-center text-2xl md:text-3xl">
+              TEN Agent
+            </CardTitle>
+            <CardDescription className="text-md text-center text-inherit md:text-lg">
+              The World's First Multimodal AI Agent with the OpenAI Realtime API
+              (Beta)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6">
+            <Input
+              placeholder="User Name"
+              value={userName}
+              onChange={onUserNameChange}
+              disabled={!isLoadingSuccess}
+            />
+            <Button
+              onClick={onClickJoin}
+              disabled={!isLoadingSuccess || !userName}
+            >
+              {!isLoadingSuccess && (
+                <AnimatedSpinnerIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+              )}
+              {isLoadingSuccess ? "Join" : "Loading"}
+            </Button>
+          </CardContent>
+          <CardFooter className="flex w-full items-center justify-center text-sm text-muted-foreground">
+            <p>Version {version}</p>
+          </CardFooter>
+        </Card>
       </div>
-      <div className={styles.section}>
-        <input placeholder="User Name" value={userName} onChange={onUserNameChange} />
-      </div>
-      <div className={styles.section}>
-        <div
-          className={`${styles.btn} ${!isLoadingSuccess && styles.btnLoadingBg}`}
-          onClick={onClickJoin}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              onClickJoin();
-            }
-          }}
-          role="button"
-          tabIndex={0}
-        >
-          <div className={styles.btnText}>
-            {isLoadingSuccess ? "Join" : <div><span>Loading</span><span className={styles.dotting} /></div>}
-          </div>
-        </div>
-      </div>
-      <div className={styles.version}>Version {version}</div>
-    </section >
-  </div >
+    </>
+  )
 }
-
-export default LoginCard
