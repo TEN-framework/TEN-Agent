@@ -60,6 +60,8 @@ class MiniMaxExtension(Extension):
 
     dump: bool = False
 
+    client: httpx.Client = None
+
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("MiniMaxExtension on_init")
         self.ten_env = ten_env
@@ -117,6 +119,7 @@ class MiniMaxExtension(Extension):
             logger.info(
                 f"GetProperty required {PROPERTY_DUMP} failed, err: {err}")
 
+        self.client = httpx.Client(timeout=httpx.Timeout(5))
 
         self.thread = threading.Thread(target=self.loop)
         self.thread.start()
@@ -127,8 +130,15 @@ class MiniMaxExtension(Extension):
         logger.info("MiniMaxExtension on_stop")
 
         self.stopped = True
+        self._flush()
         self.queue.put(None)
-        self.thread.join()
+        if self.thread:
+            self.thread.join()
+            self.thread = None
+
+        if self.client:
+            self.client.close()
+            self.client = None
 
         ten_env.on_stop_done()
     
@@ -155,11 +165,7 @@ class MiniMaxExtension(Extension):
         logger.info("on_cmd name {}".format(cmd_name))
 
         if cmd_name == "flush":
-            with self.mutex:
-                self.outdate_ts = datetime.now()
-            
-            while not self.queue.empty():
-                self.queue.get()
+            self._flush()
 
             out_cmd = Cmd.create("flush")
             ten_env.send_cmd(
@@ -258,69 +264,69 @@ class MiniMaxExtension(Extension):
         assistant_audio_ttfb = None
         self.transcript = ""
         i = 0
-        with httpx.Client(timeout=httpx.Timeout(5)) as client:
-            try:
-                # 发送 POST 请求
-                with client.stream("POST", url, headers=headers, json=payload) as response:
-                    response.raise_for_status()  # 检查响应状态
-                    for line in response.iter_lines():
-                        # logger.info(f"-> line {line}")
-                        if self._need_interrupt(ts):
-                            logger.warning("interrupted")
-                            if self.transcript:
-                                self.transcript += "[interrupted]"
-                                self._append_message("assistant", self.transcript)
-                                self._send_transcript("", "assistant", True)
-                            break
+        # with httpx.Client(timeout=httpx.Timeout(5)) as client:
+        try:
+            # 发送 POST 请求
+            with self.client.stream("POST", url, headers=headers, json=payload) as response:
+                response.raise_for_status()  # 检查响应状态
+                for line in response.iter_lines():
+                    # logger.info(f"-> line {line}")
+                    if self._need_interrupt(ts):
+                        logger.warning("interrupted")
+                        if self.transcript:
+                            self.transcript += "[interrupted]"
+                            self._append_message("assistant", self.transcript)
+                            self._send_transcript("", "assistant", True)
+                        break
 
-                        if not line.startswith("data:"):
-                            logger.warning(f"ignore line {len(line)}")
-                            continue
+                    if not line.startswith("data:"):
+                        logger.warning(f"ignore line {len(line)}")
+                        continue
 
-                        i+=1
+                    i+=1
 
-                        resp = json.loads(line.strip("data:"))
-                        if resp.get("choices") and resp["choices"][0].get("delta"):
-                            delta = resp["choices"][0]["delta"]
-                            if delta.get("role") == "assistant":
-                                if delta.get("content"):
-                                    content = delta['content']
-                                    self.transcript += content
-                                    logger.info(f"[sse] data chunck-{i} get assistant transcript {content}")
-                                    self._send_transcript(content, "assistant", False)
-                                    if not assistant_transcript_ttfb:
-                                        assistant_transcript_ttfb = self._duration_in_ms_since(start_time)
-                                        logger.info(f"assistant_transcript_ttfb {assistant_transcript_ttfb}ms")
-                                if delta.get("audio_content") and delta["audio_content"] != "":
-                                    logger.info(f"[sse] data chunck-{i} get audio_content")
-                                    base64_str = delta["audio_content"]
-                                    # with open(f"minimax_v2v_data_{i}.txt", "a") as f:
-                                    #     f.write(base64_str)
-                                    buff = base64.b64decode(base64_str)
-                                    self._send_audio_out(buff)
-                                    if not assistant_audio_ttfb:
-                                        assistant_audio_ttfb = self._duration_in_ms_since(start_time)
-                                        logger.info(f"assistant_audio_ttfb {assistant_audio_ttfb}ms")
-                                if delta.get("tool_calls"):
-                                    logger.info(f"ignore tool call {delta}")
-                                    continue
-                            if delta.get("role") == "user":
-                                self._send_transcript(delta['content'], "user", True)
-                                if not user_transcript_ttfb:
-                                    user_transcript_ttfb = self._duration_in_ms_since(start_time)
-                                    logger.info(f"user_transcript_ttfb {user_transcript_ttfb}ms")
+                    resp = json.loads(line.strip("data:"))
+                    if resp.get("choices") and resp["choices"][0].get("delta"):
+                        delta = resp["choices"][0]["delta"]
+                        if delta.get("role") == "assistant":
+                            if delta.get("content"):
+                                content = delta['content']
+                                self.transcript += content
+                                logger.info(f"[sse] data chunck-{i} get assistant transcript {content}")
+                                self._send_transcript(content, "assistant", False)
+                                if not assistant_transcript_ttfb:
+                                    assistant_transcript_ttfb = self._duration_in_ms_since(start_time)
+                                    logger.info(f"assistant_transcript_ttfb {assistant_transcript_ttfb}ms")
+                            if delta.get("audio_content") and delta["audio_content"] != "":
+                                logger.info(f"[sse] data chunck-{i} get audio_content")
+                                base64_str = delta["audio_content"]
+                                # with open(f"minimax_v2v_data_{i}.txt", "a") as f:
+                                #     f.write(base64_str)
+                                buff = base64.b64decode(base64_str)
+                                self._send_audio_out(buff)
+                                if not assistant_audio_ttfb:
+                                    assistant_audio_ttfb = self._duration_in_ms_since(start_time)
+                                    logger.info(f"assistant_audio_ttfb {assistant_audio_ttfb}ms")
+                            if delta.get("tool_calls"):
+                                logger.info(f"ignore tool call {delta}")
+                                continue
+                        if delta.get("role") == "user":
+                            self._send_transcript(delta['content'], "user", True)
+                            if not user_transcript_ttfb:
+                                user_transcript_ttfb = self._duration_in_ms_since(start_time)
+                                logger.info(f"user_transcript_ttfb {user_transcript_ttfb}ms")
 
-            except httpx.TimeoutException:
-                logger.warning("timeout")
-            except httpx.HTTPStatusError as e:
-                logger.warning(f"http status error: {e}")
-            except httpx.RequestError as e:
-                logger.warning(f"request error: {e}")
-            finally:
-                logger.info(f"http loop done, cost_time {self._duration_in_ms_since(start_time)}ms")
-                if self.transcript:
-                    self._append_message("assistant", self.transcript)
-                    self._send_transcript("", "assistant", True)
+        except httpx.TimeoutException:
+            logger.warning("http timeout")
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"http status error: {e}")
+        except httpx.RequestError as e:
+            logger.warning(f"http request error: {e}")
+        finally:
+            logger.info(f"http loop done, cost_time {self._duration_in_ms_since(start_time)}ms")
+            if self.transcript:
+                self._append_message("assistant", self.transcript)
+                self._send_transcript("", "assistant", True)
 
         # for line in response.iter_lines(decode_unicode=True):
         #     if self._need_interrupt(ts):
@@ -418,7 +424,13 @@ class MiniMaxExtension(Extension):
         except:
             logger.exception(
                 f"Error send text data {role}: {content} {is_final}")
-            
+    
+    def _flush(self) -> None:
+        with self.mutex:
+            self.outdate_ts = datetime.now()
+        while not self.queue.empty():
+            self.queue.get()
+
     def _dump_audio_if_need(self, buf: bytearray, suffix: str) -> None:
         if not self.dump:
             return
