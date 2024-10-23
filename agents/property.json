@@ -3197,7 +3197,8 @@
                         "name": "minimax_v2v_python",
                         "property": {
                             "in_sample_rate": 16000,
-                            "token": "${env:MINIMAX_TOKEN}"
+                            "token": "${env:MINIMAX_TOKEN}",
+                            "dump": true
                         }
                     },
                     {

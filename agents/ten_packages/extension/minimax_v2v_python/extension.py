@@ -34,6 +34,7 @@ PROPERTY_OUT_SAMPLE_RATE = "out_sample_rate"
 PROPERTY_MODEL = "model"
 PROPERTY_VOICE_MODEL = "voice_model"
 PROPERTY_VOICE_ID = "voice_id"
+PROPERTY_DUMP = "dump"
 
 class MiniMaxExtension(Extension):
     ten_env:TenEnv = None
@@ -53,6 +54,8 @@ class MiniMaxExtension(Extension):
     prompt:str = "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
     in_sample_rate:int = 16000
     out_sample_rate:int = 32000
+
+    dump: bool = False
 
     def on_init(self, ten_env: TenEnv) -> None:
         logger.info("MiniMaxExtension on_init")
@@ -105,6 +108,13 @@ class MiniMaxExtension(Extension):
             logger.info(
                 f"GetProperty required {PROPERTY_VOICE_ID} failed, err: {err}")
         
+        try:
+            self.dump = ten_env.get_property_bool(PROPERTY_DUMP)
+        except Exception as err:
+            logger.info(
+                f"GetProperty required {PROPERTY_DUMP} failed, err: {err}")
+
+
         self.thread = threading.Thread(target=self.loop)
         self.thread.start()
 
@@ -316,9 +326,8 @@ class MiniMaxExtension(Extension):
                 f"Error send text data {role}: {content} {is_final}")
             
     def _dump_audio_if_need(self, buf: bytearray, suffix: str) -> None:
-        # TODO: add dump property
-        # if not self.dump:
-        #     return
+        if not self.dump:
+            return
 
         with open("{}_{}.pcm".format("minimax_v2v", suffix), "ab") as dump_file:
             dump_file.write(buf)
