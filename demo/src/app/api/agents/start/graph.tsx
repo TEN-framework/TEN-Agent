@@ -42,7 +42,7 @@ export const voiceNameMap: LanguageMap = {
         },
         minimax: {
             male: "junlang_nanyou",
-            female: "female-yujie"
+            female: "danya_xuejie"
         }
     },
     "ja-JP": {
@@ -56,7 +56,7 @@ export const voiceNameMap: LanguageMap = {
         },
         minimax: {
             male: "junlang_nanyou",
-            female: "female-yujie"
+            female: "danya_xuejie"
         }
     },
     "ko-KR": {
@@ -70,7 +70,7 @@ export const voiceNameMap: LanguageMap = {
         },
         minimax: {
             male: "junlang_nanyou",
-            female: "female-yujie"
+            female: "danya_xuejie"
         }
     },
 };
