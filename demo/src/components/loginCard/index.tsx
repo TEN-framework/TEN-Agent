@@ -23,8 +23,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import NextLink from "next/link"
-import { GithubIcon, AnimatedSpinnerIcon } from "@/components/Icon"
+import { GitHubIcon } from "@/components/Icon"
 import { toast } from "sonner"
+import { LoadingButton } from "@/components/Button/LoadingButton"
 
 const { version } = packageData
 
@@ -81,7 +82,7 @@ export default function LoginCard() {
               className="ml-auto w-fit rounded-full bg-transparent px-2 py-1"
             >
               <NextLink href={GITHUB_URL} target="_blank">
-                <GithubIcon className="h-4 w-4" />
+                <GitHubIcon className="h-4 w-4" />
                 <span className="">GitHub</span>
               </NextLink>
             </Button>
@@ -100,15 +101,13 @@ export default function LoginCard() {
               onChange={onUserNameChange}
               disabled={!isLoadingSuccess}
             />
-            <Button
+            <LoadingButton
               onClick={onClickJoin}
               disabled={!isLoadingSuccess || !userName}
+              loading={!isLoadingSuccess}
             >
-              {!isLoadingSuccess && (
-                <AnimatedSpinnerIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-              )}
               {isLoadingSuccess ? "Join" : "Loading"}
-            </Button>
+            </LoadingButton>
           </CardContent>
           <CardFooter className="flex w-full items-center justify-center text-sm text-muted-foreground">
             <p>Version {version}</p>
