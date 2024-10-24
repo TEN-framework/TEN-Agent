@@ -62,8 +62,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.7.1-rc1",
-      "hash": "93deafa3c031257f018a6ce269e416626a85ef8d58b58f4d139bcbce0770fd6f",
+      "version": "0.7.2-rc1",
+      "hash": "23cacffd635f9ccf48395a531240ea6dafc853841e26b09b2660f53844bcaaa3",
       "dependencies": [
         {
           "type": "system",
@@ -130,8 +130,8 @@
     {
       "type": "system",
       "name": "agora_rtc_sdk",
-      "version": "4.1.38+build376742",
-      "hash": "c57acf53d90fbee04d06aa3fd48b0425dd4cca1bee62666c5c01699044b43288",
+      "version": "4.1.39+build397657",
+      "hash": "b2e9f4cfc93e3fb15108fc285b8162ccf36b6d7fd2bbefe4d4374290badf8d4e",
       "supports": [
         {
           "os": "linux",
