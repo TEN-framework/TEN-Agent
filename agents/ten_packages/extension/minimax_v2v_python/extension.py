@@ -268,11 +268,26 @@ class MiniMaxExtension(Extension):
         try:
             # 发送 POST 请求
             with self.client.stream("POST", url, headers=headers, json=payload) as response:
+                trace_id = ""
+                alb_receive_time = ""
+                try:
+                    trace_id = response.headers.get("Trace-Id")
+                except:
+                    logger.warning("Get response, no Trace-Id")
+                try:
+                    alb_receive_time = response.headers.get("alb_receive_time")
+                except:
+                    logger.warning("Get response, no alb_receive_time")
+                logger.info(
+                        f"Get response trace-id: {trace_id}, alb_receive_time: {alb_receive_time}, cost_time {self._duration_in_ms_since(start_time)}ms"
+                    )
+
                 response.raise_for_status()  # 检查响应状态
+
                 for line in response.iter_lines():
                     # logger.info(f"-> line {line}")
                     if self._need_interrupt(ts):
-                        logger.warning("interrupted")
+                        logger.warning(f"trace-id: {trace_id}, interrupted")
                         if self.transcript:
                             self.transcript += "[interrupted]"
                             self._append_message("assistant", self.transcript)
@@ -296,7 +311,7 @@ class MiniMaxExtension(Extension):
                                 self._send_transcript(content, "assistant", False)
                                 if not assistant_transcript_ttfb:
                                     assistant_transcript_ttfb = self._duration_in_ms_since(start_time)
-                                    logger.info(f"assistant_transcript_ttfb {assistant_transcript_ttfb}ms")
+                                    logger.info(f"trace-id: {trace_id}, assistant_transcript_ttfb {assistant_transcript_ttfb}ms")
                             if delta.get("audio_content") and delta["audio_content"] != "":
                                 logger.info(f"[sse] data chunck-{i} get audio_content")
                                 base64_str = delta["audio_content"]
@@ -306,7 +321,7 @@ class MiniMaxExtension(Extension):
                                 self._send_audio_out(buff)
                                 if not assistant_audio_ttfb:
                                     assistant_audio_ttfb = self._duration_in_ms_since(start_time)
-                                    logger.info(f"assistant_audio_ttfb {assistant_audio_ttfb}ms")
+                                    logger.info(f"trace-id: {trace_id}, assistant_audio_ttfb {assistant_audio_ttfb}ms")
                             if delta.get("tool_calls"):
                                 logger.info(f"ignore tool call {delta}")
                                 continue
@@ -314,7 +329,7 @@ class MiniMaxExtension(Extension):
                             self._send_transcript(delta['content'], "user", True)
                             if not user_transcript_ttfb:
                                 user_transcript_ttfb = self._duration_in_ms_since(start_time)
-                                logger.info(f"user_transcript_ttfb {user_transcript_ttfb}ms")
+                                logger.info(f"trace-id: {trace_id}, user_transcript_ttfb {user_transcript_ttfb}ms")
 
         except httpx.TimeoutException:
             logger.warning("http timeout")
