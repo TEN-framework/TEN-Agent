@@ -20,7 +20,7 @@ export const voiceNameMap: LanguageMap = {
         },
         minimax: {
             male: "junlang_nanyou",
-            female: "female-yujie"
+            female: "danya_xuejie"
         }
     },
     "en-US": {
