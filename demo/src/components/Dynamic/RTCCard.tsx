@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { useAppSelector, useAppDispatch, VOICE_OPTIONS } from "@/common"
-import { ITextItem } from "@/types"
+import { ITextItem, EMessageType } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
   setRoomConnected,
@@ -95,7 +95,7 @@ export default function RTCCard(props: { className?: string }) {
         addChatItem({
           userId: text.uid,
           text: text.text,
-          type: isAgent ? "agent" : "user",
+          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
           isFinal: text.isFinal,
           time: text.time,
         }),
