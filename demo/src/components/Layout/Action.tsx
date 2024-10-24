@@ -102,6 +102,10 @@ export default function Action(props: { className?: string }) {
     }
   }
 
+  const onChangeMobileActiveTab = (tab: string) => {
+    dispatch(setMobileActiveTab(tab as EMobileActiveTab))
+  }
+
   return (
     <>
       {/* Action Bar */}
@@ -120,7 +124,11 @@ export default function Action(props: { className?: string }) {
           </span>
         </div>
 
-        <Tabs defaultValue={mobileActiveTab} className="w-[400px] md:hidden">
+        <Tabs
+          defaultValue={mobileActiveTab}
+          className="w-[400px] md:hidden"
+          onValueChange={onChangeMobileActiveTab}
+        >
           <TabsList>
             {Object.values(EMobileActiveTab).map((tab) => (
               <TabsTrigger key={tab} value={tab} className="w-24 text-sm">
@@ -132,6 +140,7 @@ export default function Action(props: { className?: string }) {
 
         {/* -- Action Button */}
         <LoadingButton
+          onClick={onClickConnect}
           variant={!agentConnected ? "default" : "destructive"}
           size="sm"
           className="ml-auto w-fit min-w-24"
