@@ -151,7 +151,7 @@ export const getGraphProperties = (
             "minimax_v2v_python": {
                 "voice_id": voiceNameMap[language]["minimax"][voiceType],
                 ...localizationOptions,
-                "system_message": prompt,
+                "prompt": prompt,
             },
             "agora_rtc": {
                 "agora_asr_language": language,
