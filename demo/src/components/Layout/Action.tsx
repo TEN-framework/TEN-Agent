@@ -107,7 +107,7 @@ export default function Action(props: { className?: string }) {
       {/* Action Bar */}
       <div
         className={cn(
-          "mx-2 mt-2 flex items-center justify-between rounded-t-lg bg-secondary p-2 md:m-2 md:rounded-lg",
+          "mx-2 mt-2 flex items-center justify-between rounded-t-lg bg-[#181a1d] p-2 md:m-2 md:rounded-lg",
           className,
         )}
       >

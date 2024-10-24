@@ -41,12 +41,12 @@ export default function Home() {
 
   return (
     <>
-      <div className="mx-auto flex h-screen flex-col">
-        <Header />
-        <Action className="" />
-        <div className="mx-2 mb-2 flex h-full flex-col md:flex-row md:gap-2">
-          <DynamicRTCCard className="m-0 w-full rounded-b-lg bg-secondary p-4 md:w-[480px] md:rounded-lg" />
-          <ChatCard className="m-0 w-full rounded-b-lg bg-secondary p-4 md:rounded-lg" />
+      <div className="mx-auto flex h-full min-h-screen flex-col md:h-screen">
+        <Header className="h-[60px]" />
+        <Action className="h-[48px]" />
+        <div className="mx-2 mb-2 flex h-full max-h-[calc(100vh-108px-24px)] flex-col md:flex-row md:gap-2">
+          <DynamicRTCCard className="m-0 w-full rounded-b-lg bg-[#181a1d] md:w-[480px] md:rounded-lg" />
+          <ChatCard className="m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg" />
         </div>
       </div>
     </>

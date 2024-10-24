@@ -10,7 +10,7 @@
 
 html,
 body {
-  background-color: #0F0F11;
+  background-color: #0f0f11;
   font-family: "PingFang SC";
   height: 100%;
 }
@@ -30,46 +30,41 @@ a {
   color: #667085 !important;
 }
 
-
 .ant-select-selection-item {
   color: #667085 !important;
 }
 
 .ant-select-selector {
-  border: 1px solid #272A2F !important;
-  background-color: #272A2F !important;
+  border: 1px solid #272a2f !important;
+  background-color: #272a2f !important;
 }
 
 .ant-select-dropdown {
-  background-color: #1E2024 !important;
+  background-color: #1e2024 !important;
 }
 
 .ant-select-item {
-  background: #1E2024 !important;
+  background: #1e2024 !important;
   color: var(--Grey-600, #667085) !important;
 }
 
 .ant-select-item-option-selected {
-  background: #272A2F !important;
-  color: var(--Grey-300, #EAECF0) !important;
+  background: #272a2f !important;
+  color: var(--Grey-300, #eaecf0) !important;
 }
-
 
 .ant-popover-inner {
   /* width: 260px !important; */
-  background: #1E2025 !important;
+  background: #1e2025 !important;
 }
-
 
 .ant-select-selection-placeholder {
   color: var(--Grey-600, #667085) !important;
 }
 
-
 .ant-empty-description {
   color: var(--Grey-600, #667085) !important;
 }
-
 
 @layer base {
   :root {
@@ -127,7 +122,6 @@ a {
   }
 }
 
-
 @layer base {
   * {
     @apply border-border;
@@ -135,4 +129,29 @@ a {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
 }
