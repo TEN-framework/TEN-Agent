@@ -11,6 +11,8 @@ import base64
 import requests
 import json
 import httpx
+import pathlib
+import os
 
 from queue import Queue
 from typing import Iterator, Any, List
@@ -171,6 +173,11 @@ class MiniMaxExtension(Extension):
             ten_env.send_cmd(
                 out_cmd, lambda ten, result: logger.info("send_cmd flush done"),
             )
+        # elif cmd_name == "on_user_joined":
+        #     hello_cn_file = pathlib.Path(__file__).parent.absolute().joinpath("hello_cn.pcm")
+        #     with open(hello_cn_file, "rb") as f:
+        #         content = f.read()
+        #         self.queue.put((datetime.now(), content))
 
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
