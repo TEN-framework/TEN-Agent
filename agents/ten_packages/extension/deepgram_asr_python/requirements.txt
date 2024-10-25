@@ -1,0 +1,1 @@
+deepgram-sdk==3.7.5

@@ -1,0 +1,56 @@
+{
+    "type": "extension",
+    "name": "cartesia_tts",
+    "version": "0.1.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.2"
+        }
+    ],
+    "api": {
+        "property": {
+            "api_key": {
+                "type": "string"
+            },
+            "cartesia_version": {
+                "type": "string"
+            },
+            "model_id": {
+                "type": "string"
+            },
+            "sample_rate": {
+                "type": "string"
+            },
+            "voice_id": {
+                "type": "string"
+            }
+        },
+        "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "flush"
+            }
+        ],
+        "cmd_out": [
+            {
+                "name": "flush"
+            }
+        ],
+        "audio_frame_out": [
+            {
+                "name": "pcm_frame"
+            }
+        ]
+    }
+}
