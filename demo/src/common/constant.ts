@@ -48,6 +48,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
     label: "Voice Agent with OpenAI Realtime API (Beta)",
     value: "va.openai.v2v"
+  },
+  {
+    label: "Voice Agent with OpenAI Realtime API (Beta) with Vision",
+    value: "va.openai.v2v.vision"
   }
 ]
 

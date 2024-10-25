@@ -105,7 +105,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName == "va.openai.v2v") {
+    } else if (graphName == "va.openai.v2v" || graphName == "va.openai.v2v.vision") {
         return {
             "openai_v2v_python": {
                 "model": "gpt-4o-realtime-preview",
