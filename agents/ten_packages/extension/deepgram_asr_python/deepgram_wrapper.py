@@ -5,7 +5,7 @@ from ten import (
     Data
 )
 
-from deepgram import ListenWebSocketClient, DeepgramClientOptions, LiveTranscriptionEvents, LiveOptions
+from deepgram import AsyncListenWebSocketClient, DeepgramClientOptions, LiveTranscriptionEvents, LiveOptions
 
 from .log import logger
 from .deepgram_config import DeepgramConfig
@@ -34,25 +34,26 @@ class AsyncDeepgramWrapper():
         self.stream_id = 0
 
         logger.info(f"init deepgram client with api key: {config.api_key[:5]}")
-        self.deepgram_client = ListenWebSocketClient(config=DeepgramClientOptions(
+        self.deepgram_client = AsyncListenWebSocketClient(config=DeepgramClientOptions(
             api_key=config.api_key,
+            options={"keepalive": "true"}
         ))
 
-        self.start(ten)
         asyncio.set_event_loop(self.loop)
+        self.loop.create_task(self.start_listen(ten))
 
-    def start(self, ten:TenEnv) -> None:
-        logger.info(f"start deepgram")
+    async def start_listen(self, ten:TenEnv) -> None:
+        logger.info(f"start and listen deepgram")
 
         super = self
 
-        def on_open(self, open, **kwargs):
-            logger.info(f"deepgram on_open: {open}")
+        async def on_open(self, open, **kwargs):
+            logger.info(f"deepgram event callback on_open: {open}")
 
-        def on_close(self, close, **kwargs):
-            logger.info(f"deepgram on_close: {close}")
+        async def on_close(self, close, **kwargs):
+            logger.info(f"deepgram event callback on_close: {close}")
 
-        def on_message(self, result, **kwargs):
+        async def on_message(self, result, **kwargs):
             sentence = result.channel.alternatives[0].transcript
 
             if len(sentence) == 0:
@@ -63,8 +64,8 @@ class AsyncDeepgramWrapper():
 
             create_and_send_data(ten=ten, text_result=sentence, is_final=is_final, stream_id=super.stream_id)
 
-        def on_error(self, error, **kwargs):
-            logger.error(f"deepgram on_error: {error}")
+        async def on_error(self, error, **kwargs):
+            logger.error(f"deepgram event callback on_error: {error}")
 
         self.deepgram_client.on(LiveTranscriptionEvents.Open, on_open)
         self.deepgram_client.on(LiveTranscriptionEvents.Close, on_close)
@@ -79,11 +80,11 @@ class AsyncDeepgramWrapper():
                               interim_results=self.config.interim_results,
                               punctuate=self.config.punctuate)
         # connect to websocket
-        if self.deepgram_client.start(options) is False:
-            logger.error(f"failed to connect to Deepgram")
+        if await self.deepgram_client.start(options) is False:
+            logger.error(f"failed to connect to deepgram")
             return
 
-        logger.info(f"successfully connected to Deepgram")
+        logger.info(f"successfully connected to deepgram")
 
     async def send_frame(self) -> None:
         while not self.stopped:
@@ -100,9 +101,9 @@ class AsyncDeepgramWrapper():
                     continue
 
                 self.stream_id = pcm_frame.get_property_int('stream_id')
-                self.deepgram_client.send(frame_buf)
+                await self.deepgram_client.send(frame_buf)
                 self.queue.task_done()
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 logger.exception(f"error in send_frame: {e}")
             except IOError as e:
                 logger.exception(f"error in send_frame: {e}")
@@ -117,8 +118,6 @@ class AsyncDeepgramWrapper():
             await self.send_frame()
         except Exception as e:
             logger.exception(e)
-        finally:
-            await self.cleanup()
 
     def run(self) -> None:
         self.loop.run_until_complete(self.deepgram_loop())
