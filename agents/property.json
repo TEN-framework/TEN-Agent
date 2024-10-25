@@ -2679,7 +2679,8 @@
                             "subscribe_video": true,
                             "publish_audio": true,
                             "publish_data": true,
-                            "subscribe_audio_sample_rate": 24000
+                            "subscribe_audio_sample_rate": 24000,
+                            "subscribe_video_pix_fmt": 4
                         }
                     },
                     {
