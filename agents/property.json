@@ -3,26 +3,22 @@
         "log_level": 3,
         "predefined_graphs": [
             {
-                "name": "va.openai.azure.fashionai",
-                "auto_start": true,
+                "name": "va_openai_azure_fashionai",
+                "auto_start": false,
                 "connections": [
                     {
-                        "app": "localhost",
                         "data": [
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "interrupt_detector",
                                         "extension_group": "default"
                                     },
                                     {
-                                        "app": "localhost",
                                         "extension": "openai_chatgpt",
                                         "extension_group": "chatgpt"
                                     },
                                     {
-                                        "app": "localhost",
                                         "extension": "message_collector",
                                         "extension_group": "transcriber"
                                     }
@@ -34,17 +30,14 @@
                         "extension_group": "default"
                     },
                     {
-                        "app": "localhost",
                         "cmd": [
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "azure_tts",
                                         "extension_group": "tts"
                                     },
                                     {
-                                        "app": "localhost",
                                         "extension": "fashionai",
                                         "extension_group": "default"
                                     }
@@ -56,12 +49,10 @@
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "message_collector",
                                         "extension_group": "transcriber"
                                     },
                                     {
-                                        "app": "localhost",
                                         "extension": "fashionai",
                                         "extension_group": "default"
                                     }
@@ -73,12 +64,10 @@
                         "extension_group": "chatgpt"
                     },
                     {
-                        "app": "localhost",
                         "audio_frame": [
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "agora_rtc",
                                         "extension_group": "default"
                                     }
@@ -90,7 +79,6 @@
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "agora_rtc",
                                         "extension_group": "default"
                                     }
@@ -102,12 +90,10 @@
                         "extension_group": "tts"
                     },
                     {
-                        "app": "localhost",
                         "data": [
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "agora_rtc",
                                         "extension_group": "default"
                                     }
@@ -119,12 +105,10 @@
                         "extension_group": "transcriber"
                     },
                     {
-                        "app": "localhost",
                         "cmd": [
                             {
                                 "dest": [
                                     {
-                                        "app": "localhost",
                                         "extension": "openai_chatgpt",
                                         "extension_group": "chatgpt"
                                     }
@@ -139,7 +123,6 @@
                 "nodes": [
                     {
                         "addon": "agora_rtc",
-                        "app": "localhost",
                         "extension_group": "default",
                         "name": "agora_rtc",
                         "property": {
@@ -162,14 +145,12 @@
                     },
                     {
                         "addon": "interrupt_detector",
-                        "app": "localhost",
                         "extension_group": "default",
                         "name": "interrupt_detector",
                         "type": "extension"
                     },
                     {
                         "addon": "openai_chatgpt",
-                        "app": "localhost",
                         "extension_group": "chatgpt",
                         "name": "openai_chatgpt",
                         "property": {
@@ -187,7 +168,6 @@
                     },
                     {
                         "addon": "azure_tts",
-                        "app": "localhost",
                         "extension_group": "tts",
                         "name": "azure_tts",
                         "property": {
@@ -199,14 +179,12 @@
                     },
                     {
                         "addon": "message_collector",
-                        "app": "localhost",
                         "extension_group": "transcriber",
                         "name": "message_collector",
                         "type": "extension"
                     },
                     {
                         "addon": "fashionai",
-                        "app": "localhost",
                         "extension_group": "default",
                         "name": "fashionai",
                         "property": {
@@ -221,7 +199,7 @@
                 ]
             },
             {
-                "name": "va.openai.azure",
+                "name": "va_openai_azure",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -285,26 +263,6 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
                     }
                 ],
                 "connections": [
@@ -420,7 +378,7 @@
                 ]
             },
             {
-                "name": "va.openai.11labs",
+                "name": "va_openai_11labs",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -490,26 +448,6 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
                     }
                 ],
                 "connections": [
@@ -625,7 +563,7 @@
                 ]
             },
             {
-                "name": "va.openai.fish",
+                "name": "va_openai_fish",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -675,6 +613,12 @@
                     },
                     {
                         "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    },
+                    {
+                        "type": "extension",
                         "extension_group": "tts",
                         "addon": "fish_audio_tts",
                         "name": "fish_audio_tts",
@@ -685,32 +629,6 @@
                             "request_timeout_seconds": 30,
                             "base_url": "https://api.fish.audio"
                         }
-                    },
-                    {
-                        "type": "extension",
-                        "extension_group": "transcriber",
-                        "addon": "message_collector",
-                        "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
                     }
                 ],
                 "connections": [
@@ -826,7 +744,7 @@
                 ]
             },
             {
-                "name": "va.bedrock.azure",
+                "name": "va_bedrock_azure",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -883,21 +801,6 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "bedrock"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
                     }
                 ],
                 "connections": [
@@ -990,7 +893,7 @@
                 ]
             },
             {
-                "name": "va.openai.cosy",
+                "name": "va_openai_cosy",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -1055,26 +958,6 @@
                         "extension_group": "chat_transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chat_transcriber"
                     }
                 ],
                 "connections": [
@@ -1210,7 +1093,7 @@
                 ]
             },
             {
-                "name": "va.qwen.cosy",
+                "name": "va_qwen_cosy",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -1271,26 +1154,6 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "llm"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chat_transcriber"
                     }
                 ],
                 "connections": [
@@ -1413,7 +1276,7 @@
                 ]
             },
             {
-                "name": "va.bedrock.polly",
+                "name": "va_bedrock_polly",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -1474,21 +1337,6 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "bedrock"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
                     }
                 ],
                 "connections": [
@@ -1581,7 +1429,7 @@
                 ]
             },
             {
-                "name": "va.transcribe-bedrock.polly",
+                "name": "va_transcribe_bedrock_polly",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -1655,26 +1503,6 @@
                         "extension_group": "default",
                         "addon": "interrupt_detector_python",
                         "name": "interrupt_detector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "bedrock"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "asr"
                     }
                 ],
                 "connections": [
@@ -1811,8 +1639,8 @@
                 ]
             },
             {
-                "name": "camera.va.openai.azure",
-                "auto_start": true,
+                "name": "camera_va_openai_azure",
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1879,26 +1707,6 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
                     }
                 ],
                 "connections": [
@@ -2045,7 +1853,7 @@
                 ]
             },
             {
-                "name": "va.gemini.azure",
+                "name": "va_gemini_azure",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -2109,26 +1917,6 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "llm"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "transcriber"
                     }
                 ],
                 "connections": [
@@ -2244,7 +2032,7 @@
                 ]
             },
             {
-                "name": "va.qwen.rag",
+                "name": "va_qwen_rag",
                 "auto_start": false,
                 "nodes": [
                     {
@@ -2619,8 +2407,8 @@
                 ]
             },
             {
-                "name": "va.openai.v2v",
-                "auto_start": false,
+                "name": "va_openai_v2v",
+                "auto_start": true,
                 "nodes": [
                     {
                         "type": "extension",
@@ -2862,7 +2650,7 @@
                 ]
             },
             {
-                "name": "va.openai.v2v.fish",
+                "name": "va_openai_v2v_fish",
                 "auto_start": false,
                 "nodes": [
                     {
