@@ -1,0 +1,27 @@
+{
+  "type": "extension",
+  "name": "minimax_v2v_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.3.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "token": {
+        "type": "string"
+      }
+    }
+  }
+}
