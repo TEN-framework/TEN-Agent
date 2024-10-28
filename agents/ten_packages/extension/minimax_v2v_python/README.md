@@ -1,16 +1,20 @@
-# minimax_v2v_python
+# MiniMax Voice-to-Voice Extension
 
-<!-- brief introduction for the extension -->
+A TEN extension that implements voice-to-voice conversation capabilities using MiniMax's API services.
 
 ## Features
 
-<!-- main features introduction -->
+- Real-time voice-to-voice conversation
+- Support for streaming responses including assistant's voice, assisntant's transcript, and user's transcript
+- Configurable voice settings
+- Memory management for conversation context
+- Asynchronous processing based on asyncio
 
-- xxx feature
 
 ## API
 
-Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
+Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).      
+`token` is mandatory to use MiniMax's API, others are optional.     
 
 <!-- Additional API.md can be referred to if extra introduction needed -->
 
@@ -27,3 +31,6 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 ## Misc
 
 <!-- others if applicable -->
+
+## References
+- [ChatCompletion v2](https://platform.minimaxi.com/document/ChatCompletion%20v2?key=66701d281d57f38758d581d0#ww1u9KZvwrgnF2EfpPrnHHGd)
