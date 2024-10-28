@@ -1,6 +1,6 @@
 import { IOptions, IChatItem, Language, VoiceType } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList } from "@/common"
+import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, setOverridenPropertiesToLocal } from "@/common"
 
 export interface InitialState {
   options: IOptions
@@ -13,6 +13,7 @@ export interface InitialState {
   graphName: string,
   graphs: string[],
   extensions: Record<string, any>,
+  overridenProperties: Record<string, any>,
   extensionMetadata: Record<string, any>
 }
 
@@ -28,8 +29,19 @@ const getInitialState = (): InitialState => {
     graphName: "camera.va.openai.azure",
     graphs: [],
     extensions: {},
+    overridenProperties: {},
     extensionMetadata: {},
   }
+}
+
+function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+  for (const key of Object.keys(source)) {
+    if (source[key] instanceof Object && key in target) {
+      Object.assign(source[key], deepMerge(target[key], source[key]));
+    }
+  }
+  // Merge source into target
+  return { ...target, ...source };
 }
 
 export const globalSlice = createSlice({
@@ -100,6 +112,15 @@ export const globalSlice = createSlice({
       let { graphName, nodesMap } = action.payload
       state.extensions[graphName] = nodesMap
     },
+    setOverridenProperties: (state, action: PayloadAction<Record<string, any>>) => {
+      let { properties } = action.payload
+      state.overridenProperties = properties
+    },
+    setOverridenPropertiesByGraph: (state, action: PayloadAction<Record<string, any>>) => {
+      let { graphName, nodesMap } = action.payload
+      state.overridenProperties[graphName] = deepMerge(state.overridenProperties[graphName] || {}, nodesMap)
+      setOverridenPropertiesToLocal(state.overridenProperties)
+    },
     setExtensionMetadata: (state, action: PayloadAction<Record<string, any>>) => {
       state.extensionMetadata = action.payload
     },
@@ -115,7 +136,7 @@ export const globalSlice = createSlice({
 
 export const { reset, setOptions,
   setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage, setGraphName, setGraphs, setExtensions, setExtensionMetadata } =
+  addChatItem, setThemeColor, setLanguage, setGraphName, setGraphs, setExtensions, setExtensionMetadata, setOverridenProperties, setOverridenPropertiesByGraph } =
   globalSlice.actions
 
 export default globalSlice.reducer

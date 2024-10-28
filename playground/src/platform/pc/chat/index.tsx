@@ -12,7 +12,7 @@ import {
   useGraphExtensions,
   apiGetExtensionMetadata,
 } from "@/common"
-import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions } from "@/store/reducers/global"
+import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph } from "@/store/reducers/global"
 import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
@@ -31,6 +31,7 @@ const Chat = () => {
   const [modal2Open, setModal2Open] = useState(false)
   const graphExtensions = useGraphExtensions()
   const extensionMetadata = useAppSelector(state => state.global.extensionMetadata)
+  const overridenProperties = useAppSelector(state => state.global.overridenProperties)
 
 
   // const chatItems = genRandomChatList(10)
@@ -109,9 +110,10 @@ const Chat = () => {
             initialData={node["property"] || {}}
             metadata={metadata ? metadata.api.property : {}}
             onUpdate={(data) => {
-              let nodesMap = JSON.parse(JSON.stringify(graphExtensions))
-              nodesMap[key]["property"] = data
-              dispatch(setExtensions({ graphName, nodesMap }))
+              // clone the overridenProperties
+              let nodesMap = JSON.parse(JSON.stringify(overridenProperties[graphName] || {}))
+              nodesMap[key] = data
+              dispatch(setOverridenPropertiesByGraph({ graphName, nodesMap }))
             }}
           ></EditableTable>
         }
