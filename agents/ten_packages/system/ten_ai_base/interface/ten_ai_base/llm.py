@@ -54,6 +54,7 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
                 tool_metadata = TenLLMToolMetadata.model_validate_json(tool_metadata_json)
                 async with self.available_tools_lock:
                     self.available_tools.append(tool_metadata)
+                await self.on_tools_update(async_ten_env, tool_metadata)
                 async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
         except Exception as err:
             async_ten_env.log_warn(f"on_cmd failed: {err}")
@@ -96,6 +97,10 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
 
     @abstractmethod
     async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMDataCompletionArgs) -> None:
+        pass
+
+    @abstractmethod
+    async def on_tools_update(self, ten_env: TenEnv, tool: TenLLMToolMetadata) -> None:
         pass
 
     async def _process_queue(self, ten_env: TenEnv):

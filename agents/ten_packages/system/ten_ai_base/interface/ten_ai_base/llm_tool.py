@@ -74,6 +74,5 @@ class TenLLMToolBaseExtension(AsyncExtension, ABC):
         pass
 
     @abstractmethod
-    def run_tool(self, name: str, args: dict) -> TenLLMToolResult:
+    async def run_tool(self, name: str, args: dict) -> TenLLMToolResult:
         pass
-    

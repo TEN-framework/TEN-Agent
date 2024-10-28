@@ -14,7 +14,7 @@ from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
 from ten_ai_base.llm import TenLLMBaseExtension
-from ten_ai_base.types import TenLLMCallCompletionArgs, TenLLMCompletionContentItemAudio, TenLLMCompletionContentItemImage, TenLLMCompletionContentItemText, TenLLMCompletionContentItem, TenLLMDataCompletionArgs, TenLLMToolResult
+from ten_ai_base.types import TenLLMCallCompletionArgs, TenLLMCompletionContentItemAudio, TenLLMCompletionContentItemImage, TenLLMCompletionContentItemText, TenLLMCompletionContentItem, TenLLMDataCompletionArgs, TenLLMToolMetadata, TenLLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -162,6 +162,9 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
 
         # Start an asynchronous task for handling chat completion
         await self.queue_input_item(False, content=[TenLLMCompletionContentItemText(text=input_text)])
+
+    async def on_tools_update(self, ten_env: TenEnv, tool: TenLLMToolMetadata) -> None:
+        return await super().on_tools_update(ten_env, tool)
 
     async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMCallCompletionArgs) -> None:
         return await super().on_call_chat_completion(ten_env, **kargs)
