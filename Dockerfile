@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.2.0 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.2.1 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
