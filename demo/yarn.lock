@@ -5,6 +5,19 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@agora-js/media@npm:4.22.0":
+  version: 4.22.0
+  resolution: "@agora-js/media@npm:4.22.0"
+  dependencies:
+    "@agora-js/report": "npm:4.22.0"
+    "@agora-js/shared": "npm:4.22.0"
+    agora-rte-extension: "npm:^1.2.4"
+    axios: "npm:^1.6.8"
+    webrtc-adapter: "npm:8.2.0"
+  checksum: 10c0/d0660720be326fde999eb96d23b6641324d0872a76cd9263b7aacfcc967bf4e7f936e3e2b8e39b3bcbdf7804e31375ee90afc83d49478f76b46fc33eb56a732f
+  languageName: node
+  linkType: hard
+
 "@agora-js/media@npm:4.22.1":
   version: 4.22.1
   resolution: "@agora-js/media@npm:4.22.1"
@@ -18,6 +31,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@agora-js/report@npm:4.22.0":
+  version: 4.22.0
+  resolution: "@agora-js/report@npm:4.22.0"
+  dependencies:
+    "@agora-js/shared": "npm:4.22.0"
+    axios: "npm:^1.6.8"
+  checksum: 10c0/2361213e97d5a308d6e112c704a3c554df239c38b5392e05f8051478b4b9cac63aa00a71c2060a7e0e652f896c3cb4739b983bdc554800b861f788eb5d78d04a
+  languageName: node
+  linkType: hard
+
 "@agora-js/report@npm:4.22.1":
   version: 4.22.1
   resolution: "@agora-js/report@npm:4.22.1"
@@ -25,6 +48,16 @@ __metadata:
     "@agora-js/shared": "npm:4.22.1"
     axios: "npm:^1.7.7"
   checksum: 10c0/f80c312ecb1463df805351f2c5e03208c757521e8fa1fa3a536d8d53ae51cf1151d28d9a6d93cf13a7f839781dcbd1c4ed4e34fe06e905254fd4828e7226ef9c
+  languageName: node
+  linkType: hard
+
+"@agora-js/shared@npm:4.22.0":
+  version: 4.22.0
+  resolution: "@agora-js/shared@npm:4.22.0"
+  dependencies:
+    axios: "npm:^1.6.8"
+    ua-parser-js: "npm:^0.7.34"
+  checksum: 10c0/491082f342bab5e9de4b1d7639c064860b7a79cf95412299fe31ca59d17780f7e0b72322142812b16b9da9c553bf04838ccba0d63c2a7c7fc0c6b0f1d6c37fae
   languageName: node
   linkType: hard
 
@@ -3106,6 +3139,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"agora-rtc-sdk-ng@npm:4.22.0":
+  version: 4.22.0
+  resolution: "agora-rtc-sdk-ng@npm:4.22.0"
+  dependencies:
+    "@agora-js/media": "npm:4.22.0"
+    "@agora-js/report": "npm:4.22.0"
+    "@agora-js/shared": "npm:4.22.0"
+    agora-rte-extension: "npm:^1.2.4"
+    axios: "npm:^1.6.8"
+    formdata-polyfill: "npm:^4.0.7"
+    pako: "npm:^2.1.0"
+    ua-parser-js: "npm:^0.7.34"
+    webrtc-adapter: "npm:8.2.0"
+  checksum: 10c0/05f25546415b2e6e325b2d8361b8d3e6e94ecf92f4b90fcfbe7b5f0292f9b1d391d5e631df191ca49afcf87a603d86c0b428ba0745cb5f912b37e945209317cb
+  languageName: node
+  linkType: hard
+
 "agora-rtc-sdk-ng@npm:^4.21.0":
   version: 4.22.1
   resolution: "agora-rtc-sdk-ng@npm:4.22.1"
@@ -3127,6 +3177,18 @@ __metadata:
   version: 1.2.4
   resolution: "agora-rte-extension@npm:1.2.4"
   checksum: 10c0/64623ce8abcdcf4e0ca8e3846accd31ab4f3f3ee12bfa8814ae7ef3b29b26928ca9ec7c721395b2d2bc3ae482b53b983867d76c0718105641852ae6b899420a4
+  languageName: node
+  linkType: hard
+
+"agora-rtm@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "agora-rtm@npm:2.2.0"
+  dependencies:
+    agora-rtc-sdk-ng: "npm:4.22.0"
+  dependenciesMeta:
+    agora-rtc-sdk-ng:
+      optional: true
+  checksum: 10c0/637a949e94ccad4595b0e671009e86eebcc52eba8a77790e81d78e893a8a8f92fccec9ebeb0a64cec89d9b9df32e08f8a709053e44695939726da6bab6e3306b
   languageName: node
   linkType: hard
 
@@ -3457,7 +3519,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.7.7":
+"axios@npm:^1.6.8, axios@npm:^1.7.7":
   version: 1.7.7
   resolution: "axios@npm:1.7.7"
   dependencies:
@@ -8518,6 +8580,7 @@ __metadata:
     "@types/react-dom": "npm:^18"
     "@types/react-redux": "npm:^7.1.22"
     agora-rtc-sdk-ng: "npm:^4.21.0"
+    agora-rtm: "npm:^2.2.0"
     antd: "npm:^5.21.4"
     autoprefixer: "npm:^10.4.20"
     axios: "npm:^1.7.7"

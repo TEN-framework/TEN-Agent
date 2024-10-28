@@ -31,12 +31,29 @@ export interface IChatItem {
   time: number
 }
 
+/** @deprecated */
 export interface ITextItem {
   dataType: "transcribe" | "translate"
   uid: string
   time: number
   text: string
   isFinal: boolean
+}
+
+export enum ERTMTextType {
+  TRANSCRIBE = "transcribe",
+  TRANSLATE = "translate",
+  INPUT_TEXT = "input_text",
+  INPUT_IMAGE = "input_image",
+  INPUT_AUDIO = "input_audio",
+  INPUT_FILE = "input_file",
+}
+
+export interface IRTMTextItem {
+  is_final: boolean
+  type: ERTMTextType
+  ts: number
+  text: string
 }
 
 export interface GraphOptionItem {

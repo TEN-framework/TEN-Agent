@@ -14,6 +14,7 @@ import { setGraphName, setLanguage } from "@/store/reducers/global"
 import MessageList from "@/components/Chat/MessageList"
 import { Button } from "@/components/ui/button"
 import { Send } from "lucide-react"
+import { rtmManager } from "@/manager/rtm"
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props
@@ -34,7 +35,7 @@ export default function ChatCard(props: { className?: string }) {
           </div>
           {/* Chat messages would go here */}
           <MessageList />
-          <div className="hidden border-t pt-4">
+          <div className="border-t pt-4">
             <form
               onSubmit={(e) => {
                 e.preventDefault()

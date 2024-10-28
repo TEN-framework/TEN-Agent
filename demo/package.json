@@ -23,6 +23,7 @@
     "@radix-ui/react-tooltip": "^1.1.3",
     "@reduxjs/toolkit": "^2.2.3",
     "agora-rtc-sdk-ng": "^4.21.0",
+    "agora-rtm": "^2.2.0",
     "antd": "^5.21.4",
     "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
