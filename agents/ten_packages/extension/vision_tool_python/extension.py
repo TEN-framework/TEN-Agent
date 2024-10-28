@@ -3,19 +3,19 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ..ten_ai_base.extension import TenLLMToolBaseExtension, TenLLMToolMetadata, TenLLMToolResult, TenLLMToolResultItem
+from ten_ai_base.llm_tool import TenLLMToolBaseExtension, TenLLMToolMetadata, TenLLMToolResult
 from ten import (
     AudioFrame,
     VideoFrame,
     TenEnv,
     Cmd,
-    StatusCode,
-    CmdResult,
     Data,
 )
 from PIL import Image
 from io import BytesIO
 from base64 import b64encode
+
+from ten_ai_base.types import TenLLMCompletionContentItemImage
 
 
 def rgb2base64jpeg(rgb_data, width, height):
@@ -144,5 +144,5 @@ class VisionToolExtension(TenLLMToolBaseExtension):
                 raise Exception("No image data available")
 
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
-            result = TenLLMToolResultItem(type="image", data=base64_image)
+            result = TenLLMCompletionContentItemImage(image=base64_image)
             return TenLLMToolResult(items=[result])

@@ -14,7 +14,7 @@
 		{
 			"label": "start app",
 			"type": "shell",
-			"command": "export TEN_ENABLE_PYTHON_DEBUG=true; export TEN_PYTHON_DEBUG_PORT=5678; ./agents/bin/start",
+			"command": "export TEN_ENABLE_PYTHON_DEBUG=true; export TEN_PYTHON_DEBUG_PORT=5678; export PYTHONPATH=/app/agents/ten_packages/system/ten_ai_base/interface:$PYTHONPATH; ./agents/bin/start",
 			"group": "none",
 			"isBackground": true
 		},

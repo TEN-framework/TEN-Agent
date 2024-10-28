@@ -10,20 +10,20 @@ import json
 import traceback
 
 from ten.async_ten_env import AsyncTenEnv
-from ..ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
+from ten.ten_env import TenEnv
+from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
+from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
+from ten_ai_base.llm import TenLLMBaseExtension
+from ten_ai_base.types import TenLLMCallCompletionArgs, TenLLMCompletionContentItemAudio, TenLLMCompletionContentItemImage, TenLLMCompletionContentItemText, TenLLMCompletionContentItem, TenLLMDataCompletionArgs, TenLLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
-    TenEnv,
     Cmd,
     StatusCode,
     CmdResult,
     Data,
 )
-from ..ten_ai_base.extension import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, TenLLMAudioCompletionArgs, TenLLMBaseExtension, TenLLMDataType, TenLLMTextCompletionArgs, TenLLMToolResult
-
-from .log import logger
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
@@ -158,19 +158,20 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
             ten_env.log_warn("ignore empty text")
             return
 
-        ten_env.log_debug(f"OnData input text: [{input_text}]")
+        ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        await self.queue_input_item(TenLLMDataType.TEXT, [{
-            "type": "text",
-            "text": input_text,
-        }])
+        await self.queue_input_item(False, content=[TenLLMCompletionContentItemText(text=input_text)])
 
-    async def on_audio_completion(self, ten_env: AsyncTenEnv, message: any, **kargs: TenLLMAudioCompletionArgs) -> None:
-        return await super().on_audio_completion(ten_env, message, **kargs)
+    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMCallCompletionArgs) -> None:
+        return await super().on_call_chat_completion(ten_env, **kargs)
 
-    async def on_text_completion(self, ten_env: AsyncTenEnv, content: any, **kargs: TenLLMTextCompletionArgs) -> None:
+    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMDataCompletionArgs) -> None:
         """Run the chatflow asynchronously."""
+        kcontent = kargs.get("content", [])
+        content = []
+        for item in kcontent:
+            content.append(self._contentItem_to_dict(ten_env, item))
         memory_cache = []
         memory = self.memory
         try:
@@ -216,18 +217,10 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
                         result: CmdResult = await ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result = TenLLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
-                            logger.info(f"tool_result: {tool_result}")
-                            content = []
-                            for item in tool_result.items:
-                                if item.type == "text":
-                                    content.append({"type": "text", "text": item.data})
-                                elif item.type == "image":
-                                    content.append({"type": "image_url", "image_url": {"url": item.data}})
-                                else:
-                                    logger.warning(f"Unknown tool result type: {item.type}")
-                            await self.queue_input_item(TenLLMDataType.TEXT, content, True)
+                            ten_env.log_info(f"tool_result: {tool_result}")
+                            await self.queue_input_item(True, content=tool_result.items)
                         else:
-                            logger.error(f"Tool call failed: {result.get_property_to_json('error')}")
+                            ten_env.log_error(f"Tool call failed: {result.get_property_to_json('error')}")
 
             async def handle_content_update(content: str):
                 # Append the content to the last assistant message
@@ -259,13 +252,25 @@ class OpenAIChatGPTExtension(TenLLMBaseExtension):
         except asyncio.CancelledError:
             ten_env.log_info(f"Task cancelled: {content}")
         except Exception as e:
-            logger.error(
+            ten_env.log_error(
                 f"Error in chat_completion: {traceback.format_exc()} for input text: {content}")
         finally:
             self.send_text_output(ten_env, "", True)
             # always append the memory
             for m in memory_cache:
                 self._append_memory(m)
+
+    def _contentItem_to_dict(self, ten_env: TenEnv , item: TenLLMCompletionContentItem):
+        if isinstance(item, TenLLMCompletionContentItemText):
+            return {"type": "text", "text": item.text}
+        elif isinstance(item, TenLLMCompletionContentItemImage):
+            return {"type": "image_url", "image_url": {"url": item.image}}
+        elif isinstance(item, TenLLMCompletionContentItemAudio):
+            return {"type": "audio_url", "audio_url": {"url": item.audio}}
+        else:
+            ten_env.log_warn(f"Unknown content item type")
+            return None
+
 
     def _append_memory(self, message: str):
         if len(self.memory) > self.max_memory_length:
