@@ -74,7 +74,7 @@ class MinimaxV2VExtension(AsyncExtension):
         super().__init__(name)
 
         self.config = MinimaxV2VConfig()
-        self.client = httpx.Client(timeout=httpx.Timeout(5))
+        self.client = httpx.AsyncClient(timeout=httpx.Timeout(5))
         self.memory = ChatMemory(self.config.max_memory_length)
         self.remote_stream_id = 0
         self.ten_env = None
@@ -100,6 +100,9 @@ class MinimaxV2VExtension(AsyncExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
 
+        if self.client:
+            await self.client.aclose()
+            self.client = None
         self.ten_env = None
         ten_env.on_deinit_done()
 
@@ -111,11 +114,10 @@ class MinimaxV2VExtension(AsyncExtension):
             # process cmd
             match cmd_name:
                 case "flush":
-                    ten_env.log_info("flush")
                     # await self._cancel_all_tasks()
                     # TODO: cancel current task
-                    await ten_env.send_cmd(Cmd.create("flush"), None)
-                    ten_env.log_info("cmd flush sent")
+                    _result = await ten_env.send_cmd(Cmd.create("flush"))
+                    ten_env.log_info("flush done")
                 case _:
                     pass
             ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
@@ -147,6 +149,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
             # process audio frame, must be after vad
             await self._complete_with_history(ts, frame_buf)
+            ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id} done")
         except asyncio.CancelledError:
             ten_env.log_warn(f"on audio frame cancelled")
             raise
@@ -192,7 +195,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
         try:
             # send POST request
-            with self.client.stream(
+            async with self.client.stream(
                 "POST", url, headers=headers, json=payload
             ) as response:
                 trace_id = response.headers.get("Trace-Id", "")
@@ -204,7 +207,7 @@ class MinimaxV2VExtension(AsyncExtension):
                 response.raise_for_status()  # check response
 
                 i = 0
-                for line in response.iter_lines():
+                async for line in response.aiter_lines():
                     # logger.info(f"-> line {line}")
                     # if self._need_interrupt(ts):
                     #     ten_env.log_warn(f"trace-id: {trace_id}, interrupted")
