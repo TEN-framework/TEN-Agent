@@ -79,9 +79,14 @@ class MinimaxV2VExtension(AsyncExtension):
         self.remote_stream_id = 0
         self.ten_env = None
 
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_init")
+        # able to cancel
+        self.curr_task = None   
 
+        # make sure tasks processing in order
+        self.process_input_task = None
+        self.queue = asyncio.Queue()
+
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.config.read_from_property(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
@@ -90,11 +95,19 @@ class MinimaxV2VExtension(AsyncExtension):
         ten_env.on_init_done()
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        self.process_input_task = asyncio.create_task(self._process_input(ten_env=ten_env, queue=self.queue), name="process_input")
+
         ten_env.on_start_done()
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+
+        await self._flush(ten_env=ten_env)
+        self.queue.put_nowait(None)
+        if self.process_input_task:
+            self.process_input_task.cancel()
+            await asyncio.gather(self.process_input_task, return_exceptions=True)
+            self.process_input_task = None
+
         ten_env.on_stop_done()
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -114,10 +127,9 @@ class MinimaxV2VExtension(AsyncExtension):
             # process cmd
             match cmd_name:
                 case "flush":
-                    # await self._cancel_all_tasks()
-                    # TODO: cancel current task
+                    await self._flush(ten_env=ten_env)
                     _result = await ten_env.send_cmd(Cmd.create("flush"))
-                    ten_env.log_info("flush done")
+                    ten_env.log_debug("flush done")
                 case _:
                     pass
             ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
@@ -145,11 +157,16 @@ class MinimaxV2VExtension(AsyncExtension):
 
             frame_buf = audio_frame.get_buf()
             ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id}")
-            await self._dump_audio_if_need(frame_buf, "in")
 
             # process audio frame, must be after vad
-            await self._complete_with_history(ts, frame_buf)
-            ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id} done")
+            # put_nowait to make sure put in_order
+            self.queue.put_nowait((ts, frame_buf))
+            # await self._complete_with_history(ts, frame_buf)
+
+            # dump input audio if need
+            await self._dump_audio_if_need(frame_buf, "in")
+            
+            # ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id} put done")
         except asyncio.CancelledError:
             ten_env.log_warn(f"on audio frame cancelled")
             raise
@@ -161,9 +178,33 @@ class MinimaxV2VExtension(AsyncExtension):
     ) -> None:
         pass
 
+    async def _process_input(self, ten_env: AsyncTenEnv, queue: asyncio.Queue):
+        ten_env.log_info("process_input started")
+
+        while True:
+            item = await queue.get()
+            if not item:
+                break
+
+            (ts, frame_buf) = item
+            ten_env.log_debug(f"start process task {ts} {len(frame_buf)}")
+
+            try:
+                self.curr_task = asyncio.create_task(self._complete_with_history(ts, frame_buf))
+                await self.curr_task
+                self.curr_task = None
+            except asyncio.CancelledError:
+                ten_env.log_warn("task cancelled")
+            except Exception as e:
+                ten_env.log_warn(f"task failed, err {e}")
+            finally:
+                queue.task_done()
+
+        ten_env.log_info("process_input exit")
+
     async def _complete_with_history(
         self, ts: datetime, buff: bytearray
-    ) -> Iterator[bytes]:
+    ):
         start_time = datetime.now()
         ten_env = self.ten_env
         ten_env.log_debug(
@@ -420,26 +461,20 @@ class MinimaxV2VExtension(AsyncExtension):
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role} failed, err {e}"
             )
 
-    # async def _cancel_all_tasks(self) -> None:
-    #     start_time = datetime.now()
+    async def _flush(self, ten_env: AsyncTenEnv) -> None:
+        # clear queue
+        while not self.queue.empty():
+            try:
+                self.queue.get_nowait()
+                self.queue.task_done()
+            except Exception as e:
+                ten_env.log_warn("flush queue error {e}")
 
-    #     current_task = asyncio.current_task()
-    #     tasks = asyncio.all_tasks()
-    #     self.ten_env.log_info(f"cancelling tasks {len(tasks)-1}")  # except current_task
-
-    #     # cancel all tasks except current one
-    #     for t in tasks:
-    #         if t is not current_task:
-    #             t.cancel()
-
-    #     # wait for done
-    #     await asyncio.gather(
-    #         *[t for t in tasks if t is not current_task], return_exceptions=True
-    #     )
-
-    #     self.ten_env.log_info(
-    #         f"cancelled tasks {len(tasks)}, cost_time {duration_in_ms_since(start_time)}"
-    #     )
+        # cancel current task
+        if self.curr_task:
+            self.curr_task.cancel()
+            await asyncio.gather(self.curr_task, return_exceptions=True)
+            self.curr_task = None
 
     async def _dump_audio_if_need(self, buf: bytearray, suffix: str) -> None:
         if not self.config.dump:
