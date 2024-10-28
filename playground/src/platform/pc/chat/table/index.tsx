@@ -141,8 +141,8 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
                     </Form.Item>
                 ) : (
                     <div onClick={() => edit(record)} style={{ cursor: 'pointer' }}>
-                        {record.value !== null && record.value !== undefined && record.value !== ''
-                            ? record.value
+                        {record.value != null && String(record.value).trim() !== ''
+                            ? String(record.value)
                             : <span style={{ color: 'gray' }}>Click to edit</span>}
                     </div>
                 );
