@@ -2941,6 +2941,291 @@
                         ]
                     }
                 ]
+            },
+            {
+                "name": "va_openai_v2v_storage",
+                "auto_start": true,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "rtc",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "${env:AGORA_APP_ID}",
+                            "token": "",
+                            "channel": "ten_agent_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "subscribe_audio_sample_rate": 24000
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "llm",
+                        "addon": "openai_v2v_python",
+                        "name": "openai_v2v_python",
+                        "property": {
+                            "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+                            "temperature": 0.9,
+                            "model": "gpt-4o-realtime-preview",
+                            "max_tokens": 2048,
+                            "voice": "alloy",
+                            "language": "en-US",
+                            "server_vad": true,
+                            "dump": true,
+                            "history": 10,
+                            "enable_storage": true
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tools",
+                        "addon": "weatherapi_tool_python",
+                        "name": "weatherapi_tool_python",
+                        "property": {
+                            "api_key": "${env:WEATHERAPI_API_KEY}"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tools",
+                        "addon": "bingsearch_tool_python",
+                        "name": "bingsearch_tool_python",
+                        "property": {
+                            "api_key": "${env:BING_API_KEY}"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "context",
+                        "addon": "tsdb_firestore",
+                        "name": "tsdb_firestore",
+                        "property": {
+                            "credentials": {
+                                "type": "service_account",
+                                "project_id": "${env:FIRESTORE_PROJECT_ID}",
+                                "private_key_id": "${env:FIRESTORE_PRIVATE_KEY_ID}",
+                                "private_key": "${env:FIRESTORE_PRIVATE_KEY}",
+                                "client_email": "${env:FIRESTORE_CLIENT_EMAIL}",
+                                "client_id": "${env:FIRESTORE_CLIENT_ID}",
+                                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                                "token_uri": "https://oauth2.googleapis.com/token",
+                                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                                "client_x509_cert_url": "${env:FIRESTORE_CERT_URL}",
+                                "universe_domain": "googleapis.com"
+                            },
+                            "channel_name": "astra_agents_test",
+                            "collection_name": "llm_context"
+                        }
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "rtc",
+                        "extension": "agora_rtc",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "realtime",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tools",
+                        "extension": "weatherapi_tool_python",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "realtime",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tools",
+                        "extension": "bingsearch_tool_python",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "realtime",
+                                        "extension": "openai_v2v_python"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "realtime",
+                        "extension": "openai_v2v_python",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": [
+                            {
+                                "name": "append",
+                                "dest": [
+                                    {
+                                        "extension_group": "context",
+                                        "extension": "tsdb_firestore"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "retrieve",
+                                "dest": [
+                                    {
+                                        "extension_group": "context",
+                                        "extension": "tsdb_firestore"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_get_current_weather",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_get_past_weather",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_get_future_weather",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call_bing_search",
+                                "dest": [
+                                    {
+                                        "extension_group": "tools",
+                                        "extension": "weatherapi_tool_python",
+                                        "msg_conversion": {
+                                            "type": "per_property",
+                                            "keep_original": true,
+                                            "rules": [
+                                                {
+                                                    "path": "_ten.name",
+                                                    "conversion_mode": "fixed_value",
+                                                    "value": "tool_call"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "rtc",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }

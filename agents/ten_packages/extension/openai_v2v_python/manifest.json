@@ -64,6 +64,9 @@
       },
       "history": {
         "type": "int64"
+      },
+      "enable_storage": {
+        "type": "bool"
       }
     },
     "audio_frame_in": [
@@ -79,6 +82,14 @@
     "data_out": [
       {
         "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "append",
         "property": {
           "text": {
             "type": "string"
