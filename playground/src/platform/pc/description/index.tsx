@@ -1,8 +1,7 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
   useAppDispatch, useAppSelector, apiPing, genUUID,
-  apiStartService, apiStopService,
-  useGraphExtensions
+  apiStartService, apiStopService
 } from "@/common"
 import { Select, Button, message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"
@@ -20,7 +19,6 @@ const Description = () => {
   const voiceType = useAppSelector(state => state.global.voiceType)
   const [loading, setLoading] = useState(false)
   const graphName = useAppSelector(state => state.global.graphName)
-  const graphNodes = useGraphExtensions()
   const overridenProperties = useAppSelector(state => state.global.overridenProperties)
 
   useEffect(() => {

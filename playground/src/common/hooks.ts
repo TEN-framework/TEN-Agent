@@ -1,7 +1,7 @@
 "use client"
 
 import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { normalizeFrequencies } from "./utils"
+import { deepMerge, normalizeFrequencies } from "./utils"
 import { useState, useEffect, useMemo, useRef } from "react"
 import type { AppDispatch, AppStore, RootState } from "../store"
 import { useDispatch, useSelector, useStore } from "react-redux"
@@ -132,13 +132,29 @@ export const usePrevious = (value: any) => {
 export const useGraphExtensions = () => {
   const graphName = useAppSelector(state => state.global.graphName);
   const nodes = useAppSelector(state => state.global.extensions);
+  const overridenProperties = useAppSelector(state => state.global.overridenProperties);
   const [graphExtensions, setGraphExtensions] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (nodes && nodes[graphName]) {
-      setGraphExtensions(nodes[graphName]);
+      let extensions:Record<string, any> = {}
+      let extensionsByGraph = JSON.parse(JSON.stringify(nodes[graphName]));
+      let overriden = overridenProperties[graphName] || {};
+      for (const key of Object.keys(extensionsByGraph)) {
+        if (!overriden[key]) {
+          extensions[key] = extensionsByGraph[key];
+          continue;
+        }
+        extensions[key] = {
+          addon: extensionsByGraph[key].addon,
+          name: extensionsByGraph[key].name,
+        };
+        extensions[key].property = deepMerge(extensionsByGraph[key].property, overriden[key]);
+      }
+      setGraphExtensions(extensions);
     }
-  }, [graphName, nodes]);
+
+  }, [graphName, nodes, overridenProperties]);
 
   return graphExtensions;
 };

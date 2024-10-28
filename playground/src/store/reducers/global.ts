@@ -1,6 +1,6 @@
 import { IOptions, IChatItem, Language, VoiceType } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, setOverridenPropertiesToLocal } from "@/common"
+import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, setOverridenPropertiesToLocal, deepMerge } from "@/common"
 
 export interface InitialState {
   options: IOptions
@@ -32,16 +32,6 @@ const getInitialState = (): InitialState => {
     overridenProperties: {},
     extensionMetadata: {},
   }
-}
-
-function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
-  for (const key of Object.keys(source)) {
-    if (source[key] instanceof Object && key in target) {
-      Object.assign(source[key], deepMerge(target[key], source[key]));
-    }
-  }
-  // Merge source into target
-  return { ...target, ...source };
 }
 
 export const globalSlice = createSlice({
@@ -113,8 +103,7 @@ export const globalSlice = createSlice({
       state.extensions[graphName] = nodesMap
     },
     setOverridenProperties: (state, action: PayloadAction<Record<string, any>>) => {
-      let { properties } = action.payload
-      state.overridenProperties = properties
+      state.overridenProperties = action.payload
     },
     setOverridenPropertiesByGraph: (state, action: PayloadAction<Record<string, any>>) => {
       let { graphName, nodesMap } = action.payload
