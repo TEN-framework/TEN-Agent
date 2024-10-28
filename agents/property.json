@@ -3024,7 +3024,7 @@
                                 "client_x509_cert_url": "${env:FIRESTORE_CERT_URL}",
                                 "universe_domain": "googleapis.com"
                             },
-                            "channel_name": "astra_agents_test",
+                            "channel_name": "ten_agent_test",
                             "collection_name": "llm_context"
                         }
                     }
