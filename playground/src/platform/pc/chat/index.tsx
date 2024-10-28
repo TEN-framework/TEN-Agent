@@ -12,7 +12,7 @@ import {
   useGraphExtensions,
   apiGetExtensionMetadata,
 } from "@/common"
-import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph } from "@/store/reducers/global"
+import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
@@ -94,9 +94,14 @@ const Chat = () => {
       open={modal2Open}
       onCancel={() => setModal2Open(false)}
       footer={
-        <Button type="primary" onClick={() => setModal2Open(false)}>
-          Close
-        </Button>
+        <>
+          <Button type="default" onClick={() => { dispatch(setOverridenProperties({})) }}>
+            Clear Settings
+          </Button>
+          <Button type="primary" onClick={() => setModal2Open(false)}>
+            Close
+          </Button>
+        </>
       }
     >
       <p>You can adjust extension properties here, the values will be overridden when the agent starts using "Connect." Note that this won't modify the property.json file.</p>

@@ -104,6 +104,7 @@ export const globalSlice = createSlice({
     },
     setOverridenProperties: (state, action: PayloadAction<Record<string, any>>) => {
       state.overridenProperties = action.payload
+      setOverridenPropertiesToLocal(state.overridenProperties)
     },
     setOverridenPropertiesByGraph: (state, action: PayloadAction<Record<string, any>>) => {
       let { graphName, nodesMap } = action.payload

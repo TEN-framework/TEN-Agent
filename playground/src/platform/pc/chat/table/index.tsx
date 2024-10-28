@@ -33,13 +33,18 @@ const convertToType = (value: any, type: string) => {
 };
 
 const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, metadata }) => {
-    const [dataSource, setDataSource] = useState<DataType[]>(
-        Object.entries(initialData).map(([key, value]) => ({ key, value }))
-    );
+    const [dataSource, setDataSource] = useState<DataType[]>([]);
     const [editingKey, setEditingKey] = useState<string>('');
     const [form] = Form.useForm();
     const inputRef = useRef<InputRef>(null); // Ref to manage focus
     const updatedValuesRef = useRef<Record<string, string | number | boolean | null>>({});
+
+    // Update dataSource whenever initialData changes
+    useEffect(() => {
+        setDataSource(
+            Object.entries(initialData).map(([key, value]) => ({ key, value }))
+        );
+    }, [initialData]);
 
     // Function to check if the current row is being edited
     const isEditing = (record: DataType) => record.key === editingKey;
