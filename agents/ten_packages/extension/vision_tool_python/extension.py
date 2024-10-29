@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension, TenLLMToolMetadata, TenLLMToolResult
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
 from ten import (
     AudioFrame,
     VideoFrame,
@@ -15,7 +15,7 @@ from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.types import TenLLMCompletionContentItemImage
+from ten_ai_base.types import LLMCompletionContentItemImage
 
 
 def rgb2base64jpeg(rgb_data, width, height):
@@ -129,20 +129,20 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
         self.image_width = video_frame.get_width()
         self.image_height = video_frame.get_height()
 
-    def get_tool_metadata(self) -> list[TenLLMToolMetadata]:
+    def get_tool_metadata(self) -> list[LLMToolMetadata]:
         return [
-            TenLLMToolMetadata(
+            LLMToolMetadata(
                 name="get_vision_tool",
                 description="Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
                 parameters=[],
             )
         ]
     
-    async def run_tool(self, name: str, args: dict) -> TenLLMToolResult:
+    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
         if name == "get_vision_tool":
             if self.image_data is None:
                 raise Exception("No image data available")
 
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
-            result = TenLLMCompletionContentItemImage(image=base64_image)
-            return TenLLMToolResult(items=[result])
+            result = LLMCompletionContentItemImage(image=base64_image)
+            return LLMToolResult(items=[result])

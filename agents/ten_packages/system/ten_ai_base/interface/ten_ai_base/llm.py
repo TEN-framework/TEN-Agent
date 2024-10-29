@@ -18,7 +18,7 @@ from ten.async_ten_env import AsyncTenEnv
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
 from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, DATA_OUTPUT_PROPERTY_TEXT
-from .types import TenLLMCallCompletionArgs, TenLLMDataCompletionArgs, TenLLMToolMetadata
+from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from .helper import AsyncQueue
 import json
 
@@ -35,7 +35,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
     def __init__(self, name: str):
         super().__init__(name)
         self.queue = AsyncQueue()
-        self.available_tools: list[TenLLMToolMetadata] = []
+        self.available_tools: list[LLMToolMetadata] = []
         self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
         self.current_task = None
         self.hit_default_cmd = False
@@ -66,7 +66,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             try:
                 tool_metadata_json = json.loads(cmd.get_property_to_json(CMD_PROPERTY_TOOL))
                 async_ten_env.log_info(f"register tool: {tool_metadata_json}")
-                tool_metadata = TenLLMToolMetadata.model_validate_json(tool_metadata_json)
+                tool_metadata = LLMToolMetadata.model_validate_json(tool_metadata_json)
                 async with self.available_tools_lock:
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
@@ -76,7 +76,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 async_ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
 
-    async def queue_input_item(self, prepend: bool = False, **kargs: TenLLMDataCompletionArgs):
+    async def queue_input_item(self, prepend: bool = False, **kargs: LLMDataCompletionArgs):
         """Queues an input item for processing."""
         await self.queue.put(kargs, prepend)
 
@@ -108,12 +108,12 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             )
 
     @abstractmethod
-    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMCallCompletionArgs) -> None:
+    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> None:
         """Called when a chat completion is requested by cmd call. Implement this method to process the chat completion."""
         pass
 
     @abstractmethod
-    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMDataCompletionArgs) -> None:
+    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
         """
         Called when a chat completion is requested by data input. Implement this method to process the chat completion.
         Note that this method is stream-based, and it should consider supporting local context caching.
@@ -121,7 +121,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         pass
 
     @abstractmethod
-    async def on_tools_update(self, ten_env: TenEnv, tool: TenLLMToolMetadata) -> None:
+    async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
         """Called when a new tool is registered. Implement this method to process the new tool."""
         pass
 

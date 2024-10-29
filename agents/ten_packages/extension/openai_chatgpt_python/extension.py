@@ -14,7 +14,7 @@ from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
 from ten_ai_base.llm import AsyncLLMBaseExtension
-from ten_ai_base.types import TenLLMCallCompletionArgs, TenLLMCompletionContentItemAudio, TenLLMCompletionContentItemImage, TenLLMCompletionContentItemText, TenLLMCompletionContentItem, TenLLMDataCompletionArgs, TenLLMToolMetadata, TenLLMToolResult
+from ten_ai_base.types import LLMCallCompletionArgs, LLMCompletionContentItemAudio, LLMCompletionContentItemImage, LLMCompletionContentItemText, LLMCompletionContentItem, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -160,15 +160,15 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        await self.queue_input_item(False, content=[TenLLMCompletionContentItemText(text=input_text)])
+        await self.queue_input_item(False, content=[LLMCompletionContentItemText(text=input_text)])
 
-    async def on_tools_update(self, ten_env: TenEnv, tool: TenLLMToolMetadata) -> None:
+    async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
         return await super().on_tools_update(ten_env, tool)
 
-    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMCallCompletionArgs) -> None:
+    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> None:
         return await super().on_call_chat_completion(ten_env, **kargs)
 
-    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMDataCompletionArgs) -> None:
+    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
         """Run the chatflow asynchronously."""
         kcontent = kargs.get("content", [])
         content = []
@@ -218,7 +218,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         # Send the command and handle the result through the future
                         result: CmdResult = await ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
-                            tool_result = TenLLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
+                            tool_result = LLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
                             ten_env.log_info(f"tool_result: {tool_result}")
                             await self.queue_input_item(True, content=tool_result.items)
                         else:
@@ -262,12 +262,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             for m in memory_cache:
                 self._append_memory(m)
 
-    def _contentItem_to_dict(self, ten_env: TenEnv , item: TenLLMCompletionContentItem):
-        if isinstance(item, TenLLMCompletionContentItemText):
+    def _contentItem_to_dict(self, ten_env: TenEnv , item: LLMCompletionContentItem):
+        if isinstance(item, LLMCompletionContentItemText):
             return {"type": "text", "text": item.text}
-        elif isinstance(item, TenLLMCompletionContentItemImage):
+        elif isinstance(item, LLMCompletionContentItemImage):
             return {"type": "image_url", "image_url": {"url": item.image}}
-        elif isinstance(item, TenLLMCompletionContentItemAudio):
+        elif isinstance(item, LLMCompletionContentItemAudio):
             return {"type": "audio_url", "audio_url": {"url": item.audio}}
         else:
             ten_env.log_warn(f"Unknown content item type")

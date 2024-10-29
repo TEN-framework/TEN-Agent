@@ -12,7 +12,7 @@ from ten.audio_frame import AudioFrame
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
 from ten.video_frame import VideoFrame
-from .types import TenLLMToolMetadata, TenLLMToolResult
+from .types import LLMToolMetadata, LLMToolResult
 from .const import CMD_TOOL_REGISTER, CMD_TOOL_CALL, CMD_PROPERTY_TOOL, CMD_PROPERTY_RESULT
 import json
 
@@ -74,9 +74,9 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
         pass
 
     @abstractmethod
-    def get_tool_metadata(self) -> list[TenLLMToolMetadata]:
+    def get_tool_metadata(self) -> list[LLMToolMetadata]:
         pass
 
     @abstractmethod
-    async def run_tool(self, name: str, args: dict) -> TenLLMToolResult:
+    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
         pass

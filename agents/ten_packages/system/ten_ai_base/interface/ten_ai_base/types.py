@@ -1,39 +1,39 @@
 from typing import TypedDict, Union
 from pydantic import BaseModel
 
-class TenLLMToolMetadataParameter(BaseModel):
+class LLMToolMetadataParameter(BaseModel):
     name: str
     type: str
     description: str
     required: bool
 
-class TenLLMToolMetadata(BaseModel):
+class LLMToolMetadata(BaseModel):
     name: str
     description: str
-    parameters: list[TenLLMToolMetadataParameter]
+    parameters: list[LLMToolMetadataParameter]
 
 
-class TenLLMCompletionContentItemText(BaseModel):
+class LLMCompletionContentItemText(BaseModel):
     text: str
 
-class TenLLMCompletionContentItemImage(BaseModel):
+class LLMCompletionContentItemImage(BaseModel):
     image: str
 
-class TenLLMCompletionContentItemAudio(BaseModel):
+class LLMCompletionContentItemAudio(BaseModel):
     audio: str
 
-TenLLMCompletionContentItem = Union[
-    TenLLMCompletionContentItemText, 
-    TenLLMCompletionContentItemImage, 
-    TenLLMCompletionContentItemAudio
+LLMCompletionContentItem = Union[
+    LLMCompletionContentItemText, 
+    LLMCompletionContentItemImage, 
+    LLMCompletionContentItemAudio
 ]
 
-class TenLLMToolResult(BaseModel):
-    items: list[TenLLMCompletionContentItem]
+class LLMToolResult(BaseModel):
+    items: list[LLMCompletionContentItem]
 
-class TenLLMCallCompletionArgs(TypedDict, total=False):
-    content: list[TenLLMCompletionContentItem]
+class LLMCallCompletionArgs(TypedDict, total=False):
+    content: list[LLMCompletionContentItem]
 
-class TenLLMDataCompletionArgs(TypedDict, total=False):
-    content: list[TenLLMCompletionContentItem]
+class LLMDataCompletionArgs(TypedDict, total=False):
+    content: list[LLMCompletionContentItem]
     no_tool: bool = False
