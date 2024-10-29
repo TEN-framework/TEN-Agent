@@ -3,7 +3,7 @@ module app
 go 1.21
 
 require (
-	github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20240531043742-11bdd9531d08
+	github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20241016072020-3226f86a4488
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-resty/resty/v2 v2.13.1
 	github.com/gogf/gf v1.16.9

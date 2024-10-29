@@ -253,7 +253,7 @@ func (s *HttpServer) handlerGenerateToken(c *gin.Context) {
 		return
 	}
 
-	token, err := rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, req.Uid, rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, tokenExpirationInSeconds)
+	token, err := rtctokenbuilder.BuildTokenWithRtm(s.config.AppId, s.config.AppCertificate, req.ChannelName, fmt.Sprintf("%d", req.Uid), rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, tokenExpirationInSeconds)
 	if err != nil {
 		slog.Error("handlerGenerateToken generate token failed", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrGenerateTokenFailed, http.StatusBadRequest)
