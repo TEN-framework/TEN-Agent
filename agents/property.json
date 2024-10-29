@@ -2447,8 +2447,8 @@
                         "name": "agora_rtc",
                         "property": {
                             "app_id": "${env:AGORA_APP_ID}",
-                            "token": "007eJxSYHh+a2cm9635zf6vNKpOrTy/yuSXWM0zj7LOnTV8q9ZzC1orMCRZpBgapxinGqammJsYm5gnGRmmJpubphiaG6RamKcm+vOLpzcEMjJUqm9mYWSAQBCfhyExPb8oMb48x6CszJyBARAAAP//qn4iSA==",
-                            "channel": "agora_wl0vv7",
+                            "token": "",
+                            "channel": "ten_agent_test",
                             "stream_id": 1234,
                             "remote_stream_id": 123,
                             "subscribe_audio": true,

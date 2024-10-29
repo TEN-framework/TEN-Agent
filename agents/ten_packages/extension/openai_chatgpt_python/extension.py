@@ -49,13 +49,12 @@ PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
 
 
 class OpenAIChatGPTExtension(TenLLMBaseExtension):
-    memory = []
-    max_memory_length = 10
-    openai_chatgpt = None
-    image_data = None
-    image_width = 0
-    image_height = 0
-    sentence_fragment = ""
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.memory = []
+        self.max_memory_length = 10
+        self.openai_chatgpt = None
+        self.sentence_fragment = ""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_init")

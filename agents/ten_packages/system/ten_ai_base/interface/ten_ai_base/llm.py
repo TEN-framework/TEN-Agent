@@ -24,10 +24,12 @@ import json
 
 class TenLLMBaseExtension(AsyncExtension, ABC):
     # Create the queue for message processing
-    queue = AsyncQueue()
-    available_tools: list[TenLLMToolMetadata] = []
-    available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
-    current_task = None
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.queue = AsyncQueue()
+        self.available_tools: list[TenLLMToolMetadata] = []
+        self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
+        self.current_task = None
 
     async def on_init(self, ten_env: TenEnv) -> None:
         ten_env.log_debug("on_init")
