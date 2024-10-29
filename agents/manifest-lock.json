@@ -68,6 +68,24 @@
       ]
     },
     {
+      "type": "extension",
+      "name": "agora_sess_ctrl",
+      "version": "0.2.0",
+      "hash": "52f26dee2fb8fbd22d55ecc6bb197176a51f4a3bd2268788f75582f68cf1270b",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
       "type": "system",
       "name": "azure_speech_sdk",
       "version": "1.38.0",

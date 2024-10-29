@@ -1,8 +1,7 @@
 import { setAgentConnected } from "@/store/reducers/global"
 import {
   useAppDispatch, useAppSelector, apiPing, genUUID,
-  apiStartService, apiStopService,
-  useGraphExtensions
+  apiStartService, apiStopService
 } from "@/common"
 import { Select, Button, message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"
@@ -20,7 +19,7 @@ const Description = () => {
   const voiceType = useAppSelector(state => state.global.voiceType)
   const [loading, setLoading] = useState(false)
   const graphName = useAppSelector(state => state.global.graphName)
-  const graphNodes = useGraphExtensions()
+  const overridenProperties = useAppSelector(state => state.global.overridenProperties)
 
   useEffect(() => {
     if (channel) {
@@ -47,18 +46,14 @@ const Description = () => {
       message.success("Agent disconnected")
       stopPing()
     } else {
-      let properties: Record<string, any> = {}
-      Object.keys(graphNodes).forEach(extensionName => {
-        properties[extensionName] = {}
-        properties[extensionName] = graphNodes[extensionName].property
-      })
+      let properties: Record<string, any> = overridenProperties[graphName] || {}
       const res = await apiStartService({
         channel,
         userId,
         graphName,
         language,
         voiceType,
-        properties: properties
+        properties
       })
       const { code, msg } = res || {}
       if (code != 0) {
