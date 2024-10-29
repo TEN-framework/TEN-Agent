@@ -3226,6 +3226,254 @@
                         ]
                     }
                 ]
+            },
+            {
+                "name": "va_deepgram_openai_cartesia",
+                "auto_start": false,
+                "nodes": [
+                    {
+                        "type": "extension",
+                        "extension_group": "default",
+                        "addon": "agora_rtc",
+                        "name": "agora_rtc",
+                        "property": {
+                            "app_id": "${env:AGORA_APP_ID}",
+                            "token": "<agora_token>",
+                            "channel": "ten_agent_test",
+                            "stream_id": 1234,
+                            "remote_stream_id": 123,
+                            "subscribe_audio": true,
+                            "publish_audio": true,
+                            "publish_data": true,
+                            "enable_agora_asr": false,
+                            "agora_asr_vendor_name": "microsoft",
+                            "agora_asr_language": "en-US",
+                            "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+                            "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+                            "agora_asr_session_control_file_path": "session_control.conf"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "asr",
+                        "addon": "deepgram_asr_python",
+                        "name": "deepgram_asr",
+                        "property": {
+                            "api_key": "${env:DEEPGRAM_API_KEY}",
+                            "language": "en-US",
+                            "model": "nova-2",
+                            "sample_rate": "16000"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "chatgpt",
+                        "addon": "openai_chatgpt",
+                        "name": "openai_chatgpt",
+                        "property": {
+                            "base_url": "",
+                            "api_key": "${env:OPENAI_API_KEY}",
+                            "frequency_penalty": 0.9,
+                            "model": "gpt-4o-mini",
+                            "max_tokens": 512,
+                            "prompt": "",
+                            "proxy_url": "${env:OPENAI_PROXY_URL}",
+                            "greeting": "TEN Agent connected. How can I help you today?",
+                            "max_memory_length": 10
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "tts",
+                        "addon": "cartesia_tts",
+                        "name": "cartesia_tts",
+                        "property": {
+                            "api_key": "${env:CARTESIA_API_KEY}",
+                            "cartesia_version": "2024-06-10",
+                            "model_id": "sonic-english",
+                            "voice_id": "f9836c6e-a0bd-460e-9d3c-f7299fa60f94",
+                            "sample_rate": "16000"
+                        }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "default",
+                        "addon": "interrupt_detector_python",
+                        "name": "interrupt_detector"
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "transcriber",
+                        "addon": "message_collector",
+                        "name": "message_collector"
+                    }
+                ],
+                "connections": [
+                    {
+                        "extension_group": "default",
+                        "extension": "agora_rtc",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "asr",
+                                        "extension": "deepgram_asr"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "on_user_joined",
+                                "dest": [
+                                    {
+                                        "extension_group": "asr",
+                                        "extension": "deepgram_asr"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "on_user_left",
+                                "dest": [
+                                    {
+                                        "extension_group": "asr",
+                                        "extension": "deepgram_asr"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "on_connection_failure",
+                                "dest": [
+                                    {
+                                        "extension_group": "asr",
+                                        "extension": "deepgram_asr"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "asr",
+                        "extension": "deepgram_asr",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "interrupt_detector"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "chatgpt",
+                        "extension": "openai_chatgpt",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "cartesia_tts"
+                                    },
+                                    {
+                                        "extension_group": "transcriber",
+                                        "extension": "message_collector"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "tts",
+                                        "extension": "cartesia_tts"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "transcriber",
+                        "extension": "message_collector",
+                        "data": [
+                            {
+                                "name": "data",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "tts",
+                        "extension": "cartesia_tts",
+                        "audio_frame": [
+                            {
+                                "name": "pcm_frame",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "default",
+                                        "extension": "agora_rtc"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "default",
+                        "extension": "interrupt_detector",
+                        "data": [
+                            {
+                                "name": "text_data",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
+                                    }
+                                ]
+                            }
+                        ],
+                        "cmd": [
+                            {
+                                "name": "flush",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
