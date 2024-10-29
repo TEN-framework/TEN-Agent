@@ -17,12 +17,20 @@ from ten import (
 from ten.async_ten_env import AsyncTenEnv
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
-from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER
+from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, DATA_OUTPUT_PROPERTY_TEXT
 from .types import TenLLMCallCompletionArgs, TenLLMDataCompletionArgs, TenLLMToolMetadata
 from .helper import AsyncQueue
 import json
 
-class TenLLMBaseExtension(AsyncExtension, ABC):
+class AsyncLLMBaseExtension(AsyncExtension, ABC):
+    """
+    Base class for implementing a Language Model Extension.
+    This class provides a basic implementation for processing chat completions.
+    It automatically handles the registration of tools and the processing of chat completions.
+    Use queue_input_item to queue input items for processing.
+    Use flush_input_items to flush the queue and cancel the current task.
+    Override on_call_chat_completion and on_data_chat_completion to implement the chat completion logic.
+    """
     # Create the queue for message processing
     def __init__(self, name: str):
         super().__init__(name)
@@ -30,6 +38,7 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
         self.available_tools: list[TenLLMToolMetadata] = []
         self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
         self.current_task = None
+        self.hit_default_cmd = False
 
     async def on_init(self, ten_env: TenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -47,10 +56,14 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
         ten_env.log_debug("on_deinit")
 
     async def on_cmd(self, async_ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        """
+        handle default commands
+        return True if the command is handled, False otherwise
+        """
         cmd_name = cmd.get_name()
         async_ten_env.log_debug(f"on_cmd name {cmd_name}")
-        try:
-            if cmd_name == CMD_TOOL_REGISTER:
+        if cmd_name == CMD_TOOL_REGISTER:
+            try:
                 tool_metadata_json = json.loads(cmd.get_property_to_json(CMD_PROPERTY_TOOL))
                 async_ten_env.log_info(f"register tool: {tool_metadata_json}")
                 tool_metadata = TenLLMToolMetadata.model_validate_json(tool_metadata_json)
@@ -58,12 +71,13 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
                 async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
-        except Exception as err:
-            async_ten_env.log_warn(f"on_cmd failed: {err}")
-            async_ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            except Exception as err:
+                async_ten_env.log_warn(f"on_cmd failed: {err}")
+                async_ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
 
     async def queue_input_item(self, prepend: bool = False, **kargs: TenLLMDataCompletionArgs):
+        """Queues an input item for processing."""
         await self.queue.put(kargs, prepend)
 
     async def flush_input_items(self, ten_env: TenEnv):
@@ -78,11 +92,11 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
 
     def send_text_output(self, ten_env: TenEnv, sentence: str, end_of_segment: bool):
         try:
-            output_data = Data.create("text_data")
+            output_data = Data.create(DATA_OUTPUT_NAME)
             output_data.set_property_string(
-                "text", sentence)
+                DATA_OUTPUT_PROPERTY_TEXT, sentence)
             output_data.set_property_bool(
-                "end_of_segment", end_of_segment
+                DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, end_of_segment
             )
             ten_env.send_data(output_data)
             ten_env.log_info(
@@ -95,14 +109,20 @@ class TenLLMBaseExtension(AsyncExtension, ABC):
 
     @abstractmethod
     async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMCallCompletionArgs) -> None:
+        """Called when a chat completion is requested by cmd call. Implement this method to process the chat completion."""
         pass
 
     @abstractmethod
     async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: TenLLMDataCompletionArgs) -> None:
+        """
+        Called when a chat completion is requested by data input. Implement this method to process the chat completion.
+        Note that this method is stream-based, and it should consider supporting local context caching.
+        """
         pass
 
     @abstractmethod
     async def on_tools_update(self, ten_env: TenEnv, tool: TenLLMToolMetadata) -> None:
+        """Called when a new tool is registered. Implement this method to process the new tool."""
         pass
 
     async def _process_queue(self, ten_env: TenEnv):

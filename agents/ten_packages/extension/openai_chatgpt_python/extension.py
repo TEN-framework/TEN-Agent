@@ -13,7 +13,7 @@ from ten.async_ten_env import AsyncTenEnv
 from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
-from ten_ai_base.llm import TenLLMBaseExtension
+from ten_ai_base.llm import AsyncLLMBaseExtension
 from ten_ai_base.types import TenLLMCallCompletionArgs, TenLLMCompletionContentItemAudio, TenLLMCompletionContentItemImage, TenLLMCompletionContentItemText, TenLLMCompletionContentItem, TenLLMDataCompletionArgs, TenLLMToolMetadata, TenLLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
@@ -48,7 +48,7 @@ PROPERTY_PROXY_URL = "proxy_url"  # Optional
 PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
 
 
-class OpenAIChatGPTExtension(TenLLMBaseExtension):
+class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self.memory = []

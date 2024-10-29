@@ -8,67 +8,62 @@
 import asyncio
 from collections import deque
 from typing import Callable
-from ten.data import Data
-from .log import logger
-from PIL import Image
-from datetime import datetime
-from io import BytesIO
-from base64 import b64encode
+from ten.async_ten_env import AsyncTenEnv
 
 
-def get_property_bool(data: Data, property_name: str) -> bool:
-    """Helper to get boolean property from data with error handling."""
+def get_property_bool(ten_env: AsyncTenEnv, property_name: str) -> bool:
+    """Helper to get boolean property from ten_env with error handling."""
     try:
-        return data.get_property_bool(property_name)
+        return ten_env.get_property_bool(property_name)
     except Exception as err:
-        logger.warn(f"GetProperty {property_name} failed: {err}")
+        ten_env.log_warn(f"GetProperty {property_name} failed: {err}")
         return False
 
-def get_properties_bool(data: Data, property_names: list[str], callback: Callable[[str, bool], None]) -> None:
-    """Helper to get boolean properties from data with error handling."""
+def get_properties_bool(ten_env: AsyncTenEnv, property_names: list[str], callback: Callable[[str, bool], None]) -> None:
+    """Helper to get boolean properties from ten_env with error handling."""
     for property_name in property_names:
-        callback(property_name, get_property_bool(data, property_name))
+        callback(property_name, get_property_bool(ten_env, property_name))
 
 
-def get_property_string(data: Data, property_name: str) -> str:
-    """Helper to get string property from data with error handling."""
+def get_property_string(ten_env: AsyncTenEnv, property_name: str) -> str:
+    """Helper to get string property from ten_env with error handling."""
     try:
-        return data.get_property_string(property_name)
+        return ten_env.get_property_string(property_name)
     except Exception as err:
-        logger.warn(f"GetProperty {property_name} failed: {err}")
+        ten_env.log_warn(f"GetProperty {property_name} failed: {err}")
         return ""
 
 
-def get_properties_string(data: Data, property_names: list[str], callback: Callable[[str, str], None]) -> None:
-    """Helper to get string properties from data with error handling."""
+def get_properties_string(ten_env: AsyncTenEnv, property_names: list[str], callback: Callable[[str, str], None]) -> None:
+    """Helper to get string properties from ten_env with error handling."""
     for property_name in property_names:
-        callback(property_name, get_property_string(data, property_name))
+        callback(property_name, get_property_string(ten_env, property_name))
 
-def get_property_int(data: Data, property_name: str) -> int:
-    """Helper to get int property from data with error handling."""
+def get_property_int(ten_env: AsyncTenEnv, property_name: str) -> int:
+    """Helper to get int property from ten_env with error handling."""
     try:
-        return data.get_property_int(property_name)
+        return ten_env.get_property_int(property_name)
     except Exception as err:
-        logger.warn(f"GetProperty {property_name} failed: {err}")
+        ten_env.log_warn(f"GetProperty {property_name} failed: {err}")
         return 0
     
-def get_properties_int(data: Data, property_names: list[str], callback: Callable[[str, int], None]) -> None:
-    """Helper to get int properties from data with error handling."""
+def get_properties_int(ten_env: AsyncTenEnv, property_names: list[str], callback: Callable[[str, int], None]) -> None:
+    """Helper to get int properties from ten_env with error handling."""
     for property_name in property_names:
-        callback(property_name, get_property_int(data, property_name))
+        callback(property_name, get_property_int(ten_env, property_name))
     
-def get_property_float(data: Data, property_name: str) -> float:
-    """Helper to get float property from data with error handling."""
+def get_property_float(ten_env: AsyncTenEnv, property_name: str) -> float:
+    """Helper to get float property from ten_env with error handling."""
     try:
-        return data.get_property_float(property_name)
+        return ten_env.get_property_float(property_name)
     except Exception as err:
-        logger.warn(f"GetProperty {property_name} failed: {err}")
+        ten_env.log_warn(f"GetProperty {property_name} failed: {err}")
         return 0.0
 
-def get_properties_float(data: Data, property_names: list[str], callback: Callable[[str, float], None]) -> None:
-    """Helper to get float properties from data with error handling."""
+def get_properties_float(ten_env: AsyncTenEnv, property_names: list[str], callback: Callable[[str, float], None]) -> None:
+    """Helper to get float properties from ten_env with error handling."""
     for property_name in property_names:
-        callback(property_name, get_property_float(data, property_name))
+        callback(property_name, get_property_float(ten_env, property_name))
 
 class AsyncEventEmitter:
     def __init__(self):
