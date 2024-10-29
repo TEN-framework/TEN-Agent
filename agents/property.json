@@ -3306,26 +3306,6 @@
                         "extension_group": "transcriber",
                         "addon": "message_collector",
                         "name": "message_collector"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "default"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "chatgpt"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "tts"
-                    },
-                    {
-                        "type": "extension_group",
-                        "addon": "default_extension_group",
-                        "name": "asr"
                     }
                 ],
                 "connections": [
