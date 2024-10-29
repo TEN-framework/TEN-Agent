@@ -34,28 +34,30 @@
 <br>
 <h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
 
-OpenAI Realtime API provides ultra-low latency, and RTC offers AI noise suppression. TEN Agent has both. Feel free to try it out at [agent.theten.ai](https://agent.theten.ai).
+Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. Try it now at [agent.theten.ai](https://agent.theten.ai).
 
-![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
+![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
 <h2>TEN Agent Features</h2>
 
 Aside from being world's the first agent to integrate the OpenAI Realtime API and RTC, TEN Agent also offers the following features:
 
-1. **High-Performance Real-Time Multimodal Interactions**:
+1. **OpenAI Realtime API and RTC**: TEN Agent is the world's first AI agent to integrate the OpenAI Realtime API and RTC.
+
+2. **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
 
-2. **Multi-Language and Multi-Platform Support** :
+3. **Multi-Language and Multi-Platform Support** :
 Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
 
-3. **Edge-Cloud Integration**:
+4. **Edge-Cloud Integration**:
 Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
 
-4. **Flexibility Beyond Model Limitations**:
+5. **Flexibility Beyond Model Limitations**:
 Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
 
-5. **Real-Time Agent State Management**:
+6. **Real-Time Agent State Management**:
 Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 <br>
