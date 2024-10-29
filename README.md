@@ -61,6 +61,11 @@ Easily build complex AI applications through simple drag-and-drop programming, i
 Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 <br>
+<h2>Ready-to-use Extensions</h2>
+
+![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
+
+<br>
 <h2>Stay Tuned</h2>
 
 Before we get started, be sure to star our repository and get instant notifications for all new releases!
