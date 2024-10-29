@@ -12,7 +12,7 @@ import {
   useGraphExtensions,
   apiGetExtensionMetadata,
 } from "@/common"
-import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions } from "@/store/reducers/global"
+import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
@@ -31,6 +31,7 @@ const Chat = () => {
   const [modal2Open, setModal2Open] = useState(false)
   const graphExtensions = useGraphExtensions()
   const extensionMetadata = useAppSelector(state => state.global.extensionMetadata)
+  const overridenProperties = useAppSelector(state => state.global.overridenProperties)
 
 
   // const chatItems = genRandomChatList(10)
@@ -93,9 +94,14 @@ const Chat = () => {
       open={modal2Open}
       onCancel={() => setModal2Open(false)}
       footer={
-        <Button type="primary" onClick={() => setModal2Open(false)}>
-          Close
-        </Button>
+        <>
+          <Button type="default" onClick={() => { dispatch(setOverridenProperties({})) }}>
+            Clear Settings
+          </Button>
+          <Button type="primary" onClick={() => setModal2Open(false)}>
+            Close
+          </Button>
+        </>
       }
     >
       <p>You can adjust extension properties here, the values will be overridden when the agent starts using "Connect." Note that this won't modify the property.json file.</p>
@@ -109,9 +115,10 @@ const Chat = () => {
             initialData={node["property"] || {}}
             metadata={metadata ? metadata.api.property : {}}
             onUpdate={(data) => {
-              let nodesMap = JSON.parse(JSON.stringify(graphExtensions))
-              nodesMap[key]["property"] = data
-              dispatch(setExtensions({ graphName, nodesMap }))
+              // clone the overridenProperties
+              let nodesMap = JSON.parse(JSON.stringify(overridenProperties[graphName] || {}))
+              nodesMap[key] = data
+              dispatch(setOverridenPropertiesByGraph({ graphName, nodesMap }))
             }}
           ></EditableTable>
         }

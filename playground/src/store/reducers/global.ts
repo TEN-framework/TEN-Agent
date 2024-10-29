@@ -1,6 +1,6 @@
 import { IOptions, IChatItem, Language, VoiceType } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList } from "@/common"
+import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, setOverridenPropertiesToLocal, deepMerge } from "@/common"
 
 export interface InitialState {
   options: IOptions
@@ -13,6 +13,7 @@ export interface InitialState {
   graphName: string,
   graphs: string[],
   extensions: Record<string, any>,
+  overridenProperties: Record<string, any>,
   extensionMetadata: Record<string, any>
 }
 
@@ -28,6 +29,7 @@ const getInitialState = (): InitialState => {
     graphName: "camera_va_openai_azure",
     graphs: [],
     extensions: {},
+    overridenProperties: {},
     extensionMetadata: {},
   }
 }
@@ -100,6 +102,15 @@ export const globalSlice = createSlice({
       let { graphName, nodesMap } = action.payload
       state.extensions[graphName] = nodesMap
     },
+    setOverridenProperties: (state, action: PayloadAction<Record<string, any>>) => {
+      state.overridenProperties = action.payload
+      setOverridenPropertiesToLocal(state.overridenProperties)
+    },
+    setOverridenPropertiesByGraph: (state, action: PayloadAction<Record<string, any>>) => {
+      let { graphName, nodesMap } = action.payload
+      state.overridenProperties[graphName] = deepMerge(state.overridenProperties[graphName] || {}, nodesMap)
+      setOverridenPropertiesToLocal(state.overridenProperties)
+    },
     setExtensionMetadata: (state, action: PayloadAction<Record<string, any>>) => {
       state.extensionMetadata = action.payload
     },
@@ -115,7 +126,7 @@ export const globalSlice = createSlice({
 
 export const { reset, setOptions,
   setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage, setGraphName, setGraphs, setExtensions, setExtensionMetadata } =
+  addChatItem, setThemeColor, setLanguage, setGraphName, setGraphs, setExtensions, setExtensionMetadata, setOverridenProperties, setOverridenPropertiesByGraph } =
   globalSlice.actions
 
 export default globalSlice.reducer
