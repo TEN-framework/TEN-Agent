@@ -33,12 +33,18 @@ const convertToType = (value: any, type: string) => {
 };
 
 const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, metadata }) => {
-    const [dataSource, setDataSource] = useState<DataType[]>(
-        Object.entries(initialData).map(([key, value]) => ({ key, value }))
-    );
+    const [dataSource, setDataSource] = useState<DataType[]>([]);
     const [editingKey, setEditingKey] = useState<string>('');
     const [form] = Form.useForm();
     const inputRef = useRef<InputRef>(null); // Ref to manage focus
+    const updatedValuesRef = useRef<Record<string, string | number | boolean | null>>({});
+
+    // Update dataSource whenever initialData changes
+    useEffect(() => {
+        setDataSource(
+            Object.entries(initialData).map(([key, value]) => ({ key, value }))
+        );
+    }, [initialData]);
 
     // Function to check if the current row is being edited
     const isEditing = (record: DataType) => record.key === editingKey;
@@ -55,25 +61,26 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
             const row = await form.validateFields();
             const newData = [...dataSource];
             const index = newData.findIndex((item) => key === item.key);
-    
+
             if (index > -1) {
                 const item = newData[index];
                 const valueType = metadata[key]?.type || 'string';
                 const updatedValue = row.value === '' ? null : convertToType(row.value, valueType); // Set to null if empty
-    
+
                 newData.splice(index, 1, { ...item, value: updatedValue });
                 setDataSource(newData);
                 setEditingKey('');
-    
-                // Notify the parent component of the update
-                const updatedData = Object.fromEntries(newData.map(({ key, value }) => [key, value]));
-                onUpdate(updatedData);
+
+                // Store the updated value in the ref
+                updatedValuesRef.current[key] = updatedValue;
+
+                // Notify the parent component of only the updated value
+                onUpdate({ [key]: updatedValue });
             }
         } catch (errInfo) {
             console.log('Validation Failed:', errInfo);
         }
-    };    
-    
+    };
 
     // Toggle the checkbox for boolean values directly in the table cell
     const handleCheckboxChange = (key: string, checked: boolean) => {
@@ -83,9 +90,11 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
             newData[index].value = checked; // Update the boolean value
             setDataSource(newData);
 
-            // Notify the parent component of the update
-            const updatedData = Object.fromEntries(newData.map(({ key, value }) => [key, value]));
-            onUpdate(updatedData);
+            // Store the updated value in the ref
+            updatedValuesRef.current[key] = checked;
+
+            // Notify the parent component of only the updated value
+            onUpdate({ [key]: checked });
         }
     };
 
@@ -111,7 +120,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
             key: 'value',
             render: (_, record: DataType) => {
                 const valueType = metadata[record.key]?.type || 'string';
-        
+
                 // Always display the checkbox for boolean values
                 if (valueType === 'bool') {
                     return (
@@ -121,7 +130,7 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
                         />
                     );
                 }
-        
+
                 // Inline editing for other types (string, number)
                 const editable = isEditing(record);
                 return editable ? (
@@ -137,13 +146,13 @@ const EditableTable: React.FC<EditableTableProps> = ({ initialData, onUpdate, me
                     </Form.Item>
                 ) : (
                     <div onClick={() => edit(record)} style={{ cursor: 'pointer' }}>
-                        {record.value !== null && record.value !== undefined && record.value !== ''
-                            ? record.value
+                        {record.value != null && String(record.value).trim() !== ''
+                            ? String(record.value)
                             : <span style={{ color: 'gray' }}>Click to edit</span>}
                     </div>
                 );
             },
-        },        
+        },
     ];
 
     return (

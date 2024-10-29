@@ -29,7 +29,7 @@ curl 'http://localhost:8080/start' \
     "request_id": "c1912182-924c-4d15-a8bb-85063343077c",
     "channel_name": "test",
     "user_uid": 176573,
-    "graph_name": "camera.va.openai.azure",
+    "graph_name": "camera_va_openai_azure",
     "properties": {
       "openai_chatgpt": {
         "model": "gpt-4o"
