@@ -35,28 +35,28 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
     label: "Voice Agent - OpenAI LLM + Azure TTS",
-    value: "va.openai.azure"
+    value: "va_openai_azure"
   },
   {
     label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
-    value: "camera.va.openai.azure"
+    value: "camera_va_openai_azure"
   },
   // {
   //   label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
-  //   value: "va.qwen.rag"
+  //   value: "va_qwen_rag"
   // },
   {
     label: "Voice Agent with OpenAI Realtime API (Beta)",
-    value: "va.openai.v2v"
+    value: "va_openai_v2v"
   },
   {
     label: "Voice Agent with OpenAI Realtime API (Beta) + FishAudio TTS",
-    value: "va.openai.v2v.fish"
+    value: "va_openai_v2v_fish"
   }
 ]
 
 export const isRagGraph = (graphName: string) => {
-  return graphName === "va.qwen.rag"
+  return graphName === "va_qwen_rag"
 }
 
 export const VOICE_OPTIONS: VoiceOptionItem[] = [

@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "message_collector",
+  "name": "tsdb_firestore",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -16,16 +16,13 @@
       "BUILD.gn",
       "**.tent",
       "**.py",
-      "src/**.tent",
-      "src/**.py",
       "README.md"
     ]
   },
   "api": {
-    "property": {},
     "data_in": [
       {
-        "name": "text_data",
+        "name": "append",
         "property": {
           "text": {
             "type": "string"
@@ -33,18 +30,22 @@
           "is_final": {
             "type": "bool"
           },
-          "stream_id": {
-            "type": "uint32"
-          },
-          "end_of_segment": {
-            "type": "bool"
+          "role": {
+            "type": "string"
           }
         }
       }
     ],
-    "data_out": [
+    "cmd_in": [
       {
-        "name": "data"
+        "name": "retrieve",
+        "result": {
+          "property": {
+            "response": {
+              "type": "string"
+            }
+          }
+        }
       }
     ]
   }
