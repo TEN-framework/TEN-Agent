@@ -11,6 +11,7 @@ import {
   apiGetNodes,
   useGraphExtensions,
   apiGetExtensionMetadata,
+  apiReloadGraph,
 } from "@/common"
 import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
@@ -38,17 +39,19 @@ const Chat = () => {
   const chatRef = useRef(null)
 
   useEffect(() => {
-    apiGetGraphs().then((res: any) => {
-      let graphs = res["data"].map((item: any) => item["name"])
-      dispatch(setGraphs(graphs))
-    })
-    apiGetExtensionMetadata().then((res: any) => {
-      let metadata = res["data"]
-      let metadataMap: Record<string, any> = {}
-      metadata.forEach((item: any) => {
-        metadataMap[item["name"]] = item
+    apiReloadGraph().then(() => {
+      Promise.all([apiGetGraphs(), apiGetExtensionMetadata()]).then((res: any) => {
+        let [graphRes, metadataRes] = res
+        let graphs = graphRes["data"].map((item: any) => item["name"])
+
+        let metadata = metadataRes["data"]
+        let metadataMap: Record<string, any> = {}
+        metadata.forEach((item: any) => {
+          metadataMap[item["name"]] = item
+        })
+        dispatch(setGraphs(graphs))
+        dispatch(setExtensionMetadata(metadataMap))
       })
-      dispatch(setExtensionMetadata(metadataMap))
     })
   }, [])
 
