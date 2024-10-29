@@ -1,6 +1,5 @@
 "use client"
 
-import protoRoot from "@/protobuf/SttMessage_es6.js"
 import AgoraRTC, {
   IAgoraRTCClient,
   IMicrophoneAudioTrack,
