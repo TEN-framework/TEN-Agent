@@ -38,7 +38,7 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "va.openai.v2v",
+    graphName: "va_openai_v2v",
     agentSettings: DEFAULT_AGENT_SETTINGS,
     mobileActiveTab: EMobileActiveTab.AGENT,
   }

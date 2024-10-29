@@ -90,7 +90,7 @@ export const getGraphProperties = (
         }
     }
 
-    if (graphName == "camera.va.openai.azure") {
+    if (graphName == "camera_va_openai_azure") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -105,7 +105,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName == "va.openai.v2v") {
+    } else if (graphName == "va_openai_v2v") {
         return {
             "openai_v2v_python": {
                 "model": "gpt-4o-realtime-preview",
@@ -116,7 +116,21 @@ export const getGraphProperties = (
                 "greeting": greeting,
             }
         }
-    } else if (graphName == "va.openai.azure") {
+    } else if (graphName == "va_openai_v2v_fish") {
+        return {
+            "openai_v2v_python": {
+                "model": "gpt-4o-realtime-preview",
+                "voice": voiceNameMap[language]["openai"][voiceType],
+                "language": language,
+                ...localizationOptions,
+                "system_message": prompt,
+                "greeting": greeting,
+            },
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+        }
+    } else if (graphName == "va_openai_azure") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -131,7 +145,7 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
-    } else if (graphName == "va.qwen.rag") {
+    } else if (graphName == "va_qwen_rag") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,

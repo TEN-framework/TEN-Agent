@@ -57,3 +57,13 @@ export const genUUID = () => {
 export const isMobile = () => {
   return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
 }
+
+export const deepMerge = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
+  for (const key of Object.keys(source)) {
+    if (source[key] instanceof Object && key in target) {
+      Object.assign(source[key], deepMerge(target[key], source[key]));
+    }
+  }
+  // Merge source into target
+  return { ...target, ...source };
+}
