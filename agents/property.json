@@ -1640,7 +1640,7 @@
             },
             {
                 "name": "camera_va_openai_azure",
-                "auto_start": false,
+                "auto_start": true,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1649,7 +1649,7 @@
                         "name": "agora_rtc",
                         "property": {
                             "app_id": "${env:AGORA_APP_ID}",
-                            "token": "<agora_token>",
+                            "token": "",
                             "channel": "ten_agent_test",
                             "stream_id": 1234,
                             "remote_stream_id": 123,
@@ -1681,7 +1681,7 @@
                             "base_url": "${env:OPENAI_API_BASE}",
                             "api_key": "${env:OPENAI_API_KEY}",
                             "frequency_penalty": 0.9,
-                            "model": "${env:OPENAI_MODEL}",
+                            "model": "gpt-4o",
                             "max_tokens": 512,
                             "prompt": "",
                             "proxy_url": "${env:OPENAI_PROXY_URL}",
@@ -1690,6 +1690,12 @@
                             "max_memory_length": 10,
                             "enable_tools": true
                         }
+                    },
+                    {
+                        "type": "extension",
+                        "extension_group": "chatgpt",
+                        "addon": "vision_tool_python",
+                        "name": "vision_tool"
                     },
                     {
                         "type": "extension",
@@ -1738,7 +1744,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "chatgpt",
-                                        "extension": "openai_chatgpt"
+                                        "extension": "vision_tool"
                                     }
                                 ]
                             }
@@ -1789,6 +1795,30 @@
                                     {
                                         "extension_group": "tts",
                                         "extension": "azure_tts"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "tool_call",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "vision_tool"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "chatgpt",
+                        "extension": "vision_tool",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
                                     }
                                 ]
                             }
@@ -2408,7 +2438,7 @@
             },
             {
                 "name": "va_openai_v2v",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
