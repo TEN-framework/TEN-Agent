@@ -112,7 +112,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 ### Next step
 
 #### 1. Modify config files
-In the root of the project, use `cp` command to create `.env` from the example.
+In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 
 It will be used to store information for `docker compose` later.
 ```bash
@@ -168,9 +168,12 @@ make run-server
 
 #### TEN Agent
 Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
+
 #### TEN Graph Designer
 
 Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Graph Designer to create, connect and edit extensions on canvas.
+
+Once you save the graph, you can return to [localhost:3000]( http://localhost:3000 ) and select the corresponding graph to view the changes.
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
