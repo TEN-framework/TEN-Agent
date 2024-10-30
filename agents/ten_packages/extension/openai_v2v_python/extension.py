@@ -204,7 +204,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=True)
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=False)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -386,8 +386,8 @@ class OpenAIV2VExtension(Extension):
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
             await self.conn.send_audio_data(self.out_audio_buff)
-            logger.info(
-                f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
+            # logger.info(
+            #     f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
 
     def _fetch_properties(self, ten_env: TenEnv):
