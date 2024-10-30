@@ -46,21 +46,6 @@ Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppre
 * **OpenAI Realtime API and RTC integration**:
 TEN Agent is the world-class multimodal AI agent to integrate the OpenAI Realtime API and RTC.
 
-<<<<<<< Updated upstream
-1. **High-Performance Real-Time Multimodal Interactions**:
-Offers high-performance, low-latency solutions for complex audio-visual AI applications.
-
-2. **Multi-Language and Multi-Platform Support** :
-Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
-
-3. **Edge-Cloud Integration**:
-Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
-
-4. **Flexibility Beyond Model Limitations**:
-Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
-
-5. **Real-Time Agent State Management**:
-=======
 * **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
 
@@ -74,7 +59,6 @@ Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, a
 Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
 
 * **Real-Time Agent State Management**:
->>>>>>> Stashed changes
 Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 <br>
