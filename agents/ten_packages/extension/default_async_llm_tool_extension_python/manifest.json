@@ -36,18 +36,16 @@
           "name",
           "arguments"
         ],
-        "result": [
-          {
-            "property": {
-              "tool_result": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "tool_result"
-            ]
-          }
-        ]
+        "result": {
+          "property": {
+            "tool_result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tool_result"
+          ]
+        }
       }
     ],
     "cmd_out": [
