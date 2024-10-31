@@ -3393,8 +3393,8 @@
                                 "name": "rtm_message_event",
                                 "dest": [
                                     {
-                                        "extension_group": "transcriber",
-                                        "extension": "message_collector",
+                                        "extension_group": "openai_chatgpt",
+                                        "extension": "chatgpt",
                                         "msg_conversion": {
                                             "type": "per_property",
                                             "keep_original": true,
