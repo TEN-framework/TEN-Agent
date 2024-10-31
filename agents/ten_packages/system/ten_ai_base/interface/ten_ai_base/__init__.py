@@ -7,6 +7,7 @@
 from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
 from .llm import AsyncLLMBaseExtension
 from .llm_tool import AsyncLLMToolBaseExtension
+from .chat_memory import ChatMemory
 
 # Specify what should be imported when a user imports * from the
 # ten_ai_base package.
@@ -16,5 +17,6 @@ __all__ = [
     "LLMCallCompletionArgs",
     "LLMDataCompletionArgs",
     "AsyncLLMBaseExtension",
-    "AsyncLLMToolBaseExtension"
+    "AsyncLLMToolBaseExtension",
+    "ChatMemory"
 ]
