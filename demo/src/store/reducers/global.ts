@@ -23,7 +23,7 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "va_openai_v2v",
+    graphName: "va_coze_azure",
     agentSettings: DEFAULT_AGENT_SETTINGS,
   }
 }

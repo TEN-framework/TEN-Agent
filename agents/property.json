@@ -3916,7 +3916,7 @@
                         "property": {
                             "token": "${env:COZE_TOKEN}",
                             "bot_id": "${env:COZE_BOT_ID}",
-                            "base_url": "https://api.coze.com"
+                            "base_url": "https://api.coze.cn"
                         }
                     },
                     {

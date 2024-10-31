@@ -145,6 +145,15 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va_coze_azure") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "azure_tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     } else if (graphName == "va_qwen_rag") {
         return {
             "agora_rtc": {

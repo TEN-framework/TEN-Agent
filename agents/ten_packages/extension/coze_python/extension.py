@@ -3,11 +3,12 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import time
 from datetime import datetime
 from queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 
-from cozepy import ChatEventType, Coze, Message, TokenAuth  # noqa
+from cozepy import ChatEventType, Coze, Message, TokenAuth, SyncHTTPClient, CozeAPIError
 
 from ten import (
     AudioFrame,
@@ -64,6 +65,8 @@ class CozeExtension(Extension):
     outdate_ts = datetime.now()
     ten_env:TenEnv = None
     coze:Coze = None
+    mtx:Lock = Lock()
+    http:SyncHTTPClient = None
     stopped:bool = False
     thread:Thread = None
 
@@ -223,24 +226,37 @@ class CozeExtension(Extension):
         return self.outdate_ts > ts
     
     def _chat(self, input:str, ts:datetime) -> None:
-        for event in self.coze.chat.stream(
-            bot_id=self.bot_id,
-            user_id=self.user_id,
-            additional_messages=[
-                Message.build_user_question_text(input),
-            ],
-            conversation_id=self.conversation.id,
-        ):
-            if self._need_interrrupt(ts):
-                self.ten_env.log_info("interupted")
-                break
-            
-            self.ten_env.log_info(f"get result {event}")
-            if event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
-                sentences, self.sentence_fragment = parse_sentences(
-                    self.sentence_fragment, event.message.content)
-                for s in sentences:
-                    self._send_text(s)
+        with self.mtx:
+            self.http = SyncHTTPClient()
+        coze = Coze(auth=TokenAuth(token=self.token), base_url=self.base_url, http_client=self.http)
+        
+        try:
+            for event in coze.chat.stream(
+                bot_id=self.bot_id,
+                user_id=self.user_id,
+                additional_messages=[
+                    Message.build_user_question_text(input),
+                ],
+                conversation_id=self.conversation.id,
+            ):
+                if self._need_interrrupt(ts):
+                    self.ten_env.log_info("interupted")
+                    break
+                
+                self.ten_env.log_info(f"get result {event}")
+                if event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
+                    sentences, self.sentence_fragment = parse_sentences(
+                        self.sentence_fragment, event.message.content)
+                    for s in sentences:
+                        self._send_text(s)
+        except CozeAPIError as e:
+            self.ten_env.log_error(f"failed to chat with api err {e}")
+            if e.code == 4016:
+                time.sleep(0.05)
+                self._chat(input, ts)
+            else:
+                raise
+
     
     def _send_text(self, text:str) -> None:
         data = Data.create("text_data")
@@ -253,3 +269,7 @@ class CozeExtension(Extension):
 
         while not self.queue.empty():
             self.queue.get()
+        
+        with self.mtx:
+            if self.http:
+                self.http.close()
