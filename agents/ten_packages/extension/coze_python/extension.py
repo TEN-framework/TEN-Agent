@@ -33,12 +33,32 @@ DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
 
+def is_punctuation(char):
+    if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
+        return True
+    return False
+
+def parse_sentences(sentence_fragment, content):
+    sentences = []
+    current_sentence = sentence_fragment
+    for char in content:
+        current_sentence += char
+        if is_punctuation(char):
+            # Check if the current sentence contains non-punctuation characters
+            stripped_sentence = current_sentence
+            if any(c.isalnum() for c in stripped_sentence):
+                sentences.append(stripped_sentence)
+            current_sentence = ""  # Reset for the next sentence
+
+    remain = current_sentence  # Any remaining characters form the incomplete sentence
+    return sentences, remain
 class CozeExtension(Extension):
     token:str = ""
     bot_id:str = ""
     base_url:str = "https://api.coze.com"
     user_id:str = "TenAgent"
     prompt:str = ""
+    sentence_fragment:str = ""
     enable_storage: bool = False
     queue:Queue = Queue()
     outdate_ts = datetime.now()
@@ -107,9 +127,10 @@ class CozeExtension(Extension):
             ]
 
         self.conversation = self.coze.conversations.create(messages=messages)
+        ten_env.log_info(f"get conversation {self.conversation.id}")
 
         self.ten_env = ten_env
-        self.thread = Thread(self._async_loop)
+        self.thread = Thread(target=self._async_loop)
         self.thread.start()
 
         ten_env.on_start_done()
@@ -150,14 +171,14 @@ class CozeExtension(Extension):
         is_final = False
         input_text = ""
         try:
-            is_final = ten_env.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
+            is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
         
         try:
-            input_text = ten_env.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
+            input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
         except Exception as err:
             ten_env.log_info(
                 f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
@@ -216,7 +237,10 @@ class CozeExtension(Extension):
             
             self.ten_env.log_info(f"get result {event}")
             if event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
-                self._send_text(event.message.content)
+                sentences, self.sentence_fragment = parse_sentences(
+                    self.sentence_fragment, event.message.content)
+                for s in sentences:
+                    self._send_text(s)
     
     def _send_text(self, text:str) -> None:
         data = Data.create("text_data")
