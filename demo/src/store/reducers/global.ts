@@ -20,6 +20,7 @@ export interface InitialState {
   options: IOptions
   roomConnected: boolean
   agentConnected: boolean
+  rtmConnected: boolean
   themeColor: string
   language: Language
   voiceType: VoiceType
@@ -35,6 +36,7 @@ const getInitialState = (): InitialState => {
     themeColor: COLOR_LIST[0].active,
     roomConnected: false,
     agentConnected: false,
+    rtmConnected: false,
     language: "en-US",
     voiceType: "male",
     chatItems: [],
@@ -61,6 +63,9 @@ export const globalSlice = createSlice({
     },
     setRoomConnected: (state, action: PayloadAction<boolean>) => {
       state.roomConnected = action.payload
+    },
+    setRtmConnected: (state, action: PayloadAction<boolean>) => {
+      state.rtmConnected = action.payload
     },
     addChatItem: (state, action: PayloadAction<IChatItem>) => {
       const { userId, text, isFinal, type, time } = action.payload
@@ -156,6 +161,7 @@ export const {
   setOptions,
   setRoomConnected,
   setAgentConnected,
+  setRtmConnected,
   setVoiceType,
   addChatItem,
   setThemeColor,

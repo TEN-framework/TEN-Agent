@@ -10,6 +10,8 @@ export interface IOptions {
   channel: string
   userName: string
   userId: number
+  appId: string
+  token: string
 }
 
 export interface IAgentSettings {

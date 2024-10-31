@@ -25,81 +25,70 @@ export const DEFAULT_TOPIC = "chat"
 export class RtmManager extends AGEventEmitter<IRtmEvents> {
   private _joined: boolean
   private _client: RTMClient | null
-  private _stChannel: RTMStreamChannel | null
-  protected TOPIC = DEFAULT_TOPIC
+  channel: string = ""
+  userId: number = 0
+  appId: string = ""
+  token: string = ""
 
   constructor() {
     super()
     this._joined = false
     this._client = null
-    this._stChannel = null
   }
 
-  private async _getRemoteConfig({
+  async init({
     channel,
     userId,
+    appId,
+    token,
   }: {
     channel: string
     userId: number
+    appId: string
+    token: string
   }) {
-    // const res = await apiGenAgoraData({ channel, userId })
-    // const { code, data } = res ?? {}
-    // if (code != 0) {
-    //   throw new Error("Failed to get Agora token")
-    // }
-    // TODO: remove this
-    const data = {
-      appId: "123",
-      token: "456",
-    }
-    const { appId, token } = data
-    return { appId, token }
-  }
-
-  async init({ channel, userId }: { channel: string; userId: number }) {
     if (this._joined) {
       return
     }
-    const { appId, token } = await this._getRemoteConfig({ channel, userId })
+    this.channel = channel
+    this.userId = userId
+    this.appId = appId
+    this.token = token
     const rtm = new AgoraRTM.RTM(appId, String(userId), {
       logLevel: "debug", // TODO: use INFO
       // update config: https://doc.shengwang.cn/api-ref/rtm2/javascript/toc-configuration/configuration#rtmConfig
     })
     await rtm.login({ token })
     try {
-      // create StreamChannel
-      const stChannel = await rtm.createStreamChannel(channel)
-      console.log("Create Stream Channel success!: ", channel)
-      // join StreamChannel
-      const stJoinResult = await stChannel.join({
-        token: token,
+      // subscribe message channel(will be created automatically)
+      const subscribeResult = await rtm.subscribe(channel, {
+        withMessage: true,
         withPresence: true,
         beQuiet: false,
-        withMetadata: false,
-        withLock: false,
+        withMetadata: true,
+        withLock: true,
       })
-      console.log("Join Stream Channel success!: ", stJoinResult)
-      // join topic: max 64 subscribtions
-      const topicJoinResult = await stChannel.joinTopic(this.TOPIC)
-      console.log("Join Topic success!: ", topicJoinResult)
+      console.log("[RTM] Subscribe Message Channel success!: ", subscribeResult)
 
       this._joined = true
       this._client = rtm
-      this._stChannel = stChannel
 
       // listen events
       this._listenRtmEvents()
     } catch (status) {
-      console.error("Failed to Create/Join Stream Channel", status)
+      console.error("Failed to Create/Join Message Channel", status)
     }
   }
 
   private _listenRtmEvents() {
-    this._client?.on("message", this.handleRtmMessage)
+    this._client!.addEventListener("message", this.handleRtmMessage)
+    // tmp add presence
+    this._client!.addEventListener("presence", this.handleRtmPresence)
+    console.log("[RTM] Listen RTM events success!")
   }
 
   async handleRtmMessage(e: TRTMMessageEvent) {
-    console.log("[TRTMMessageEvent] RAW", JSON.stringify(e))
+    console.log("[RTM] [TRTMMessageEvent] RAW", JSON.stringify(e))
     const { message, messageType } = e
     if (messageType === "STRING") {
       const msg: IRTMTextItem = JSON.parse(message as string)
@@ -113,6 +102,10 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     }
   }
 
+  async handleRtmPresence(e: any) {
+    console.log("[RTM] [TRTMPresenceEvent] RAW", JSON.stringify(e))
+  }
+
   async sendText(text: string) {
     const msg: IRTMTextItem = {
       is_final: true,
@@ -120,26 +113,22 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       text,
       type: ERTMTextType.INPUT_TEXT,
     }
-    await this._stChannel?.publishTopicMessage(
-      this.TOPIC,
-      JSON.stringify(msg),
-      { customType: "PainTxt" },
-    )
+    await this._client?.publish(this.channel, JSON.stringify(msg), {
+      customType: "PainTxt",
+    })
     this.emit("textChanged", msg)
   }
 
-  async destory() {
+  async destroy() {
     // remove listener
     this._client?.removeEventListener("message", this.handleRtmMessage)
-    // leave topic
-    await this._stChannel?.leaveTopic(this.TOPIC)
-    // leave StreamChannel
-    await this._stChannel?.leave()
+    this._client?.removeEventListener("presence", this.handleRtmPresence)
+    // unsubscribe
+    await this._client?.unsubscribe(this.channel)
     // logout
     await this._client?.logout()
 
     this._client = null
-    this._stChannel = null
     this._joined = false
   }
 }

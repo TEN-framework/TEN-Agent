@@ -12,6 +12,8 @@ export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
   userId: 0,
+  appId: "",
+  token: "",
 }
 
 export const DEFAULT_AGENT_SETTINGS = {

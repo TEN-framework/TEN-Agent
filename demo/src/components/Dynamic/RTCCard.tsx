@@ -10,6 +10,7 @@ import {
   setRoomConnected,
   addChatItem,
   setVoiceType,
+  setOptions,
 } from "@/store/reducers/global"
 import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect"
 import AgentView from "@/components/Agent/View"
@@ -50,13 +51,20 @@ export default function RTCCard(props: { className?: string }) {
   const init = async () => {
     console.log("[test] init")
     rtcManager.on("localTracksChanged", onLocalTracksChanged)
-    rtcManager.on("textChanged", onTextChanged)
+    // rtcManager.on("textChanged", onTextChanged)
     rtcManager.on("remoteUserChanged", onRemoteUserChanged)
     await rtcManager.createTracks()
     await rtcManager.join({
       channel,
       userId,
     })
+    dispatch(
+      setOptions({
+        ...options,
+        appId: rtcManager.appId ?? "",
+        token: rtcManager.token ?? "",
+      }),
+    )
     await rtcManager.publish()
     dispatch(setRoomConnected(true))
     hasInit = true
@@ -64,7 +72,7 @@ export default function RTCCard(props: { className?: string }) {
 
   const destory = async () => {
     console.log("[test] destory")
-    rtcManager.off("textChanged", onTextChanged)
+    // rtcManager.off("textChanged", onTextChanged)
     rtcManager.off("localTracksChanged", onLocalTracksChanged)
     rtcManager.off("remoteUserChanged", onRemoteUserChanged)
     await rtcManager.destroy()
@@ -88,20 +96,21 @@ export default function RTCCard(props: { className?: string }) {
     }
   }
 
-  const onTextChanged = (text: ITextItem) => {
-    if (text.dataType == "transcribe") {
-      const isAgent = Number(text.uid) != Number(userId)
-      dispatch(
-        addChatItem({
-          userId: text.uid,
-          text: text.text,
-          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
-          isFinal: text.isFinal,
-          time: text.time,
-        }),
-      )
-    }
-  }
+  // const onTextChanged = (text: ITextItem) => {
+  //   console.log("[RTCCard] onTextChanged", text)
+  //   if (text.dataType == "transcribe") {
+  //     const isAgent = Number(text.uid) != Number(userId)
+  //     dispatch(
+  //       addChatItem({
+  //         userId: text.uid,
+  //         text: text.text,
+  //         type: isAgent ? EMessageType.AGENT : EMessageType.USER,
+  //         isFinal: text.isFinal,
+  //         time: text.time,
+  //       }),
+  //     )
+  //   }
+  // }
 
   const onVoiceChange = (value: any) => {
     dispatch(setVoiceType(value))

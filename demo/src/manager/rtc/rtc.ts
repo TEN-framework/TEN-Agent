@@ -16,6 +16,8 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _joined
   client: IAgoraRTCClient
   localTracks: IUserTracks
+  appId: string | null = null
+  token: string | null = null
 
   constructor() {
     super()
@@ -33,6 +35,8 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         throw new Error("Failed to get Agora token")
       }
       const { appId, token } = data
+      this.appId = appId
+      this.token = token
       await this.client?.join(appId, channel, token, userId)
       this._joined = true
     }
@@ -102,98 +106,123 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         videoTrack: user.videoTrack,
       })
     })
-    this.client.on("stream-message", (uid: UID, stream: any) => {
-      this._parseData(stream)
-    })
+    // this.client.on("stream-message", (uid: UID, stream: any) => {
+    //   this._parseData(stream)
+    // })
   }
 
-  private _parseData(data: any): ITextItem | void {
-    let decoder = new TextDecoder('utf-8');
-    let decodedMessage = decoder.decode(data);
-    const textstream = JSON.parse(decodedMessage);
-  
-    console.log("[test] textstream raw data", JSON.stringify(textstream));
-    
-    const { stream_id, is_final, text, text_ts, data_type, message_id, part_number, total_parts } = textstream;
-  
-    if (total_parts > 0) {
-      // If message is split, handle it accordingly
-      this._handleSplitMessage(message_id, part_number, total_parts, stream_id, is_final, text, text_ts);
-    } else {
-      // If there is no message_id, treat it as a complete message
-      this._handleCompleteMessage(stream_id, is_final, text, text_ts);
-    }
-  }
-  
-  private messageCache: { [key: string]: { parts: string[], totalParts: number } } = {};
-  
+  // private _parseData(data: any): ITextItem | void {
+  //   let decoder = new TextDecoder("utf-8")
+  //   let decodedMessage = decoder.decode(data)
+  //   const textstream = JSON.parse(decodedMessage)
+
+  //   console.log("[test] textstream raw data", JSON.stringify(textstream))
+
+  //   const {
+  //     stream_id,
+  //     is_final,
+  //     text,
+  //     text_ts,
+  //     data_type,
+  //     message_id,
+  //     part_number,
+  //     total_parts,
+  //   } = textstream
+
+  //   if (total_parts > 0) {
+  //     // If message is split, handle it accordingly
+  //     this._handleSplitMessage(
+  //       message_id,
+  //       part_number,
+  //       total_parts,
+  //       stream_id,
+  //       is_final,
+  //       text,
+  //       text_ts,
+  //     )
+  //   } else {
+  //     // If there is no message_id, treat it as a complete message
+  //     this._handleCompleteMessage(stream_id, is_final, text, text_ts)
+  //   }
+  // }
+
+  // private messageCache: {
+  //   [key: string]: { parts: string[]; totalParts: number }
+  // } = {}
+
   /**
    * Handle complete messages (not split).
    */
-  private _handleCompleteMessage(stream_id: number, is_final: boolean, text: string, text_ts: number): void {
-    const textItem: ITextItem = {
-      uid: `${stream_id}`,
-      time: text_ts,
-      dataType: "transcribe",
-      text: text,
-      isFinal: is_final
-    };
+  // private _handleCompleteMessage(
+  //   stream_id: number,
+  //   is_final: boolean,
+  //   text: string,
+  //   text_ts: number,
+  // ): void {
+  //   const textItem: ITextItem = {
+  //     uid: `${stream_id}`,
+  //     time: text_ts,
+  //     dataType: "transcribe",
+  //     text: text,
+  //     isFinal: is_final,
+  //   }
 
-    if (text.trim().length > 0) {
-      this.emit("textChanged", textItem);
-    }
-  }
-  
+  //   if (text.trim().length > 0) {
+  //     this.emit("textChanged", textItem)
+  //   }
+  // }
+
   /**
    * Handle split messages, track parts, and reassemble once all parts are received.
    */
-  private _handleSplitMessage(
-    message_id: string,
-    part_number: number,
-    total_parts: number,
-    stream_id: number,
-    is_final: boolean,
-    text: string,
-    text_ts: number
-  ): void {
-    // Ensure the messageCache entry exists for this message_id
-    if (!this.messageCache[message_id]) {
-      this.messageCache[message_id] = { parts: [], totalParts: total_parts };
-    }
-  
-    const cache = this.messageCache[message_id];
-  
-    // Store the received part at the correct index (part_number starts from 1, so we use part_number - 1)
-    cache.parts[part_number - 1] = text;
-  
-    // Check if all parts have been received
-    const receivedPartsCount = cache.parts.filter(part => part !== undefined).length;
-  
-    if (receivedPartsCount === total_parts) {
-      // All parts have been received, reassemble the message
-      const fullText = cache.parts.join('');
-  
-      // Now that the message is reassembled, handle it like a complete message
-      this._handleCompleteMessage(stream_id, is_final, fullText, text_ts);
-  
-      // Remove the cached message since it is now fully processed
-      delete this.messageCache[message_id];
-    }
-  }
+  // private _handleSplitMessage(
+  //   message_id: string,
+  //   part_number: number,
+  //   total_parts: number,
+  //   stream_id: number,
+  //   is_final: boolean,
+  //   text: string,
+  //   text_ts: number,
+  // ): void {
+  //   // Ensure the messageCache entry exists for this message_id
+  //   if (!this.messageCache[message_id]) {
+  //     this.messageCache[message_id] = { parts: [], totalParts: total_parts }
+  //   }
 
+  //   const cache = this.messageCache[message_id]
 
-  _playAudio(audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined) {
+  //   // Store the received part at the correct index (part_number starts from 1, so we use part_number - 1)
+  //   cache.parts[part_number - 1] = text
+
+  //   // Check if all parts have been received
+  //   const receivedPartsCount = cache.parts.filter(
+  //     (part) => part !== undefined,
+  //   ).length
+
+  //   if (receivedPartsCount === total_parts) {
+  //     // All parts have been received, reassemble the message
+  //     const fullText = cache.parts.join("")
+
+  //     // Now that the message is reassembled, handle it like a complete message
+  //     this._handleCompleteMessage(stream_id, is_final, fullText, text_ts)
+
+  //     // Remove the cached message since it is now fully processed
+  //     delete this.messageCache[message_id]
+  //   }
+  // }
+
+  _playAudio(
+    audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined,
+  ) {
     if (audioTrack && !audioTrack.isPlaying) {
       audioTrack.play()
     }
   }
-
 
   private _resetData() {
     this.localTracks = {}
     this._joined = false
   }
 }
-
 
 export const rtcManager = new RtcManager()
