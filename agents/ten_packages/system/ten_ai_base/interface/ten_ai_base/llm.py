@@ -5,13 +5,9 @@
 #
 from abc import ABC, abstractmethod
 import asyncio
-from enum import Enum
-from typing import Optional, TypedDict, Union
 
-from pydantic import BaseModel
 from ten import (
     AsyncExtension,
-    TenEnv,
     Data,
 )
 from ten.async_ten_env import AsyncTenEnv
@@ -21,6 +17,7 @@ from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_
 from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from .helper import AsyncQueue
 import json
+
 
 class AsyncLLMBaseExtension(AsyncExtension, ABC):
     """
@@ -32,6 +29,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
     Override on_call_chat_completion and on_data_chat_completion to implement the chat completion logic.
     """
     # Create the queue for message processing
+
     def __init__(self, name: str):
         super().__init__(name)
         self.queue = AsyncQueue()
@@ -40,19 +38,19 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         self.current_task = None
         self.hit_default_cmd = False
 
-    async def on_init(self, ten_env: TenEnv) -> None:
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
 
-    async def on_start(self, ten_env: TenEnv) -> None:
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
 
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_queue(ten_env))
 
-    async def on_stop(self, ten_env: TenEnv) -> None:
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
-    async def on_deinit(self, ten_env: TenEnv) -> None:
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
 
     async def on_cmd(self, async_ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -64,23 +62,26 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         async_ten_env.log_debug(f"on_cmd name {cmd_name}")
         if cmd_name == CMD_TOOL_REGISTER:
             try:
-                tool_metadata_json = json.loads(cmd.get_property_to_json(CMD_PROPERTY_TOOL))
+                tool_metadata_json = json.loads(
+                    cmd.get_property_to_json(CMD_PROPERTY_TOOL))
                 async_ten_env.log_info(f"register tool: {tool_metadata_json}")
-                tool_metadata = LLMToolMetadata.model_validate_json(tool_metadata_json)
+                tool_metadata = LLMToolMetadata.model_validate_json(
+                    tool_metadata_json)
                 async with self.available_tools_lock:
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
-                async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+                async_ten_env.return_result(
+                    CmdResult.create(StatusCode.OK), cmd)
             except Exception as err:
                 async_ten_env.log_warn(f"on_cmd failed: {err}")
-                async_ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
-
+                async_ten_env.return_result(
+                    CmdResult.create(StatusCode.ERROR), cmd)
 
     async def queue_input_item(self, prepend: bool = False, **kargs: LLMDataCompletionArgs):
         """Queues an input item for processing."""
         await self.queue.put(kargs, prepend)
 
-    async def flush_input_items(self, ten_env: TenEnv):
+    async def flush_input_items(self, ten_env: AsyncTenEnv):
         """Flushes the self.queue and cancels the current task."""
         # Flush the queue using the new flush method
         await self.queue.flush()
@@ -90,7 +91,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             ten_env.log_info("Cancelling the current task during flush.")
             self.current_task.cancel()
 
-    def send_text_output(self, ten_env: TenEnv, sentence: str, end_of_segment: bool):
+    def send_text_output(self, ten_env: AsyncTenEnv, sentence: str, end_of_segment: bool):
         try:
             output_data = Data.create(DATA_OUTPUT_NAME)
             output_data.set_property_string(
@@ -108,12 +109,12 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             )
 
     @abstractmethod
-    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> None:
+    async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> None:
         """Called when a chat completion is requested by cmd call. Implement this method to process the chat completion."""
         pass
 
     @abstractmethod
-    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
+    async def on_data_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs) -> None:
         """
         Called when a chat completion is requested by data input. Implement this method to process the chat completion.
         Note that this method is stream-based, and it should consider supporting local context caching.
@@ -121,11 +122,11 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         pass
 
     @abstractmethod
-    async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
+    async def on_tools_update(self, ten_env: AsyncTenEnv, tool: LLMToolMetadata) -> None:
         """Called when a new tool is registered. Implement this method to process the new tool."""
         pass
 
-    async def _process_queue(self, ten_env: TenEnv):
+    async def _process_queue(self, ten_env: AsyncTenEnv):
         """Asynchronously process queue items one by one."""
         while True:
             # Wait for an item to be available in the queue
@@ -137,5 +138,3 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 ten_env.log_info(f"Task cancelled: {args}")
-
-    
