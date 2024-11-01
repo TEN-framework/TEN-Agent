@@ -23,7 +23,7 @@ export default function MessageList(props: { className?: string }) {
   return (
     <div
       ref={containerRef}
-      className={cn("flex-grow overflow-y-auto p-4", className)}
+      className={cn("flex-grow space-y-2 overflow-y-auto p-4", className)}
     >
       {chatItems.map((item, index) => {
         return <MessageItem data={item} key={item.time} />
@@ -38,8 +38,8 @@ export function MessageItem(props: { data: IChatItem }) {
   return (
     <>
       <div
-        className={cn("flex items-start space-x-2", {
-          "justify-end": data.type === EMessageType.USER,
+        className={cn("flex items-start gap-2", {
+          "flex-row-reverse": data.type === EMessageType.USER,
         })}
       >
         <Avatar>

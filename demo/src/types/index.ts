@@ -56,6 +56,7 @@ export interface IRTMTextItem {
   type: ERTMTextType
   ts: number
   text: string
+  stream_id: string
 }
 
 export interface GraphOptionItem {

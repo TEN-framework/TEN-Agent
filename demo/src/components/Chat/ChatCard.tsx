@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { LanguageSelect, GraphSelect } from "@/components/Chat/ChatCfgSelect"
@@ -79,7 +81,6 @@ export default function ChatCard(props: { className?: string }) {
 
   const init = async () => {
     console.log("[ChatCard] init")
-    rtmManager.on("textChanged", onTextChanged)
     await rtmManager.init({
       channel: options.channel,
       userId: options.userId,
@@ -87,11 +88,12 @@ export default function ChatCard(props: { className?: string }) {
       token: options.token,
     })
     dispatch(setRtmConnected(true))
+    rtmManager.on("rtmMessage", onTextChanged)
     hasInit = true
   }
   const destory = async () => {
     console.log("[ChatCard] destory")
-    rtmManager.off("textChanged", onTextChanged)
+    rtmManager.off("rtmMessage", onTextChanged)
     await rtmManager.destroy()
     dispatch(setRtmConnected(false))
     hasInit = false
@@ -105,8 +107,19 @@ export default function ChatCard(props: { className?: string }) {
         addChatItem({
           userId: options.userId,
           text: text.text,
-          type: false ? EMessageType.AGENT : EMessageType.USER,
+          type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
           isFinal: text.is_final,
+          time: text.ts,
+        }),
+      )
+    }
+    if (text.type == ERTMTextType.INPUT_TEXT) {
+      dispatch(
+        addChatItem({
+          userId: options.userId,
+          text: text.text,
+          type: EMessageType.USER,
+          isFinal: true,
           time: text.ts,
         }),
       )

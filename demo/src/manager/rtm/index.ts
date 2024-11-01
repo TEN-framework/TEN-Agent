@@ -6,7 +6,7 @@ import { apiGenAgoraData } from "@/common"
 import { type IRTMTextItem, ERTMTextType } from "@/types"
 
 export interface IRtmEvents {
-  textChanged: (text: any) => void // TODO: update type
+  rtmMessage: (text: any) => void // TODO: update type
 }
 
 export type TRTMMessageEvent = {
@@ -20,11 +20,9 @@ export type TRTMMessageEvent = {
   timestamp: number
 }
 
-export const DEFAULT_TOPIC = "chat"
-
 export class RtmManager extends AGEventEmitter<IRtmEvents> {
   private _joined: boolean
-  private _client: RTMClient | null
+  _client: RTMClient | null
   channel: string = ""
   userId: number = 0
   appId: string = ""
@@ -81,9 +79,12 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   private _listenRtmEvents() {
-    this._client!.addEventListener("message", this.handleRtmMessage)
+    this._client!.addEventListener("message", this.handleRtmMessage.bind(this))
     // tmp add presence
-    this._client!.addEventListener("presence", this.handleRtmPresence)
+    this._client!.addEventListener(
+      "presence",
+      this.handleRtmPresence.bind(this),
+    )
     console.log("[RTM] Listen RTM events success!")
   }
 
@@ -91,14 +92,19 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     console.log("[RTM] [TRTMMessageEvent] RAW", JSON.stringify(e))
     const { message, messageType } = e
     if (messageType === "STRING") {
+      console.log("[RTM] [TRTMMessageEvent] STRING", message)
       const msg: IRTMTextItem = JSON.parse(message as string)
-      this.emit("textChanged", msg)
+      console.log("[RTM] [TRTMMessageEvent] STRING PARSED", msg)
+      if (msg) {
+        console.log("[RTM] Emitting rtmMessage event with msg:", msg)
+        this.emit("rtmMessage", msg)
+      }
     }
     if (messageType === "BINARY") {
       const decoder = new TextDecoder("utf-8")
       const decodedMessage = decoder.decode(message as Uint8Array)
       const msg: IRTMTextItem = JSON.parse(decodedMessage)
-      this.emit("textChanged", msg)
+      this.emit("rtmMessage", msg)
     }
   }
 
@@ -112,17 +118,24 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       ts: Date.now(),
       text,
       type: ERTMTextType.INPUT_TEXT,
+      stream_id: String(this.userId),
     }
     await this._client?.publish(this.channel, JSON.stringify(msg), {
       customType: "PainTxt",
     })
-    this.emit("textChanged", msg)
+    this.emit("rtmMessage", msg)
   }
 
   async destroy() {
     // remove listener
-    this._client?.removeEventListener("message", this.handleRtmMessage)
-    this._client?.removeEventListener("presence", this.handleRtmPresence)
+    this._client?.removeEventListener(
+      "message",
+      this.handleRtmMessage.bind(this),
+    )
+    this._client?.removeEventListener(
+      "presence",
+      this.handleRtmPresence.bind(this),
+    )
     // unsubscribe
     await this._client?.unsubscribe(this.channel)
     // logout

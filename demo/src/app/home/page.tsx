@@ -6,11 +6,15 @@ import dynamic from "next/dynamic"
 import Header from "@/components/Layout/Header"
 import Action from "@/components/Layout/Action"
 // import RTCCard from "@/components/Dynamic/RTCCard"
-import ChatCard from "@/components/Chat/ChatCard"
+// import ChatCard from "@/components/Chat/ChatCard"
 import { cn } from "@/lib/utils"
 import FormModal from "@/components/settings"
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
+  ssr: false,
+})
+
+const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
   ssr: false,
 })
 
@@ -33,7 +37,7 @@ export default function Home() {
               },
             )}
           />
-          <ChatCard
+          <DynamicChatCard
             className={cn(
               "m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg",
               {
