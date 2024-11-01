@@ -5,13 +5,25 @@
 #
 from ten import AsyncTenEnv
 from ten_ai_base import (
-    AsyncLLMBaseExtension, LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
+    AsyncLLMBaseExtension, LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata, BaseConfig
 )
+from dataclasses import dataclass
+
+
+@dataclass
+class DefaultAsyncLLMConfig(BaseConfig):
+    model: str = ""
+    # TODO: add extra config fields here
 
 
 class DefaultAsyncLLMExtension(AsyncLLMBaseExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
+
+        # initialize configuration
+        self.config = DefaultAsyncLLMConfig()
+        self.config.init_from_property(ten_env=ten_env)
+        ten_env.log_info(f"config: {self.config}")
 
         """Implement this method to construct and start your resources."""
         ten_env.log_debug("TODO: on_start")

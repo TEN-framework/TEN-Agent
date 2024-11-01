@@ -20,7 +20,11 @@
     ]
   },
   "api": {
-    "property": {},
+    "property": {
+      "model": {
+        "type": "string"
+      }
+    },
     "cmd_in": [
       {
         "name": "tool_register",
