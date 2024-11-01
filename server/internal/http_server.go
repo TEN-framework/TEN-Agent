@@ -404,7 +404,8 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	// Generate token
 	req.Token = s.config.AppId
 	if s.config.AppCertificate != "" {
-		req.Token, err = rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, tokenExpirationInSeconds)
+		//req.Token, err = rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, tokenExpirationInSeconds)
+		req.Token, err = rtctokenbuilder.BuildTokenWithRtm(s.config.AppId, s.config.AppCertificate, req.ChannelName, fmt.Sprintf("%d", 0), rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, tokenExpirationInSeconds)
 		if err != nil {
 			slog.Error("handlerStart generate token failed", "err", err, "requestId", req.RequestId, logTag)
 			return

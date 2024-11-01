@@ -3264,7 +3264,7 @@
                             "channel": "ten_agent_test",
                             "app_id": "${env:AGORA_APP_ID}",
                             "token": "<agora_token>",
-                            "user_id": "TenAgent",
+                            "user_id": "0",
                             "rtm_enabled": true,
                             "rtm_is_stream": false,
                             "rtm_presence_enabled": true,
