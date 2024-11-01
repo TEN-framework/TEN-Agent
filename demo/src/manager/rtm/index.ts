@@ -92,9 +92,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     console.log("[RTM] [TRTMMessageEvent] RAW", JSON.stringify(e))
     const { message, messageType } = e
     if (messageType === "STRING") {
-      console.log("[RTM] [TRTMMessageEvent] STRING", message)
       const msg: IRTMTextItem = JSON.parse(message as string)
-      console.log("[RTM] [TRTMMessageEvent] STRING PARSED", msg)
       if (msg) {
         console.log("[RTM] Emitting rtmMessage event with msg:", msg)
         this.emit("rtmMessage", msg)

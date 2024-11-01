@@ -4,30 +4,13 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { LanguageSelect, GraphSelect } from "@/components/Chat/ChatCfgSelect"
 import PdfSelect from "@/components/pdfSelect"
-import {
-  useAppDispatch,
-  useAutoScroll,
-  LANGUAGE_OPTIONS,
-  useAppSelector,
-  GRAPH_OPTIONS,
-  isRagGraph,
-} from "@/common"
-import {
-  setGraphName,
-  setLanguage,
-  setRtmConnected,
-  addChatItem,
-} from "@/store/reducers/global"
+import { useAppDispatch, useAppSelector, isRagGraph } from "@/common"
+import { setRtmConnected, addChatItem } from "@/store/reducers/global"
 import MessageList from "@/components/Chat/MessageList"
 import { Button } from "@/components/ui/button"
 import { Send } from "lucide-react"
 import { rtmManager } from "@/manager/rtm"
-import {
-  ITextItem,
-  type IRTMTextItem,
-  EMessageType,
-  ERTMTextType,
-} from "@/types"
+import { type IRTMTextItem, EMessageType, ERTMTextType } from "@/types"
 
 let hasInit: boolean = false
 
@@ -36,9 +19,9 @@ export default function ChatCard(props: { className?: string }) {
   const [inputValue, setInputValue] = React.useState("")
 
   const graphName = useAppSelector((state) => state.global.graphName)
-  const chatItems = useAppSelector((state) => state.global.chatItems)
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected)
   const options = useAppSelector((state) => state.global.options)
+  const agentConnected = useAppSelector((state) => state.global.agentConnected)
   const dispatch = useAppDispatch()
 
   const disableInputMemo = React.useMemo(() => {
@@ -47,7 +30,8 @@ export default function ChatCard(props: { className?: string }) {
       !options.userId ||
       !options.appId ||
       !options.token ||
-      !rtmConnected
+      !rtmConnected ||
+      !agentConnected
     )
   }, [
     options.channel,
@@ -55,6 +39,7 @@ export default function ChatCard(props: { className?: string }) {
     options.appId,
     options.token,
     rtmConnected,
+    agentConnected,
   ])
 
   React.useEffect(() => {
@@ -80,7 +65,7 @@ export default function ChatCard(props: { className?: string }) {
   }, [options.channel, options.userId, options.appId, options.token])
 
   const init = async () => {
-    console.log("[ChatCard] init")
+    console.log("[rtm] init")
     await rtmManager.init({
       channel: options.channel,
       userId: options.userId,
@@ -92,7 +77,7 @@ export default function ChatCard(props: { className?: string }) {
     hasInit = true
   }
   const destory = async () => {
-    console.log("[ChatCard] destory")
+    console.log("[rtm] destory")
     rtmManager.off("rtmMessage", onTextChanged)
     await rtmManager.destroy()
     dispatch(setRtmConnected(false))
@@ -100,7 +85,7 @@ export default function ChatCard(props: { className?: string }) {
   }
 
   const onTextChanged = (text: IRTMTextItem) => {
-    console.log("[ChatCard] onTextChanged", text)
+    console.log("[rtm] onTextChanged", text)
     if (text.type == ERTMTextType.TRANSCRIBE) {
       // const isAgent = Number(text.uid) != Number(options.userId)
       dispatch(
@@ -163,14 +148,22 @@ export default function ChatCard(props: { className?: string }) {
                 placeholder="Type a message..."
                 value={inputValue}
                 onChange={handleInputChange}
-                className="flex-grow rounded-md border bg-background p-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
+                className={cn(
+                  "flex-grow rounded-md border bg-background p-1.5 focus:outline-none focus:ring-1 focus:ring-ring",
+                  {
+                    ["cursor-not-allowed"]: disableInputMemo,
+                  },
+                )}
               />
               <Button
                 type="submit"
                 disabled={disableInputMemo || inputValue.length == 0}
                 size="icon"
                 variant="outline"
-                className="bg-transparent"
+                className={cn("bg-transparent", {
+                  ["opacity-50"]: disableInputMemo || inputValue.length == 0,
+                  ["cursor-not-allowed"]: disableInputMemo,
+                })}
               >
                 <Send className="h-4 w-4" />
                 <span className="sr-only">Send message</span>

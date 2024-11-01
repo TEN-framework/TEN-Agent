@@ -49,7 +49,7 @@ export default function RTCCard(props: { className?: string }) {
   }, [options.channel])
 
   const init = async () => {
-    console.log("[test] init")
+    console.log("[rtc] init")
     rtcManager.on("localTracksChanged", onLocalTracksChanged)
     rtcManager.on("textChanged", onTextChanged)
     rtcManager.on("remoteUserChanged", onRemoteUserChanged)
@@ -71,7 +71,7 @@ export default function RTCCard(props: { className?: string }) {
   }
 
   const destory = async () => {
-    console.log("[test] destory")
+    console.log("[rtc] destory")
     rtcManager.off("textChanged", onTextChanged)
     rtcManager.off("localTracksChanged", onLocalTracksChanged)
     rtcManager.off("remoteUserChanged", onRemoteUserChanged)
@@ -81,12 +81,12 @@ export default function RTCCard(props: { className?: string }) {
   }
 
   const onRemoteUserChanged = (user: IRtcUser) => {
-    console.log("[test] onRemoteUserChanged", user)
+    console.log("[rtc] onRemoteUserChanged", user)
     setRemoteUser(user)
   }
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
-    console.log("[test] onLocalTracksChanged", tracks)
+    console.log("[rtc] onLocalTracksChanged", tracks)
     const { videoTrack, audioTrack } = tracks
     if (videoTrack) {
       setVideoTrack(videoTrack)
@@ -97,7 +97,7 @@ export default function RTCCard(props: { className?: string }) {
   }
 
   const onTextChanged = (text: ITextItem) => {
-    console.log("[RTCCard] onTextChanged", text)
+    console.log("[rtc] onTextChanged", text)
     if (text.dataType == "transcribe") {
       const isAgent = Number(text.uid) != Number(userId)
       dispatch(

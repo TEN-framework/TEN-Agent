@@ -21,13 +21,18 @@ import { setGraphName, setLanguage } from "@/store/reducers/global"
 export function GraphSelect() {
   const dispatch = useAppDispatch()
   const graphName = useAppSelector((state) => state.global.graphName)
+  const agentConnected = useAppSelector((state) => state.global.agentConnected)
   const onGraphNameChange = (val: string) => {
     dispatch(setGraphName(val))
   }
 
   return (
     <>
-      <Select value={graphName} onValueChange={onGraphNameChange}>
+      <Select
+        value={graphName}
+        onValueChange={onGraphNameChange}
+        disabled={agentConnected}
+      >
         <SelectTrigger className="w-fit">
           <SelectValue placeholder="Graph" />
         </SelectTrigger>
@@ -48,6 +53,7 @@ export function GraphSelect() {
 export function LanguageSelect() {
   const dispatch = useAppDispatch()
   const language = useAppSelector((state) => state.global.language)
+  const agentConnected = useAppSelector((state) => state.global.agentConnected)
 
   const onLanguageChange = (val: Language) => {
     dispatch(setLanguage(val))
@@ -55,7 +61,11 @@ export function LanguageSelect() {
 
   return (
     <>
-      <Select value={language} onValueChange={onLanguageChange}>
+      <Select
+        value={language}
+        onValueChange={onLanguageChange}
+        disabled={agentConnected}
+      >
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Language" />
         </SelectTrigger>

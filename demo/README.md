@@ -24,7 +24,8 @@ URL: https://agent.theten.ai
 ```bash
 # cd ./demo
 # install dependencies
-yarn install
+# corepack enable
+yarn
 ```
 
 ### Run
