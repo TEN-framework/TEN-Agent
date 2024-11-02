@@ -24,8 +24,7 @@ class DefaultAsyncLLMToolExtension(AsyncLLMToolBaseExtension):
         await super().on_start(ten_env)
 
         # initialize configuration
-        self.config = DefaultAsyncLLMToolConfig()
-        self.config.init_from_property(ten_env=ten_env)
+        self.config = DefaultAsyncLLMToolConfig.create(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         """Implement this method to construct and start your resources."""

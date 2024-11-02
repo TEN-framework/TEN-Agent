@@ -1,6 +1,9 @@
 from dataclasses import dataclass, fields
 import builtins
+from typing import TypeVar, Type
 from ten import TenEnv
+
+T = TypeVar('T', bound='BaseConfig')
 
 
 @dataclass
@@ -10,7 +13,13 @@ class BaseConfig:
     Extra configuration fields can be added in inherited class. 
     """
 
-    def init_from_property(obj, ten_env: TenEnv):
+    @classmethod
+    def create(cls: Type[T], ten_env: TenEnv) -> T:
+        c = cls()
+        c._init(ten_env)
+        return c
+
+    def _init(obj, ten_env: TenEnv):
         """
         Get property from ten_env to initialize the dataclass config.    
         """
