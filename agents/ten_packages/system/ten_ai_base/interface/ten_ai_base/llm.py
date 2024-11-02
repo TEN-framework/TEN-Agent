@@ -39,19 +39,19 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         self.hit_default_cmd = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_init")
+        await super().on_init(ten_env)
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
+        await super().on_start(ten_env)
 
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_queue(ten_env))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
+        await super().on_stop(ten_env)
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        await super().on_deinit(ten_env)
 
     async def on_cmd(self, async_ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         """

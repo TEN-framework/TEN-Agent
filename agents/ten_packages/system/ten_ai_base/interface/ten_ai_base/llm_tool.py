@@ -16,8 +16,9 @@ import json
 
 class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_start")
-        tools = self.get_tool_metadata()
+        await super().on_start(ten_env)
+
+        tools = self.get_tool_metadata(ten_env)
         for tool in tools:
             ten_env.log_info(f"tool: {tool}")
             c: Cmd = Cmd.create(CMD_TOOL_REGISTER)
@@ -27,10 +28,7 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
             ten_env.log_info(f"tool registered, {tool}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_stop")
-
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
+        await super().on_stop(ten_env)
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
