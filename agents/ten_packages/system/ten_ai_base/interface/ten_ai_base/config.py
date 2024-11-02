@@ -10,10 +10,7 @@ class BaseConfig:
     Extra configuration fields can be added in inherited class. 
     """
 
-    def __post_init__(self, ten_env: TenEnv):
-        self._init_from_property(ten_env=ten_env)
-
-    def _init_from_property(obj, ten_env: TenEnv):
+    def init_from_property(obj, ten_env: TenEnv):
         """
         Get property from ten_env to initialize the dataclass config.    
         """
