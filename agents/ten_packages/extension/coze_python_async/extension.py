@@ -4,8 +4,10 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import traceback
 from datetime import datetime
-from cozepy import ChatEventType, AsyncCoze, Message, TokenAuth
+from cozepy import ChatEventType, Message, TokenAuth, AsyncCoze
+from .coze import AsyncClient, AsyncChat
 
 from ten import (
     AudioFrame,
@@ -59,8 +61,11 @@ class AsyncCozeExtension(AsyncExtension):
     prompt:str = ""
     enable_storage: bool = False
     outdate_ts = datetime.now()
+    sentence_fragment:str = ""
     ten_env:AsyncTenEnv = None
-    coze:AsyncCoze = None
+    coze:AsyncClient = None
+    current_chat:AsyncChat = None
+    loop:asyncio.AbstractEventLoop = None
     stopped:bool = False
     queue = asyncio.Queue()
 
@@ -70,6 +75,8 @@ class AsyncCozeExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_start")
+
+        self.loop = asyncio.get_event_loop()
 
         try:
             self.token = ten_env.get_property_string(PROPERTY_TOKEN)
@@ -129,14 +136,17 @@ class AsyncCozeExtension(AsyncExtension):
             ten_env.log_error(f"failed to create conversation {e}")
             return
 
+        self.acoze = AsyncClient(auth=TokenAuth(token=self.token), base_url=self.base_url)
         self.ten_env = ten_env
+
+        self.loop.create_task(self._consume())
 
         ten_env.on_start_done()
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_stop")
 
-        self._flush()
+        await self._flush()
         
         ten_env.on_stop_done()
 
@@ -149,12 +159,12 @@ class AsyncCozeExtension(AsyncExtension):
         ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
         if cmd_name == "flush":
-            self._flush()
-            cmd_out = Cmd.create("flush")
-            await ten_env.send_cmd(
-                cmd_out,
-                lambda ten, result: ten_env.log_info("send_cmd flush done"),
-            )
+            try:
+                await self._flush()
+                await ten_env.send_cmd(Cmd.create("flush"))
+                ten_env.log_info("on flush")
+            except Exception as e:
+                ten_env.log_error(f"{traceback.format_exc()} \n Failed to handle {e}")
 
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
@@ -201,8 +211,14 @@ class AsyncCozeExtension(AsyncExtension):
     ) -> None:
         pass
 
-    def _flush(self):
+    async def _flush(self):
+        self.ten_env.log_info("flush")
         self.outdate_ts = datetime.now()
+
+        if self.current_chat:
+            await self.current_chat.close()
+            self.current_chat = None
+            self.ten_env.log_info("close current chat")
     
     def _need_interrrupt(self, ts:datetime) -> bool:
         return self.outdate_ts > ts
@@ -230,7 +246,8 @@ class AsyncCozeExtension(AsyncExtension):
                 self.ten_env.log_error(f"Failed to handle {e}")
 
     async def _chat(self, input:str, ts:datetime) -> None:
-        async for event in self.coze.chat.stream(
+        self.current_chat = self.acoze.chat()
+        async for event in self.current_chat.stream(
             bot_id=self.bot_id,
             user_id=self.user_id,
             additional_messages=[
@@ -243,8 +260,13 @@ class AsyncCozeExtension(AsyncExtension):
                 break
             
             self.ten_env.log_info(f"get result {event}")
-            if event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
-                sentences, self.sentence_fragment = parse_sentences(
-                    self.sentence_fragment, event.message.content)
-                for s in sentences:
-                    await self._send_text(s)
+            try:
+                if event.event == ChatEventType.CONVERSATION_MESSAGE_DELTA:
+                    sentences, self.sentence_fragment = parse_sentences(
+                        self.sentence_fragment, event.message.content)
+                    for s in sentences:
+                        await self._send_text(s)
+            except Exception as e:
+                self.ten_env.log_error(f"Failed to handle {e}")
+        
+        self.current_chat = None

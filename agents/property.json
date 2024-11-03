@@ -3911,8 +3911,8 @@
                     {
                         "type": "extension",
                         "extension_group": "glue",
-                        "addon": "coze_python",
-                        "name": "coze_python",
+                        "addon": "coze_python_async",
+                        "name": "coze_python_async",
                         "property": {
                             "token": "${env:COZE_TOKEN}",
                             "bot_id": "${env:COZE_BOT_ID}",
@@ -3951,7 +3951,7 @@
                                     },
                                     {
                                         "extension_group": "glue",
-                                        "extension": "coze_python"
+                                        "extension": "coze_python_async"
                                     },
                                     {
                                         "extension_group": "transcriber",
@@ -3963,7 +3963,7 @@
                     },
                     {
                         "extension_group": "glue",
-                        "extension": "coze_python",
+                        "extension": "coze_python_async",
                         "data": [
                             {
                                 "name": "text_data",
@@ -4041,7 +4041,7 @@
                                 "dest": [
                                     {
                                         "extension_group": "glue",
-                                        "extension": "coze_python"
+                                        "extension": "coze_python_async"
                                     }
                                 ]
                             }

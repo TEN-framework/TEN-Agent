@@ -2,19 +2,6 @@
   "version": 1,
   "packages": [
     {
-      "type": "extension",
-      "name": "default_async_extension_python",
-      "version": "0.3.1",
-      "hash": "1e8a7acad60653ef02a59f7fee0b9c1116e9012c8f4e6570512704e0ff0066ec",
-      "dependencies": [
-        {
-          "type": "system",
-          "name": "ten_runtime_python"
-        }
-      ],
-      "supports": []
-    },
-    {
       "type": "system",
       "name": "ten_runtime_go",
       "version": "0.3.1",
