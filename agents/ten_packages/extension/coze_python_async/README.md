@@ -1,29 +1,27 @@
 # coze_python_async
 
-<!-- brief introduction for the extension -->
+This is a python extension for coze that support both coze.cn and coze.com.
 
 ## Features
 
-<!-- main features introduction -->
+Currently the extension only support conversation with certain bot.
 
-- xxx feature
+- `bot_id` (must have)
+- `token` (must have)
+- `base_url` (optional): can be coze.com or coze.cn
+
+The extension support flush that will close the existing http session.
+
+### TODO List
+
+Currently file upload is not support and there is no memory support in current extension.
 
 ## API
 
 Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
 
-<!-- Additional API.md can be referred to if extra introduction needed -->
-
-## Development
-
-### Build
-
-<!-- build dependencies and steps -->
-
-### Unit test
-
-<!-- how to do unit test for the extension -->
-
-## Misc
-
-<!-- others if applicable -->
+- In:
+ - `text_data` [data]: the asr result
+ - `flush` [cmd]: the flush signal
+- Out:
+ - `flush` [cmd]: the flush signal
