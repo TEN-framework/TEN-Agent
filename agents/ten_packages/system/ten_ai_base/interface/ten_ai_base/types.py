@@ -1,17 +1,19 @@
-from typing import TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 from pydantic import BaseModel
 
 class LLMToolMetadataParameter(BaseModel):
     name: str
     type: str
     description: str
-    required: bool
+    required: Optional[bool] = False
 
 class LLMToolMetadata(BaseModel):
     name: str
     description: str
     parameters: list[LLMToolMetadataParameter]
 
+class LLMCompletionContentItemJSON(BaseModel):
+    json_str: str
 
 class LLMCompletionContentItemText(BaseModel):
     text: str
@@ -25,15 +27,25 @@ class LLMCompletionContentItemAudio(BaseModel):
 LLMCompletionContentItem = Union[
     LLMCompletionContentItemText, 
     LLMCompletionContentItemImage, 
-    LLMCompletionContentItemAudio
+    LLMCompletionContentItemAudio,
+    LLMCompletionContentItemJSON
 ]
 
+
+
+class LLMCompletionArgsMessage(BaseModel):
+    role: Literal["system"] | Literal["user"] | Literal["assistant"] | Literal["tool"]
+    content: list[LLMCompletionContentItem]
+    tool_call_id: Optional[str] = None
+
+
 class LLMToolResult(BaseModel):
-    items: list[LLMCompletionContentItem]
+    message: LLMCompletionArgsMessage
+
 
 class LLMCallCompletionArgs(TypedDict, total=False):
-    content: list[LLMCompletionContentItem]
+    message: LLMCompletionArgsMessage
 
 class LLMDataCompletionArgs(TypedDict, total=False):
-    content: list[LLMCompletionContentItem]
+    content: LLMCompletionArgsMessage
     no_tool: bool = False

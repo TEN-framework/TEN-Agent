@@ -15,7 +15,7 @@ from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.types import LLMCompletionContentItemImage
+from ten_ai_base.types import LLMCompletionArgsMessage, LLMCompletionContentItemImage
 
 
 def rgb2base64jpeg(rgb_data, width, height):
@@ -129,7 +129,7 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
         self.image_width = video_frame.get_width()
         self.image_height = video_frame.get_height()
 
-    def get_tool_metadata(self) -> list[LLMToolMetadata]:
+    def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         return [
             LLMToolMetadata(
                 name="get_vision_tool",
@@ -145,4 +145,4 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
 
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
             result = LLMCompletionContentItemImage(image=base64_image)
-            return LLMToolResult(items=[result])
+            return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
