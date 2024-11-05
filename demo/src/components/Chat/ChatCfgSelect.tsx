@@ -33,7 +33,7 @@ export function GraphSelect() {
         onValueChange={onGraphNameChange}
         disabled={agentConnected}
       >
-        <SelectTrigger className="w-fit">
+        <SelectTrigger className="w-auto max-w-full">
           <SelectValue placeholder="Graph" />
         </SelectTrigger>
         <SelectContent>

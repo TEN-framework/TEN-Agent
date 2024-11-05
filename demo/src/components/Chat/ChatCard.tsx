@@ -130,14 +130,18 @@ export default function ChatCard(props: { className?: string }) {
       <div className={cn("flex-grow", className)}>
         <div className="flex h-full w-full flex-col p-4">
           {/* Action Bar */}
-          <div className="flex items-center justify-end gap-4">
+          <div className="flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
             <GraphSelect />
             <LanguageSelect />
             {isRagGraph(graphName) && <PdfSelect />}
           </div>
           {/* Chat messages would go here */}
           <MessageList />
-          <div className="border-t pt-4">
+          <div
+            className={cn("border-t pt-4", {
+              ["hidden"]: !graphName.includes("rtm"), // TODO: TMP use rtm key word
+            })}
+          >
             <form
               onSubmit={handleInputSubmit}
               className="flex items-center space-x-2"

@@ -94,20 +94,28 @@ export default function LoginCard() {
               (Beta)
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
-            <Input
-              placeholder="User Name"
-              value={userName}
-              onChange={onUserNameChange}
-              disabled={!isLoadingSuccess}
-            />
-            <LoadingButton
-              onClick={onClickJoin}
-              disabled={!isLoadingSuccess || !userName}
-              loading={!isLoadingSuccess}
+          <CardContent className="">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                onClickJoin()
+              }}
+              className="flex flex-col gap-6"
             >
-              {isLoadingSuccess ? "Join" : "Loading"}
-            </LoadingButton>
+              <Input
+                placeholder="User Name"
+                value={userName}
+                onChange={onUserNameChange}
+                disabled={!isLoadingSuccess}
+              />
+              <LoadingButton
+                type="submit"
+                disabled={!isLoadingSuccess || !userName}
+                loading={!isLoadingSuccess}
+              >
+                {isLoadingSuccess ? "Join" : "Loading"}
+              </LoadingButton>
+            </form>
           </CardContent>
           <CardFooter className="flex w-full items-center justify-center text-sm text-muted-foreground">
             <p>Version {version}</p>
