@@ -1,0 +1,104 @@
+{
+  "type": "extension",
+  "name": "minimax_v2v_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.3.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "token": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int32"
+      },
+      "model": {
+        "type": "string"
+      },
+      "voice_model": {
+        "type": "string"
+      },
+      "voice_id": {
+        "type": "string"
+      },
+      "in_sample_rate": {
+        "type": "int32"
+      },
+      "out_sample_rate": {
+        "type": "int32"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int32"
+      },
+      "dump": {
+        "type": "bool"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "stream_id": {
+            "type": "uint32"
+          }
+        }
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          },
+          "role": {
+            "type": "string"
+          },
+          "stream_id": {
+            "type": "uint32"
+          }
+        }
+      }
+    ]
+  }
+}

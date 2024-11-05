@@ -1,6 +1,6 @@
 services:
     ten_agent_dev:
-        image: ghcr.io/ten-framework/ten_agent_build:0.1.0
+        image: ghcr.io/ten-framework/ten_agent_build:0.2.1
         container_name: ten_agent_dev
         platform: linux/amd64
         tty: true
@@ -19,7 +19,7 @@ services:
         networks:
             - ten_agent_network
     ten_agent_playground:
-        image: ghcr.io/ten-framework/ten_agent_playground
+        image: ghcr.io/ten-framework/ten_agent_playground:0.5.0-67-g3c37e38
         container_name: ten_agent_playground
         restart: always
         ports:
@@ -30,7 +30,7 @@ services:
             - AGENT_SERVER_URL=http://ten_agent_dev:8080
             - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
     ten_agent_demo:
-        image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-50-gf9d5d4e
+        image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-67-g3c37e38
         container_name: ten_agent_demo
         restart: always
         ports:

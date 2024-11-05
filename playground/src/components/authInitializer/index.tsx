@@ -1,8 +1,8 @@
 "use client"
 
 import { ReactNode, useEffect } from "react"
-import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId } from "@/common"
-import { setOptions, reset } from "@/store/reducers/global"
+import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId, getOverridenPropertiesFromLocal } from "@/common"
+import { setOptions, reset, setOverridenProperties } from "@/store/reducers/global"
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -15,16 +15,18 @@ const AuthInitializer = (props: AuthInitializerProps) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal()
+      const overridenProperties = getOverridenPropertiesFromLocal()
       if (options && options.channel) {
         dispatch(reset())
         dispatch(setOptions(options))
       } else {
         dispatch(reset())
-        dispatch(setOptions({ 
+        dispatch(setOptions({
           channel: getRandomChannel(),
           userId: getRandomUserId(),
         }))
       }
+      dispatch(setOverridenProperties(overridenProperties))
     }
   }, [dispatch])
 

@@ -40,6 +40,7 @@ PROPERTY_MODEL = "model"  # Optional
 PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
 PROPERTY_TEMPERATURE = "temperature"  # Optional
 PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
+PROPERTY_ENABLE_STORAGE = "enable_storage"  # Optional
 PROPERTY_VOICE = "voice"  # Optional
 PROPERTY_AUDIO_OUT = "audio_out"  # Optional
 PROPERTY_INPUT_TRANSCRIPT = "input_transcript"
@@ -96,7 +97,10 @@ class OpenAIV2VExtension(Extension):
         # max history store in context
         self.max_history = 0
         self.history = []
+        self.enable_storage: bool = False
+        self.retrieved = []
         self.remote_stream_id: int = 0
+        self.stream_id: int = 0
         self.channel_name: str = ""
         self.dump: bool = False
         self.registry = ToolRegistry()
@@ -115,6 +119,10 @@ class OpenAIV2VExtension(Extension):
             target=start_event_loop, args=(self.loop,))
         self.thread.start()
 
+        if self.enable_storage:
+            r = Cmd.create("retrieve")
+            ten_env.send_cmd(r, self.on_retrieved)
+
         # self._register_local_tools()
 
         asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
@@ -132,6 +140,23 @@ class OpenAIV2VExtension(Extension):
             self.thread = None
 
         ten_env.on_stop_done()
+
+    def on_retrieved(self, ten_env:TenEnv, result:CmdResult) -> None:
+        if result.get_status_code() == StatusCode.OK:
+            try:
+                history = json.loads(result.get_property_string("response"))
+                if not self.last_updated:
+                    # cache the history
+                    # FIXME need to have json
+                    if self.max_history and len(history) > self.max_history:
+                        self.retrieved = history[len(history) - self.max_history:]
+                    else:
+                        self.retrieved = history
+                logger.info(f"on retrieve context {history} {self.retrieved}")
+            except:
+                logger.exception("Failed to handle retrieve result")
+        else:
+            logger.warning("Failed to retrieve content")
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         try:
@@ -179,7 +204,7 @@ class OpenAIV2VExtension(Extension):
     async def _init_connection(self):
         try:
             self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=True)
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=False)
             logger.info(f"Finish init client {self.config} {self.conn}")
         except:
             logger.exception(f"Failed to create client {self.config}")
@@ -211,6 +236,10 @@ class OpenAIV2VExtension(Extension):
                             update_msg = self._update_session()
                             await self.conn.send_request(update_msg)
 
+                            if self.retrieved:
+                                await self._append_retrieve()
+                                logger.info(f"after append retrieve: {len(self.retrieved)}")
+
                             text = self._greeting_text()
                             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
                             await self.conn.send_request(ResponseCreate())
@@ -222,6 +251,7 @@ class OpenAIV2VExtension(Extension):
                                 f"On request transcript {message.transcript}")
                             self._send_transcript(
                                 ten_env, message.transcript, Role.User, True)
+                            self._append_context(ten_env, message.transcript, self.remote_stream_id, Role.User)
                         case ItemInputAudioTranscriptionFailed():
                             logger.warning(
                                 f"On request transcript failed {message.item_id} {message.error}")
@@ -269,6 +299,7 @@ class OpenAIV2VExtension(Extension):
                                 logger.warning(
                                     f"On flushed transcript done {message.response_id}")
                                 continue
+                            self._append_context(ten_env, message.transcript, self.stream_id, Role.Assistant)
                             self.transcript = ""
                             self._send_transcript(
                                 ten_env, "", Role.Assistant, True)
@@ -355,8 +386,8 @@ class OpenAIV2VExtension(Extension):
         # Buffer audio
         if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
             await self.conn.send_audio_data(self.out_audio_buff)
-            logger.info(
-                f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
+            # logger.info(
+            #     f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
             self.out_audio_buff = b''
 
     def _fetch_properties(self, ten_env: TenEnv):
@@ -435,6 +466,13 @@ class OpenAIV2VExtension(Extension):
             logger.info(
                 f"GetProperty optional {PROPERTY_MAX_TOKENS} failed, err: {err}"
             )
+        
+        try:
+            self.enable_storage = ten_env.get_property_bool(PROPERTY_ENABLE_STORAGE)
+        except Exception as err:
+            logger.info(
+                f"GetProperty optional {PROPERTY_ENABLE_STORAGE} failed, err: {err}"
+            )
 
         try:
             voice = ten_env.get_property_string(PROPERTY_VOICE)
@@ -510,6 +548,14 @@ class OpenAIV2VExtension(Extension):
             su.session.input_audio_transcription=InputAudioTranscription(
                     model="whisper-1")
         return su
+    
+    async def _append_retrieve(self):
+        if self.retrieved:
+            for r in self.retrieved:
+                if r["role"] == MessageRole.User:
+                    await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
+                elif r["role"] == MessageRole.Assistant:
+                    await self.conn.send_request(ItemCreate(item=AssistantMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
 
     '''
     def _update_conversation(self) -> UpdateConversationConfig:
@@ -548,6 +594,20 @@ class OpenAIV2VExtension(Extension):
         f.unlock_buf(buff)
         ten_env.send_audio_frame(f)
 
+    def _append_context(self, ten_env: TenEnv, sentence: str, stream_id: int, role: str):
+        if not self.enable_storage:
+            return
+        
+        try:
+            d = Data.create("append")
+            d.set_property_string("text", sentence)
+            d.set_property_string("role", role)
+            d.set_property_int("stream_id", stream_id)
+            logger.info(f"append_contexttext [{sentence}] stream_id {stream_id} role {role}")
+            ten_env.send_data(d)
+        except:
+            logger.exception(f"Error send append_context data {role}: {sentence}")
+
     def _send_transcript(self, ten_env: TenEnv, content: str, role: Role, is_final: bool) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
@@ -568,12 +628,13 @@ class OpenAIV2VExtension(Extension):
 
             remain = current_sentence  # Any remaining characters form the incomplete sentence
             return sentences, remain
-        
-        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, is_final: bool):
+
+        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
             try:
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
                 d.set_property_bool("end_of_segment", is_final)
+                d.set_property_string("role", role)
                 d.set_property_int("stream_id", stream_id)
                 logger.info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
@@ -587,9 +648,9 @@ class OpenAIV2VExtension(Extension):
             if role == Role.Assistant and not is_final:
                 sentences, self.transcript = parse_sentences(self.transcript, content)
                 for s in sentences:
-                    send_data(ten_env, s, stream_id, is_final)
+                    send_data(ten_env, s, stream_id, role, is_final)
             else:
-                send_data(ten_env, content, stream_id, is_final)
+                send_data(ten_env, content, stream_id, role, is_final)
         except:
             logger.exception(f"Error send text data {role}: {content} {is_final}")
 

@@ -6,22 +6,22 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.2"
+      "version": "0.3"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.2"
-    },
-    {
-      "type": "extension_group",
-      "name": "default_extension_group",
-      "version": "0.2"
+      "version": "0.3"
     },
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.7.0-rc2"
+      "version": "=0.8.0-rc2"
+    },
+    {
+      "type": "extension",
+      "name": "agora_sess_ctrl",
+      "version": "0.2.0"
     },
     {
       "type": "system",
@@ -31,7 +31,7 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "0.4.2"
+      "version": "=0.5.1"
     }
   ]
 }
