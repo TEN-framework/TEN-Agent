@@ -52,6 +52,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self.memory = []
+        self.memory_cache = []
         self.max_memory_length = 10
         self.openai_chatgpt = None
         self.sentence_fragment = ""
@@ -180,7 +181,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
         message = self._message_to_dict(ten_env, kmessage)
 
-        memory_cache = []
+        self.memory_cache = []
         memory = self.memory
         try:
             ten_env.log_info(f"for input text: [{message}] memory: {memory}")
@@ -190,9 +191,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             if kmessage.role == "user":
                 non_artifact_content = [item for item in message.get("content", []) if item.get("type") == "text"]
                 non_artifact_message = {"role": kmessage.role, "content": non_artifact_content}
-                memory_cache = memory_cache + [non_artifact_message, {"role": "assistant", "content": ""}]
+                self.memory_cache = self.memory_cache + [non_artifact_message, {"role": "assistant", "content": ""}]
             elif kmessage.role == "tool":
-                memory_cache = memory_cache + [message, {"role": "assistant", "content": ""}]
+                self.memory_cache = self.memory_cache + [message, {"role": "assistant", "content": ""}]
 
             tools = [] if not no_tool and len(self.available_tools) > 0 else None
             for tool in self.available_tools:
@@ -208,7 +209,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
-                nonlocal memory_cache
                 self.tool_task_future = asyncio.get_event_loop().create_future()
                 ten_env.log_info(f"tool_call: {tool_call}")
                 for tool in self.available_tools:
@@ -223,29 +223,36 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         result: CmdResult = await ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result = LLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
-                            ten_env.log_info(f"tool_result: {tool_result}")
-                            tool_result.message.tool_call_id = tool_call["id"]
-                            while len(memory_cache) > 0:
-                                memory_cache.pop()
-                            self.memory.append({
-                                "role": "assistant",
-                                "tool_calls": [{
-                                    "id": tool_call["id"],
-                                    "type": "function",
-                                    "function": {
-                                        "name": tool.name,
-                                        "arguments": tool_call["function"]["arguments"]
-                                    }
-                                }]
-                            })
-                            await self.queue_input_item(True, message=tool_result.message)
+
+                            if tool_result.message.role == "tool":
+                                # if tool result role is tool, then record the tool call and send the tool result to the chat completion
+                                ten_env.log_info(f"tool_result: {tool_result}")
+                                tool_result.message.tool_call_id = tool_call["id"]
+                                self.memory_cache.pop()
+                                self.memory_cache.append({
+                                    "role": "assistant",
+                                    "tool_calls": [{
+                                        "id": tool_call["id"],
+                                        "type": "function",
+                                        "function": {
+                                            "name": tool.name,
+                                            "arguments": tool_call["function"]["arguments"]
+                                        }
+                                    }]
+                                })
+                                await self.queue_input_item(True, message=tool_result.message)
+                            elif tool_result.message.role == "user":
+                                # if tool result role is user, then clean the memory cache and resend the result to the chat completion
+                                ten_env.log_info(f"tool_result: {tool_result}")
+                                self.memory_cache = []
+                                await self.queue_input_item(True, message=LLMCompletionArgsMessage(role="user", content=tool_result.message.content))
                         else:
-                            ten_env.log_error(f"Tool call failed: {result.get_property_to_json('error')}")
+                            ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
 
             async def handle_content_update(content: str):
                 # Append the content to the last assistant message
-                for item in reversed(memory_cache):
+                for item in reversed(self.memory_cache):
                     if item.get('role') == 'assistant':
                         item['content'] = item['content'] + content
                         break
@@ -270,6 +277,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
             # Wait for the content to be finished
             await content_finished_event.wait()
+
+            ten_env.log_info(f"Chat completion finished for input text: {message}")
         except asyncio.CancelledError:
             ten_env.log_info(f"Task cancelled: {message}")
         except Exception as e:
@@ -278,9 +287,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         finally:
             self.send_text_output(ten_env, "", True)
             # always append the memory
-            for m in memory_cache:
-                if len(m.get("content")) > 0:
-                    self._append_memory(m.get("content"))
+            for m in self.memory_cache:
+                self._append_memory(m)
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json = {

@@ -37,6 +37,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
         self.current_task = None
         self.hit_default_cmd = False
+        self.loop_task = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -44,8 +45,9 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
 
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self._process_queue(ten_env))
+        if self.loop_task is None:
+            self.loop = asyncio.get_event_loop()
+            self.loop_task = self.loop.create_task(self._process_queue(ten_env))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
@@ -138,3 +140,5 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 ten_env.log_info(f"Task cancelled: {args}")
+            except Exception as err:
+                ten_env.log_error(f"Task failed: {args}, err: {err}")
