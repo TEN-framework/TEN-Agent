@@ -1697,6 +1697,16 @@
                         "addon": "vision_tool_python",
                         "name": "vision_tool"
                     },
+
+                    {
+                        "type": "extension",
+                        "extension_group": "chatgpt",
+                        "addon": "weatherapi_tool_python",
+                        "name": "weatherapi_tool_python",
+                        "property": {
+                            "api_key": "${env:WEATHER_API_KEY}"
+                        }
+                    },
                     {
                         "type": "extension",
                         "extension_group": "tts",
@@ -1804,6 +1814,10 @@
                                     {
                                         "extension_group": "chatgpt",
                                         "extension": "vision_tool"
+                                    },
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "weatherapi_tool_python"
                                     }
                                 ]
                             }
@@ -1812,6 +1826,21 @@
                     {
                         "extension_group": "chatgpt",
                         "extension": "vision_tool",
+                        "cmd": [
+                            {
+                                "name": "tool_register",
+                                "dest": [
+                                    {
+                                        "extension_group": "chatgpt",
+                                        "extension": "openai_chatgpt"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "extension_group": "chatgpt",
+                        "extension": "weatherapi_tool_python",
                         "cmd": [
                             {
                                 "name": "tool_register",
