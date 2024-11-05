@@ -109,7 +109,8 @@ class AsyncGlueExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
-        self.queue.put(None)
+        self.stopped = True
+        await self.queue.put(None)
         await self._flush()
 
         ten_env.on_stop_done()
