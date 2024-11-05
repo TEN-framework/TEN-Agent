@@ -19,6 +19,11 @@
       "version": "=0.8.0-rc2"
     },
     {
+      "type": "extension",
+      "name": "agora_sess_ctrl",
+      "version": "0.2.0"
+    },
+    {
       "type": "system",
       "name": "azure_speech_sdk",
       "version": "1.38.0"

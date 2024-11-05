@@ -34,29 +34,37 @@
 <br>
 <h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
 
-OpenAI Realtime API provides ultra-low latency, and RTC offers AI noise suppression. TEN Agent has both. Feel free to try it out at [agent.theten.ai](https://agent.theten.ai).
+Try OpenAI Realtime API and RTC at [agent.theten.ai](https://agent.theten.ai).
 
-![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
+Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
+
+![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
 <h2>TEN Agent Features</h2>
 
-Aside from being world's the first agent to integrate the OpenAI Realtime API and RTC, TEN Agent also offers the following features:
+* **OpenAI Realtime API and RTC integration**:
+TEN Agent is the world-class multimodal AI agent to integrate the OpenAI Realtime API and RTC.
 
-1. **High-Performance Real-Time Multimodal Interactions**:
+* **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
 
-2. **Multi-Language and Multi-Platform Support** :
+* **Multi-Language and Multi-Platform Support** :
 Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
 
-3. **Edge-Cloud Integration**:
+* **Edge-Cloud Integration**:
 Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
 
-4. **Flexibility Beyond Model Limitations**:
+* **Flexibility Beyond Model Limitations**:
 Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
 
-5. **Real-Time Agent State Management**:
+* **Real-Time Agent State Management**:
 Manages and adjusts agent behavior in real-time for dynamic responsiveness.
+
+<br>
+<h2>Ready-to-use Extensions</h2>
+
+![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
 <br>
 <h2>Stay Tuned</h2>
@@ -104,7 +112,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 ### Next step
 
 #### 1. Modify config files
-In the root of the project, use `cp` command to create `.env` from the example.
+In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 
 It will be used to store information for `docker compose` later.
 ```bash
@@ -137,6 +145,11 @@ In the same directory, run the `docker compose up` command to compose containers
 docker compose up
 ```
 
+Or using the `docker compose up -d` command, start the container in detached mode.([more here](https://doc.theten.ai/ten-agent/setting_up_vscode_for_development_inside_container))
+```bash
+docker compose up -d
+```
+
 #### 4. Enter container and build agent
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
@@ -156,12 +169,11 @@ make run-server
 #### TEN Agent
 Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
 
-#### TEN Agent with OpenAI Realtime API
-Open up [localhost:3002]( http://localhost:3002 ) in browser to play the TEN Agent with OpenAI Realtime API.
-
 #### TEN Graph Designer
 
 Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Graph Designer to create, connect and edit extensions on canvas.
+
+Once you save the graph, you can return to [localhost:3000]( http://localhost:3000 ) and select the corresponding graph to view the changes.
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
