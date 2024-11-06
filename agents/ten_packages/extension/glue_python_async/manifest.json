@@ -1,0 +1,69 @@
+{
+  "type": "extension",
+  "name": "glue_python_async",
+  "version": "0.3.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.3.1"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "token": {
+        "type": "string"
+      },
+      "api_url": {
+        "type": "string"
+      },
+      "user_id": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  }
+}
