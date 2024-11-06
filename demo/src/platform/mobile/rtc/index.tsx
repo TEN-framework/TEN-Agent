@@ -2,7 +2,7 @@
 
 import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { useAppSelector, useAppDispatch, VOICE_OPTIONS } from "@/common"
-import { ITextItem } from "@/types"
+import { ITextItem, EMessageType } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import { setRoomConnected, addChatItem, setVoiceType } from "@/store/reducers/global"
 import MicSection from "./micSection"
@@ -90,7 +90,7 @@ const Rtc = () => {
       dispatch(addChatItem({
         userId: text.uid,
         text: text.text,
-        type: isAgent ? "agent" : "user",
+        type: isAgent ? EMessageType.AGENT : EMessageType.USER,
         isFinal: text.isFinal,
         time: text.time
       }))

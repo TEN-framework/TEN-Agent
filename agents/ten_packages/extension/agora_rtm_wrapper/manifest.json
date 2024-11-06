@@ -1,0 +1,32 @@
+{
+  "type": "extension",
+  "name": "agora_rtm_wrapper",
+  "version": "0.1.4",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.3"
+    }
+  ],
+  "api": {
+    "data_in": [
+      {
+        "name": "data"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "publish",
+        "property": {
+          "message": {
+            "type": "buf"
+          }
+        }
+      },
+      {
+        "name": "set_presence_state"
+      }
+    ]
+  }
+}

@@ -4,6 +4,6 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-export LD_LIBRARY_PATH=$(pwd)/ten_packages/system/agora_rtc_sdk/lib:$(pwd)/ten_packages/system/azure_speech_sdk/lib
+export LD_LIBRARY_PATH=$(pwd)/ten_packages/system/agora_rtc_sdk/lib:$(pwd)/ten_packages/extension/agora_rtm/lib:$(pwd)/ten_packages/system/azure_speech_sdk/lib
 
 exec bin/worker "$@"

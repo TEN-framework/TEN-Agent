@@ -1,6 +1,5 @@
 import { getRandomUserId } from "./utils"
-import { IChatItem } from "@/types"
-
+import { IChatItem, EMessageType } from "@/types"
 
 const SENTENCES = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -12,7 +11,6 @@ const SENTENCES = [
   "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 ]
 
-
 export const genRandomParagraph = (num: number = 0): string => {
   let paragraph = ""
   for (let i = 0; i < num; i++) {
@@ -23,11 +21,10 @@ export const genRandomParagraph = (num: number = 0): string => {
   return paragraph.trim()
 }
 
-
 export const genRandomChatList = (num: number = 10): IChatItem[] => {
   const arr: IChatItem[] = []
   for (let i = 0; i < num; i++) {
-    const type = Math.random() > 0.5 ? "agent" : "user"
+    const type = Math.random() > 0.5 ? EMessageType.AGENT : EMessageType.USER
     arr.push({
       userId: getRandomUserId(),
       userName: type == "agent" ? "Agent" : "You",
