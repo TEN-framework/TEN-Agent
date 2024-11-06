@@ -25,7 +25,7 @@ from ten import (
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.helper import get_properties_string
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMCompletionArgsMessage, LLMCompletionContentItemJSON, LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
+from ten_ai_base.types import LLMChatCompletionToolMessageParam, LLMChatCompletionUserMessageParam, LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
 from .log import logger
 
 CMD_TOOL_REGISTER = "tool_register"
@@ -173,19 +173,19 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
             )
         ]
     
-    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(self, name: str, args: dict, tool_call:dict) -> LLMToolResult:
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return LLMToolResult(message=LLMCompletionArgsMessage(role="tool", content=[LLMCompletionContentItemJSON(json_str=json.dumps(result))]))
+            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
         elif name == HISTORY_TOOL_NAME:
             result = await self._get_past_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return LLMToolResult(message=LLMCompletionArgsMessage(role="tool", content=[LLMCompletionContentItemJSON(json_str=json.dumps(result))]))
+            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
         elif name == FORECAST_TOOL_NAME:
             result = await self._get_future_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return LLMToolResult(message=LLMCompletionArgsMessage(role="tool", content=[LLMCompletionContentItemJSON(json_str=json.dumps(result))]))
+            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
         
     async def _get_current_weather(self, args: dict) -> Any:
         if "location" not in args:

@@ -15,7 +15,7 @@ from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.types import LLMCompletionArgsMessage, LLMCompletionContentItemImage
+from ten_ai_base.types import LLMChatCompletionUserMessageParam
 
 
 def rgb2base64jpeg(rgb_data, width, height):
@@ -138,11 +138,19 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
             )
         ]
     
-    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(self, name: str, args: dict, tool_call: dict) -> LLMToolResult:
         if name == "get_vision_tool":
             if self.image_data is None:
                 raise Exception("No image data available")
 
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
-            result = LLMCompletionContentItemImage(image=base64_image)
-            return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
+            # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
+            return {"message": {
+                "role": "user",
+                "content": [{
+                    "type": "image_url",
+                    "image_url": {
+                        "url": base64_image
+                    }
+                }]
+            }}

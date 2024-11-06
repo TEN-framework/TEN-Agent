@@ -40,9 +40,10 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
             try:
                 tool_name = cmd.get_property_string("name")
                 tool_args = json.loads(cmd.get_property_to_json("arguments"))
+                tool_call = json.loads(cmd.get_property_to_json("tool_call"))
                 ten_env.log_debug(
                     f"tool_name: {tool_name}, tool_args: {tool_args}")
-                result = await asyncio.create_task(self.run_tool(tool_name, tool_args))
+                result = await asyncio.create_task(self.run_tool(tool_name, tool_args, tool_call))
 
                 if result is None:
                     await sleep(5)
@@ -51,7 +52,7 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
 
                 cmd_result: CmdResult = CmdResult.create(StatusCode.OK)
                 cmd_result.set_property_from_json(
-                    CMD_PROPERTY_RESULT, json.dumps(result.model_dump_json()))
+                    CMD_PROPERTY_RESULT, json.dumps(result))
                 await sleep(5)
                 ten_env.return_result(cmd_result, cmd)
                 ten_env.log_info(f"tool result done, {result}")
@@ -85,5 +86,5 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
         pass
 
     @abstractmethod
-    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict, tool_call: dict) -> LLMToolResult:
         pass

@@ -1977,7 +1977,7 @@
                         "addon": "weatherapi_tool_python",
                         "name": "weatherapi_tool_python",
                         "property": {
-                            "api_key": "${env:WEATHER_API_KEY}"
+                            "api_key": "${env:WEATHERAPI_API_KEY}"
                         }
                     },
                     {

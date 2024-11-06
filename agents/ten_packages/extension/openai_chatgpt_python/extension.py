@@ -14,7 +14,7 @@ from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
 from ten_ai_base.llm import AsyncLLMBaseExtension
-from ten_ai_base.types import LLMCallCompletionArgs, LLMCompletionArgsMessage, LLMCompletionContentItemAudio, LLMCompletionContentItemImage, LLMCompletionContentItemJSON, LLMCompletionContentItemText, LLMCompletionContentItem, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
+from ten_ai_base.types import LLMCallCompletionArgs, LLMChatCompletionToolMessageParam, LLMChatCompletionUserMessageParam, LLMChatCompletionMessageParam, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -162,7 +162,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMCompletionArgsMessage(role="user", content=[LLMCompletionContentItemText(text=input_text)])
+        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
         await self.queue_input_item(False, message=message)
 
     async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
@@ -173,13 +173,13 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
     async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
         """Run the chatflow asynchronously."""
-        kmessage: LLMCompletionArgsMessage = kargs.get("message", None)
+        kmessage: LLMChatCompletionUserMessageParam = kargs.get("message", None)
 
         if not kmessage:
             ten_env.log_error("No message in data")
             return
 
-        message = self._message_to_dict(ten_env, kmessage)
+        message = self.message_to_dict(kmessage)
 
         self.memory_cache = []
         memory = self.memory
@@ -188,11 +188,11 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             tools = None
             no_tool = kargs.get("no_tool", False)
 
-            if kmessage.role == "user":
+            if not isinstance(message.get("content"), str) and message.get("role") == "user":
                 non_artifact_content = [item for item in message.get("content", []) if item.get("type") == "text"]
-                non_artifact_message = {"role": kmessage.role, "content": non_artifact_content}
+                non_artifact_message = {"role": message.get("role"), "content": non_artifact_content}
                 self.memory_cache = self.memory_cache + [non_artifact_message, {"role": "assistant", "content": ""}]
-            elif kmessage.role == "tool":
+            else:
                 self.memory_cache = self.memory_cache + [message, {"role": "assistant", "content": ""}]
 
             tools = [] if not no_tool and len(self.available_tools) > 0 else None
@@ -216,18 +216,18 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         cmd:Cmd = Cmd.create(CMD_TOOL_CALL)
                         cmd.set_property_string("name", tool.name)
                         cmd.set_property_from_json("arguments", tool_call["function"]["arguments"])
+                        cmd.set_property_from_json("tool_call", json.dumps({"tool_call_id": tool_call["id"]}))
                         # cmd.set_property_from_json("arguments", json.dumps([]))
 
 
                         # Send the command and handle the result through the future
                         result: CmdResult = await ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
-                            tool_result = LLMToolResult.model_validate_json(json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT)))
+                            tool_result: LLMToolResult = json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT))
 
-                            if tool_result.message.role == "tool":
+                            if tool_result["message"]["role"] == "tool":
                                 # if tool result role is tool, then record the tool call and send the tool result to the chat completion
                                 ten_env.log_info(f"tool_result: {tool_result}")
-                                tool_result.message.tool_call_id = tool_call["id"]
                                 self.memory_cache.pop()
                                 self.memory_cache.append({
                                     "role": "assistant",
@@ -240,12 +240,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                                         }
                                     }]
                                 })
-                                await self.queue_input_item(True, message=tool_result.message)
-                            elif tool_result.message.role == "user":
+                                await self.queue_input_item(True, message=tool_result["message"])
+                            elif tool_result["message"]["role"] == "user":
                                 # if tool result role is user, then clean the memory cache and resend the result to the chat completion
                                 ten_env.log_info(f"tool_result: {tool_result}")
                                 self.memory_cache = []
-                                await self.queue_input_item(True, message=LLMCompletionArgsMessage(role="user", content=tool_result.message.content))
+                                await self.queue_input_item(True, message=tool_result["message"])
                         else:
                             ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
@@ -316,28 +316,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
         return json
 
-    def _message_to_dict(self, ten_env: TenEnv , message: LLMCompletionArgsMessage):
-        content = []
-        if message.role == "tool":
-            content = message.content[0].json_str
+    def message_to_dict(self, message: LLMChatCompletionMessageParam):
+        if isinstance(message["content"], str):
+            message["content"] = str(message["content"])
         else:
-            for item in message.content:
-                if isinstance(item, LLMCompletionContentItemText):
-                    content_item = {"type": "text", "text": item.text}
-                elif isinstance(item, LLMCompletionContentItemImage):
-                    content_item = {"type": "image_url", "image_url": {"url": item.image}}
-                elif isinstance(item, LLMCompletionContentItemAudio):
-                    content_item = {"type": "audio_url", "audio_url": {"url": item.audio}}
-                else:
-                    ten_env.log_warn(f"Unknown content item type")
-                    continue
-                content.append(content_item)
-        dict = {"role": message.role, "content": content}
-        if message.tool_call_id:
-            dict["tool_call_id"] = message.tool_call_id
-        return dict
-            
-
+            message["content"] = list(message["content"])
+        return message
 
     def _append_memory(self, message: str):
         if len(self.memory) > self.max_memory_length:
