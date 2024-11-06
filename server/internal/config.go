@@ -12,6 +12,7 @@ type Prop struct {
 const (
 	// Extension name
 	extensionNameAgoraRTC   = "agora_rtc"
+	extensionNameAgoraRTM   = "agora_rtm"
 	extensionNameHttpServer = "http_server"
 
 	// Property json
@@ -29,6 +30,7 @@ var (
 	startPropMap = map[string][]Prop{
 		"ChannelName": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
+			{ExtensionName: extensionNameAgoraRTM, Property: "channel"},
 		},
 		"RemoteStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "remote_stream_id"},
@@ -38,6 +40,7 @@ var (
 		},
 		"Token": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "token"},
+			{ExtensionName: extensionNameAgoraRTM, Property: "token"},
 		},
 		"WorkerHttpServerPort": {
 			{ExtensionName: extensionNameHttpServer, Property: "listen_port"},

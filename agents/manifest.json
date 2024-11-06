@@ -32,6 +32,11 @@
       "type": "extension",
       "name": "azure_tts",
       "version": "=0.5.1"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "0.1.5"
     }
   ]
 }

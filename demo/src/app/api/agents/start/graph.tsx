@@ -105,6 +105,21 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "camera_va_openai_azure_rtm") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "openai_chatgpt": {
+                "model": "gpt-4o",
+                ...localizationOptions,
+                "prompt": prompt,
+                "greeting": greeting,
+            },
+            "azure_tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     } else if (graphName == "va_openai_v2v") {
         return {
             "openai_v2v_python": {
