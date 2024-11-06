@@ -1640,7 +1640,7 @@
             },
             {
                 "name": "camera_va_openai_azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -1913,7 +1913,7 @@
             },
             {
                 "name": "tool_va_openai_azure",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",
@@ -2740,7 +2740,7 @@
             },
             {
                 "name": "va_openai_v2v",
-                "auto_start": false,
+                "auto_start": true,
                 "nodes": [
                     {
                         "type": "extension",
@@ -3276,7 +3276,7 @@
             },
             {
                 "name": "va_openai_v2v_storage",
-                "auto_start": true,
+                "auto_start": false,
                 "nodes": [
                     {
                         "type": "extension",

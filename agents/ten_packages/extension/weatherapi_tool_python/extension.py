@@ -173,19 +173,19 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
             )
         ]
     
-    async def run_tool(self, name: str, args: dict, tool_call:dict) -> LLMToolResult:
+    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
+            return {"content":json.dumps(result)}
         elif name == HISTORY_TOOL_NAME:
             result = await self._get_past_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
+            return {"content":json.dumps(result)}
         elif name == FORECAST_TOOL_NAME:
             result = await self._get_future_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"message": {"content":json.dumps(result), "role":"tool", "tool_call_id":tool_call.get("tool_call_id", "")}}
+            return {"content":json.dumps(result)}
         
     async def _get_current_weather(self, args: dict) -> Any:
         if "location" not in args:

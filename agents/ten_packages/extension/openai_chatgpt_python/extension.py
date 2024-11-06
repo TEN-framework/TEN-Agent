@@ -8,13 +8,14 @@
 import asyncio
 import json
 import traceback
+from typing import Iterable
 
 from ten.async_ten_env import AsyncTenEnv
 from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
 from ten_ai_base.llm import AsyncLLMBaseExtension
-from ten_ai_base.types import LLMCallCompletionArgs, LLMChatCompletionToolMessageParam, LLMChatCompletionUserMessageParam, LLMChatCompletionMessageParam, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
+from ten_ai_base.types import LLMCallCompletionArgs, LLMChatCompletionContentPartParam, LLMChatCompletionUserMessageParam, LLMChatCompletionMessageParam, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
 
 from .helper import parse_sentences, rgb2base64jpeg
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -224,28 +225,18 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         result: CmdResult = await ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result: LLMToolResult = json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT))
-
-                            if tool_result["message"]["role"] == "tool":
-                                # if tool result role is tool, then record the tool call and send the tool result to the chat completion
-                                ten_env.log_info(f"tool_result: {tool_result}")
-                                self.memory_cache.pop()
-                                self.memory_cache.append({
-                                    "role": "assistant",
-                                    "tool_calls": [{
-                                        "id": tool_call["id"],
-                                        "type": "function",
-                                        "function": {
-                                            "name": tool.name,
-                                            "arguments": tool_call["function"]["arguments"]
-                                        }
-                                    }]
-                                })
-                                await self.queue_input_item(True, message=tool_result["message"])
-                            elif tool_result["message"]["role"] == "user":
-                                # if tool result role is user, then clean the memory cache and resend the result to the chat completion
-                                ten_env.log_info(f"tool_result: {tool_result}")
-                                self.memory_cache = []
-                                await self.queue_input_item(True, message=tool_result["message"])
+                            
+                            ten_env.log_info(f"tool_result: {tool_result}")
+                            # self.memory_cache = []
+                            self.memory_cache.pop()
+                            result_content = tool_result["content"]
+                            nonlocal message
+                            new_message = {
+                                "role": "user",
+                                "content": self._convert_to_content_parts(message["content"])
+                            }
+                            new_message["content"] = new_message["content"] + self._convert_to_content_parts(result_content)
+                            await self.queue_input_item(True, message=new_message)
                         else:
                             ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
@@ -289,6 +280,20 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             # always append the memory
             for m in self.memory_cache:
                 self._append_memory(m)
+
+    def _convert_to_content_parts(self, content: Iterable[LLMChatCompletionContentPartParam]):
+        content_parts = []
+
+
+        if isinstance(content, str):
+            content_parts.append({
+                "type": "text",
+                "text": content
+            })
+        else:
+            for part in content:
+                content_parts.append(part)
+        return content_parts
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json = {

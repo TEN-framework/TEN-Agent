@@ -138,19 +138,18 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
             )
         ]
     
-    async def run_tool(self, name: str, args: dict, tool_call: dict) -> LLMToolResult:
+    async def run_tool(self, name: str, args: dict) -> LLMToolResult:
         if name == "get_vision_tool":
             if self.image_data is None:
                 raise Exception("No image data available")
 
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
-            return {"message": {
-                "role": "user",
+            return {
                 "content": [{
                     "type": "image_url",
                     "image_url": {
                         "url": base64_image
                     }
                 }]
-            }}
+            }
