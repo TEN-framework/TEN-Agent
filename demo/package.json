@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -29,7 +29,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
-    "next": "14.2.4",
+    "next": "^15.0.2",
     "next-themes": "^0.3.0",
     "protobufjs": "^7.2.5",
     "react": "^18",
@@ -50,7 +50,7 @@
     "@types/react-redux": "^7.1.22",
     "autoprefixer": "^10.4.20",
     "eslint": "^8",
-    "eslint-config-next": "14.2.4",
+    "eslint-config-next": "^15.0.2",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
