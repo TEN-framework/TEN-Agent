@@ -32,12 +32,8 @@ import { useAppDispatch, useAppSelector } from "@/common"
 import { setAgentSettings } from "@/store/reducers/global"
 
 const formSchema = z.object({
-  greeting: z.string().min(2, {
-    message: "Greeting must be at least 2 characters.",
-  }),
-  prompt: z.string().min(2, {
-    message: "Prompt must be at least 2 characters.",
-  }),
+  greeting: z.string(),
+  prompt: z.string(),
 })
 
 export default function SettingsDialog() {
