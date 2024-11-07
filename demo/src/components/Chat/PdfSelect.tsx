@@ -132,7 +132,6 @@ export function UploadPdf({
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!agentConnected) {
-      // Use browser alert since we don't have antd message
       toast.error("Please connect to agent first")
       return
     }
