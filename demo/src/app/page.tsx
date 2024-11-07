@@ -1,5 +1,5 @@
 import LoginCard from "@/components/Card/Login"
-import styles from "./index.module.scss"
+import styles from "./index.module.css"
 
 export default function Login() {
   return (

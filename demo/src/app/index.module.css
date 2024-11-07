@@ -1,20 +1,4 @@
-@function multiple-box-shadow($n, $width, $height) {
-  $value: "#{random() * $width} #{random() * $height} #FFF";
-
-  @for $i from 2 through $n {
-    $value: "#{$value}, #{random() * $width} #{random() * $height} #FFF";
-  }
-
-  @return unquote($value);
-}
-
 @media (max-width: 1400px) {
-  $width: 1500px;
-  $height: 1500px;
-  $shadows-small: multiple-box-shadow(700, $width, $height);
-  $shadows-medium: multiple-box-shadow(200, $width, $height);
-  $shadows-big: multiple-box-shadow(100, $width, $height);
-
   .login {
     position: absolute;
     left: 0;
@@ -31,14 +15,18 @@
     width: 1px;
     height: 1px;
     background: transparent;
-    box-shadow: $shadows-small;
+    box-shadow:
+      145px 234px #fff,
+      876px 543px #fff;
     animation: animStar 50s linear infinite;
   }
 
   .starts2 {
     width: 2px;
     height: 2px;
-    box-shadow: $shadows-medium;
+    box-shadow:
+      445px 234px #fff,
+      276px 943px #fff;
     animation: animStar 100s linear infinite;
   }
 
@@ -46,18 +34,14 @@
     width: 3px;
     height: 3px;
     background: transparent;
-    box-shadow: $shadows-big;
+    box-shadow:
+      745px 834px #fff,
+      176px 243px #fff;
     animation: animStar 150s linear infinite;
   }
 }
 
 @media (min-width: 1400px) {
-  $width: 150vw;
-  $height: 150vh;
-  $shadows-small: multiple-box-shadow(700, $width, $height);
-  $shadows-medium: multiple-box-shadow(200, $width, $height);
-  $shadows-big: multiple-box-shadow(100, $width, $height);
-
   .login {
     position: absolute;
     left: 0;
@@ -74,14 +58,18 @@
     width: 1px;
     height: 1px;
     background: transparent;
-    box-shadow: $shadows-small;
+    box-shadow:
+      45vw 34vh #fff,
+      76vw 43vh #fff;
     animation: animStar 50s linear infinite;
   }
 
   .starts2 {
     width: 2px;
     height: 2px;
-    box-shadow: $shadows-medium;
+    box-shadow:
+      145vw 134vh #fff,
+      76vw 143vh #fff;
     animation: animStar 100s linear infinite;
   }
 
@@ -89,7 +77,9 @@
     width: 3px;
     height: 3px;
     background: transparent;
-    box-shadow: $shadows-big;
+    box-shadow:
+      45vw 134vh #fff,
+      176vw 43vh #fff;
     animation: animStar 150s linear infinite;
   }
 }
