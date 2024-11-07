@@ -16,17 +16,17 @@ def embed_from_resp(cmd_result: CmdResult) -> List[float]:
     return json.loads(embedding_output_json)
 
 
-class ASTRAEmbedding(BaseEmbedding):
+class LlamaEmbedding(BaseEmbedding):
     ten: Any
 
     def __init__(self, ten):
-        """Creates a new ASTRA embedding interface."""
+        """Creates a new Llama embedding interface."""
         super().__init__()
         self.ten = ten
 
     @classmethod
     def class_name(cls) -> str:
-        return "astra_embedding"
+        return "llama_embedding"
 
     async def _aget_query_embedding(self, query: str) -> List[float]:
         return self._get_query_embedding(query)
@@ -36,7 +36,7 @@ class ASTRAEmbedding(BaseEmbedding):
 
     def _get_query_embedding(self, query: str) -> List[float]:
         logger.info(
-            "ASTRAEmbedding generate embeddings for the query: {}".format(query)
+            "LlamaEmbedding generate embeddings for the query: {}".format(query)
         )
         wait_event = threading.Event()
         resp: List[float]
@@ -45,7 +45,7 @@ class ASTRAEmbedding(BaseEmbedding):
             nonlocal resp
             nonlocal wait_event
 
-            logger.debug("ASTRAEmbedding embedding received")
+            logger.debug("LlamaEmbedding embedding received")
             resp = embed_from_resp(result)
             wait_event.set()
 

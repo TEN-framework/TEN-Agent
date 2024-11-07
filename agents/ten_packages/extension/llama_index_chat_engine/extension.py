@@ -202,16 +202,16 @@ class LlamaIndexExtension(Extension):
                 logger.info("process input text [%s] ts [%s]", input_text, ts)
 
                 # lazy import packages which requires long time to load
-                from .astra_llm import ASTRALLM
-                from .astra_retriever import ASTRARetriever
-                
+                from .llama_llm import LlamaLLM
+                from .llama_retriever import LlamaRetriever
+
                 # prepare chat engine
                 chat_engine = None
                 if len(self.collection_name) > 0:
-                    from llama_index.core.chat_engine import ContextChatEngine                    
+                    from llama_index.core.chat_engine import ContextChatEngine
                     chat_engine = ContextChatEngine.from_defaults(
-                        llm=ASTRALLM(ten=ten),
-                        retriever=ASTRARetriever(ten=ten, coll=self.collection_name),
+                        llm=LlamaLLM(ten=ten),
+                        retriever=LlamaRetriever(ten=ten, coll=self.collection_name),
                         memory=self.chat_memory,
                         system_prompt=(
                             # "You are an expert Q&A system that is trusted around the world.\n"
@@ -233,7 +233,7 @@ class LlamaIndexExtension(Extension):
                 else:
                     from llama_index.core.chat_engine import SimpleChatEngine
                     chat_engine = SimpleChatEngine.from_defaults(
-                        llm=ASTRALLM(ten=ten),
+                        llm=LlamaLLM(ten=ten),
                         system_prompt=(
                             "You are a voice assistant who talks in a conversational way and can chat with me like my friends. \n"
                             "I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. \n"
