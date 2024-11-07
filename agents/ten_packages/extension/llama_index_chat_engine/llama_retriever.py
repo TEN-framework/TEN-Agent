@@ -5,7 +5,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.retrievers import BaseRetriever
 
 from .log import logger
-from .astra_embedding import ASTRAEmbedding
+from .llama_embedding import LlamaEmbedding
 from ten import (
     TenEnv,
     Cmd,
@@ -15,7 +15,7 @@ from ten import (
 
 
 def format_node_result(cmd_result: CmdResult) -> List[NodeWithScore]:
-    logger.info("ASTRARetriever retrieve response {}".format(cmd_result.to_json()))
+    logger.info("LlamaRetriever retrieve response {}".format(cmd_result.to_json()))
     status = cmd_result.get_status_code()
     try:
         contents_json = cmd_result.get_property_to_json("response")
@@ -45,21 +45,21 @@ def format_node_result(cmd_result: CmdResult) -> List[NodeWithScore]:
     return nodes
 
 
-class ASTRARetriever(BaseRetriever):
+class LlamaRetriever(BaseRetriever):
     ten: Any
-    embed_model: ASTRAEmbedding
+    embed_model: LlamaEmbedding
 
     def __init__(self, ten: TenEnv, coll: str):
         super().__init__()
         try:
             self.ten = ten
-            self.embed_model = ASTRAEmbedding(ten=ten)
+            self.embed_model = LlamaEmbedding(ten=ten)
             self.collection_name = coll
         except Exception as e:
-            logger.error(f"Failed to initialize ASTRARetriever: {e}")
+            logger.error(f"Failed to initialize LlamaRetriever: {e}")
 
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
-        logger.info("ASTRARetriever retrieve: {}".format(query_bundle.to_json))
+        logger.info("LlamaRetriever retrieve: {}".format(query_bundle.to_json))
 
         wait_event = threading.Event()
         resp: List[NodeWithScore] = []
@@ -69,7 +69,7 @@ class ASTRARetriever(BaseRetriever):
             nonlocal wait_event
             resp = format_node_result(result)
             wait_event.set()
-            logger.debug("ASTRARetriever callback done")
+            logger.debug("LlamaRetriever callback done")
 
         embedding = self.embed_model.get_query_embedding(query=query_bundle.query_str)
 
@@ -78,7 +78,7 @@ class ASTRARetriever(BaseRetriever):
         query_cmd.set_property_int("top_k", 3)  # TODO: configable
         query_cmd.set_property_from_json("embedding", json.dumps(embedding))
         logger.info(
-            "ASTRARetriever send_cmd, collection_name: {}, embedding len: {}".format(
+            "LlamaRetriever send_cmd, collection_name: {}, embedding len: {}".format(
                 self.collection_name, len(embedding)
             )
         )
