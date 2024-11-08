@@ -10,12 +10,12 @@ from ten import (
     register_addon_as_extension,
     TenEnv,
 )
-from .log import logger
 
 
 @register_addon_as_extension("qwen_llm_python")
 class QWenLLMExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context):
+        from .log import logger
         logger.info("on_create_instance")
 
         from .qwen_llm_extension import QWenLLMExtension
