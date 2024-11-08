@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import SettingsDialog from "@/components/Dialog/Settings"
 
 let intervalId: NodeJS.Timeout | null = null
 
@@ -139,16 +140,23 @@ export default function Action(props: { className?: string }) {
         </Tabs>
 
         {/* -- Action Button */}
-        <LoadingButton
-          onClick={onClickConnect}
-          variant={!agentConnected ? "default" : "destructive"}
-          size="sm"
-          className="ml-auto w-fit min-w-24"
-          loading={loading}
-          svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
-        >
-          {loading ? "Connecting" : !agentConnected ? "Connect" : "Disconnect"}
-        </LoadingButton>
+        <div className="ml-auto flex items-center gap-2">
+          <SettingsDialog />
+          <LoadingButton
+            onClick={onClickConnect}
+            variant={!agentConnected ? "default" : "destructive"}
+            size="sm"
+            className="w-fit min-w-24"
+            loading={loading}
+            svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
+          >
+            {loading
+              ? "Connecting"
+              : !agentConnected
+                ? "Connect"
+                : "Disconnect"}
+          </LoadingButton>
+        </div>
       </div>
     </>
   )

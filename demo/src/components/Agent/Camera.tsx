@@ -5,7 +5,7 @@ import * as React from "react"
 import { CamIconByStatus } from "@/components/Icon"
 import AgoraRTC, { ICameraVideoTrack } from "agora-rtc-sdk-ng"
 // import { LocalStreamPlayer } from "../streamPlayer"
-import { useSmallScreen } from "@/common"
+// import { useSmallScreen } from "@/common"
 import {
   CommonDeviceWrapper,
   TDeviceSelectItem,

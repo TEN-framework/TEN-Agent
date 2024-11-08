@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { LanguageSelect, GraphSelect } from "@/components/Chat/ChatCfgSelect"
-import PdfSelect from "@/components/pdfSelect"
+import PdfSelect from "@/components/Chat/PdfSelect"
 import { useAppDispatch, useAppSelector, isRagGraph } from "@/common"
 import { setRtmConnected, addChatItem } from "@/store/reducers/global"
 import MessageList from "@/components/Chat/MessageList"
