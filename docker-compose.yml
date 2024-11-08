@@ -30,7 +30,7 @@ services:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
       - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
   ten_agent_demo:
-    image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-91-g1fba458
+    image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-83-g3a18390
     container_name: ten_agent_demo
     restart: always
     ports:
