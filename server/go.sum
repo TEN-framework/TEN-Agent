@@ -1,5 +1,5 @@
-github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20240531043742-11bdd9531d08 h1:iMjzBpQsOhO+8tDG8uL86S0330CtJk/8j3CroVbAfHY=
-github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20240531043742-11bdd9531d08/go.mod h1:4bXIK0ntDk9CqAXobmomWd7dedbfNv/aaIpmpqqzt+A=
+github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20241016072020-3226f86a4488 h1:AJ15eFBf6vhPFEXUg8nsip19PeAhB1/vNqPb4i4wa40=
+github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src v0.0.0-20241016072020-3226f86a4488/go.mod h1:4bXIK0ntDk9CqAXobmomWd7dedbfNv/aaIpmpqqzt+A=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.2.0 h1:Rt8g24XnyGTyglgET/PRUNlrUeu9F5L+7FilkXfZgs0=
 github.com/BurntSushi/toml v1.2.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=

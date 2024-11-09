@@ -10,13 +10,13 @@ from ten import (
     register_addon_as_extension,
     TenEnv,
 )
-from .extension import MessageCollectorExtension
-from .log import logger
 
 
 @register_addon_as_extension("message_collector")
 class MessageCollectorExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+        from .extension import MessageCollectorExtension
+        from .log import logger
         logger.info("MessageCollectorExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(MessageCollectorExtension(name), context)

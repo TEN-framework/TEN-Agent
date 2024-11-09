@@ -1,0 +1,143 @@
+openapi: 3.0.0
+info:
+  title: Streaming Chat Completion API with Multimedia Support
+  version: 1.0.0
+  description: API for streaming chat completions with support for text, image, and audio content
+
+paths:
+  /chat/completions:
+    post:
+      summary: Create a streaming chat completion
+      description: Streams a chat completion response
+      operationId: createChatCompletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+      x-stream: true
+
+components:
+  schemas:
+    ChatCompletionRequest:
+      type: object
+      required:
+        - messages
+        - model
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        model:
+          type: string
+          example: "gpt-4-vision-preview"
+        temperature:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 2
+          default: 1
+        stream:
+          type: boolean
+          default: true
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+        content:
+          oneOf:
+            - $ref: '#/components/schemas/TextContent'
+            - $ref: '#/components/schemas/ImageContent'
+            - $ref: '#/components/schemas/AudioContent'
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/TextContent'
+                  - $ref: '#/components/schemas/ImageContent'
+                  - $ref: '#/components/schemas/AudioContent'
+
+    TextContent:
+      type: object
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          enum: [text]
+        text:
+          type: string
+
+    ImageContent:
+      type: object
+      required:
+        - type
+        - image_url
+      properties:
+        type:
+          type: string
+          enum: [image]
+        image_url:
+          type: string
+          format: uri
+
+    AudioContent:
+      type: object
+      required:
+        - type
+        - audio_url
+      properties:
+        type:
+          type: string
+          enum: [audio]
+        audio_url:
+          type: string
+          format: uri
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Choice'
+
+    Choice:
+      type: object
+      properties:
+        delta:
+          $ref: '#/components/schemas/Delta'
+        index:
+          type: integer
+        finish_reason:
+          type: string
+          nullable: true
+
+    Delta:
+      type: object
+      properties:
+        content:
+          type: string

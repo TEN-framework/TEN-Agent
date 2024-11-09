@@ -115,6 +115,23 @@
       "supports": []
     },
     {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "0.1.5",
+      "hash": "a4230fbe477ff2cc6c4eee033138e4f19a3c742c41e1a15533d02d39bd46c4ad",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "nlohmann_json"
+        }
+      ],
+      "supports": []
+    },
+    {
       "type": "system",
       "name": "ten_runtime",
       "version": "0.3.1",
@@ -128,6 +145,13 @@
     },
     {
       "type": "system",
+      "name": "nlohmann_json",
+      "version": "3.11.2",
+      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
+      "supports": []
+    },
+    {
+      "type": "system",
       "name": "agora_rtc_sdk",
       "version": "4.1.38+build376742",
       "hash": "c57acf53d90fbee04d06aa3fd48b0425dd4cca1bee62666c5c01699044b43288",
@@ -137,13 +161,6 @@
           "arch": "x64"
         }
       ]
-    },
-    {
-      "type": "system",
-      "name": "nlohmann_json",
-      "version": "3.11.2",
-      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
-      "supports": []
     },
     {
       "type": "system",
