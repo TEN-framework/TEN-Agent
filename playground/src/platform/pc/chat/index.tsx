@@ -20,6 +20,7 @@ import PdfSelect from "@/components/pdfSelect"
 import styles from "./index.module.scss"
 import { SettingOutlined } from "@ant-design/icons"
 import EditableTable from "./table"
+import { rtcManager } from "@/manager"
 
 
 const Chat = () => {
@@ -33,6 +34,7 @@ const Chat = () => {
   const graphExtensions = useGraphExtensions()
   const extensionMetadata = useAppSelector(state => state.global.extensionMetadata)
   const overridenProperties = useAppSelector(state => state.global.overridenProperties)
+  const [inputValue, setInputValue] = useState("")
 
 
   // const chatItems = genRandomChatList(10)
@@ -74,6 +76,20 @@ const Chat = () => {
     dispatch(setGraphName(val))
   }
 
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }
+
+  const handleInputSubmit = () => {
+    if (!inputValue) {
+      return
+    }
+    // rtmManager.sendText(inputValue)
+    rtcManager.sendText(inputValue)
+    setInputValue("")
+  }
+
   return <section className={styles.chat}>
     <div className={styles.header}>
       <span className={styles.left}>
@@ -90,6 +106,33 @@ const Chat = () => {
       {chatItems.map((item, index) => {
         return <ChatItem data={item} key={index} ></ChatItem>
       })}
+    </div>
+
+    <div
+      style={{
+        borderTop: "1px solid #e8e8e8",
+        padding: "10px",
+        display: "flex",
+        justifyContent: "space-between",
+        width: "100%",
+        gap: "10px",
+      }}
+    >
+      <input
+        type="text"
+        // disabled={disableInputMemo}
+        style={{ width: "calc(100% - 50px)", padding: "5px" }}
+        placeholder="Type a message..."
+        value={inputValue}
+        onChange={handleInputChange}
+      />
+      <Button
+        type="primary"
+        // disabled={disableInputMemo || inputValue.length == 0}
+        onClick={handleInputSubmit}
+      >
+        <span className="sr-only">Send message</span>
+      </Button>
     </div>
     <Modal
       title="Properties Override"

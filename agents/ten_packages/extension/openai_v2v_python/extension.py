@@ -195,7 +195,14 @@ class OpenAIV2VExtension(Extension):
 
     # Should not be here
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
-        pass
+        # text input
+        text = data.get_property_string("text")
+        
+        asyncio.run_coroutine_threadsafe(self._send_text_item(text), self.loop)
+
+    async def _send_text_item(self, text: str):
+        await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
+        await self.conn.send_request(ResponseCreate())
 
     def on_config_changed(self) -> None:
         # update session again

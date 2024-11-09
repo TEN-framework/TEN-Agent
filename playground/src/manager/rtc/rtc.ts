@@ -24,6 +24,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _joined
   client: IAgoraRTCClient
   localTracks: IUserTracks
+  userId: number | null = null
 
   constructor() {
     super()
@@ -41,6 +42,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         throw new Error("Failed to get Agora token")
       }
       const { appId, token } = data
+      this.userId = userId
       await this.client?.join(appId, channel, token, userId)
       this._joined = true
     }
@@ -73,6 +75,16 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     if (tracks.length) {
       await this.client.publish(tracks)
     }
+  }
+
+  async sendText(text: string) {
+    const encoder = new TextEncoder()
+    const message = encoder.encode(JSON.stringify({
+      text,
+      stream_id: this.userId,
+    }))
+    // @ts-ignore
+    await this.client.sendStreamMessage(message)
   }
 
   async destroy() {

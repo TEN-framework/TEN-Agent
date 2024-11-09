@@ -63,6 +63,7 @@ class OpenAIChatGPTExtension(AsyncExtension):
     checking_vision_text_items = []
     loop = None
     sentence_fragment = ""
+    current_task = None
 
     # Create the queue for message processing
     queue = AsyncQueue()
@@ -162,7 +163,7 @@ class OpenAIChatGPTExtension(AsyncExtension):
 
         if cmd_name == CMD_IN_FLUSH:
             await self._flush_queue(ten_env)
-            ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH), None)
+            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
             ten_env.log_info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
         elif cmd_name == CMD_IN_ON_USER_JOINED:
