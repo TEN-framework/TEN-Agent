@@ -8,7 +8,6 @@ import Action from "@/components/Layout/Action"
 // import RTCCard from "@/components/Dynamic/RTCCard"
 // import ChatCard from "@/components/Chat/ChatCard"
 import { cn } from "@/lib/utils"
-import FormModal from "@/components/settings"
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
@@ -46,7 +45,6 @@ export default function Home() {
             )}
           />
         </div>
-        <FormModal />
       </div>
     </>
   )

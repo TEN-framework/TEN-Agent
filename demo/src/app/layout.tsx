@@ -1,4 +1,3 @@
-import { ConfigProvider } from "antd"
 import { StoreProvider } from "@/store"
 import type { Metadata, Viewport } from "next"
 import "./global.css"
@@ -31,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="dark">
-        <ConfigProvider
+        {/* <ConfigProvider
           theme={{
             components: {
               Select: {
@@ -39,9 +38,9 @@ export default function RootLayout({
               },
             },
           }}
-        >
-          <StoreProvider>{children}</StoreProvider>
-        </ConfigProvider>
+        > */}
+        <StoreProvider>{children}</StoreProvider>
+        {/* </ConfigProvider> */}
         <Toaster />
       </body>
     </html>
