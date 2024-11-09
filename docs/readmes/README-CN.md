@@ -77,9 +77,10 @@ OpenAI Realtime API 提供超低延迟，而 RTC 提供 AI 噪声抑制。TEN Ag
 
 ### 先决条件
 #### Keys 
-- Agora App ID 和 App Certificate（[点击此处了解详情](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web)）
-- Azure 的 [STT](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) 和 [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API Keys
+- Agora App ID 和 App Certificate（[大中华地区点击此处了解详情](https://doc.shengwang.cn/doc/rtc/android/get-started/enable-service)）
 - [OpenAI](https://openai.com/index/openai-api/) API Key
+- [Deepgram](https://deepgram.com/) ASR API Key + [FishAudio](fish.audio) TTS API Key
+
 #### 下载安装
 - [Docker](https://www.docker.com/)	和 [Docker Compose](https://docs.docker.com/compose/install/)
 - [Node.js(LTS) v18](https://nodejs.org/en)
@@ -136,16 +137,11 @@ cp ./.env.example ./.env
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
-# Azure STT key and region
-AZURE_STT_KEY=
-AZURE_STT_REGION=
-
-# Azure TTS key and region
-AZURE_TTS_KEY=
-AZURE_TTS_REGION=
-
-# OpenAI API key
 OPENAI_API_KEY=
+
+DEEPGRAM_API_KEY=
+
+FISH_AUDIO_TTS_KEY=
 ```
 
 #### 3. 创建 Docker 容器
@@ -157,8 +153,6 @@ docker compose up
 #### 4. 在容器内创建 agent 服务
 再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建 agent 服务：
 ```bash
-#  进入容器创建 agent
-
 docker exec -it ten_agent_dev bash
 
 make build
@@ -176,10 +170,6 @@ make run-server
 #### 验证 TEN Agent 
 
 现在可以打开浏览器 [localhost:3000]( http://localhost:3000 ) 体验 TEN Agent。
-
-#### 验证 TEN Agent 和 OpenAI Realtime API
-
-现在可以打开浏览器 [localhost:3002]( http://localhost:3002 ) 体验 TEN Agent 和 OpenAI Realtime API。
 
 #### 验证 Graph Designer
 
