@@ -263,7 +263,7 @@ class OpenAIChatGPTExtension(AsyncExtension):
                 message = {"role": "user", "content": input_text}
                 memory_cache = memory_cache + \
                     [message, {"role": "assistant", "content": ""}]
-                tools = self.available_tools if self.enable_tools else None
+                # tools = self.available_tools if self.enable_tools else None
                 if self.image_data is not None:
                     url = rgb2base64jpeg(
                         self.image_data, self.image_width, self.image_height)
