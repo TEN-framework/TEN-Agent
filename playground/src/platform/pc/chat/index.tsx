@@ -14,7 +14,7 @@ import {
   apiReloadGraph,
 } from "@/common"
 import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
-import { Button, Modal, Select, Tabs, TabsProps, } from 'antd';
+import { Button, ConfigProvider, Modal, Select, Tabs, TabsProps, theme, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
 
 import styles from "./index.module.scss"
@@ -107,33 +107,47 @@ const Chat = () => {
         return <ChatItem data={item} key={index} ></ChatItem>
       })}
     </div>
+    <ConfigProvider
+      theme={{
+        // 1. 单独使用暗色算法
+        algorithm: theme.darkAlgorithm,
 
-    <div
-      style={{
-        borderTop: "1px solid #e8e8e8",
-        padding: "10px",
-        display: "flex",
-        justifyContent: "space-between",
-        width: "100%",
-        gap: "10px",
-      }}
-    >
-      <input
-        type="text"
-        // disabled={disableInputMemo}
-        style={{ width: "calc(100% - 50px)", padding: "5px" }}
-        placeholder="Type a message..."
-        value={inputValue}
-        onChange={handleInputChange}
-      />
-      <Button
-        type="primary"
-        // disabled={disableInputMemo || inputValue.length == 0}
-        onClick={handleInputSubmit}
+        // 2. 组合使用暗色算法与紧凑算法
+        // algorithm: [theme.darkAlgorithm, theme.compactAlgorithm],
+      }}>
+      <div
+        style={{
+          borderTop: "1px solid #272A2F",
+          padding: "10px",
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+          gap: "10px",
+        }}
       >
-        <span className="sr-only">Send message</span>
-      </Button>
-    </div>
+        <input
+          type="text"
+          // disabled={disableInputMemo}
+          style={{ width: "calc(100% - 50px)", padding: "5px" }}
+          placeholder="Type a message..."
+          value={inputValue}
+          onChange={handleInputChange}
+          disabled={!agentConnected}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleInputSubmit();
+            }
+          }}
+        />
+        <Button
+          type="primary"
+          disabled={!agentConnected || inputValue.length == 0}
+          onClick={handleInputSubmit}
+        >
+          <span className="sr-only">Send message</span>
+        </Button>
+      </div>
+    </ConfigProvider>
     <Modal
       title="Properties Override"
       centered
