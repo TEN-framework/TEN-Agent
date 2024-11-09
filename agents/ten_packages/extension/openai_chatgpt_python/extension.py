@@ -217,7 +217,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         cmd:Cmd = Cmd.create(CMD_TOOL_CALL)
                         cmd.set_property_string("name", tool.name)
                         cmd.set_property_from_json("arguments", tool_call["function"]["arguments"])
-                        cmd.set_property_from_json("tool_call", json.dumps({"tool_call_id": tool_call["id"]}))
                         # cmd.set_property_from_json("arguments", json.dumps([]))
 
 
