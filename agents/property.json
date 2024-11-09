@@ -1240,14 +1240,20 @@
           {
             "type": "extension",
             "extension_group": "llm",
-            "addon": "qwen_llm_python",
+            "addon": "openai_chatgpt_python",
             "name": "qwen_llm",
             "property": {
+              "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
               "api_key": "${env:QWEN_API_KEY}",
+              "frequency_penalty": 0.9,
               "model": "qwen-max",
               "max_tokens": 512,
               "prompt": "",
-              "max_memory_length": 10
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
             }
           },
           {
