@@ -108,6 +108,10 @@
                   {
                     "extension_group": "llm",
                     "extension": "openai_v2v_python"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
                   }
                 ]
               }
