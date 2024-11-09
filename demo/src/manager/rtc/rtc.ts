@@ -26,6 +26,8 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _joined
   client: IAgoraRTCClient
   localTracks: IUserTracks
+  appId: string | null = null
+  token: string | null = null
 
   constructor() {
     super()
@@ -43,6 +45,8 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         throw new Error("Failed to get Agora token")
       }
       const { appId, token } = data
+      this.appId = appId
+      this.token = token
       await this.client?.join(appId, channel, token, userId)
       this._joined = true
     }
@@ -210,19 +214,18 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     return chunks.map(chunk => chunk.content).join('');
   }
 
-
-  _playAudio(audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined) {
+  _playAudio(
+    audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined,
+  ) {
     if (audioTrack && !audioTrack.isPlaying) {
       audioTrack.play()
     }
   }
-
 
   private _resetData() {
     this.localTracks = {}
     this._joined = false
   }
 }
-
 
 export const rtcManager = new RtcManager()

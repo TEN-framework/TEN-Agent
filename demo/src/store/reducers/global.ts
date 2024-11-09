@@ -1,17 +1,33 @@
-import { IOptions, IChatItem, Language, VoiceType, IAgentSettings } from "@/types"
+import {
+  IOptions,
+  IChatItem,
+  Language,
+  VoiceType,
+  IAgentSettings,
+} from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
-import { DEFAULT_OPTIONS, COLOR_LIST, setOptionsToLocal, genRandomChatList, DEFAULT_AGENT_SETTINGS, setAgentSettingsToLocal } from "@/common"
+import {
+  EMobileActiveTab,
+  DEFAULT_OPTIONS,
+  COLOR_LIST,
+  setOptionsToLocal,
+  genRandomChatList,
+  DEFAULT_AGENT_SETTINGS,
+  setAgentSettingsToLocal,
+} from "@/common"
 
 export interface InitialState {
   options: IOptions
-  roomConnected: boolean,
-  agentConnected: boolean,
-  themeColor: string,
+  roomConnected: boolean
+  agentConnected: boolean
+  rtmConnected: boolean
+  themeColor: string
   language: Language
   voiceType: VoiceType
-  chatItems: IChatItem[],
-  graphName: string,
+  chatItems: IChatItem[]
+  graphName: string
   agentSettings: IAgentSettings
+  mobileActiveTab: EMobileActiveTab
 }
 
 const getInitialState = (): InitialState => {
@@ -20,11 +36,13 @@ const getInitialState = (): InitialState => {
     themeColor: COLOR_LIST[0].active,
     roomConnected: false,
     agentConnected: false,
+    rtmConnected: false,
     language: "en-US",
     voiceType: "male",
     chatItems: [],
     graphName: "va_openai_v2v",
     agentSettings: DEFAULT_AGENT_SETTINGS,
+    mobileActiveTab: EMobileActiveTab.AGENT,
   }
 }
 
@@ -38,10 +56,16 @@ export const globalSlice = createSlice({
     },
     setThemeColor: (state, action: PayloadAction<string>) => {
       state.themeColor = action.payload
-      document.documentElement.style.setProperty('--theme-color', action.payload);
+      document.documentElement.style.setProperty(
+        "--theme-color",
+        action.payload,
+      )
     },
     setRoomConnected: (state, action: PayloadAction<boolean>) => {
       state.roomConnected = action.payload
+    },
+    setRtmConnected: (state, action: PayloadAction<boolean>) => {
+      state.rtmConnected = action.payload
     },
     addChatItem: (state, action: PayloadAction<IChatItem>) => {
       const { userId, text, isFinal, type, time } = action.payload
@@ -57,21 +81,41 @@ export const globalSlice = createSlice({
         // has last final Item
         if (time <= LastFinalItem.time) {
           // discard
-          console.log("[test] addChatItem, time < last final item, discard!:", text, isFinal, type)
+          console.log(
+            "[test] addChatItem, time < last final item, discard!:",
+            text,
+            isFinal,
+            type,
+          )
           return
         } else {
           if (LastNonFinalItem) {
-            console.log("[test] addChatItem, update last item(none final):", text, isFinal, type)
+            console.log(
+              "[test] addChatItem, update last item(none final):",
+              text,
+              isFinal,
+              type,
+            )
             state.chatItems[LastNonFinalIndex] = action.payload
           } else {
-            console.log("[test] addChatItem, add new item:", text, isFinal, type)
+            console.log(
+              "[test] addChatItem, add new item:",
+              text,
+              isFinal,
+              type,
+            )
             state.chatItems.push(action.payload)
           }
         }
       } else {
         // no last final Item
         if (LastNonFinalItem) {
-          console.log("[test] addChatItem, update last item(none final):", text, isFinal, type)
+          console.log(
+            "[test] addChatItem, update last item(none final):",
+            text,
+            isFinal,
+            type,
+          )
           state.chatItems[LastNonFinalIndex] = action.payload
         } else {
           console.log("[test] addChatItem, add new item:", text, isFinal, type)
@@ -89,23 +133,42 @@ export const globalSlice = createSlice({
     setGraphName: (state, action: PayloadAction<string>) => {
       state.graphName = action.payload
     },
-    setAgentSettings: (state: { agentSettings: any }, action: PayloadAction<Record<string, any>>) => {
+    setAgentSettings: (
+      state: { agentSettings: any },
+      action: PayloadAction<Record<string, any>>,
+    ) => {
       state.agentSettings = { ...state.agentSettings, ...action.payload }
       setAgentSettingsToLocal(state.agentSettings)
     },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
     },
+    setMobileActiveTab: (state, action: PayloadAction<EMobileActiveTab>) => {
+      state.mobileActiveTab = action.payload
+    },
     reset: (state) => {
       Object.assign(state, getInitialState())
-      document.documentElement.style.setProperty('--theme-color', COLOR_LIST[0].active);
+      document.documentElement.style.setProperty(
+        "--theme-color",
+        COLOR_LIST[0].active,
+      )
     },
   },
 })
 
-export const { reset, setOptions,
-  setRoomConnected, setAgentConnected, setVoiceType,
-  addChatItem, setThemeColor, setLanguage, setGraphName, setAgentSettings } =
-  globalSlice.actions
+export const {
+  reset,
+  setOptions,
+  setRoomConnected,
+  setAgentConnected,
+  setRtmConnected,
+  setVoiceType,
+  addChatItem,
+  setThemeColor,
+  setLanguage,
+  setGraphName,
+  setAgentSettings,
+  setMobileActiveTab,
+} = globalSlice.actions
 
 export default globalSlice.reducer

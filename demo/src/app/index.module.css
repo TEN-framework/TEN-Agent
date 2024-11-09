@@ -1,0 +1,94 @@
+@media (max-width: 1400px) {
+  .login {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: url("../assets/background.jpg") no-repeat center center;
+    background-size: cover;
+    box-sizing: border-box;
+  }
+
+  .starts {
+    width: 1px;
+    height: 1px;
+    background: transparent;
+    box-shadow:
+      145px 234px #fff,
+      876px 543px #fff;
+    animation: animStar 50s linear infinite;
+  }
+
+  .starts2 {
+    width: 2px;
+    height: 2px;
+    box-shadow:
+      445px 234px #fff,
+      276px 943px #fff;
+    animation: animStar 100s linear infinite;
+  }
+
+  .starts3 {
+    width: 3px;
+    height: 3px;
+    background: transparent;
+    box-shadow:
+      745px 834px #fff,
+      176px 243px #fff;
+    animation: animStar 150s linear infinite;
+  }
+}
+
+@media (min-width: 1400px) {
+  .login {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: url("../assets/background.jpg") no-repeat center center;
+    background-size: cover;
+    box-sizing: border-box;
+  }
+
+  .starts {
+    width: 1px;
+    height: 1px;
+    background: transparent;
+    box-shadow:
+      45vw 34vh #fff,
+      76vw 43vh #fff;
+    animation: animStar 50s linear infinite;
+  }
+
+  .starts2 {
+    width: 2px;
+    height: 2px;
+    box-shadow:
+      145vw 134vh #fff,
+      76vw 143vh #fff;
+    animation: animStar 100s linear infinite;
+  }
+
+  .starts3 {
+    width: 3px;
+    height: 3px;
+    background: transparent;
+    box-shadow:
+      45vw 134vh #fff,
+      176vw 43vh #fff;
+    animation: animStar 150s linear infinite;
+  }
+}
+
+@keyframes animStar {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-2000px);
+  }
+}

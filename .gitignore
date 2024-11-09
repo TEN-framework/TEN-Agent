@@ -19,7 +19,6 @@ crash_context_v1
 /.gnfiles
 include/
 interface/
-lib/
 lib64
 node_modules/
 /out/
