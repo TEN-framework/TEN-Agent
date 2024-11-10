@@ -3020,9 +3020,11 @@
               "stream_id": 1234,
               "remote_stream_id": 123,
               "subscribe_audio": true,
+              "subscribe_video": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "subscribe_audio_sample_rate": 24000,
+              "subscribe_video_pix_fmt": 4
             }
           },
           {
@@ -3040,6 +3042,25 @@
               "server_vad": true,
               "dump": true,
               "history": 10
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "llm",
+            "addon": "openai_chatgpt_python",
+            "name": "openai_chatgpt",
+            "property": {
+              "base_url": "${env:OPENAI_API_BASE}",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "${env:OPENAI_MODEL}",
+              "max_tokens": 512,
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
             }
           },
           {
@@ -3065,6 +3086,12 @@
             "property": {
               "api_key": "${env:BING_API_KEY}"
             }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "vision_analyze_tool_python",
+            "name": "vision_analyze_tool_python"
           }
         ],
         "connections": [
@@ -3078,6 +3105,17 @@
                   {
                     "extension_group": "llm",
                     "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "vision_analyze_tool_python"
                   }
                 ]
               }
@@ -3108,6 +3146,30 @@
                   {
                     "extension_group": "llm",
                     "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "vision_analyze_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              },
+              {
+                "name": "chat_completion_call",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_chatgpt"
                   }
                 ]
               }
@@ -3214,6 +3276,26 @@
                   {
                     "extension_group": "tools",
                     "extension": "bingsearch_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_vision_chat_completion",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "vision_analyze_tool_python",
                     "msg_conversion": {
                       "type": "per_property",
                       "keep_original": true,
