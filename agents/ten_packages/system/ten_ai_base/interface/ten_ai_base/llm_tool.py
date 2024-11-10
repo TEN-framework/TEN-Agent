@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from asyncio import sleep
 import asyncio
+import traceback
 from ten import (
     AsyncExtension,
     Data,
@@ -56,7 +57,7 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
                 ten_env.return_result(cmd_result, cmd)
                 ten_env.log_info(f"tool result done, {result}")
             except Exception as err:
-                ten_env.log_warn(f"on_cmd failed: {err}")
+                ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:

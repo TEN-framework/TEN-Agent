@@ -1828,7 +1828,16 @@
             "addon": "weatherapi_tool_python",
             "name": "weatherapi_tool_python",
             "property": {
-              "api_key": "${env:WEATHER_API_KEY}"
+              "api_key": "${env:WEATHERAPI_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "bingsearch_tool_python",
+            "name": "bingsearch_tool_python",
+            "property": {
+              "api_key": "${env:BING_API_KEY}"
             }
           },
           {
@@ -1942,6 +1951,10 @@
                   {
                     "extension_group": "chatgpt",
                     "extension": "weatherapi_tool_python"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "bingsearch_tool_python"
                   }
                 ]
               }
@@ -1965,6 +1978,21 @@
           {
             "extension_group": "chatgpt",
             "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "bingsearch_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
