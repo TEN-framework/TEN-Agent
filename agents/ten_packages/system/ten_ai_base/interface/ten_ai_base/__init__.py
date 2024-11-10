@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 
-from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
+from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult, LLMChatCompletionMessageParam
 from .llm import AsyncLLMBaseExtension
 from .llm_tool import AsyncLLMToolBaseExtension
 from .chat_memory import ChatMemory
@@ -23,5 +23,6 @@ __all__ = [
     "ChatMemory",
     "AsyncQueue",
     "AsyncEventEmitter",
-    "BaseConfig"
+    "BaseConfig",
+    "LLMChatCompletionMessageParam",
 ]

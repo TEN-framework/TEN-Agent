@@ -43,7 +43,7 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
                 tool_args = json.loads(cmd.get_property_to_json("arguments"))
                 ten_env.log_debug(
                     f"tool_name: {tool_name}, tool_args: {tool_args}")
-                result = await asyncio.create_task(self.run_tool(tool_name, tool_args))
+                result = await asyncio.create_task(self.run_tool(ten_env, tool_name, tool_args))
 
                 if result is None:
                     await sleep(5)

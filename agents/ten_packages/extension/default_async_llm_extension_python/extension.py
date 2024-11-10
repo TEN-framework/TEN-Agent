@@ -33,7 +33,7 @@ class DefaultAsyncLLMExtension(AsyncLLMBaseExtension):
         """Implement this method to stop and destruct your resources."""
         ten_env.log_debug("TODO: on_stop")
 
-    async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> None:
+    async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> any:
         """Called when a chat completion is requested by cmd call. Implement this method to process the chat completion."""
         ten_env.log_debug("TODO: on_call_chat_completion")
 

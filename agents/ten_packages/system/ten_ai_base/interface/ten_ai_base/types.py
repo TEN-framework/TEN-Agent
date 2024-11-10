@@ -89,8 +89,8 @@ class LLMToolResult(TypedDict, total=False):
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
 
 class LLMCallCompletionArgs(TypedDict, total=False):
-    message: LLMChatCompletionMessageParam
+    messages: Iterable[LLMChatCompletionMessageParam]
 
 class LLMDataCompletionArgs(TypedDict, total=False):
-    message: LLMChatCompletionMessageParam
+    messages: Iterable[LLMChatCompletionMessageParam]
     no_tool: bool = False

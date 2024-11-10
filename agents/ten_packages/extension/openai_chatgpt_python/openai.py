@@ -9,6 +9,7 @@ from collections import defaultdict
 import random
 import requests
 from openai import AsyncOpenAI
+from openai.types.chat.chat_completion import ChatCompletion
 from typing import List, Dict, Any, Optional
 from .log import logger
 
@@ -73,6 +74,32 @@ class OpenAIChatGPT:
             logger.info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
+
+    async def get_chat_completions(self, messages, tools = None) -> ChatCompletion:
+        req = {
+            "model": self.config.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": self.config.prompt,
+                },
+                *messages,
+            ],
+            "tools": tools,
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "presence_penalty": self.config.presence_penalty,
+            "frequency_penalty": self.config.frequency_penalty,
+            "max_tokens": self.config.max_tokens,
+            "seed": self.config.seed,
+        }
+
+        try:
+            response = await self.client.chat.completions.create(**req)
+        except Exception as e:
+            raise Exception(f"CreateChatCompletion failed, err: {e}")
+
+        return response
 
     async def get_chat_completions_stream(self, messages, tools = None, listener = None):
         req = {

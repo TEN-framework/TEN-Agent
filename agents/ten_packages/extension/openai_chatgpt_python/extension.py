@@ -164,17 +164,22 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
         # Start an asynchronous task for handling chat completion
         message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
-        await self.queue_input_item(False, message=message)
+        await self.queue_input_item(False, messages=[message])
 
     async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
         return await super().on_tools_update(ten_env, tool)
 
-    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> None:
-        return await super().on_call_chat_completion(ten_env, **kargs)
+    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> any:
+        kmessages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
+
+        ten_env.log_info(f"on_call_chat_completion: {kmessages}")
+        response = await self.openai_chatgpt.get_chat_completions(
+            kmessages, None)
+        return response.to_json()
 
     async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
         """Run the chatflow asynchronously."""
-        kmessage: LLMChatCompletionUserMessageParam = kargs.get("message", None)
+        kmessage: LLMChatCompletionUserMessageParam = kargs.get("messages", [])[0]
 
         if not kmessage:
             ten_env.log_error("No message in data")
@@ -235,7 +240,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                                 "content": self._convert_to_content_parts(message["content"])
                             }
                             new_message["content"] = new_message["content"] + self._convert_to_content_parts(result_content)
-                            await self.queue_input_item(True, message=new_message)
+                            await self.queue_input_item(True, messages=[new_message])
                         else:
                             ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
