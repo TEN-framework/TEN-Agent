@@ -15,7 +15,7 @@ export const voiceNameMap: LanguageMap = {
             female: "Zhiyu",
         },
         openai: {
-            male: "ash",
+            male: "alloy",
             female: "shimmer"
         }
     },
@@ -33,7 +33,7 @@ export const voiceNameMap: LanguageMap = {
             female: "Ruth",
         },
         openai: {
-            male: "ash",
+            male: "alloy",
             female: "shimmer"
         }
     },
@@ -43,7 +43,7 @@ export const voiceNameMap: LanguageMap = {
             female: "ja-JP-NanamiNeural",
         },
         openai: {
-            male: "ash",
+            male: "alloy",
             female: "shimmer"
         }
     },
@@ -53,7 +53,7 @@ export const voiceNameMap: LanguageMap = {
             female: "ko-KR-JiMinNeural",
         },
         openai: {
-            male: "ash",
+            male: "alloy",
             female: "shimmer"
         }
     },
