@@ -117,7 +117,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 #### 1. Modify config files
 In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 
-It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again for the changes to take effect.
+It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again in the container for the changes to take effect.
 ```bash
 cp ./.env.example ./.env
 ```
