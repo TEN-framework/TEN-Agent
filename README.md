@@ -123,7 +123,7 @@ cp ./.env.example ./.env
 ```
 
 #### 2. Setup API keys
-Open the `.env` file and fill in the `keys`.
+Open the `.env` file and fill in the `keys`. We recommend using [ Deepgram ASR ](https://deepgram.com/) and [ FishAudio TTS ](https://fish.audio/) as they are free to sign up for and offer free credits. Of course, you can also use other services, see the list in [.env.example](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 ```bash
 # Agora App ID 
 # Agora App Certificate(only required if enabled in the Agora Console)
