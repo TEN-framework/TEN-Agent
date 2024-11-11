@@ -34,7 +34,7 @@ export default function CameraBlock(props: { videoTrack?: ICameraVideoTrack }) {
       isActive={!videoMute}
       select={<CamSelect videoTrack={videoTrack} />}
     >
-      <div className="mt-3 h-full min-h-28 w-full">
+      <div className="my-3 h-52 w-full overflow-hidden rounded-lg">
         <LocalStreamPlayer videoTrack={videoTrack} />
       </div>
     </CommonDeviceWrapper>
