@@ -1,4 +1,4 @@
-## DEMO
+## Playground
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
@@ -8,9 +8,7 @@
 [![shadcn/ui](https://img.shields.io/badge/UI-shadcn%2Fui-black)](https://ui.shadcn.com)
 [![pnpm](https://img.shields.io/badge/pnpm-9.12.3-blue)](package.json)
 
-Web demo for Ten Agent.
-
-URL: https://agent.theten.ai
+Local playground for Ten Agent.
 
 ## Local Development
 
@@ -22,7 +20,7 @@ URL: https://agent.theten.ai
 ### Install dependencies
 
 ```bash
-# cd ./demo
+# cd ./playground
 # install dependencies
 # corepack enable
 pnpm install
