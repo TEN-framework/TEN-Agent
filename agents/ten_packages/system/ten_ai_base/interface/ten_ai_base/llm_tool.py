@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from asyncio import sleep
+import asyncio
+import traceback
 from ten import (
     AsyncExtension,
     Data,
@@ -40,14 +43,21 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
                 tool_args = json.loads(cmd.get_property_to_json("arguments"))
                 ten_env.log_debug(
                     f"tool_name: {tool_name}, tool_args: {tool_args}")
-                result = await self.run_tool(tool_name, tool_args)
+                result = await asyncio.create_task(self.run_tool(ten_env, tool_name, tool_args))
+
+                if result is None:
+                    await sleep(5)
+                    ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+                    return
+
                 cmd_result: CmdResult = CmdResult.create(StatusCode.OK)
                 cmd_result.set_property_from_json(
-                    CMD_PROPERTY_RESULT, json.dumps(result.model_dump_json()))
+                    CMD_PROPERTY_RESULT, json.dumps(result))
+                await sleep(5)
                 ten_env.return_result(cmd_result, cmd)
-                ten_env.log_debug(f"tool result done, {result}")
+                ten_env.log_info(f"tool result done, {result}")
             except Exception as err:
-                ten_env.log_warn(f"on_cmd failed: {err}")
+                ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:

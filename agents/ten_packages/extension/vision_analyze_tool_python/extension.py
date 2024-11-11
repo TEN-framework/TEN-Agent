@@ -4,22 +4,23 @@
 # See the LICENSE file for more information.
 #
 import json
-from ten.cmd_result import CmdResult
-from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
-from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
 from ten import (
     AudioFrame,
     VideoFrame,
+    AsyncExtension,
     AsyncTenEnv,
     Cmd,
+    StatusCode,
+    CmdResult,
     Data,
 )
 from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolMetadataParameter
-
+from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
+from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
 
 def rgb2base64jpeg(rgb_data, width, height):
     # Convert the RGB image to a PIL Image
@@ -78,8 +79,7 @@ def resize_image_keep_aspect(image, max_size=512):
 
     return resized_image
 
-
-class VisionToolExtension(AsyncLLMToolBaseExtension):
+class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
     image_data = None
     image_width = 0
     image_height = 0
@@ -135,24 +135,54 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         return [
             LLMToolMetadata(
-                name="get_vision_tool",
-                description="Get the image from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
-                parameters=[],
+                name="get_vision_chat_completion",
+                description="Get the image analyze result from camera. Call this whenever you need to understand the input camera image like you have vision capability, for example when user asks 'What can you see?' or 'Can you see me?'",
+                parameters=[
+                    LLMToolMetadataParameter(
+                        name="query",
+                        type="string",
+                        description="The vision completion query.",
+                        required=True,
+                    ),
+                ],
             ),
         ]
     
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
-        if name == "get_vision_tool":
+        if name == "get_vision_chat_completion":
             if self.image_data is None:
                 raise Exception("No image data available")
 
+            if "query" not in args:
+                raise Exception("Failed to get property")
+            
+            query = args["query"]
+            
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
-            return {
-                "content": [{
+            cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
+            message: LLMChatCompletionUserMessageParam = LLMChatCompletionUserMessageParam(
+                role="user",
+                content=[
+                {
+                    "type": "text",
+                    "text": query
+                },
+                {
                     "type": "image_url",
                     "image_url": {
                         "url": base64_image
                     }
+                }
+            ]
+            )
+            cmd.set_property_from_json("arguments", json.dumps({"messages":[message]}))
+            ten_env.log_info("send_cmd {}".format(message))
+            cmd_result: CmdResult = await ten_env.send_cmd(cmd)
+            result = cmd_result.get_property_to_json("response")
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": result
                 }]
             }

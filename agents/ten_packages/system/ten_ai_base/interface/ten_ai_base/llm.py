@@ -13,7 +13,7 @@ from ten import (
 from ten.async_ten_env import AsyncTenEnv
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
-from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, DATA_OUTPUT_PROPERTY_TEXT
+from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, DATA_OUTPUT_PROPERTY_TEXT, CMD_CHAT_COMPLETION_CALL
 from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from .helper import AsyncQueue
 import json
@@ -37,6 +37,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
         self.current_task = None
         self.hit_default_cmd = False
+        self.loop_task = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -44,8 +45,9 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
 
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self._process_queue(ten_env))
+        if self.loop_task is None:
+            self.loop = asyncio.get_event_loop()
+            self.loop_task = self.loop.create_task(self._process_queue(ten_env))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
@@ -76,6 +78,19 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 async_ten_env.log_warn(f"on_cmd failed: {err}")
                 async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd)
+        elif cmd_name == CMD_CHAT_COMPLETION_CALL:
+            try:
+                args = json.loads(cmd.get_property_to_json("arguments"))
+                response = await self.on_call_chat_completion(async_ten_env, **args)
+                cmd_result = CmdResult.create(StatusCode.OK)
+                cmd_result.set_property_from_json(
+                    "response", response)
+                async_ten_env.return_result(cmd_result, cmd)
+            except Exception as err:
+                async_ten_env.log_warn(f"on_cmd failed: {err}")
+                async_ten_env.return_result(
+                    CmdResult.create(StatusCode.ERROR), cmd)
+
 
     async def queue_input_item(self, prepend: bool = False, **kargs: LLMDataCompletionArgs):
         """Queues an input item for processing."""
@@ -109,7 +124,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             )
 
     @abstractmethod
-    async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> None:
+    async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> any:
         """Called when a chat completion is requested by cmd call. Implement this method to process the chat completion."""
         pass
 
@@ -138,3 +153,5 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 ten_env.log_info(f"Task cancelled: {args}")
+            except Exception as err:
+                ten_env.log_error(f"Task failed: {args}, err: {err}")

@@ -5,9 +5,11 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
+from collections import defaultdict
 import random
 import requests
 from openai import AsyncOpenAI
+from openai.types.chat.chat_completion import ChatCompletion
 from typing import List, Dict, Any, Optional
 from .log import logger
 
@@ -73,6 +75,32 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
+    async def get_chat_completions(self, messages, tools = None) -> ChatCompletion:
+        req = {
+            "model": self.config.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": self.config.prompt,
+                },
+                *messages,
+            ],
+            "tools": tools,
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "presence_penalty": self.config.presence_penalty,
+            "frequency_penalty": self.config.frequency_penalty,
+            "max_tokens": self.config.max_tokens,
+            "seed": self.config.seed,
+        }
+
+        try:
+            response = await self.client.chat.completions.create(**req)
+        except Exception as e:
+            raise Exception(f"CreateChatCompletion failed, err: {e}")
+
+        return response
+
     async def get_chat_completions_stream(self, messages, tools = None, listener = None):
         req = {
             "model": self.config.model,
@@ -99,6 +127,8 @@ class OpenAIChatGPT:
             raise Exception(f"CreateChatCompletionStream failed, err: {e}")
         
         full_content = ""
+        # Check for tool calls
+        tool_calls_dict = defaultdict(lambda: {"id": None, "function": {"arguments": "", "name": None}, "type": None})
 
         async for chat_completion in response:
             choice = chat_completion.choices[0]
@@ -112,14 +142,31 @@ class OpenAIChatGPT:
 
             full_content += content
 
-            # Check for tool calls
             if delta.tool_calls:
                 for tool_call in delta.tool_calls:
                     logger.info(f"tool_call: {tool_call}")
+                    if tool_call.id is not None:
+                        tool_calls_dict[tool_call.index]["id"] = tool_call.id
 
-                    # Emit tool call event (fire-and-forget)
-                    if listener:
-                        listener.emit('tool_call', tool_call)
+                    # If the function name is not None, set it
+                    if tool_call.function.name is not None:
+                        tool_calls_dict[tool_call.index]["function"]["name"] = tool_call.function.name
+
+                    # Append the arguments
+                    tool_calls_dict[tool_call.index]["function"]["arguments"] += tool_call.function.arguments
+
+                    # If the type is not None, set it
+                    if tool_call.type is not None:
+                        tool_calls_dict[tool_call.index]["type"] = tool_call.type
+
+
+        # Convert the dictionary to a list
+        tool_calls_list = list(tool_calls_dict.values())
+
+        # Emit tool calls event (fire-and-forget)
+        if listener and tool_calls_list:
+            for tool_call in tool_calls_list:
+                listener.emit('tool_call', tool_call)
 
         # Emit content finished event after the loop completes
         if listener:
