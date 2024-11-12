@@ -92,7 +92,7 @@ class OpenAIV2VExtension(Extension):
         self.transcript: str = ''
 
         # misc.
-        self.greeting : str = DEFAULT_GREETING
+        self.greeting : str = ""
         self.vendor: str = ""
         # max history store in context
         self.max_history = 0
@@ -248,6 +248,8 @@ class OpenAIV2VExtension(Extension):
                                 logger.info(f"after append retrieve: {len(self.retrieved)}")
 
                             text = self._greeting_text()
+                            if self.greeting:
+                                text = self.greeting
                             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
                             await self.conn.send_request(ResponseCreate())
 

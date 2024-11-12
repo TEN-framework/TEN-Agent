@@ -37,7 +37,9 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10
+              "history": 10,
+              "system_message": "",
+              "greeting": ""
             }
           },
           {
