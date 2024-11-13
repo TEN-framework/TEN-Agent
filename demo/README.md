@@ -4,9 +4,9 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-18-blue)](package.json)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](package.json)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15-black)](package.json)
 [![shadcn/ui](https://img.shields.io/badge/UI-shadcn%2Fui-black)](https://ui.shadcn.com)
-[![Yarn](https://img.shields.io/badge/Yarn-4-blue)](package.json)
+[![pnpm](https://img.shields.io/badge/pnpm-9.12.3-blue)](package.json)
 
 Web demo for Ten Agent.
 
@@ -17,7 +17,7 @@ URL: https://agent.theten.ai
 ### Prerequisites
 
 - Node.js >= 20
-- [Yarn >= 4](https://yarnpkg.com/getting-started)
+- [pnpm 9.12.3](https://pnpm.io/installation)
 
 ### Install dependencies
 
@@ -25,12 +25,12 @@ URL: https://agent.theten.ai
 # cd ./demo
 # install dependencies
 # corepack enable
-yarn
+pnpm install
 ```
 
 ### Run
 
 ```bash
 # run
-yarn dev
+pnpm dev
 ```
