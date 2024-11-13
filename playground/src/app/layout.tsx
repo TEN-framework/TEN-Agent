@@ -1,17 +1,18 @@
-import { ConfigProvider } from "antd"
+// import { ConfigProvider } from "antd";
 import { StoreProvider } from "@/store";
 import type { Metadata, Viewport } from "next";
+import { Toaster } from "@/components/ui/sonner";
 
-import './global.css'
-
+import "./global.css";
 
 export const metadata: Metadata = {
   title: "TEN Agent | Real-Time Multimodal AI Agent",
-  description: "TEN Agent is an open-source multimodal AI agent that can speak, see, and access a knowledge base(RAG).",
+  description:
+    "TEN Agent is an open-source multimodal AI agent that can speak, see, and access a knowledge base(RAG).",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
-  }
+  },
 };
 
 export const viewport: Viewport = {
@@ -21,10 +22,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-}
-
-
-
+};
 
 export default function RootLayout({
   children,
@@ -33,8 +31,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <ConfigProvider
+      <body className="dark">
+        {/* <ConfigProvider
           theme={{
             components: {
               Select: {
@@ -42,11 +40,10 @@ export default function RootLayout({
               },
             },
           }}
-        >
-          <StoreProvider>
-            {children}
-          </StoreProvider>
-        </ConfigProvider>
+        > */}
+        <StoreProvider>{children}</StoreProvider>
+        {/* </ConfigProvider> */}
+        <Toaster />
       </body>
     </html>
   );
