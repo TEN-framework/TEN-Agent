@@ -105,12 +105,19 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
   - CPU >= 2 Core
   - RAM >= 4 GB
 
-#### Docker setting on Apple Silicon
+#### MacOS: Docker setting on Apple Silicon
 
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon. However, please note that build and connection times will be a little slower due to emulation when running on ARM systems. Once deployed to x64 (e.g. your Linux server) it will be much faster.
 
 
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+#### Windows: Configuring Git to handle line endings
+To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
+
+```bash
+git config --global core.autocrlf true
+```
 
 ### Next step
 
