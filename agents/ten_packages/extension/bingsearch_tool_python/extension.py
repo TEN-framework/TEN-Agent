@@ -39,15 +39,15 @@ TOOL_CALLBACK = "callback"
 TOOL_NAME = "bing_search"
 TOOL_DESCRIPTION = "Use Bing.com to search for latest information. Call this function if you are not sure about the answer."
 TOOL_PARAMETERS = {
-        "type": "object",
-        "properties": {
+    "type": "object",
+    "properties": {
             "query": {
                 "type": "string",
                 "description": "The search query to call Bing Search."
             }
-        },
-        "required": ["query"],
-    }
+    },
+    "required": ["query"],
+}
 
 PROPERTY_API_KEY = "api_key"  # Required
 
@@ -82,18 +82,17 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
         self.session = aiohttp.ClientSession()
-        ten_env.on_init_done()
+        await super().on_init(ten_env)
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
         await super().on_start(ten_env)
 
-        get_properties_string(ten_env, [PROPERTY_API_KEY], lambda name, value: setattr(self, name, value))
+        get_properties_string(
+            ten_env, [PROPERTY_API_KEY], lambda name, value: setattr(self, name, value))
         if not self.api_key:
             ten_env.log_info(f"API key is missing, exiting on_start")
             return
-
-        ten_env.on_start_done()
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
@@ -102,12 +101,6 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
         if self.session:
             await self.session.close()
             self.session = None  # Ensure it can't be reused accidentally
-
-        ten_env.on_stop_done()
-
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
-        ten_env.on_deinit_done()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
@@ -130,23 +123,23 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
                 ],
             )
         ]
-    
+
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
         if name == TOOL_NAME:
             result = await self._do_search(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"content":json.dumps(result)}
-        
+            return {"content": json.dumps(result)}
+
     async def _do_search(self, args: dict) -> Any:
         if "query" not in args:
             raise Exception("Failed to get property")
-        
+
         query = args["query"]
         snippets = []
         results = await self._bing_search_results(query, count=self.k)
         if len(results) == 0:
             return "No good Bing Search Result was found"
-        
+
         for result in results:
             snippets.append(result["snippet"])
 
@@ -160,12 +153,12 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
             "textDecorations": "true",
             "textFormat": "HTML"
         }
-        
+
         async with self.session as session:
             async with session.get(DEFAULT_BING_SEARCH_ENDPOINT, headers=headers, params=params) as response:
                 response.raise_for_status()
                 search_results = await response.json()
-        
+
         if "webPages" in search_results:
             return search_results["webPages"]["value"]
         return []

@@ -86,23 +86,18 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
-        ten_env.on_init_done()
+        await super().on_init(ten_env)
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
         await super().on_start(ten_env)
-        ten_env.on_start_done()
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
         # TODO: clean up resources
 
-        ten_env.on_stop_done()
-
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("on_deinit")
-        ten_env.on_deinit_done()
+        await super().on_stop(ten_env)
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
@@ -140,13 +135,14 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
                 parameters=[],
             ),
         ]
-    
+
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
         if name == "get_vision_tool":
             if self.image_data is None:
                 raise Exception("No image data available")
 
-            base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
+            base64_image = rgb2base64jpeg(
+                self.image_data, self.image_width, self.image_height)
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             return {
                 "content": [{
