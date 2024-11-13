@@ -287,6 +287,17 @@
                   }
                 ]
               }
+            ],
+            "audio_frame": [
+              {
+                "dest": [
+                  {
+                    "extension": "message_collector",
+                    "extension_group": "transcriber"
+                  }
+                ],
+                "name": "pcm_frame"
+              }
             ]
           },
           {
@@ -4856,6 +4867,17 @@
                   {
                     "extension_group": "chatgpt",
                     "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
                   }
                 ]
               }
