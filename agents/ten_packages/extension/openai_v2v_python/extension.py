@@ -188,6 +188,7 @@ class OpenAIV2VExtension(Extension):
     # Should not be here
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
+        ten_env.log_info(f"on_cmd name {cmd_name}")
 
         if cmd_name == CMD_TOOL_REGISTER:
             self._on_tool_register(ten_env, cmd)
@@ -231,11 +232,11 @@ class OpenAIV2VExtension(Extension):
                     # logger.info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            logger.info(
+                            ten_env.log_info(
                                 f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
-                            update_msg = self._update_session()
+                            update_msg = self._update_session(ten_env)
                             await self.conn.send_request(update_msg)
 
                             if self.retrieved:
@@ -531,15 +532,17 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
         self.ctx["greeting"] = self.greeting
 
-    def _update_session(self) -> SessionUpdate:
+    def _update_session(self, ten_env: TenEnv) -> SessionUpdate:
         self.ctx["tools"] = self.registry.to_prompt()
         prompt = self._replace(self.config.instruction)
         self.last_updated = datetime.now()
+        tools = self.registry.get_tools()
+        ten_env.log_info(f"update session {prompt} {tools}")
         su = SessionUpdate(session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
                 tool_choice="auto",
-                tools=self.registry.get_tools()
+                tools=tools
             ))
         if self.config.audio_out:
             su.session.voice=self.config.voice
