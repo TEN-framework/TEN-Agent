@@ -29,9 +29,10 @@ type minimaxTTS struct {
 
 type minimaxTTSConfig struct {
 	ApiKey                string
+	GroupId               string
 	Model                 string
 	RequestTimeoutSeconds int
-	GroupId               string
+	SampleRate            int32
 	Url                   string
 	VoiceId               string
 }
@@ -39,9 +40,10 @@ type minimaxTTSConfig struct {
 func defaultMinimaxTTSConfig() minimaxTTSConfig {
 	return minimaxTTSConfig{
 		ApiKey:                "",
-		Model:                 "speech-01-turbo",
-		RequestTimeoutSeconds: 30,
 		GroupId:               "",
+		Model:                 "speech-01-turbo",
+		RequestTimeoutSeconds: 10,
+		SampleRate:            32000,
 		Url:                   "https://api.minimax.chat/v1/t2a_v2",
 		VoiceId:               "male-qn-qingse",
 	}
@@ -63,7 +65,7 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 		"audio_setting": map[string]any{
 			"channel":     1,
 			"format":      "pcm",
-			"sample_rate": 32000,
+			"sample_rate": e.config.SampleRate,
 		},
 		"model": e.config.Model,
 		"pronunciation_dict": map[string]any{

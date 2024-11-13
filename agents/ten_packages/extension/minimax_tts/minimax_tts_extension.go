@@ -28,6 +28,7 @@ const (
 	propertyGroupId               = "group_id"                // Required
 	propertyModel                 = "model"                   // Optional
 	propertyRequestTimeoutSeconds = "request_timeout_seconds" // Optional
+	propertySampleRate            = "sample_rate"             // Optional
 	propertyUrl                   = "url"                     // Optional
 	propertyVoiceId               = "voice_id"                // Optional
 )
@@ -65,6 +66,7 @@ func newMinimaxTTSExtension(name string) ten.Extension {
 //   - group_id (required)
 //   - model
 //   - request_timeout_seconds
+//   - sample_rate
 //   - url
 //   - voice_id
 func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
@@ -103,6 +105,14 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 		}
 	}
 
+	if sampleRate, err := ten.GetPropertyInt64(propertySampleRate); err != nil {
+		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySampleRate, err), logTag)
+	} else {
+		if sampleRate > 0 {
+			minimaxTTSConfig.SampleRate = int32(sampleRate)
+		}
+	}
+
 	if url, err := ten.GetPropertyString(propertyUrl); err != nil {
 		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyUrl, err), logTag)
 	} else {
@@ -130,7 +140,10 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	e.minimaxTTS = minimaxTTS
 
 	// create pcm instance
-	pcm := newPcm(defaultPcmConfig())
+	pcmConfig := defaultPcmConfig()
+	pcmConfig.SampleRate = minimaxTTSConfig.SampleRate
+	pcmConfig.SamplesPerChannel = minimaxTTSConfig.SampleRate / 100
+	pcm := newPcm(pcmConfig)
 	pcmFrameSize := pcm.getPcmFrameSize()
 
 	// init chan

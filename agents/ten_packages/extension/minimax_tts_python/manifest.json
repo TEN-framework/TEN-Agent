@@ -1,11 +1,11 @@
 {
     "type": "extension",
-    "name": "minimax_tts",
+    "name": "minimax_tts_python",
     "version": "0.1.0",
     "dependencies": [
         {
             "type": "system",
-            "name": "ten_runtime_go",
+            "name": "ten_runtime_python",
             "version": "0.3"
         }
     ],

@@ -4634,13 +4634,14 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "minimax_tts",
+            "addon": "minimax_tts_python",
             "name": "minimax_tts",
             "property": {
               "api_key": "${env:MINIMAX_TTS_API_KEY}",
               "group_id": "${env:MINIMAX_TTS_GROUP_ID}",
               "model": "speech-01-turbo",
-              "request_timeout_seconds": 30,
+              "request_timeout_seconds": 10,
+              "sample_rate": 32000,
               "url": "https://api.minimax.chat/v1/t2a_v2",
               "voice_id": "male-qn-qingse"
             }
