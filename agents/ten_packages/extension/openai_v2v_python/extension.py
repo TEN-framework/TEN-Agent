@@ -480,14 +480,14 @@ class OpenAIV2VExtension(Extension):
         try:
             voice = ten_env.get_property_string(PROPERTY_VOICE)
             if voice:
-                v = DEFAULT_VOICE
-                if voice == "alloy":
-                    v = Voices.Alloy
-                elif voice == "echo":
-                    v = Voices.Echo
-                elif voice == "shimmer":
-                    v = Voices.Shimmer
-                self.config.voice = v
+                # v = DEFAULT_VOICE
+                # if voice == "alloy":
+                #     v = Voices.Alloy
+                # elif voice == "echo":
+                #     v = Voices.Echo
+                # elif voice == "shimmer":
+                #     v = Voices.Shimmer
+                self.config.voice = voice
         except Exception as err:
             logger.info(f"GetProperty optional {PROPERTY_VOICE} error: {err}")
 

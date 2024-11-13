@@ -93,8 +93,9 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
 
 #### Keys
 - Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate only required if enabled in the Agora Console)
-- Azure [SST(ASR)](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys
 - [OpenAI](https://openai.com/index/openai-api/) API key
+- [ Deepgram ](https://deepgram.com/) ASR and [ FishAudio ](https://fish.audio/) TTS
+<!-- - Azure [SST(ASR)](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys -->
 
 #### Installation
   - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
@@ -104,39 +105,43 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
   - CPU >= 2 Core
   - RAM >= 4 GB
 
-#### Docker setting on Apple Silicon
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon, otherwise the server is not going to work.
+#### MacOS: Docker setting on Apple Silicon
+
+You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon. However, please note that build and connection times will be a little slower due to emulation when running on ARM systems. Once deployed to x64 (e.g. your Linux server) it will be much faster.
+
 
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+#### Windows: Configuring Git to handle line endings
+To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
+
+```bash
+git config --global core.autocrlf true
+```
 
 ### Next step
 
 #### 1. Modify config files
 In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 
-It will be used to store information for `docker compose` later.
+It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again in the container for the changes to take effect.
 ```bash
 cp ./.env.example ./.env
 ```
 
 #### 2. Setup API keys
-Open the `.env` file and fill in the `keys` and `regions`. 
+Open the `.env` file and fill in the `keys`. We recommend using [ Deepgram ASR ](https://deepgram.com/) and [ FishAudio TTS ](https://fish.audio/) as they are free to sign up for and offer free credits. Of course, you can also use other services, see the list in [.env.example](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 ```bash
 # Agora App ID 
 # Agora App Certificate(only required if enabled in the Agora Console)
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
-# Azure STT key and region
-AZURE_STT_KEY=
-AZURE_STT_REGION=
-
-# Azure TTS key and region
-AZURE_TTS_KEY=
-AZURE_TTS_REGION=
-
-# OpenAI API key
 OPENAI_API_KEY=
+
+DEEPGRAM_API_KEY=
+
+FISH_AUDIO_TTS_KEY=
 ```
 
 #### 3. Start agent development containers

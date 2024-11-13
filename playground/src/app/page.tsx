@@ -1,35 +1,49 @@
-"use client"
+"use client";
 
-import AuthInitializer from "@/components/authInitializer"
-import { getRandomChannel, getRandomUserId, isMobile, useAppDispatch, useAppSelector } from "@/common"
-import dynamic from 'next/dynamic'
-import { useEffect, useState } from "react"
-import { setOptions } from "@/store/reducers/global"
+import dynamic from "next/dynamic";
 
-const PCEntry = dynamic(() => import('@/platform/pc/entry'), {
+import AuthInitializer from "@/components/authInitializer";
+import { useAppSelector, EMobileActiveTab } from "@/common";
+import Header from "@/components/Layout/Header";
+import Action from "@/components/Layout/Action";
+import { cn } from "@/lib/utils";
+
+const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
-})
-
-const MobileEntry = dynamic(() => import('@/platform/mobile/entry'), {
+});
+const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
   ssr: false,
-})
+});
 
 export default function Home() {
-  const dispatch = useAppDispatch()
-  const [mobile, setMobile] = useState<boolean | null>(null);
-
-
-  useEffect(() => {
-    setMobile(isMobile())
-  })
+  const mobileActiveTab = useAppSelector(
+    (state) => state.global.mobileActiveTab
+  );
 
   return (
-    mobile === null ? <></> :
     <AuthInitializer>
-      {mobile ? <MobileEntry></MobileEntry> : <PCEntry></PCEntry>}
-    </AuthInitializer >
+      <div className="relative mx-auto flex h-full min-h-screen flex-col md:h-screen">
+        <Header className="h-[60px]" />
+        <Action className="h-[48px]" />
+        <div className="mx-2 mb-2 flex h-full max-h-[calc(100vh-108px-24px)] flex-col md:flex-row md:gap-2">
+          <DynamicRTCCard
+            className={cn(
+              "m-0 w-full rounded-b-lg bg-[#181a1d] md:w-[480px] md:rounded-lg",
+              {
+                ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
+              }
+            )}
+          />
+          <DynamicChatCard
+            className={cn(
+              "m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg",
+              {
+                ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.AGENT,
+              }
+            )}
+          />
+        </div>
+      </div>
+    </AuthInitializer>
   );
 }
-
-
-
