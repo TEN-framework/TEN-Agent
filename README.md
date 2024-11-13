@@ -94,7 +94,7 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
 #### Keys
 - Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate only required if enabled in the Agora Console)
 - [OpenAI](https://openai.com/index/openai-api/) API key
-- [ Deepgram ](https://deepgram.com/) ASR and [ FishAudio ](fish.audio) TTS
+- [ Deepgram ](https://deepgram.com/) ASR and [ FishAudio ](https://fish.audio/) TTS
 <!-- - Azure [SST(ASR)](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys -->
 
 #### Installation
