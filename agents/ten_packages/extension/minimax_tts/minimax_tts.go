@@ -57,7 +57,7 @@ func newMinimaxTTS(config minimaxTTSConfig) (*minimaxTTS, error) {
 }
 
 func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
-	slog.Info("textToSpeechStream start tts", "text", text)
+	slog.Debug("textToSpeechStream start tts", "text", text)
 
 	payload := map[string]any{
 		"audio_setting": map[string]any{
@@ -94,7 +94,7 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 	defer func() {
 		resp.RawBody().Close()
 
-		slog.Info("textToSpeechStream close response", "err", err, "text", text)
+		slog.Debug("textToSpeechStream close response", "err", err, "text", text)
 	}()
 
 	// Check the response status code
@@ -103,12 +103,20 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 		return fmt.Errorf("unexpected response status: %d", resp.StatusCode())
 	}
 
-	scanner := bufio.NewScanner(resp.RawBody())
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	reader := bufio.NewReader(resp.RawBody())
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
 
-		if len(line) <= 5 || !bytes.HasPrefix(line, []byte("data:")) {
-			slog.Info("textToSpeechStream drop chunk", "text", text, "line", line)
+			slog.Error("failed to read line", "error", err)
+			return err
+		}
+
+		if !bytes.HasPrefix(line, []byte("data:")) {
+			slog.Debug("drop chunk", "text", text, "line", line)
 			continue
 		}
 
@@ -126,11 +134,11 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 
 		if err = json.Unmarshal(line[5:], &chunk); err != nil {
 			slog.Error("failed to decode JSON chunk", "err", err)
-			return
+			break
 		}
 
 		if chunk.Data.Status == 2 {
-			continue
+			break
 		}
 
 		audioData, err := hex.DecodeString(chunk.Data.Audio)
