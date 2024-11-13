@@ -3883,7 +3883,7 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "realtime",
+                    "extension_group": "llm",
                     "extension": "openai_v2v_python"
                   }
                 ]
@@ -3898,7 +3898,7 @@
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "realtime",
+                    "extension_group": "llm",
                     "extension": "openai_v2v_python"
                   }
                 ]
@@ -3913,7 +3913,7 @@
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "realtime",
+                    "extension_group": "llm",
                     "extension": "openai_v2v_python"
                   }
                 ]
@@ -3921,7 +3921,7 @@
             ]
           },
           {
-            "extension_group": "realtime",
+            "extension_group": "llm",
             "extension": "openai_v2v_python",
             "audio_frame": [
               {
@@ -4887,8 +4887,8 @@
                 "name": "rtm_message_event",
                 "dest": [
                   {
-                    "extension_group": "openai_chatgpt",
-                    "extension": "chatgpt",
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt",
                     "msg_conversion": {
                       "type": "per_property",
                       "keep_original": true,
