@@ -4441,8 +4441,8 @@
                 "name": "rtm_message_event",
                 "dest": [
                   {
-                    "extension_group": "openai_chatgpt",
-                    "extension": "chatgpt",
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt",
                     "msg_conversion": {
                       "type": "per_property",
                       "keep_original": true,
