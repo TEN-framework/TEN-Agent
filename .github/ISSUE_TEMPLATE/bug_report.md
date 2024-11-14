@@ -1,9 +1,7 @@
----
-name: Bug report
-about: Create a report to help us improve
-title: '[Bug]'
-labels: ''
-assignees: ''
+name: Bug Report
+description: Report a bug or issue with the project
+title: "[BUG] "
+labels: [bug]
 body:
   - type: markdown
     attributes:
@@ -53,6 +51,15 @@ body:
       label: Actual behavior
       description: What actually happened?
       placeholder: "Describe what actually happened."
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version of the software where the bug was found.
+      placeholder: "Enter the software version."
     validations:
       required: true
 
