@@ -80,8 +80,12 @@ class AsyncDeepgramWrapper():
                               interim_results=self.config.interim_results,
                               punctuate=self.config.punctuate)
         # connect to websocket
-        if await self.deepgram_client.start(options) is False:
-            logger.error(f"failed to connect to deepgram")
+        result = await self.deepgram_client.start(options)
+        if result is False:
+            if self.deepgram_client.status_code == 402:
+                logger.error("Failed to connect to Deepgram - your account has run out of credits.")
+            else:
+                logger.error("Failed to connect to Deepgram")
             return
 
         logger.info(f"successfully connected to deepgram")
