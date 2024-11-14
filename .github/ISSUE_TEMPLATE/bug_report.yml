@@ -45,15 +45,6 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behavior
-      description: What actually happened?
-      placeholder: "Describe what actually happened."
-    validations:
-      required: true
-
   - type: dropdown
     id: severity
     attributes:
