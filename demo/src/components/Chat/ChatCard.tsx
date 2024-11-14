@@ -58,9 +58,9 @@ export default function ChatCard(props: { className?: string }) {
     init()
 
     return () => {
-      if (hasInit) {
-        destory()
-      }
+      // if (hasInit) {
+      //   destory()
+      // }
     }
   }, [options.channel, options.userId, options.appId, options.token])
 
@@ -92,7 +92,7 @@ export default function ChatCard(props: { className?: string }) {
         addChatItem({
           userId: options.userId,
           text: text.text,
-          type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
+          type: `${text.stream_id}` === "0" ? EMessageType.AGENT : EMessageType.USER,
           isFinal: text.is_final,
           time: text.ts,
         }),

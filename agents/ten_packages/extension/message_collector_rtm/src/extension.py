@@ -152,8 +152,8 @@ class MessageCollectorRTMExtension(AsyncExtension):
             "is_final": end_of_segment,
             "stream_id": stream_id,
             "message_id": message_id,  # Add message_id to identify the split message
-            "data_type": "transcribe",
-            "text_ts": int(time.time() * 1000),  # Convert to milliseconds
+            "type": "transcribe",
+            "ts": int(time.time() * 1000),  # Convert to milliseconds
             "text": text,
         }
         await self._queue_message("text_data", text_data)
