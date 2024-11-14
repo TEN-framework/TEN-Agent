@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.4.0",
-      "hash": "1a6e1916008001f801b20f167e32cd915647853dd80710170ff3e8ed3deb7d1b",
+      "version": "0.4.1",
+      "hash": "716a281c46e58939d5f91599d095840290790d1dd34b0296df8db4422907e053",
       "dependencies": [
         {
           "type": "system",
@@ -22,8 +22,8 @@
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.4.0",
-      "hash": "236d34e8d1f897690bac6803f145e48bf06574ec9109e16e93dcbe0cbb24ca71",
+      "version": "0.4.1",
+      "hash": "8fdc759b3d64920362cb1cd9daa0a85826a6e084ca7cd595afe8db16aeb352f7",
       "dependencies": [
         {
           "type": "system",
@@ -117,8 +117,8 @@
     {
       "type": "extension",
       "name": "agora_rtm",
-      "version": "0.1.6",
-      "hash": "7eb0e8b7322aae24bb3f886939bcc5a6822c70835e6d9e23a888c50bc3541a0f",
+      "version": "0.3.0",
+      "hash": "0a266486736ae3b25158237028d33ab6132d43e36d2a69c4307c51a56b76c209",
       "dependencies": [
         {
           "type": "system",
@@ -134,8 +134,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.4.0",
-      "hash": "4555bf4a51cd390a6c3c4f46b74576c9a2459b197f4ceee48133cfc8121c18a2",
+      "version": "0.4.1",
+      "hash": "2d87b932a07f2375ca5fa019d0e518af55ac17de5d41ca82d66102a18cdc5d3f",
       "supports": [
         {
           "os": "linux",
@@ -165,8 +165,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4.0",
-      "hash": "bb864f6772e6026e411b1a500c4e058b09cbe71930ebb3d149f86734ecaa3d1b",
+      "version": "0.4.1",
+      "hash": "b805a787aa3f0bf4b499d7a1f5c8af503d1ade1db284a6159a9c971dd1be642c",
       "dependencies": [
         {
           "type": "system",
