@@ -4,8 +4,6 @@ about: Create a report to help us improve
 title: '[Bug]'
 labels: ''
 assignees: ''
-
----
 body:
   - type: markdown
     attributes:
