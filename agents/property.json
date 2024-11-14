@@ -4826,15 +4826,9 @@
           },
           {
             "type": "extension",
-            "extension_group": "transcriber",
-            "addon": "message_collector",
-            "name": "message_collector"
-          },
-          {
-            "type": "extension",
-            "extension_group": "agora_rtm_wrapper",
-            "addon": "agora_rtm_wrapper",
-            "name": "agora_rtm_wrapper"
+            "extension_group": "message_collector_rtm",
+            "addon": "message_collector_rtm",
+            "name": "message_collector_rtm"
           }
         ],
         "connections": [
@@ -4854,30 +4848,8 @@
                     "extension": "openai_chatgpt"
                   },
                   {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  }
-                ]
-              }
-            ],
-            "video_frame": [
-              {
-                "name": "video_frame",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "openai_chatgpt"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
                   }
                 ]
               }
@@ -4905,8 +4877,8 @@
                 "name": "on_user_audio_track_state_changed",
                 "dest": [
                   {
-                    "extension_group": "agora_rtm_wrapper",
-                    "extension": "agora_rtm_wrapper"
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
                   }
                 ]
               }
@@ -4920,24 +4892,35 @@
                 "name": "rtm_message_event",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
-                    "extension": "openai_chatgpt",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "text",
-                          "conversion_mode": "from_original",
-                          "original_path": "message"
-                        },
-                        {
-                          "path": "is_final",
-                          "conversion_mode": "fixed_value",
-                          "value": true
-                        }
-                      ]
-                    }
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_storage_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_presence_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_lock_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
                   }
                 ]
               }
@@ -4955,8 +4938,8 @@
                     "extension": "azure_tts"
                   },
                   {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
                   }
                 ]
               }
@@ -5000,23 +4983,19 @@
             ]
           },
           {
-            "extension_group": "transcriber",
-            "extension": "message_collector",
+            "extension_group": "message_collector_rtm",
+            "extension": "message_collector_rtm",
             "data": [
               {
-                "name": "data",
+                "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "agora_rtm_wrapper",
-                    "extension": "agora_rtm_wrapper"
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
                   }
                 ]
               }
-            ]
-          },
-          {
-            "extension_group": "agora_rtm_wrapper",
-            "extension": "agora_rtm_wrapper",
+            ],
             "cmd": [
               {
                 "name": "publish",

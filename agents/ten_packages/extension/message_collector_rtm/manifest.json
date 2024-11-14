@@ -1,0 +1,85 @@
+{
+  "type": "extension",
+  "name": "message_collector_rtm",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.4"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "src/**.tent",
+      "src/**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {},
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          },
+          "stream_id": {
+            "type": "uint32"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        }
+      },
+      {
+        "name": "rtm_message_event",
+        "property": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "publish",
+        "property": {
+          "message": {
+            "type": "buf"
+          }
+        }
+      },
+      {
+        "name": "set_presence_state",
+        "property": {
+          "states": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  }
+}

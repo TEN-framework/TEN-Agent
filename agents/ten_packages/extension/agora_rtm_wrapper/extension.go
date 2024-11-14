@@ -68,6 +68,7 @@ func (p *agoraRtmWrapperExtension) OnData(
 		slog.Error("OnData GetProperty data error: " + err.Error())
 		return
 	}
+	slog.Info("AGORA_RTM_WRAPPER_EXTENSION OnData: "+string(buf), logTag)
 	colllectorMessage := ColllectorMessage{}
 	err = json.Unmarshal(buf, &colllectorMessage)
 	if err != nil {
