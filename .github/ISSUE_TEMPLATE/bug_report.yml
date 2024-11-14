@@ -54,15 +54,6 @@ body:
     validations:
       required: true
 
-  - type: input
-    id: version
-    attributes:
-      label: Version
-      description: The version of the software where the bug was found.
-      placeholder: "Enter the software version."
-    validations:
-      required: true
-
   - type: dropdown
     id: severity
     attributes:
