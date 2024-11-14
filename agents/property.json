@@ -287,17 +287,6 @@
                   }
                 ]
               }
-            ],
-            "audio_frame": [
-              {
-                "dest": [
-                  {
-                    "extension": "message_collector",
-                    "extension_group": "transcriber"
-                  }
-                ],
-                "name": "pcm_frame"
-              }
             ]
           },
           {
@@ -1901,17 +1890,6 @@
                     "extension": "vision_tool"
                   }
                 ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "dest": [
-                  {
-                    "extension": "vision_tool",
-                    "extension_group": "chatgpt"
-                  }
-                ],
-                "name": "pcm_frame"
               }
             ],
             "cmd": [
