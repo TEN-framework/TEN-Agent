@@ -81,15 +81,6 @@ build_go_app() {
   fi
 }
 
-post_install() {
-  local app_dir=$1
-  cd $app_dir
-
-  if [ -f "ten_packages/extension/agora_rtc/lib/liblinux_audio_hy_extension.so" ]; then
-    rm "ten_packages/extension/agora_rtc/lib/liblinux_audio_hy_extension.so"
-  fi
-}
-
 clean() {
   local app_dir=$1
   rm -rf BUILD.gn out
@@ -138,9 +129,6 @@ main() {
   build_go_app $APP_HOME
   echo "install_python_requirements..."
   install_python_requirements $APP_HOME
-
-  echo "post installation..."
-  post_install $APP_HOME
 }
 
 main "$@"
