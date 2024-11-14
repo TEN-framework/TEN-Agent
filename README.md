@@ -11,6 +11,8 @@
 
 [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
+<a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2FTEN-Agent | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
 [![GitHub stars](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Star)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
@@ -105,25 +107,32 @@ And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be 
   - CPU >= 2 Core
   - RAM >= 4 GB
 
-#### Docker setting on Apple Silicon
+#### MacOS: Docker setting on Apple Silicon
 
 You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon. However, please note that build and connection times will be a little slower due to emulation when running on ARM systems. Once deployed to x64 (e.g. your Linux server) it will be much faster.
 
 
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
+#### Windows: Configuring Git to handle line endings
+To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
+
+```bash
+git config --global core.autocrlf true
+```
+
 ### Next step
 
 #### 1. Modify config files
 In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 
-It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again for the changes to take effect.
+It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again in the container for the changes to take effect.
 ```bash
 cp ./.env.example ./.env
 ```
 
 #### 2. Setup API keys
-Open the `.env` file and fill in the `keys`.
+Open the `.env` file and fill in the `keys`. We recommend using [ Deepgram ASR ](https://deepgram.com/) and [ FishAudio TTS ](https://fish.audio/) as they are free to sign up for and offer free credits. Of course, you can also use other services, see the list in [.env.example](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 ```bash
 # Agora App ID 
 # Agora App Certificate(only required if enabled in the Agora Console)

@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { deepMerge, normalizeFrequencies } from "./utils"
-import { useState, useEffect, useMemo, useRef } from "react"
-import type { AppDispatch, AppStore, RootState } from "../store"
-import { useDispatch, useSelector, useStore } from "react-redux"
-import { Grid } from "antd"
+import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { deepMerge, normalizeFrequencies } from "./utils";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { AppDispatch, AppStore, RootState } from "../store";
+import { useDispatch, useSelector, useStore } from "react-redux";
+// import { Grid } from "antd"
 
-const { useBreakpoint } = Grid;
+// const { useBreakpoint } = Grid;
 
-export const useAppDispatch = useDispatch.withTypes<AppDispatch>()
-export const useAppSelector = useSelector.withTypes<RootState>()
-export const useAppStore = useStore.withTypes<AppStore>()
+export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
+export const useAppSelector = useSelector.withTypes<RootState>();
+export const useAppStore = useStore.withTypes<AppStore>();
 
 export const useMultibandTrackVolume = (
   track?: IMicrophoneAudioTrack | MediaStreamTrack,
@@ -23,15 +23,16 @@ export const useMultibandTrackVolume = (
 
   useEffect(() => {
     if (!track) {
-      return setFrequencyBands(new Array(bands).fill(new Float32Array(0)))
+      return setFrequencyBands(new Array(bands).fill(new Float32Array(0)));
     }
 
     const ctx = new AudioContext();
-    let finTrack = track instanceof MediaStreamTrack ? track : track.getMediaStreamTrack()
+    let finTrack =
+      track instanceof MediaStreamTrack ? track : track.getMediaStreamTrack();
     const mediaStream = new MediaStream([finTrack]);
     const source = ctx.createMediaStreamSource(mediaStream);
     const analyser = ctx.createAnalyser();
-    analyser.fftSize = 2048
+    analyser.fftSize = 2048;
 
     source.connect(analyser);
 
@@ -70,19 +71,18 @@ export const useMultibandTrackVolume = (
 };
 
 export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
-
   const callback: MutationCallback = (mutationList, observer) => {
     mutationList.forEach((mutation) => {
       switch (mutation.type) {
         case "childList":
           if (!ref.current) {
-            return
+            return;
           }
           ref.current.scrollTop = ref.current.scrollHeight;
           break;
       }
-    })
-  }
+    });
+  };
 
   useEffect(() => {
     if (!ref.current) {
@@ -91,32 +91,32 @@ export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
     const observer = new MutationObserver(callback);
     observer.observe(ref.current, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     return () => {
       observer.disconnect();
     };
   }, [ref]);
-}
+};
 
-export const useSmallScreen = () => {
-  const screens = useBreakpoint();
+// export const useSmallScreen = () => {
+//   const screens = useBreakpoint();
 
-  const xs = useMemo(() => {
-    return !screens.sm && screens.xs
-  }, [screens])
+//   const xs = useMemo(() => {
+//     return !screens.sm && screens.xs
+//   }, [screens])
 
-  const sm = useMemo(() => {
-    return !screens.md && screens.sm
-  }, [screens])
+//   const sm = useMemo(() => {
+//     return !screens.md && screens.sm
+//   }, [screens])
 
-  return {
-    xs,
-    sm,
-    isSmallScreen: xs || sm
-  }
-}
+//   return {
+//     xs,
+//     sm,
+//     isSmallScreen: xs || sm
+//   }
+// }
 
 export const usePrevious = (value: any) => {
   const ref = useRef();
@@ -128,16 +128,19 @@ export const usePrevious = (value: any) => {
   return ref.current;
 };
 
-
 export const useGraphExtensions = () => {
-  const graphName = useAppSelector(state => state.global.graphName);
-  const nodes = useAppSelector(state => state.global.extensions);
-  const overridenProperties = useAppSelector(state => state.global.overridenProperties);
-  const [graphExtensions, setGraphExtensions] = useState<Record<string, any>>({});
+  const graphName = useAppSelector((state) => state.global.graphName);
+  const nodes = useAppSelector((state) => state.global.extensions);
+  const overridenProperties = useAppSelector(
+    (state) => state.global.overridenProperties
+  );
+  const [graphExtensions, setGraphExtensions] = useState<Record<string, any>>(
+    {}
+  );
 
   useEffect(() => {
     if (nodes && nodes[graphName]) {
-      let extensions:Record<string, any> = {}
+      let extensions: Record<string, any> = {};
       let extensionsByGraph = JSON.parse(JSON.stringify(nodes[graphName]));
       let overriden = overridenProperties[graphName] || {};
       for (const key of Object.keys(extensionsByGraph)) {
@@ -149,11 +152,13 @@ export const useGraphExtensions = () => {
           addon: extensionsByGraph[key].addon,
           name: extensionsByGraph[key].name,
         };
-        extensions[key].property = deepMerge(extensionsByGraph[key].property, overriden[key]);
+        extensions[key].property = deepMerge(
+          extensionsByGraph[key].property,
+          overriden[key]
+        );
       }
       setGraphExtensions(extensions);
     }
-
   }, [graphName, nodes, overridenProperties]);
 
   return graphExtensions;
