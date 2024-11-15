@@ -4761,9 +4761,9 @@
               "user_id": "0",
               "rtm_enabled": true,
               "rtm_is_stream": false,
-              "rtm_presence_enabled": true,
-              "rtm_metadata_enabled": true,
-              "rtm_lock_enabled": true
+              "rtm_presence_enabled": false,
+              "rtm_metadata_enabled": false,
+              "rtm_lock_enabled": false
             }
           },
           {

@@ -52,7 +52,6 @@ class MessageCollectorRTMExtension(AsyncExtension):
         ten_env.log_info("on_stop")
         self.stopped = True
         await self.queue.put(None)
-        await self._flush()
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("MessageCollectorRTMExtension on_deinit")
