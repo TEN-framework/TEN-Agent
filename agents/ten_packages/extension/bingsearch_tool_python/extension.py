@@ -6,6 +6,7 @@
 #
 #
 import json
+import aiohttp
 import requests
 from typing import Any, List
 
@@ -19,6 +20,10 @@ from ten import (
     CmdResult,
     Data,
 )
+from ten.async_ten_env import AsyncTenEnv
+from ten_ai_base.helper import get_properties_string
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
+from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
 from .log import logger
 
 CMD_TOOL_REGISTER = "tool_register"
@@ -34,15 +39,15 @@ TOOL_CALLBACK = "callback"
 TOOL_NAME = "bing_search"
 TOOL_DESCRIPTION = "Use Bing.com to search for latest information. Call this function if you are not sure about the answer."
 TOOL_PARAMETERS = {
-        "type": "object",
-        "properties": {
+    "type": "object",
+    "properties": {
             "query": {
                 "type": "string",
                 "description": "The search query to call Bing Search."
             }
-        },
-        "required": ["query"],
-    }
+    },
+    "required": ["query"],
+}
 
 PROPERTY_API_KEY = "api_key"  # Required
 
@@ -65,129 +70,95 @@ DEFAULT_BING_SEARCH_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search"
 #  2. https://learn.microsoft.com/en-us/bing/search-apis/bing-custom-search/overview
 #  3. https://azure.microsoft.com/en-in/updates/bing-search-apis-will-transition-from-azure-cognitive-services-to-azure-marketplace-on-31-october-2023/
 
-class BingSearchToolExtension(Extension):
-    api_key: str = ""
-    tools: dict = {}
-    k: int = 10
 
-    def on_init(self, ten_env: TenEnv) -> None:
-        logger.info("BingSearchToolExtension on_init")
-        self.tools = {
-            TOOL_NAME: {
-                TOOL_REGISTER_PROPERTY_NAME: TOOL_NAME,
-                TOOL_REGISTER_PROPERTY_DESCRIPTON: TOOL_DESCRIPTION,
-                TOOL_REGISTER_PROPERTY_PARAMETERS: TOOL_PARAMETERS,
-                TOOL_CALLBACK: self._do_search
-            }
-        }
+class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
-        ten_env.on_init_done()
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.api_key = None
+        self.session = None
+        self.k = 10
 
-    def on_start(self, ten_env: TenEnv) -> None:
-        logger.info("BingSearchToolExtension on_start")
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_debug("on_init")
+        self.session = aiohttp.ClientSession()
+        await super().on_init(ten_env)
 
-        try:
-            api_key = ten_env.get_property_string(PROPERTY_API_KEY)
-            self.api_key = api_key
-        except Exception as err:
-            logger.info(
-                f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_debug("on_start")
+        await super().on_start(ten_env)
+
+        get_properties_string(
+            ten_env, [PROPERTY_API_KEY], lambda name, value: setattr(self, name, value))
+        if not self.api_key:
+            ten_env.log_info(f"API key is missing, exiting on_start")
             return
-        
-        # Register func
-        for name, tool in self.tools.items():
-            c = Cmd.create(CMD_TOOL_REGISTER)
-            c.set_property_string(TOOL_REGISTER_PROPERTY_NAME, name)
-            c.set_property_string(TOOL_REGISTER_PROPERTY_DESCRIPTON, tool[TOOL_REGISTER_PROPERTY_DESCRIPTON])
-            c.set_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS, json.dumps(tool[TOOL_REGISTER_PROPERTY_PARAMETERS]))
-            ten_env.send_cmd(c, lambda ten, result: logger.info(f"register done, {result}"))
 
-        ten_env.on_start_done()
-
-    def on_stop(self, ten_env: TenEnv) -> None:
-        logger.info("BingSearchToolExtension on_stop")
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_debug("on_stop")
 
         # TODO: clean up resources
+        if self.session:
+            await self.session.close()
+            self.session = None  # Ensure it can't be reused accidentally
 
-        ten_env.on_stop_done()
-
-    def on_deinit(self, ten_env: TenEnv) -> None:
-        logger.info("BingSearchToolExtension on_deinit")
-        ten_env.on_deinit_done()
-
-    def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        logger.info(f"on_cmd name {cmd_name} {cmd.to_json()}")
+        ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
-        # FIXME need to handle async
-        try:
-            name = cmd.get_property_string(CMD_PROPERTY_NAME)
-            if name in self.tools:
-                try:
-                    tool = self.tools[name]
-                    args = cmd.get_property_string(CMD_PROPERTY_ARGS)
-                    arg_dict = json.loads(args)
-                    logger.info(f"before callback {name}")
-                    resp = tool[TOOL_CALLBACK](arg_dict)
-                    logger.info(f"after callback {resp}")
-                    cmd_result = CmdResult.create(StatusCode.OK)
-                    cmd_result.set_property_string("response", json.dumps(resp))
-                    ten_env.return_result(cmd_result, cmd)
-                    return
-                except:
-                    logger.exception("Failed to callback")
-                    cmd_result = CmdResult.create(StatusCode.ERROR)
-                    ten_env.return_result(cmd_result, cmd)
-                    return
-            else:
-                logger.error(f"unknown tool name {name}")
-        except:
-            logger.exception("Failed to get tool name")
-            cmd_result = CmdResult.create(StatusCode.ERROR)
-            ten_env.return_result(cmd_result, cmd)
-            return
-            
-        cmd_result = CmdResult.create(StatusCode.OK)
-        ten_env.return_result(cmd_result, cmd)
+        await super().on_cmd(ten_env, cmd)
 
-    def on_data(self, ten_env: TenEnv, data: Data) -> None:
-        pass
+    def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
+        return [
+            LLMToolMetadata(
+                name=TOOL_NAME,
+                description=TOOL_DESCRIPTION,
+                parameters=[
+                    LLMToolMetadataParameter(
+                        name="query",
+                        type="string",
+                        description="The search query to call Bing Search.",
+                        required=True,
+                    ),
+                ],
+            )
+        ]
 
-    def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
-        pass
+    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+        if name == TOOL_NAME:
+            result = await self._do_search(args)
+            # result = LLMCompletionContentItemText(text="I see something")
+            return {"content": json.dumps(result)}
 
-    def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
-        pass
-    
-    def _do_search(self, args:dict) -> Any:
+    async def _do_search(self, args: dict) -> Any:
         if "query" not in args:
             raise Exception("Failed to get property")
-        
+
         query = args["query"]
         snippets = []
-        results = self._bing_search_results(query, count=self.k)
+        results = await self._bing_search_results(query, count=self.k)
         if len(results) == 0:
             return "No good Bing Search Result was found"
+
         for result in results:
             snippets.append(result["snippet"])
 
         return snippets
-    
-    def _bing_search_results(self, search_term: str, count: int) -> List[dict]:
+
+    async def _bing_search_results(self, search_term: str, count: int) -> List[dict]:
         headers = {"Ocp-Apim-Subscription-Key": self.api_key}
         params = {
             "q": search_term,
             "count": count,
-            "textDecorations": True,
+            "textDecorations": "true",
             "textFormat": "HTML"
         }
-        response = requests.get(
-            DEFAULT_BING_SEARCH_ENDPOINT,
-            headers=headers,
-            params=params,  # type: ignore
-        )
-        response.raise_for_status()
-        search_results = response.json()
+
+        async with self.session as session:
+            async with session.get(DEFAULT_BING_SEARCH_ENDPOINT, headers=headers, params=params) as response:
+                response.raise_for_status()
+                search_results = await response.json()
+
         if "webPages" in search_results:
             return search_results["webPages"]["value"]
         return []

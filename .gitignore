@@ -5,6 +5,8 @@
 *.log
 addon/extension_group/
 agoradns.dat
+agorartmdns.dat
+agora_rtm_cache.db
 agorareport.dat
 bin/
 /BUILD.gn

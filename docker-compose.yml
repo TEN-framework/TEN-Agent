@@ -1,6 +1,6 @@
 services:
   ten_agent_dev:
-    image: ghcr.io/ten-framework/ten_agent_build:0.2.1
+    image: ghcr.io/ten-framework/ten_agent_build:0.2.2
     container_name: ten_agent_dev
     platform: linux/amd64
     tty: true
@@ -30,7 +30,7 @@ services:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
       - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
   ten_agent_demo:
-    image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-91-ga3c1a31
+    image: ghcr.io/ten-framework/ten_agent_demo:0.5.0-118-g35ffaa4
     container_name: ten_agent_demo
     restart: always
     ports:

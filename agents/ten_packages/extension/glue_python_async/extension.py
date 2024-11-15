@@ -104,8 +104,6 @@ class AsyncGlueExtension(AsyncExtension):
         self.ten_env = ten_env
         self.loop.create_task(self._consume())
 
-        ten_env.on_start_done()
-
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
@@ -113,11 +111,8 @@ class AsyncGlueExtension(AsyncExtension):
         await self.queue.put(None)
         await self._flush()
 
-        ten_env.on_stop_done()
-
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
-        ten_env.on_deinit_done()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
@@ -169,7 +164,7 @@ class AsyncGlueExtension(AsyncExtension):
         pass
 
     async def _flush(self):
-        self.ten_env.log_info("flush")
+        # self.ten_env.log_info("flush")
         self.outdate_ts = datetime.now()
         if self.session:
             await self.session.close()

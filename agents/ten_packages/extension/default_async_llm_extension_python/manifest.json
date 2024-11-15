@@ -1,0 +1,107 @@
+{
+  "type": "extension",
+  "name": "default_async_llm_extension_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "requirements.txt",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "model": {
+        "type": "string"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "tool_register",
+        "property": {
+          "tool": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool"
+        ]
+      },
+      {
+        "name": "call_chat_completion",
+        "property": {
+          "messages": {
+            "type": "string"
+          },
+          "stream": {
+            "type": "bool"
+          }
+        },
+        "required": [
+          "messages"
+        ],
+        "result": {
+          "property": {
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      },
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        },
+        "required": [
+          "text",
+          "end_of_segment"
+        ]
+      }
+    ]
+  }
+}

@@ -65,6 +65,15 @@ install_python_requirements() {
     done
   fi
 
+  # traverse the ten_packages/system directory to find the requirements.txt
+  if [[ -d "ten_packages/system" ]]; then
+    for extension in ten_packages/system/*; do
+      if [[ -f "$extension/requirements.txt" ]]; then
+        pip install -r $extension/requirements.txt
+      fi
+    done
+  fi
+
   # pre-import llama-index as it cloud download additional resources during the first import
   echo "pre-import python modules..."
   python3.10 -c "import llama_index.core;"

@@ -9,7 +9,7 @@ import asyncio
 import threading
 import base64
 from datetime import datetime
-from typing import Awaitable
+from typing import Awaitable, Iterable
 from functools import partial
 
 from ten import (
@@ -23,6 +23,8 @@ from ten import (
     Data,
 )
 from ten.audio_frame import AudioFrameDataFmt
+from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_PROPERTY_TOOL
+from ten_ai_base.types import LLMToolMetadata, LLMToolResult, LLMChatCompletionContentPartParam
 from .log import logger
 
 from .tools import ToolRegistry
@@ -56,7 +58,7 @@ DEFAULT_VOICE = Voices.Alloy
 CMD_TOOL_REGISTER = "tool_register"
 CMD_TOOL_CALL = "tool_call"
 CMD_PROPERTY_NAME = "name"
-CMD_PROPERTY_ARGS = "args"
+CMD_PROPERTY_ARGS = "arguments"
 
 TOOL_REGISTER_PROPERTY_NAME = "name"
 TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
@@ -186,6 +188,7 @@ class OpenAIV2VExtension(Extension):
     # Should not be here
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
+        ten_env.log_info(f"on_cmd name {cmd_name}")
 
         if cmd_name == CMD_TOOL_REGISTER:
             self._on_tool_register(ten_env, cmd)
@@ -226,14 +229,14 @@ class OpenAIV2VExtension(Extension):
             logger.info("Client loop started")
             async for message in self.conn.listen():
                 try:
-                    logger.info(f"Received message: {message.type}")
+                    # logger.info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            logger.info(
+                            ten_env.log_info(
                                 f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
-                            update_msg = self._update_session()
+                            update_msg = self._update_session(ten_env)
                             await self.conn.send_request(update_msg)
 
                             if self.retrieved:
@@ -529,15 +532,17 @@ class OpenAIV2VExtension(Extension):
         self.ctx = self.config.build_ctx()
         self.ctx["greeting"] = self.greeting
 
-    def _update_session(self) -> SessionUpdate:
+    def _update_session(self, ten_env: TenEnv) -> SessionUpdate:
         self.ctx["tools"] = self.registry.to_prompt()
         prompt = self._replace(self.config.instruction)
         self.last_updated = datetime.now()
+        tools = self.registry.get_tools()
+        ten_env.log_info(f"update session {prompt} {tools}")
         su = SessionUpdate(session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
                 tool_choice="auto",
-                tools=self.registry.get_tools()
+                tools=tools
             ))
         if self.config.audio_out:
             su.session.voice=self.config.voice
@@ -673,12 +678,20 @@ class OpenAIV2VExtension(Extension):
 
     def _on_tool_register(self, ten_env: TenEnv, cmd: Cmd):
         try:
-            name = cmd.get_property_string(TOOL_REGISTER_PROPERTY_NAME)
-            description = cmd.get_property_string(
-                TOOL_REGISTER_PROPERTY_DESCRIPTON)
-            pstr = cmd.get_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS)
-            parameters = json.loads(pstr)
+            # name = cmd.get_property_string(TOOL_REGISTER_PROPERTY_NAME)
+            # description = cmd.get_property_string(
+            #     TOOL_REGISTER_PROPERTY_DESCRIPTON)
+            # pstr = cmd.get_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS)
+            # parameters = json.loads(pstr)
+            tool_metadata_json = json.loads(
+                    cmd.get_property_to_json(CMD_PROPERTY_TOOL))
+            ten_env.log_info(f"register tool: {tool_metadata_json}")
+            tool_metadata = LLMToolMetadata.model_validate_json(
+                tool_metadata_json)
             p = partial(self._remote_tool_call, ten_env)
+            name = tool_metadata.name
+            description = tool_metadata.description
+            parameters = self._convert_tool_params_to_dict(tool_metadata)
             self.registry.register(
                 name=name, description=description,
                 callback=p,
@@ -690,9 +703,9 @@ class OpenAIV2VExtension(Extension):
 
     async def _remote_tool_call(self, ten_env: TenEnv, name: str, args: str, callback: Awaitable):
         logger.info(f"_remote_tool_call {name} {args}")
-        c = Cmd.create(f"{CMD_TOOL_CALL}_{name}")
+        c:Cmd = Cmd.create(f"{CMD_TOOL_CALL}_{name}")
         c.set_property_string(CMD_PROPERTY_NAME, name)
-        c.set_property_string(CMD_PROPERTY_ARGS, args)
+        c.set_property_from_json(CMD_PROPERTY_ARGS, args)
         ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
                 callback(result), self.loop))
         logger.info(f"_remote_tool_call finish {name} {args}")
@@ -707,13 +720,15 @@ class OpenAIV2VExtension(Extension):
         )
         try:
             if state == StatusCode.OK:
-                response = result.get_property_string("response")
-                logger.info(f"_on_tool_output {tool_call_id} {response}")
+                tool_result: LLMToolResult = json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT))
+                logger.info(f"_on_tool_output {tool_call_id} {tool_result}")
             
+                result_content = tool_result["content"]
+                output = json.dumps(self._convert_to_content_parts(result_content))
                 tool_response = ItemCreate(
                     item=FunctionCallOutputItemParam(
                         call_id=tool_call_id,
-                        output=response,
+                        output=output,
                     )
                 )
             else:
@@ -733,3 +748,38 @@ class OpenAIV2VExtension(Extension):
         elif self.config.language == "ko-KR":
             text = "안녕하세요"
         return text
+
+    
+    def _convert_tool_params_to_dict(self, tool: LLMToolMetadata):
+        json = {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+
+        for param in tool.parameters:
+            json["properties"][param.name] = {
+                "type": param.type,
+                "description": param.description
+            }
+            if param.required:
+                json["required"].append(param.name)
+
+        return json
+    
+    
+    def _convert_to_content_parts(self, content: Iterable[LLMChatCompletionContentPartParam]):
+        content_parts = []
+
+
+        if isinstance(content, str):
+            content_parts.append({
+                "type": "text",
+                "text": content
+            })
+        else:
+            for part in content:
+                # Only text content is supported currently for v2v model
+                if part["type"] == "text":
+                    content_parts.append(part)
+        return content_parts
