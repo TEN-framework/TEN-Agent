@@ -36,7 +36,7 @@ var (
 			{ExtensionName: extensionNameAgoraRTC, Property: "remote_stream_id"},
 		},
 		"BotStreamId": {
-			{ExtensionName: extensionNameAgoraRTC, Property: "uid"},
+			{ExtensionName: extensionNameAgoraRTC, Property: "stream_id"},
 		},
 		"Token": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "token"},
