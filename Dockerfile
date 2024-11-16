@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.2.2 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.2.3 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
@@ -22,7 +22,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     python3-venv \
     python3-pip \
     python3-dev \
-    jq \
+    jq vim \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
