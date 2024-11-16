@@ -12,7 +12,6 @@ package extension
 
 import (
 	"fmt"
-	"log/slog"
 
 	"ten_framework/ten"
 )
@@ -22,10 +21,6 @@ const (
 	textDataFinalField = "is_final"
 
 	cmdNameFlush = "flush"
-)
-
-var (
-	logTag = slog.String("extension", "INTERRUPT_DETECTOR_EXTENSION")
 )
 
 type interruptDetectorExtension struct {
@@ -47,29 +42,27 @@ func (p *interruptDetectorExtension) OnData(
 ) {
 	text, err := data.GetPropertyString(textDataTextField)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataTextField, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataTextField, err))
 		return
 	}
 
 	final, err := data.GetPropertyBool(textDataFinalField)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataFinalField, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("OnData GetProperty %s error: %v", textDataFinalField, err))
 		return
 	}
 
-	slog.Debug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final), logTag)
+	tenEnv.LogDebug(fmt.Sprintf("OnData %s: %s %s: %t", textDataTextField, text, textDataFinalField, final))
 
 	if final || len(text) >= 2 {
 		flushCmd, _ := ten.NewCmd(cmdNameFlush)
 		tenEnv.SendCmd(flushCmd, nil)
 
-		slog.Info(fmt.Sprintf("sent cmd: %s", cmdNameFlush), logTag)
+		tenEnv.LogInfo(fmt.Sprintf("sent cmd: %s", cmdNameFlush))
 	}
 }
 
 func init() {
-	slog.Info("interrupt_detector extension init", logTag)
-
 	// Register addon
 	ten.RegisterAddonAsExtension(
 		"interrupt_detector",

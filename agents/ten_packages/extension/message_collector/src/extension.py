@@ -21,7 +21,6 @@ from ten import (
     Data,
 )
 import asyncio
-from .log import logger
 
 MAX_SIZE = 800  # 1 KB limit
 OVERHEAD_ESTIMATE = 200  # Estimate for the overhead of metadata in the JSON
@@ -37,20 +36,21 @@ TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 cached_text_map = {}
 MAX_CHUNK_SIZE_BYTES = 1024
 
+
 def _text_to_base64_chunks(text: str, msg_id: str) -> list:
     # Ensure msg_id does not exceed 50 characters
     if len(msg_id) > 36:
         raise ValueError("msg_id cannot exceed 36 characters.")
-    
+
     # Convert text to bytearray
     byte_array = bytearray(text, 'utf-8')
-    
+
     # Encode the bytearray into base64
     base64_encoded = base64.b64encode(byte_array).decode('utf-8')
-    
+
     # Initialize list to hold the final chunks
     chunks = []
-    
+
     # We'll split the base64 string dynamically based on the final byte size
     part_index = 0
     total_parts = None  # We'll calculate total parts once we know how many chunks we create
@@ -58,17 +58,18 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
     # Process the base64-encoded content in chunks
     current_position = 0
     total_length = len(base64_encoded)
-    
+
     while current_position < total_length:
         part_index += 1
-        
+
         # Start guessing the chunk size by limiting the base64 content part
         estimated_chunk_size = MAX_CHUNK_SIZE_BYTES  # We'll reduce this dynamically
         content_chunk = ""
         count = 0
         while True:
             # Create the content part of the chunk
-            content_chunk = base64_encoded[current_position:current_position + estimated_chunk_size]
+            content_chunk = base64_encoded[current_position:
+                                           current_position + estimated_chunk_size]
 
             # Format the chunk
             formatted_chunk = f"{msg_id}|{part_index}|{total_parts if total_parts else '???'}|{content_chunk}"
@@ -81,11 +82,12 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
                 estimated_chunk_size -= 100  # Reduce content size gradually
                 count += 1
 
-        logger.debug(f"chunk estimate guess: {count}")
+        # logger.debug(f"chunk estimate guess: {count}")
 
         # Add the current chunk to the list
         chunks.append(formatted_chunk)
-        current_position += estimated_chunk_size  # Move to the next part of the content
+        # Move to the next part of the content
+        current_position += estimated_chunk_size
 
     # Now that we know the total number of parts, update the chunks with correct total_parts
     total_parts = len(chunks)
@@ -95,19 +97,21 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
 
     return updated_chunks
 
+
 class MessageCollectorExtension(Extension):
     # Create the queue for message processing
     queue = asyncio.Queue()
 
     def on_init(self, ten_env: TenEnv) -> None:
-        logger.info("MessageCollectorExtension on_init")
+        ten_env.log_info("on_init")
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
-        logger.info("MessageCollectorExtension on_start")
+        ten_env.log_info("on_start")
 
         # TODO: read properties, initialize resources
         self.loop = asyncio.new_event_loop()
+
         def start_loop():
             asyncio.set_event_loop(self.loop)
             self.loop.run_forever()
@@ -118,19 +122,19 @@ class MessageCollectorExtension(Extension):
         ten_env.on_start_done()
 
     def on_stop(self, ten_env: TenEnv) -> None:
-        logger.info("MessageCollectorExtension on_stop")
+        ten_env.log_info("on_stop")
 
         # TODO: clean up resources
 
         ten_env.on_stop_done()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
-        logger.info("MessageCollectorExtension on_deinit")
+        ten_env.log_info("on_deinit")
         ten_env.on_deinit_done()
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        logger.info("on_cmd name {}".format(cmd_name))
+        ten_env.log_info("on_cmd name {}".format(cmd_name))
 
         # TODO: process cmd
 
@@ -145,7 +149,7 @@ class MessageCollectorExtension(Extension):
             example:
             {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
         """
-        logger.debug(f"on_data")
+        # ten_env.log_debug(f"on_data")
 
         text = ""
         final = True
@@ -155,7 +159,7 @@ class MessageCollectorExtension(Extension):
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
-            logger.exception(
+            ten_env.log_error(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
             )
 
@@ -170,13 +174,14 @@ class MessageCollectorExtension(Extension):
             pass
 
         try:
-            end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+            end_of_segment = data.get_property_bool(
+                TEXT_DATA_END_OF_SEGMENT_FIELD)
         except Exception as e:
-            logger.warning(
+            ten_env.log_warn(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
             )
 
-        logger.debug(
+        ten_env.log_info(
             f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final} {TEXT_DATA_STREAM_ID_FIELD}: {stream_id} {TEXT_DATA_END_OF_SEGMENT_FIELD}: {end_of_segment}"
         )
 
@@ -207,12 +212,14 @@ class MessageCollectorExtension(Extension):
         }
 
         try:
-            chunks = _text_to_base64_chunks(json.dumps(base_msg_data), message_id)
+            chunks = _text_to_base64_chunks(
+                json.dumps(base_msg_data), message_id)
             for chunk in chunks:
-                asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
+                asyncio.run_coroutine_threadsafe(
+                    self._queue_message(chunk), self.loop)
 
         except Exception as e:
-            logger.warning(f"on_data new_data error: {e}")
+            ten_env.log_warn(f"on_data new_data error: {e}")
             return
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
@@ -222,7 +229,6 @@ class MessageCollectorExtension(Extension):
     def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
         # TODO: process image frame
         pass
-
 
     async def _queue_message(self, data: str):
         await self.queue.put(data)
