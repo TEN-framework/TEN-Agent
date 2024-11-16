@@ -75,19 +75,6 @@ Before we get started, be sure to star our repository and get instant notificati
 
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
-<!-- <br>
-<h2>TEN Agent</h2>
-
-[TEN Agent](https://agent.theten.ai)
-
-TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
-
-And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be available.
-
-
-[![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
-<br> -->
-
 <br>
 <h2>How to build TEN Agent locally
 
@@ -171,7 +158,7 @@ Once the build is done, `make run-server` on port `8080`:
 make run-server
 ```
 
-If you are using **Windows**, and see the error `sed: /app/agents/bin/start: No such file or directory`, you can run the following command to fix it:
+If you are using **Windows**, and see the this error ` /app/agents/bin/start: not found`, you can run the following command to fix it:
 
 ```bash
 sed -i 's/\r$//' /app/agents/bin/start
@@ -193,25 +180,6 @@ Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Gra
 Once you save the graph, you can return to [localhost:3000]( http://localhost:3000 ) and select the corresponding graph to view the changes.
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
-
-<!-- <br>
-<h2>TEN Agent Comparison</h2>
-
-<div align="center">
-
-| **Features**                             | **TEN Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
-| **Vision**                               |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
-| **Rich TTS Support for different languages** |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
-| **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **RAG support**                          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
-| **Rich LLM Support**                      |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
-| **Python support for extension**          |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
-| **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
-
-</div> -->
 
 <br>
 

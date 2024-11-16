@@ -171,7 +171,7 @@ make build
 make run-server
 ```
 
-如果使用的是 **Windows**，并且看到错误提示 `sed: /app/agents/bin/start: No such file or directory`，可以运行以下命令来修复：
+如果使用的是 **Windows**，并且看到错误提示 ` /app/agents/bin/start: not found`，可以运行以下命令来修复：
 
 ```bash
 sed -i 's/\r$//' /app/agents/bin/start
