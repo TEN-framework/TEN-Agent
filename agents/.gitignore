@@ -17,6 +17,8 @@ bin/
 /BUILD.gn
 .cache/
 /compile_commands.json
+manifest.json
+property.json
 core
 crash_context_v1
 .deps/
