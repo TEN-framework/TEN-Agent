@@ -115,7 +115,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 #### Windows: Configuring Git to handle line endings
-To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
+To avoid problems with Windows-style line endings (CRLF) converting to Unix-style line endings (LF) when running `make run-server` later, you can configure Git to properly handle line endings on Windows. ([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
 
 ```bash
 git config --global core.autocrlf true
@@ -168,6 +168,16 @@ make build
 #### 5. Start the server
 Once the build is done, `make run-server` on port `8080`:
 ```bash
+make run-server
+```
+
+If you are using **Windows**, and see the error `sed: /app/agents/bin/start: No such file or directory`, you can run the following command to fix it:
+
+```bash
+sed -i 's/\r$//' /app/agents/bin/start
+
+make clean
+make build
 make run-server
 ```
 

@@ -90,7 +90,7 @@ OpenAI Realtime API 提供超低延迟，而 RTC 提供 AI 噪声抑制。TEN Ag
 - CPU >= 2 Core
 - RAM >= 4 GB
 
-#### Apple Silicon 上 Docker 设置
+#### Mac: Apple Silicon 上 Docker 设置
 如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" 选项，否则服务器将无法正常工作。
 
 <div align="center">
@@ -99,6 +99,12 @@ OpenAI Realtime API 提供超低延迟，而 RTC 提供 AI 噪声抑制。TEN Ag
 
 </div>
 
+#### Windows: 配置 Git 处理行尾
+为了避免在之后运行 `make run-server` 时出现 Windows 风格的行尾 (CRLF) 转换为 Unix 风格的行尾 (LF) 的问题，您可以配置 Git 来正确处理 Windows 上的行尾。（[更多详情](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows)）
+
+```bash
+git config --global core.autocrlf true
+```
 
 #### 设置国内代理
 
@@ -162,6 +168,16 @@ make build
 
 #### 5.开启服务
 ```bash
+make run-server
+```
+
+如果使用的是 **Windows**，并且看到错误提示 `sed: /app/agents/bin/start: No such file or directory`，可以运行以下命令来修复：
+
+```bash
+sed -i 's/\r$//' /app/agents/bin/start
+
+make clean
+make build
 make run-server
 ```
 
