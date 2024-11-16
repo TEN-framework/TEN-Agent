@@ -15,20 +15,19 @@ from ten import (
     Data,
 )
 from .util import duration_in_ms, duration_in_ms_since, Role
-from .chat_memory import ChatMemory
-from dataclasses import dataclass, fields
-import builtins
+from ten_ai_base import ChatMemory, BaseConfig
+from dataclasses import dataclass
 import httpx
 from datetime import datetime
 import aiofiles
 import asyncio
-from typing import Iterator, List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any
 import base64
 import json
 
 
 @dataclass
-class MinimaxV2VConfig:
+class MinimaxV2VConfig(BaseConfig):
     token: str = ""
     max_tokens: int = 1024
     model: str = "abab6.5s-chat"
@@ -43,31 +42,6 @@ class MinimaxV2VConfig:
     max_memory_length: int = 10
     dump: bool = False
 
-    def read_from_property(self, ten_env: AsyncTenEnv):
-        for field in fields(self):
-            # TODO: 'is_property_exist' has a bug that can not be used in async extension currently, use it instead of try .. except once fixed
-            # if not ten_env.is_property_exist(field.name):
-            #     continue
-            try:
-                match field.type:
-                    case builtins.str:
-                        val = ten_env.get_property_string(field.name)
-                        if val:
-                            setattr(self, field.name, val)
-                            ten_env.log_info(f"{field.name}={val}")
-                    case builtins.int:
-                        val = ten_env.get_property_int(field.name)
-                        setattr(self, field.name, val)
-                        ten_env.log_info(f"{field.name}={val}")
-                    case builtins.bool:
-                        val = ten_env.get_property_bool(field.name)
-                        setattr(self, field.name, val)
-                        ten_env.log_info(f"{field.name}={val}")
-                    case _:
-                        pass
-            except Exception as e:
-                ten_env.log_warn(f"get property for {field.name} failed, err {e}")
-
 
 class MinimaxV2VExtension(AsyncExtension):
     def __init__(self, name: str) -> None:
@@ -80,14 +54,14 @@ class MinimaxV2VExtension(AsyncExtension):
         self.ten_env = None
 
         # able to cancel
-        self.curr_task = None   
+        self.curr_task = None
 
         # make sure tasks processing in order
         self.process_input_task = None
         self.queue = asyncio.Queue()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        self.config.read_from_property(ten_env=ten_env)
+        self.config.create(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         self.memory = ChatMemory(self.config.max_memory_length)
@@ -95,7 +69,8 @@ class MinimaxV2VExtension(AsyncExtension):
         ten_env.on_init_done()
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        self.process_input_task = asyncio.create_task(self._process_input(ten_env=ten_env, queue=self.queue), name="process_input")
+        self.process_input_task = asyncio.create_task(self._process_input(
+            ten_env=ten_env, queue=self.queue), name="process_input")
 
         ten_env.on_start_done()
 
@@ -165,7 +140,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
             # dump input audio if need
             await self._dump_audio_if_need(frame_buf, "in")
-            
+
             # ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id} put done")
         except asyncio.CancelledError:
             ten_env.log_warn(f"on audio frame cancelled")
@@ -190,7 +165,8 @@ class MinimaxV2VExtension(AsyncExtension):
             ten_env.log_debug(f"start process task {ts} {len(frame_buf)}")
 
             try:
-                self.curr_task = asyncio.create_task(self._complete_with_history(ts, frame_buf))
+                self.curr_task = asyncio.create_task(
+                    self._complete_with_history(ts, frame_buf))
                 await self.curr_task
                 self.curr_task = None
             except asyncio.CancelledError:
@@ -214,7 +190,8 @@ class MinimaxV2VExtension(AsyncExtension):
         # prepare messages with prompt and history
         messages = []
         if self.config.prompt:
-            messages.append({"role": Role.System, "content": self.config.prompt})
+            messages.append(
+                {"role": Role.System, "content": self.config.prompt})
         messages.extend(self.memory.get())
         ten_env.log_debug(f"messages without audio: [{messages}]")
         messages.append(
@@ -311,7 +288,8 @@ class MinimaxV2VExtension(AsyncExtension):
                                 base64_str = delta["audio_content"]
                                 buff = base64.b64decode(base64_str)
                                 await self._dump_audio_if_need(buff, "out")
-                                self._send_audio_frame(ten_env=ten_env, audio_data=buff)
+                                self._send_audio_frame(
+                                    ten_env=ten_env, audio_data=buff)
 
                             # tool calls
                             if delta.get("tool_calls"):
@@ -354,7 +332,8 @@ class MinimaxV2VExtension(AsyncExtension):
                 f"http loop done, cost_time {duration_in_ms_since(start_time)}ms"
             )
             if user_transcript:
-                self.memory.put({"role": Role.User, "content": user_transcript})
+                self.memory.put(
+                    {"role": Role.User, "content": user_transcript})
             if assistant_transcript:
                 self.memory.put(
                     {"role": Role.Assistant, "content": assistant_transcript}
