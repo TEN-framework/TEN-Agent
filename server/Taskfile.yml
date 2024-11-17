@@ -11,3 +11,7 @@ tasks:
     cmds:
       - rm -rf bin
 
+  run:
+    desc: run server
+    cmds:
+      - bin/api

@@ -6,8 +6,8 @@ tasks:
     vars:
       AGENT: '{{.AGENT| default "examples/default"}}'
     cmds:
-      - ln -s {{.AGENT}}/manifest.json .
-      - ln -s {{.AGENT}}/property.json .
+      - if [ ! -f manifest.json ]; then ln -s {{.AGENT}}/manifest.json . ; fi
+      - if [ ! -f property.json ]; then ln -s {{.AGENT}}/property.json . ; fi
       - ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
 
   clean:
@@ -15,4 +15,7 @@ tasks:
     cmds:
       - rm -rf manifest.json property.json bin/main bin/worker out ten_packages/system/ten_runtime* ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json .release
 
-
+  run:
+    desc: run agents
+    cmds:
+      - ./bin/start
