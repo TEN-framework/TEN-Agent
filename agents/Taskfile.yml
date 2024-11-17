@@ -13,7 +13,7 @@ tasks:
   clean:
     desc: clean up agents
     cmds:
-      - rm -rf manifest.json property.json bin/main bin/worker out ten_packages/system/ten_runtime* ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json .release
+      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out ten_packages/system/ten_runtime* ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json .release
 
   run:
     desc: run agents
