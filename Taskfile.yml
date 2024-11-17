@@ -1,0 +1,25 @@
+version: '3'
+
+includes:
+  agents:
+    taskfile: ./agents/Taskfile.yml
+    dir: ./agents
+
+  server:
+    taskfile: ./server/Taskfile.yml
+    dir: ./server
+
+tasks:
+  build:
+    desc: build all
+    cmds:
+      - task: agents:build
+      - task: server:build
+
+  clean:
+    desc: clean up all
+    cmds:
+      - task: agents:clean
+      - task: server:clean
+
+

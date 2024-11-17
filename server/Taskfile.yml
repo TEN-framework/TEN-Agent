@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  build:
+    desc: build server
+    cmds:
+      - go mod tidy && go mod download && go build -o bin/api main.go
+
+  clean:
+    desc: clean up server
+    cmds:
+      - rm -rf bin
+
