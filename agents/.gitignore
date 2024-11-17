@@ -18,6 +18,7 @@ bin/
 .cache/
 /compile_commands.json
 manifest.json
+manifest-lock.json
 property.json
 core
 crash_context_v1
