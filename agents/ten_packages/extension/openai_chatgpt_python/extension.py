@@ -243,7 +243,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                             }
                             new_message["content"] = new_message["content"] + \
                                 self._convert_to_content_parts(result_content)
-                            await self.queue_input_item(True, messages=[new_message])
+                            await self.queue_input_item(True, messages=[new_message], no_tool=True)
                         else:
                             ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
