@@ -29,18 +29,22 @@
         },
         "audio_frame_in": [
             {
-                "name": "pcm_frame"
+                "name": "pcm_frame",
+                "property": {}
             }
         ],
         "cmd_in": [
             {
-                "name": "on_user_joined"
+                "name": "on_user_joined",
+                "property": {}
             },
             {
-                "name": "on_user_left"
+                "name": "on_user_left",
+                "property": {}
             },
             {
-                "name": "on_connection_failure"
+                "name": "on_connection_failure",
+                "property": {}
             }
         ],
         "data_out": [

@@ -4468,10 +4468,6 @@
                   {
                     "extension_group": "asr",
                     "extension": "deepgram_asr"
-                  },
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
                   }
                 ]
               }
@@ -4716,10 +4712,6 @@
                   {
                     "extension_group": "asr",
                     "extension": "deepgram_asr"
-                  },
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
                   }
                 ]
               }
