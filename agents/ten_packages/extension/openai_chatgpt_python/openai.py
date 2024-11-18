@@ -94,6 +94,8 @@ class OpenAIChatGPT:
             "seed": self.config.seed,
         }
 
+        logger.info(f"get_chat_completions: {req}")
+
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:

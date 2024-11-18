@@ -724,6 +724,7 @@ class OpenAIV2VExtension(Extension):
                 logger.info(f"_on_tool_output {tool_call_id} {tool_result}")
             
                 result_content = tool_result["content"]
+                # v2v always treat result as query
                 output = json.dumps(self._convert_to_content_parts(result_content))
                 tool_response = ItemCreate(
                     item=FunctionCallOutputItemParam(

@@ -128,7 +128,7 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
         if name == TOOL_NAME:
             result = await self._do_search(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"content": json.dumps(result)}
+            return {"type":"query", "content": json.dumps(result)}
 
     async def _do_search(self, args: dict) -> Any:
         if "query" not in args:

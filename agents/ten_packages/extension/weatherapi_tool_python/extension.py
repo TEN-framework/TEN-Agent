@@ -181,7 +181,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         elif name == FORECAST_TOOL_NAME:
             result = await self._get_future_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"content": json.dumps(result)}
+            return {"type": "query", "content": json.dumps(result)}
 
     async def _get_current_weather(self, args: dict) -> Any:
         if "location" not in args:

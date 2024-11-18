@@ -166,6 +166,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> any:
         kmessages: LLMChatCompletionUserMessageParam = kargs.get(
             "messages", [])
+        stream: bool = kargs.get("stream", False)
 
         ten_env.log_info(f"on_call_chat_completion: {kmessages}")
         response = await self.openai_chatgpt.get_chat_completions(
@@ -204,8 +205,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
             tools = [] if not no_tool and len(
                 self.available_tools) > 0 else None
-            for tool in self.available_tools:
-                tools.append(self._convert_tools_to_dict(tool))
+            if tools is not None:
+                for tool in self.available_tools:
+                    tools.append(self._convert_tools_to_dict(tool))
 
             self.sentence_fragment = ""
 
@@ -236,14 +238,19 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                             # self.memory_cache = []
                             self.memory_cache.pop()
                             result_content = tool_result["content"]
-                            nonlocal message
-                            new_message = {
-                                "role": "user",
-                                "content": self._convert_to_content_parts(message["content"])
-                            }
-                            new_message["content"] = new_message["content"] + \
-                                self._convert_to_content_parts(result_content)
-                            await self.queue_input_item(True, messages=[new_message])
+                            type = tool_result["type"]
+
+                            if type == "direct_reply":
+                                self.send_text_output(ten_env, result_content, True)
+                            else: 
+                                nonlocal message
+                                new_message = {
+                                    "role": "user",
+                                    "content": self._convert_to_content_parts(message["content"])
+                                }
+                                new_message["content"] = new_message["content"] + \
+                                    self._convert_to_content_parts(result_content)
+                                await self.queue_input_item(True, messages=[new_message], no_tool=True)
                         else:
                             ten_env.log_error(f"Tool call failed")
                 self.tool_task_future.set_result(None)
