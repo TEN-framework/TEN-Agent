@@ -171,16 +171,6 @@ make build
 make run-server
 ```
 
-如果使用的是 **Windows**，并且看到错误提示 ` /app/agents/bin/start: not found`，可以运行以下命令来修复：
-
-```bash
-sed -i 's/\r$//' /app/agents/bin/start
-
-make clean
-make build
-make run-server
-```
-
 ### 构建完成 🎉
 
 走到这里就本地构建完成了，简单 5 步，上手体验拉满！
@@ -217,4 +207,4 @@ make run-server
 <br>
 <h2>许可证授权</h2>
 
-本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](LICENSE)。
+本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](../../LICENSE)。

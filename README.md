@@ -158,16 +158,6 @@ Once the build is done, `make run-server` on port `8080`:
 make run-server
 ```
 
-If you are using **Windows**, and see the this error ` /app/agents/bin/start: not found`, you can run the following command to fix it:
-
-```bash
-sed -i 's/\r$//' /app/agents/bin/start
-
-make clean
-make build
-make run-server
-```
-
 ### Finish and verify
 
 #### TEN Agent
