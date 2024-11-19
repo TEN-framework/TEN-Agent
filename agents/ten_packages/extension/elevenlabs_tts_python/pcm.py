@@ -5,8 +5,6 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-
-import logging
 from typing import Iterator
 from ten import AudioFrame, TenEnv, AudioFrameDataFmt
 
@@ -48,13 +46,6 @@ class Pcm:
 
         if chunk:
             yield chunk
-
-    def send(self, ten: TenEnv, buf: memoryview) -> None:
-        try:
-            frame = self.get_pcm_frame(buf)
-            ten.send_audio_frame(frame)
-        except Exception as e:
-            logging.error(f"send frame failed, {e}")
 
 
 class PcmConfig:
