@@ -5039,7 +5039,7 @@
           {
             "type": "extension",
             "extension_group": "chatgpt",
-            "addon": "openai_chatgpt",
+            "addon": "openai_chatgpt_python",
             "name": "openai_chatgpt",
             "property": {
               "base_url": "${env:OPENAI_API_BASE}",
