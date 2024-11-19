@@ -15,6 +15,5 @@ class AsyncGlueExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import AsyncGlueExtension
-        from .log import logger
-        logger.info("AsyncGlueExtensionAddon on_create_instance")
+        ten_env.log_info("AsyncGlueExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(AsyncGlueExtension(name), context)

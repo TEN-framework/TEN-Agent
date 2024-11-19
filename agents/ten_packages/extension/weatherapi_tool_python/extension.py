@@ -8,25 +8,17 @@
 
 import json
 import aiohttp
-import requests
 
 from typing import Any
+from dataclasses import dataclass
 
-from ten import (
-    AudioFrame,
-    VideoFrame,
-    Extension,
-    TenEnv,
-    Cmd,
-    StatusCode,
-    CmdResult,
-    Data,
-)
+from ten import Cmd
+
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.helper import get_properties_string
+from ten_ai_base import BaseConfig
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMChatCompletionToolMessageParam, LLMChatCompletionUserMessageParam, LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
-from .log import logger
+from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
 
 CMD_TOOL_REGISTER = "tool_register"
 CMD_TOOL_CALL = "tool_call"
@@ -85,12 +77,16 @@ FORECAST_TOOL_PARAMETERS = {
 
 PROPERTY_API_KEY = "api_key"  # Required
 
+@dataclass
+class WeatherToolConfig(BaseConfig):
+    api_key: str = ""
 
 class WeatherToolExtension(AsyncLLMToolBaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.api_key = None
         self.session = None
+        self.ten_env = None
+        self.config : WeatherToolConfig = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -98,13 +94,13 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
-        await super().on_start(ten_env)
 
-        get_properties_string(
-            ten_env, [PROPERTY_API_KEY], lambda name, value: setattr(self, name, value))
-        if not self.api_key:
-            ten_env.log_info(f"API key is missing, exiting on_start")
-            return
+        self.config = WeatherToolConfig.create(ten_env=ten_env)
+        ten_env.log_info(f"config: {self.config}")
+        if self.config.api_key:
+            await super().on_start(ten_env)
+
+        self.ten_env = ten_env
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
@@ -188,7 +184,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
             raise Exception("Failed to get property")
 
         location = args["location"]
-        url = f"http://api.weatherapi.com/v1/current.json?key={self.api_key}&q={location}&aqi=no"
+        url = f"http://api.weatherapi.com/v1/current.json?key={self.config.api_key}&q={location}&aqi=no"
 
         async with self.session.get(url) as response:
             result = await response.json()
@@ -205,7 +201,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
 
         location = args["location"]
         datetime = args["datetime"]
-        url = f"http://api.weatherapi.com/v1/history.json?key={self.api_key}&q={location}&dt={datetime}"
+        url = f"http://api.weatherapi.com/v1/history.json?key={self.config.api_key}&q={location}&dt={datetime}"
 
         async with self.session.get(url) as response:
             result = await response.json()
@@ -221,13 +217,13 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
             raise Exception("Failed to get property")
 
         location = args["location"]
-        url = f"http://api.weatherapi.com/v1/forecast.json?key={self.api_key}&q={location}&days=3&aqi=no&alerts=no"
+        url = f"http://api.weatherapi.com/v1/forecast.json?key={self.config.api_key}&q={location}&days=3&aqi=no&alerts=no"
 
         async with self.session.get(url) as response:
             result = await response.json()
 
             # Log the result
-            logger.info(f"get result {result}")
+            self.ten_env.log_info(f"get result {result}")
 
             # Remove all hourly data
             for d in result.get("forecast", {}).get("forecastday", []):

@@ -6,6 +6,3 @@
 #
 #
 from .src import addon
-from .src.log import logger
-
-logger.info("message_collector_rtm extension loaded")

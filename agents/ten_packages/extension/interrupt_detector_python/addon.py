@@ -12,13 +12,11 @@ from ten import (
     TenEnv,
 )
 
-
 @register_addon_as_extension("interrupt_detector_python")
 class InterruptDetectorExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:
-        from .log import logger
-        logger.info("on_create_instance")
+        ten.log_info("on_create_instance")
 
-        from .interrupt_detector_extension import InterruptDetectorExtension
+        from .extension import InterruptDetectorExtension
 
         ten.on_create_instance_done(InterruptDetectorExtension(addon_name), context)

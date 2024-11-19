@@ -26,8 +26,7 @@
         },
         "audio_frame_in": [
             {
-                "name": "pcm_frame",
-                "property": {}
+                "name": "pcm_frame"
             }
         ],
         "cmd_in": [

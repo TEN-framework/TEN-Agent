@@ -48,18 +48,6 @@
             "type": "string"
           }
         }
-      },
-      {
-        "name": "rtm_storage_event",
-        "property": {}
-      },
-      {
-        "name": "rtm_presence_event",
-        "property": {}
-      },
-      {
-        "name": "rtm_lock_event",
-        "property": {}
       }
     ],
     "data_out": [
@@ -73,12 +61,6 @@
             "type": "bool"
           }
         }
-      }
-    ],
-    "cmd_in": [
-      {
-        "name": "on_user_audio_track_state_changed",
-        "property": {}
       }
     ],
     "cmd_out": [

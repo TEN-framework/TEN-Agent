@@ -17,6 +17,5 @@ class MessageCollectorRTMExtension(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import MessageCollectorRTMExtension
-        from .log import logger
-        logger.info("MessageCollectorRTMExtensionAddon on_create_instance")
+        ten_env.log_info("MessageCollectorRTMExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(MessageCollectorRTMExtension(name), context)

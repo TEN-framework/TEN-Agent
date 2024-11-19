@@ -4,6 +4,4 @@
 # See the LICENSE file for more information.
 #
 from . import addon
-from .log import logger
 
-logger.info("glue_python_async extension loaded")
