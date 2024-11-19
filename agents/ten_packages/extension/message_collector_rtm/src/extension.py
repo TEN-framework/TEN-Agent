@@ -5,11 +5,11 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-import base64
 import json
-import threading
 import time
 import uuid
+import asyncio
+
 from ten import (
     AudioFrame,
     VideoFrame,
@@ -20,8 +20,6 @@ from ten import (
     CmdResult,
     Data,
 )
-import asyncio
-
 
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"

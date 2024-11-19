@@ -11,26 +11,34 @@ from ten import (
 import asyncio
 
 from deepgram import AsyncListenWebSocketClient, DeepgramClientOptions, LiveTranscriptionEvents, LiveOptions
+from dataclasses import dataclass
 
-from .config import DeepgramConfig
-
-PROPERTY_API_KEY = "api_key"  # Required
-PROPERTY_LANG = "language"  # Optional
-PROPERTY_MODEL = "model"  # Optional
-PROPERTY_SAMPLE_RATE = "sample_rate"  # Optional
+from ten_ai_base import BaseConfig
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
 DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
 
+@dataclass
+class DeepgramASRConfig(BaseConfig):
+    api_key: str = ""
+    language: str = "en-US"
+    model: str = "nova-2"
+    sample_rate: int = 16000
+
+    channels: int = 1
+    encoding: str = 'linear16'
+    interim_results: bool = True
+    punctuate: bool = True
+    
 class DeepgramASRExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
 
         self.stopped = False
-        self.deepgram_client : AsyncListenWebSocketClient = None
-        self.deepgram_config : DeepgramConfig = None
+        self.client : AsyncListenWebSocketClient = None
+        self.config : DeepgramASRConfig = None
         self.ten_env : AsyncTenEnv = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -41,30 +49,15 @@ class DeepgramASRExtension(AsyncExtension):
         self.loop = asyncio.get_event_loop()
         self.ten_env = ten_env
 
-        self.deepgram_config = DeepgramConfig.default_config()
+        self.config = DeepgramASRConfig.create(ten_env=ten_env)
+        ten_env.log_info(f"config: {self.config}")
 
-        try:
-            self.deepgram_config.api_key = ten_env.get_property_string(PROPERTY_API_KEY).strip()
-        except Exception as e:
-            ten_env.log_error(f"get property {PROPERTY_API_KEY} error: {e}")
+        if not self.config.api_key:
+            ten_env.log_error(f"get property api_key")
             return
 
-        for optional_param in [
-            PROPERTY_LANG,
-            PROPERTY_MODEL,
-            PROPERTY_SAMPLE_RATE,
-        ]:
-            try:
-                value = ten_env.get_property_string(optional_param).strip()
-                if value:
-                    self.deepgram_config.__setattr__(optional_param, value)
-            except Exception as err:
-                ten_env.log_debug(
-                    f"get property optional {optional_param} failed, err: {err}. Using default value: {self.deepgram_config.__getattribute__(optional_param)}"
-                )
-        
-        self.deepgram_client = AsyncListenWebSocketClient(config=DeepgramClientOptions(
-            api_key=self.deepgram_config.api_key,
+        self.client = AsyncListenWebSocketClient(config=DeepgramClientOptions(
+            api_key=self.config.api_key,
             options={"keepalive": "true"}
         ))
 
@@ -80,12 +73,12 @@ class DeepgramASRExtension(AsyncExtension):
             return
 
         self.stream_id = frame.get_property_int('stream_id')
-        await self.deepgram_client.send(frame_buf)
+        await self.client.send(frame_buf)
     
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_stop")
 
-        await self.deepgram_client.finish()
+        await self.client.finish()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_json = cmd.to_json()
@@ -118,22 +111,22 @@ class DeepgramASRExtension(AsyncExtension):
         async def on_error(_, error, **kwargs):
             self.ten_env.log_error(f"deepgram event callback on_error: {error}")
 
-        self.deepgram_client.on(LiveTranscriptionEvents.Open, on_open)
-        self.deepgram_client.on(LiveTranscriptionEvents.Close, on_close)
-        self.deepgram_client.on(LiveTranscriptionEvents.Transcript, on_message)
-        self.deepgram_client.on(LiveTranscriptionEvents.Error, on_error)
+        self.client.on(LiveTranscriptionEvents.Open, on_open)
+        self.client.on(LiveTranscriptionEvents.Close, on_close)
+        self.client.on(LiveTranscriptionEvents.Transcript, on_message)
+        self.client.on(LiveTranscriptionEvents.Error, on_error)
 
-        options = LiveOptions(language=self.deepgram_config.language,
-                              model=self.deepgram_config.model,
-                              sample_rate=self.deepgram_config.sample_rate,
-                              channels=self.deepgram_config.channels,
-                              encoding=self.deepgram_config.encoding,
-                              interim_results=self.deepgram_config.interim_results,
-                              punctuate=self.deepgram_config.punctuate)
+        options = LiveOptions(language=self.config.language,
+                              model=self.config.model,
+                              sample_rate=self.config.sample_rate,
+                              channels=self.config.channels,
+                              encoding=self.config.encoding,
+                              interim_results=self.config.interim_results,
+                              punctuate=self.config.punctuate)
         # connect to websocket
-        result = await self.deepgram_client.start(options)
+        result = await self.client.start(options)
         if result is False:
-            if self.deepgram_client.status_code == 402:
+            if self.client.status_code == 402:
                 self.ten_env.log_error("Failed to connect to Deepgram - your account has run out of credits.")
             else:
                 self.ten_env.log_error("Failed to connect to Deepgram")

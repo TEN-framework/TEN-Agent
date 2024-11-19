@@ -15,14 +15,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatCompletionRequest'
+              $ref: "#/components/schemas/ChatCompletionRequest"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatCompletionResponse'
+                oneOf:
+                  - $ref: "#/components/schemas/ChatCompletionResponse"
+                  - $ref: "#/components/schemas/ChatCompletionChunk"
       x-stream: true
 
 components:
@@ -31,45 +33,150 @@ components:
       type: object
       required:
         - messages
-        - model
       properties:
+        context:
+          type: object
+        model:
+          type: string
+          example: "gpt-4o"
         messages:
           type: array
           items:
-            $ref: '#/components/schemas/Message'
-        model:
-          type: string
-          example: "gpt-4-vision-preview"
-        temperature:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 2
-          default: 1
+            oneOf:
+              - $ref: "#/components/schemas/SystemMessage"
+              - $ref: "#/components/schemas/UserMessage"
+              - $ref: "#/components/schemas/AssistantMessage"
+              - $ref: "#/components/schemas/ToolMessage"
+        response_format:
+          $ref: "#/components/schemas/ResponseFormat"
+        modalities:
+          type: array
+          items:
+            type: string
+            enum: [text, audio]
+          default: [text]
+        audio:
+          type: object
+          properties:
+            voice:
+              type: string
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tool"
+        tool_choice:
+          oneOf:
+            - type: string
+              enum: [auto, none, required]
+            - type: object
+              properties:
+                type:
+                  type: string
+                  enum: [function]
+                function:
+                  type: object
+        parallel_tool_calls:
+          type: boolean
+          default: true
         stream:
           type: boolean
           default: true
 
-    Message:
+    SystemMessage:
       type: object
       required:
         - role
         - content
       properties:
+        name:
+          type: string
         role:
           type: string
-          enum: [system, user, assistant]
+          enum: [system]
         content:
           oneOf:
-            - $ref: '#/components/schemas/TextContent'
-            - $ref: '#/components/schemas/ImageContent'
-            - $ref: '#/components/schemas/AudioContent'
+            - type: string
+            - type: array
+              items:
+                type: string
+
+    UserMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user]
+        content:
+          oneOf:
+            - type: string
             - type: array
               items:
                 oneOf:
-                  - $ref: '#/components/schemas/TextContent'
-                  - $ref: '#/components/schemas/ImageContent'
-                  - $ref: '#/components/schemas/AudioContent'
+                  - $ref: "#/components/schemas/TextContent"
+                  - $ref: "#/components/schemas/ImageContent"
+                  - $ref: "#/components/schemas/AudioContent"
+
+    AssistantMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [system]
+        audio:
+          type: object
+          properties:
+            id:
+              type: string
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                $ref: "#/components/schemas/TextContent"
+        tool_calls:
+          type: object
+          properties:
+            id:
+              type: string
+            type:
+              type: string
+              enum: [function]
+            function:
+              type: object
+              properties:
+                name:
+                  type: string
+                arguments:
+                  type: string
+
+    ToolMessage:
+      type: object
+      required:
+        - role
+        - content
+        - tool_call_id
+      properties:
+        role:
+          type: string
+          enum: [tool]
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        tool_call_id:
+          type: string
 
     TextContent:
       type: object
@@ -91,7 +198,7 @@ components:
       properties:
         type:
           type: string
-          enum: [image]
+          enum: [image_url]
         image_url:
           type: string
           format: uri
@@ -100,14 +207,53 @@ components:
       type: object
       required:
         - type
-        - audio_url
+        - input_audio
       properties:
         type:
           type: string
-          enum: [audio]
-        audio_url:
+          enum: [input_audio]
+        input_audio:
+          type: object
+          properties:
+            data:
+              type: string
+            format:
+              type: string
+
+    Tool:
+      type: object
+      properties:
+        type:
           type: string
-          format: uri
+          enum: [function]
+        function:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            parameters:
+              type: object
+            strict:
+              type: boolean
+              default: false
+
+    ResponseFormat:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [json_schema]
+        json_schema:
+          type: object
+          properties:
+            name:
+              type: string
+            schema:
+              type: object
 
     ChatCompletionResponse:
       type: object
@@ -120,24 +266,123 @@ components:
           type: integer
         model:
           type: string
+        usage:
+          $ref: "#/components/schemas/Usage"
         choices:
           type: array
           items:
-            $ref: '#/components/schemas/Choice'
+            $ref: "#/components/schemas/Choice"
+
+    ChatCompletionChunk:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        created:
+          type: integer
+        model:
+          type: string
+        usage:
+          $ref: "#/components/schemas/Usage"
+        choices:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeltaChoice"
+
+    Usage:
+      type: object
+      properties:
+        completion_tokens:
+          type: integer
+        prompt_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        completion_tokens_details:
+          type: object
+          properties:
+            accepted_prediction_tokens:
+              type: integer
+            audio_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            rejected_prediction_tokens:
+              type: integer
+        prompt_tokens_details:
+          type: object
+          properties:
+            audio_tokens:
+              type: integer
+            cached_tokens:
+              type: integer
 
     Choice:
       type: object
       properties:
-        delta:
-          $ref: '#/components/schemas/Delta'
+        message:
+          $ref: "#/components/schemas/ResponseMessage"
         index:
           type: integer
         finish_reason:
           type: string
-          nullable: true
+
+    DeltaChoice:
+      type: object
+      properties:
+        delta:
+          $ref: "#/components/schemas/ResponseMessage"
+        index:
+          type: integer
+        finish_reason:
+          type: string
 
     Delta:
       type: object
       properties:
         content:
+          type: string
+
+    ResponseMessage:
+      type: object
+      properties:
+        content:
+          type: string
+        refusal:
+          type: string
+        tool_calls:
+          $ref: "#/components/schemas/ToolCall"
+        role:
+          type: string
+        audio:
+          $ref: "#/components/schemas/Audio"
+
+    ToolCall:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [function]
+        function:
+          type: object
+          properties:
+            name:
+              type: string
+            arguments:
+              type: string
+
+    Audio:
+      type: object
+      properties:
+        id:
+          type: string
+        expires_at:
+          type: integer
+        data:
+          type: string
+        transcript:
           type: string

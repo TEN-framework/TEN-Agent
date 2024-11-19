@@ -14,36 +14,33 @@ from ten import (
     StatusCode,
     CmdResult,
 )
-from .log import logger
-
 
 CMD_NAME_FLUSH = "flush"
 
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"
 
-
 class InterruptDetectorExtension(Extension):
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("on_start")
+        ten.log_info("on_start")
         ten.on_start_done()
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("on_stop")
+        ten.log_info("on_stop")
         ten.on_stop_done()
 
     def send_flush_cmd(self, ten: TenEnv) -> None:
         flush_cmd = Cmd.create(CMD_NAME_FLUSH)
         ten.send_cmd(
             flush_cmd,
-            lambda ten, result: logger.info("send_cmd done"),
+            lambda ten, result: ten.log_info("send_cmd done"),
         )
 
-        logger.info(f"sent cmd: {CMD_NAME_FLUSH}")
+        ten.log_info(f"sent cmd: {CMD_NAME_FLUSH}")
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        logger.info("on_cmd name {}".format(cmd_name))
+        ten.log_info("on_cmd name {}".format(cmd_name))
 
         # flush whatever cmd incoming at the moment
         self.send_flush_cmd(ten)
@@ -53,7 +50,7 @@ class InterruptDetectorExtension(Extension):
         new_cmd = Cmd.create_from_json(cmd_json)
         ten.send_cmd(
             new_cmd,
-            lambda ten, result: logger.info("send_cmd done"),
+            lambda ten, result: ten.log_info("send_cmd done"),
         )
 
         cmd_result = CmdResult.create(StatusCode.OK)
@@ -67,12 +64,12 @@ class InterruptDetectorExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello", is_final: false}
         """
-        logger.info(f"on_data")
+        ten.log_info(f"on_data")
 
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
         except Exception as e:
-            logger.warning(
+            ten.log_warn(
                 f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
             )
             return
@@ -80,12 +77,12 @@ class InterruptDetectorExtension(Extension):
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
         except Exception as e:
-            logger.warning(
+            ten.log_warn(
                 f"on_data get_property_bool {TEXT_DATA_FINAL_FIELD} error: {e}"
             )
             return
 
-        logger.debug(
+        ten.log_debug(
             f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final}"
         )
 
