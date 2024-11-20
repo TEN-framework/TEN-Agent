@@ -4,10 +4,12 @@ import {
   LanguageOptionItem,
   VoiceOptionItem,
   GraphOptionItem,
+  ICozeSettings,
 } from "@/types"
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
 export const OPTIONS_KEY = "__options__"
 export const AGENT_SETTINGS_KEY = "__agent_settings__"
+export const COZE_SETTINGS_KEY = "__coze_settings__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
@@ -19,6 +21,17 @@ export const DEFAULT_OPTIONS: IOptions = {
 export const DEFAULT_AGENT_SETTINGS = {
   greeting: "",
   prompt: "",
+}
+
+export enum ECozeBaseUrl {
+  CN = "api.coze.cn",
+  GLOBAL = "api.coze.com",
+}
+
+export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
+  token: "",
+  bot_id: "",
+  base_url: ECozeBaseUrl.GLOBAL,
 }
 
 export const DESCRIPTION =
