@@ -56,6 +56,7 @@ const MicSection = (props: MicSectionProps) => {
       </span>
       <MicSelect audioTrack={audioTrack}></MicSelect>
     </div>
+    {/* 
     <div className={styles.view}>
       <AudioVisualizer
         type="user"
@@ -66,6 +67,7 @@ const MicSection = (props: MicSectionProps) => {
         borderRadius={2}
         gap={4}></AudioVisualizer>
     </div>
+    */}
   </div>
 }
 

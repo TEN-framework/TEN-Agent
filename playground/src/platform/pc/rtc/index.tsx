@@ -7,9 +7,10 @@ import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import { setRoomConnected, addChatItem, setVoiceType } from "@/store/reducers/global"
 import MicSection from "./micSection"
 import CamSection from "./camSection"
-import Agent from "./agent"
+import Avatar from "./avatar"
 import styles from "./index.module.scss"
 import { useRef, useEffect, useState, Fragment } from "react"
+//import { Avatar } from "antd"
 
 let hasInit = false
 
@@ -81,11 +82,11 @@ const Rtc = () => {
   }
 
   const onTextChanged = (text: ITextItem) => {
-    if (text.dataType == "transcribe") {
+    if (text.dataType == "transcribe" && text.text.indexOf('SSML_')==-1) { 
       const isAgent = Number(text.uid) != Number(userId)
       dispatch(addChatItem({
         userId: text.uid,
-        text: text.text,
+        text: text.text.replace(/\bSSML_\w*\b/g, '').replace(/\s+/g, ' ').trim(),
         type: isAgent ? "agent" : "user",
         isFinal: text.isFinal,
         time: text.time
@@ -95,11 +96,7 @@ const Rtc = () => {
 
 
   return <section className={styles.rtc}>
-    <div className={styles.header}>
-      <span className={styles.text}>Audio & Video</span>
-    </div>
-    {/* agent */}
-    <Agent audioTrack={remoteuser?.audioTrack}></Agent>
+
     {/* you */}
     <div className={styles.you}>
       {/* microphone */}

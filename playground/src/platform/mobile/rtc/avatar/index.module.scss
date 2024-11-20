@@ -1,0 +1,71 @@
+.avatar {
+  position: relative;
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  align-self: stretch;
+  box-shadow: 0px 3.999px 48.988px 0px rgba(0, 7, 72, 0.12);
+  backdrop-filter: blur(7);
+  box-sizing: border-box;
+  height: 240px;
+  .text {
+    margin-top: 50px;
+    color: var(--theme-color, #E7F4E5);
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 150%;
+    letter-spacing: 0.449px;
+  }
+
+  .view {
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    iheight: 56px;
+  }
+}
+
+.fullscreenContainer {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0px;
+  left: 0px;
+  z-index: 9;
+}
+
+.fullScreenIcon {
+  position: absolute;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.6);
+  right: 12px;
+  top: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  cursor: pointer;
+
+  svg {
+    height: 28px;
+    width: 28px;
+  }
+
+}
+
+.splashScreen {
+  position: absolute;
+  color: transparent;
+  padding: 8px 6px;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  z-index: 1;
+  top:0px;
+  background: black;
+}

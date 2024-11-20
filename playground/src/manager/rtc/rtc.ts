@@ -223,7 +223,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   _playAudio(audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined) {
     if (audioTrack && !audioTrack.isPlaying) {
-      audioTrack.play()
+    //  audioTrack.play()
     }
   }
 

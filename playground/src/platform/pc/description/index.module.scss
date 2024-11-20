@@ -1,7 +1,7 @@
 .description {
   position: relative;
   display: flex;
-  padding: 12px 16px;
+  padding: 6px 8px;
   align-items: center;
   gap: 12px;
   align-self: stretch;
@@ -9,6 +9,9 @@
   border: 1px solid #272A2F;
   background: #181A1D;
 
+  .graphName {
+    width: 260px;
+  }
   .title {
     color: var(--Grey-300, #EAECF0);
     font-size: 14px;

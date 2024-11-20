@@ -16,9 +16,10 @@ import {
 import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import { Button, ConfigProvider, Modal, Select, Tabs, TabsProps, theme, } from 'antd';
 import PdfSelect from "@/components/pdfSelect"
+import { SettingOutlined } from "@ant-design/icons"
 
 import styles from "./index.module.scss"
-import { SettingOutlined } from "@ant-design/icons"
+
 import EditableTable from "./table"
 import { rtcManager } from "@/manager"
 
@@ -91,17 +92,7 @@ const Chat = () => {
   }
 
   return <section className={styles.chat}>
-    <div className={styles.header}>
-      <span className={styles.left}>
-      </span>
-      <span className={styles.right}>
-        <Select className={styles.graphName}
-          disabled={agentConnected} options={graphs.map((item) => { return { label: item, value: item } })}
-          value={graphName} onChange={onGraphNameChange}></Select>
-        <Button icon={<SettingOutlined />} type="primary" onClick={() => { setModal2Open(true) }}></Button>
-        {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
-      </span>
-    </div>
+
     <div className={`${styles.content}`} ref={chatRef}>
       {chatItems.map((item, index) => {
         return <ChatItem data={item} key={index} ></ChatItem>
@@ -148,42 +139,7 @@ const Chat = () => {
         </Button>
       </div>
     </ConfigProvider>
-    <Modal
-      title="Properties Override"
-      centered
-      open={modal2Open}
-      onCancel={() => setModal2Open(false)}
-      footer={
-        <>
-          <Button type="default" onClick={() => { dispatch(setOverridenProperties({})) }}>
-            Clear Settings
-          </Button>
-          <Button type="primary" onClick={() => setModal2Open(false)}>
-            Close
-          </Button>
-        </>
-      }
-    >
-      <p>You can adjust extension properties here, the values will be overridden when the agent starts using "Connect." Note that this won't modify the property.json file.</p>
-      <Tabs defaultActiveKey="1" items={Object.keys(graphExtensions).map((key) => {
-        let node = graphExtensions[key]
-        let addon = node["addon"]
-        let metadata = extensionMetadata[addon]
-        return {
-          key: node["name"], label: node["name"], children: <EditableTable
-            key={`${graphName}-${node["name"]}`}
-            initialData={node["property"] || {}}
-            metadata={metadata ? metadata.api.property : {}}
-            onUpdate={(data) => {
-              // clone the overridenProperties
-              let nodesMap = JSON.parse(JSON.stringify(overridenProperties[graphName] || {}))
-              nodesMap[key] = data
-              dispatch(setOverridenPropertiesByGraph({ graphName, nodesMap }))
-            }}
-          ></EditableTable>
-        }
-      })} />
-    </Modal>
+  
   </section >
 }
 
