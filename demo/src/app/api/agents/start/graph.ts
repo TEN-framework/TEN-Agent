@@ -110,7 +110,6 @@ export const getGraphProperties = (
                 "agora_asr_language": language,
             },
             "coze_python_async": {
-                "model": "gpt-4o",
                 ...localizationOptions,
                 "prompt": prompt,
                 "greeting": greeting,
