@@ -38,7 +38,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
-import { useAppDispatch, useAppSelector } from "@/common"
+import { useAppDispatch, useAppSelector, ECozeBaseUrl } from "@/common"
 import {
   setAgentSettings,
   setCozeSettings,
@@ -218,7 +218,7 @@ export const cozeSettingsFormSchema = z.object({
       message: "Bot ID is required",
     })
     .min(1),
-  base_url: z.enum(["api.coze.cn", "api.coze.com"]).default("api.coze.cn"),
+  base_url: z.nativeEnum(ECozeBaseUrl).default(ECozeBaseUrl.CN),
 })
 
 export const isCozeGraph = (graphName: string) => {
@@ -292,11 +292,11 @@ export function CozeSettingsTab(props: {
                     <SelectValue placeholder="Select base URL" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="api.coze.com">
-                      https://api.coze.com
+                    <SelectItem value={ECozeBaseUrl.GLOBAL}>
+                      {ECozeBaseUrl.GLOBAL}
                     </SelectItem>
-                    <SelectItem value="api.coze.cn">
-                      https://api.coze.cn
+                    <SelectItem value={ECozeBaseUrl.CN}>
+                      {ECozeBaseUrl.CN}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -315,7 +315,7 @@ export function CozeSettingsTab(props: {
               form.reset({
                 token: "",
                 bot_id: "",
-                base_url: "api.coze.cn",
+                base_url: ECozeBaseUrl.CN,
               })
               dispatch(resetCozeSettings())
               toast.success("Coze settings reset")

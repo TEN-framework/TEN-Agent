@@ -24,8 +24,8 @@ export const DEFAULT_AGENT_SETTINGS = {
 }
 
 export enum ECozeBaseUrl {
-  CN = "api.coze.cn",
-  GLOBAL = "api.coze.com",
+  CN = "https://api.coze.cn",
+  GLOBAL = "https://api.coze.com",
 }
 
 export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
