@@ -124,7 +124,6 @@ export default function RTCCard(props: { className?: string }) {
           <div className="w-full">
             <div className="flex w-full items-center justify-between p-2">
               <h2 className="mb-2 text-xl font-semibold">Audio & Video</h2>
-              <AgentVoicePresetSelect />
             </div>
             <AgentView audioTrack={remoteuser?.audioTrack} />
           </div>
