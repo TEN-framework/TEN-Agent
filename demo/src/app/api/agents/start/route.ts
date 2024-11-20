@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
 
     let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting);
     if (graph_name.includes("coze")) {
-      properties["coze_python_async"]["coze_token"] = coze_token;
-      properties["coze_python_async"]["coze_bot_id"] = coze_bot_id;
-      properties["coze_python_async"]["coze_base_url"] = coze_base_url;
+      properties["coze_python_async"]["token"] = coze_token;
+      properties["coze_python_async"]["bot_id"] = coze_bot_id;
+      properties["coze_python_async"]["base_url"] = coze_base_url;
     }
 
     console.log(`Starting agent for request ID: ${JSON.stringify({
