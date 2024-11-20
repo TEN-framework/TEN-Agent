@@ -1056,7 +1056,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",
@@ -1258,7 +1258,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",
@@ -2555,7 +2555,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",

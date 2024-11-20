@@ -6,10 +6,12 @@ CMD_CHAT_COMPLETION_CALL = "chat_completion_call"
 CMD_IN_FLUSH = "flush"
 CMD_OUT_FLUSH = "flush"
 
-DATA_OUTPUT_NAME = "text_data"
-DATA_OUTPUT_PROPERTY_TEXT = "text"
-DATA_OUTPUT_PROPERTY_END_OF_SEGMENT = "end_of_segment"
+DATA_OUT_NAME = "text_data"
+DATA_OUT_PROPERTY_TEXT = "text"
+DATA_OUT_PROPERTY_END_OF_SEGMENT = "end_of_segment"
 
+DATA_IN_PROPERTY_TEXT = "text"
+DATA_IN_PROPERTY_END_OF_SEGMENT = "end_of_segment"
 
 DATA_INPUT_NAME = "text_data"
 AUDIO_FRAME_OUTPUT_NAME = "pcm_frame"

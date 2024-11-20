@@ -44,7 +44,7 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str) -> None:
+    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
         try:
             self.begin_send_audio_out(ten_env, sample_rate=self.client.config.sample_rate)
             data = self.client.get(ten_env, input_text)
@@ -53,3 +53,6 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
             self.end_send_audio_out(ten_env)
         except Exception as err:
             ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
+
+    async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
+        return await super().on_cancel_tts(ten_env)
