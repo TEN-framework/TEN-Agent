@@ -66,6 +66,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Vision - OpenAI LLM + Azure TTS + RTM",
     value: "camera_va_openai_azure_rtm",
   },
+  {
+    label: "Voice Agent Coze Bot + Azure TTS",
+    value: "va_coze_azure",
+  },
 ]
 
 export const isRagGraph = (graphName: string) => {

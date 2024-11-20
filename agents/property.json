@@ -5225,9 +5225,11 @@
             "addon": "coze_python_async",
             "name": "coze_python_async",
             "property": {
-              "token": "${env:COZE_TOKEN}",
-              "bot_id": "${env:COZE_BOT_ID}",
-              "base_url": "https://api.coze.cn"
+              "token": "<coze_token>",
+              "bot_id": "<coze_bot_id>",
+              "base_url": "https://api.coze.cn",
+              "prompt": "",
+              "greeting": "TEN Agent connected. How can I help you today?"
             }
           },
           {

@@ -26,7 +26,17 @@ export async function POST(request: NextRequest) {
       voice_type,
       prompt,
       greeting,
+      coze_token,
+      coze_bot_id,
+      coze_base_url,
     } = body;
+
+    let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting);
+    if (graph_name.includes("coze")) {
+      properties[graph_name]["coze_token"] = coze_token;
+      properties[graph_name]["coze_bot_id"] = coze_bot_id;
+      properties[graph_name]["coze_base_url"] = coze_base_url;
+    }
 
     console.log(`Starting agent for request ID: ${JSON.stringify({
       request_id,
@@ -34,7 +44,7 @@ export async function POST(request: NextRequest) {
       user_uid,
       graph_name,
       // Get the graph properties based on the graph name, language, and voice type
-      properties: getGraphProperties(graph_name, language, voice_type, prompt, greeting),
+      properties,
     })}`);
 
     console.log(`AGENT_SERVER_URL: ${AGENT_SERVER_URL}/start`);
@@ -46,7 +56,7 @@ export async function POST(request: NextRequest) {
       user_uid,
       graph_name,
       // Get the graph properties based on the graph name, language, and voice type
-      properties: getGraphProperties(graph_name, language, voice_type, prompt, greeting),
+      properties,
     });
 
     const responseData = response.data;

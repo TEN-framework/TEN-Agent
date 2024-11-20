@@ -96,6 +96,20 @@ export const getGraphProperties = (
                 "agora_asr_language": language,
             },
             "openai_chatgpt": {
+                ...localizationOptions,
+                "prompt": prompt,
+                "greeting": greeting,
+            },
+            "azure_tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
+    } else if (graphName == "va_coze_azure") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "coze_python_async": {
                 "model": "gpt-4o",
                 ...localizationOptions,
                 "prompt": prompt,
