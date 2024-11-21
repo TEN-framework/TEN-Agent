@@ -3,16 +3,11 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+from asyncio import sleep
+import asyncio
 from .cosy_tts import CosyTTS, CosyTTSConfig
 from ten import (
-    AudioFrame,
-    VideoFrame,
-    AsyncExtension,
     AsyncTenEnv,
-    Cmd,
-    StatusCode,
-    CmdResult,
-    Data,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
 
@@ -34,24 +29,33 @@ class CosyTTSExtension(AsyncTTSBaseExtension):
         self.config = CosyTTSConfig.create(ten_env=ten_env)
         self.client = CosyTTS(self.config)
 
+        asyncio.create_task(self._process_audio_data(ten_env))
+
+
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
-        # TODO: clean up resources
+        await self.queue.put(None)
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
-        audio_stream = self.client.text_to_speech_stream(ten_env, input_text, end_of_segment)
+    async def _process_audio_data(self, ten_env: AsyncTenEnv) -> None:
+        while True:
+            audio_data = await self.client.get_audio_bytes()
 
-        self.begin_send_audio_out(ten_env)
-        async for audio_data in audio_stream:
+            if audio_data is None:
+                break
+
+            self.begin_send_audio_out(ten_env)
             self.send_audio_out(ten_env, audio_data)
-        self.end_send_audio_out(ten_env)
+            self.end_send_audio_out(ten_env)
+            
 
+    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+        self.client.text_to_speech_stream(ten_env, input_text, end_of_segment)
     
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
-        self.client.cancel()
+        self.client.cancel(ten_env)

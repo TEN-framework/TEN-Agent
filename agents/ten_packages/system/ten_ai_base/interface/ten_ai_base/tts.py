@@ -53,6 +53,7 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
+        self.loop_task.cancel()
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
@@ -62,8 +63,8 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
         async_ten_env.log_info(f"on_cmd name: {cmd_name}")
 
         if cmd_name == CMD_IN_FLUSH:
-            await self.flush_input_items(async_ten_env)
             await self.on_cancel_tts(async_ten_env)
+            await self.flush_input_items(async_ten_env)
             await async_ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
             async_ten_env.log_info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
@@ -175,8 +176,8 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
         while True:
             # Wait for an item to be available in the queue
             [text, end_of_segment] = await self.queue.get()
+
             try:
-                ten_env.log_info(f"Processing queue item: {text}")
                 self.current_task = asyncio.create_task(
                     self.on_request_tts(ten_env, text, end_of_segment))
                 await self.current_task  # Wait for the current task to finish or be cancelled
