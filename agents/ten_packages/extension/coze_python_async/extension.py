@@ -97,10 +97,13 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             ten_env.log_error("Missing required configuration")
             return
     
-        self.acoze = AsyncCoze(auth=TokenAuth(token=self.config.token), base_url=self.config.base_url)
-        self.conversation = await self.acoze.conversations.create(messages = [
-                Message.build_user_question_text(self.config.prompt)
-            ] if self.config.prompt else [])
+        try:
+            self.acoze = AsyncCoze(auth=TokenAuth(token=self.config.token), base_url=self.config.base_url)
+            self.conversation = await self.acoze.conversations.create(messages = [
+                    Message.build_user_question_text(self.config.prompt)
+                ] if self.config.prompt else [])
+        except Exception as e:
+            ten_env.log_error(f"Failed to create conversation {e}")
 
         self.ten_env = ten_env
 
@@ -170,6 +173,8 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             except Exception as e:
                 self.ten_env.log_error(f"Failed to parse response: {message} {e}")
                 traceback.print_exc()
+        if sentence_fragment:
+            await self._send_text(sentence_fragment)
         
         self.ten_env.log_info(f"total_output: {total_output} {calls}")
 
@@ -257,6 +262,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     "auto_save_history": True,
                     "conversation_id": self.conversation.id
                 }
+                event = ""
                 async with session.post(url, json=params, headers=headers) as response:
                     async for line in response.content:
                         if line:
@@ -266,9 +272,12 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                                 if decoded_line:
                                     if decoded_line.startswith("data:"):
                                         data = decoded_line[5:].strip()
-                                        yield chat_stream_handler(event=data, event_data=data.strip())
+                                        yield chat_stream_handler(event=event, event_data=data.strip())
                                     elif decoded_line.startswith("event:"):
-                                        self.ten_env.log_info(f"event: {decoded_line[6:]}")
+                                        event = decoded_line[6:]
+                                        self.ten_env.log_info(f"event: {event}")
+                                        if event == "done":
+                                            break
                                     else:
                                         result = json.loads(decoded_line)
                                         code = result.get("code", 0)
