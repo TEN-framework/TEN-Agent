@@ -36,13 +36,18 @@
 <br>
 <h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
 
-Try OpenAI Realtime API and RTC at [agent.theten.ai](https://agent.theten.ai).
+Try OpenAI Realtime API, **Weather Check** and **Web Search** at [agent.theten.ai](https://agent.theten.ai).
 
 Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
 
 ![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
+<h2>Usecases</h2>
+
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
+<br>
+
 <h2>TEN Agent Features</h2>
 
 * **OpenAI Realtime API and RTC integration**:
@@ -68,25 +73,6 @@ Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
-<br>
-<h2>Stay Tuned</h2>
-
-Before we get started, be sure to star our repository and get instant notifications for all new releases!
-
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
-
-<!-- <br>
-<h2>TEN Agent</h2>
-
-[TEN Agent](https://agent.theten.ai)
-
-TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
-
-And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be available.
-
-
-[![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
-<br> -->
 
 <br>
 <h2>How to build TEN Agent locally
@@ -184,29 +170,16 @@ Once you save the graph, you can return to [localhost:3000]( http://localhost:30
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
-<!-- <br>
-<h2>TEN Agent Comparison</h2>
 
-<div align="center">
+<br>
+<h2>Stay Tuned</h2>
 
-| **Features**                             | **TEN Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
-| **Vision**                               |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
-| **Rich TTS Support for different languages** |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
-| **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **RAG support**                          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
-| **Rich LLM Support**                      |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
-| **Python support for extension**          |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
-| **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
+Before we get started, be sure to star our repository and get instant notifications for all new releases!
 
-</div> -->
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
 
-
-<br>
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
