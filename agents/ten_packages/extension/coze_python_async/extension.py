@@ -6,6 +6,7 @@
 import asyncio
 import traceback
 import aiohttp
+import json
 
 from typing import List, Any, AsyncGenerator
 from dataclasses import dataclass
@@ -146,7 +147,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
 
     async def on_data_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs) -> None:
         if not self.conversation:
-            self._send_text("Coze is not connected. Please check your configuration.")
+            await self._send_text("Coze is not connected. Please check your configuration.")
             return
 
         input: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
@@ -259,17 +260,25 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                 async with session.post(url, json=params, headers=headers) as response:
                     async for line in response.content:
                         if line:
-                            self.ten_env.log_info(f"line: {line}")
-                            decoded_line = line.decode('utf-8').strip()
-                            if decoded_line:
-                                event_data = decoded_line.split(":", 1)
-                                if len(event_data) == 2:
-                                    if event_data[0] == "event":
-                                        event = event_data[1]
-                                        continue
-                                    elif event_data[0] == "data":
-                                        data = event_data[1]
-                                        yield chat_stream_handler(event=event.strip(), event_data=data.strip())
+                            try:
+                                self.ten_env.log_info(f"line: {line}")
+                                decoded_line = line.decode('utf-8').strip()
+                                if decoded_line:
+                                    if decoded_line.startswith("data:"):
+                                        data = decoded_line[5:].strip()
+                                        yield chat_stream_handler(event=data, event_data=data.strip())
+                                    elif decoded_line.startswith("event:"):
+                                        self.ten_env.log_info(f"event: {decoded_line[6:]}")
+                                    else:
+                                        result = json.loads(decoded_line)
+                                        code = result.get("code", 0)
+                                        if code == 4000:
+                                            await self._send_text("Coze bot is not published.")
+                                        else:
+                                            self.ten_env.log_error(f"Failed to stream chat: {result['code']}")
+                                            await self._send_text("Coze bot is not connected. Please check your configuration.")
+                            except Exception as e:
+                                self.ten_env.log_error(f"Failed to stream chat: {e}")
             except Exception as e:
                 traceback.print_exc()
                 self.ten_env.log_error(f"Failed to stream chat: {e}")
