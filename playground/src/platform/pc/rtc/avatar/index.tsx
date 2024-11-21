@@ -26,6 +26,12 @@ const Avatar = (props: AvatarProps) => {
   var bg = 0;
   var music = 0;
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const avatarIdFromURL = urlParams.get('avatarId');
+  const finalAvatarId =
+  avatarIdFromURL || process.env.NEXT_PUBLIC_avatarId || '';
+
+
   // Keep track of the agent connection status.
   const agentConnected = useAppSelector(state => state.global.agentConnected)
   const options = useAppSelector(state => state.global.options)
@@ -171,7 +177,7 @@ const Avatar = (props: AvatarProps) => {
       <TrulienceAvatar
         url={process.env.NEXT_PUBLIC_trulienceSDK}
         ref={trulienceAvatarRef}
-        avatarId={process.env.NEXT_PUBLIC_avatarId ? process.env.NEXT_PUBLIC_avatarId : ""}
+        avatarId={finalAvatarId}
         token={process.env.NEXT_PUBLIC_avatarToken}
         eventCallbacks={eventCallbacks}
         width="100%"
