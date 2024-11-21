@@ -3,9 +3,10 @@
   "version": "0.4.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3030",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3030",
+    "pm2-start": "pm2 start npm --name \"ten-ui\" -- start",
     "lint": "next lint",
     "proto": "pbjs -t json-module -w commonjs -o src/protobuf/SttMessage.js src/protobuf/SttMessage.proto"
   },
