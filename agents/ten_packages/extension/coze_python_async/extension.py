@@ -126,10 +126,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         detail = "success"
 
         if cmd_name == CMD_IN_FLUSH:
-            pass
-            #await self.flush_input_items(ten_env)
-            #await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
-            #ten_env.log_info("on flush")
+            await self.flush_input_items(ten_env)
+            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
+            ten_env.log_info("on flush")
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
