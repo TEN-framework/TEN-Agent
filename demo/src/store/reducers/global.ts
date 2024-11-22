@@ -33,6 +33,10 @@ export interface InitialState {
   agentSettings: IAgentSettings
   cozeSettings: ICozeSettings
   mobileActiveTab: EMobileActiveTab
+  globalSettingsDialog: {
+    open?: boolean
+    tab?: string
+  }
 }
 
 const getInitialState = (): InitialState => {
@@ -49,6 +53,7 @@ const getInitialState = (): InitialState => {
     agentSettings: DEFAULT_AGENT_SETTINGS,
     cozeSettings: DEFAULT_COZE_SETTINGS,
     mobileActiveTab: EMobileActiveTab.AGENT,
+    globalSettingsDialog: { open: false },
   }
 }
 
@@ -160,6 +165,15 @@ export const globalSlice = createSlice({
     setMobileActiveTab: (state, action: PayloadAction<EMobileActiveTab>) => {
       state.mobileActiveTab = action.payload
     },
+    setGlobalSettingsDialog: (
+      state,
+      action: PayloadAction<Partial<InitialState["globalSettingsDialog"]>>,
+    ) => {
+      state.globalSettingsDialog = {
+        ...state.globalSettingsDialog,
+        ...action.payload,
+      }
+    },
     reset: (state) => {
       Object.assign(state, getInitialState())
       document.documentElement.style.setProperty(
@@ -185,6 +199,7 @@ export const {
   setCozeSettings,
   resetCozeSettings,
   setMobileActiveTab,
+  setGlobalSettingsDialog,
 } = globalSlice.actions
 
 export default globalSlice.reducer

@@ -41,7 +41,7 @@ export default function RootLayout({
         > */}
         <StoreProvider>{children}</StoreProvider>
         {/* </ConfigProvider> */}
-        <Toaster />
+        <Toaster richColors closeButton theme="dark" />
       </body>
     </html>
   )

@@ -43,6 +43,7 @@ import {
   setAgentSettings,
   setCozeSettings,
   resetCozeSettings,
+  setGlobalSettingsDialog,
 } from "@/store/reducers/global"
 
 const TABS_OPTIONS = [
@@ -81,12 +82,24 @@ export const useSettingsTabs = () => {
 }
 
 export default function SettingsDialog() {
-  const [open, setOpen] = React.useState(false)
+  const dispatch = useAppDispatch()
+  const globalSettingsDialog = useAppSelector(
+    (state) => state.global.globalSettingsDialog,
+  )
 
   const tabs = useSettingsTabs()
 
+  const handleClose = () => {
+    dispatch(setGlobalSettingsDialog({ open: false, tab: undefined }))
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={globalSettingsDialog.open}
+      onOpenChange={(open) =>
+        dispatch(setGlobalSettingsDialog({ open, tab: undefined }))
+      }
+    >
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="w-9">
           <SettingsIcon />
@@ -97,7 +110,7 @@ export default function SettingsDialog() {
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
         <Tabs
-          defaultValue={TABS_OPTIONS[0].value}
+          defaultValue={globalSettingsDialog.tab || TABS_OPTIONS[0].value}
           className="w-full min-w-96 max-w-screen-sm"
         >
           {tabs.length > 1 && (
@@ -115,14 +128,14 @@ export default function SettingsDialog() {
           )}
           <TabsContent value="agent">
             <CommonAgentSettingsTab
-              handleClose={() => setOpen(false)}
-              handleSubmit={() => setOpen(false)}
+              handleClose={handleClose}
+              handleSubmit={handleClose}
             />
           </TabsContent>
           <TabsContent value="coze">
             <CozeSettingsTab
-              handleClose={() => setOpen(false)}
-              handleSubmit={() => setOpen(false)}
+              handleClose={handleClose}
+              handleSubmit={handleClose}
             />
           </TabsContent>
         </Tabs>
@@ -305,28 +318,33 @@ export function CozeSettingsTab(props: {
             </FormItem>
           )}
         />
-        <DialogFooter>
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              form.reset({
-                token: "",
-                bot_id: "",
-                base_url: ECozeBaseUrl.CN,
-              })
-              dispatch(resetCozeSettings())
-              toast.success("Coze settings reset")
-            }}
-          >
-            <RotateCcwIcon />
-          </Button>
-          <Button type="submit" disabled={!form.formState.isValid}>
-            Save Coze Settings
-          </Button>
-        </DialogFooter>
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                form.reset({
+                  token: "",
+                  bot_id: "",
+                  base_url: ECozeBaseUrl.CN,
+                })
+                dispatch(resetCozeSettings())
+                toast.success("Coze settings reset")
+              }}
+            >
+              <RotateCcwIcon />
+            </Button>
+            <Button type="submit" disabled={!form.formState.isValid}>
+              Save Coze Settings
+            </Button>
+          </div>
+          <div className="flex-1 select-none text-right text-xs text-muted-foreground">
+            *Settings are saved in your browser only
+          </div>
+        </div>
       </form>
     </Form>
   )
