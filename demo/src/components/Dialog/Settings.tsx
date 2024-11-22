@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { SettingsIcon, RotateCcwIcon } from "lucide-react"
+import { SettingsIcon, EraserIcon, ShieldCheckIcon } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -335,15 +335,16 @@ export function CozeSettingsTab(props: {
                 toast.success("Coze settings reset")
               }}
             >
-              <RotateCcwIcon />
+              <EraserIcon />
             </Button>
             <Button type="submit" disabled={!form.formState.isValid}>
               Save Coze Settings
             </Button>
           </div>
-          <div className="flex-1 select-none text-right text-xs text-muted-foreground">
-            *Settings are saved in your browser only
-          </div>
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+            <ShieldCheckIcon className="me-1 size-3" />
+            Settings are saved in your browser only
+          </Label>
         </div>
       </form>
     </Form>
