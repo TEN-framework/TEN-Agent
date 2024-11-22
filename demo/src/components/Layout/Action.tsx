@@ -3,7 +3,11 @@
 import * as React from "react"
 
 import { LoadingButton } from "@/components/Button/LoadingButton"
-import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global"
+import {
+  setAgentConnected,
+  setMobileActiveTab,
+  setGlobalSettingsDialog,
+} from "@/store/reducers/global"
 import {
   useAppDispatch,
   useAppSelector,
@@ -38,6 +42,7 @@ export default function Action(props: { className?: string }) {
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab,
   )
+
   const [loading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
@@ -83,6 +88,12 @@ export default function Action(props: { className?: string }) {
           const cozeSettingsResult =
             cozeSettingsFormSchema.safeParse(cozeSettings)
           if (!cozeSettingsResult.success) {
+            dispatch(
+              setGlobalSettingsDialog({
+                open: true,
+                tab: "coze",
+              }),
+            )
             throw new Error(
               "Invalid Coze settings. Please check your settings.",
             )
