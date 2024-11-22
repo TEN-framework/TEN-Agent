@@ -145,6 +145,7 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
                 self.image_data, self.image_width, self.image_height)
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             return {
+                "type": "query",
                 "content": [{
                     "type": "image_url",
                     "image_url": {

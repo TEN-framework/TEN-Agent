@@ -173,10 +173,10 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
             cmd.set_property_from_json("arguments", json.dumps({"messages":[message]}))
             ten_env.log_info("send_cmd {}".format(message))
             cmd_result: CmdResult = await ten_env.send_cmd(cmd)
-            result = cmd_result.get_property_to_json("response")
+            result = json.loads(cmd_result.get_property_to_json("response"))
+
+            response_text = result["choices"][0]["message"]["content"]
             return {
-                "content": [{
-                    "type": "text",
-                    "text": result
-                }]
+                "type": "direct_reply",
+                "content": response_text
             }

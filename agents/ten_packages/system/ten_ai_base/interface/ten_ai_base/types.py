@@ -86,10 +86,12 @@ LLMChatCompletionMessageParam: TypeAlias = Union[
 ]
 
 class LLMToolResult(TypedDict, total=False):
+    type: Union[Literal["query"], Literal["direct_reply"]]
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
 
 class LLMCallCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]
+    stream: Optional[bool] = False
 
 class LLMDataCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]
