@@ -1,12 +1,11 @@
 services:
   ten_agent_dev:
-    image: ghcr.io/ten-framework/ten_agent_build:0.2.3
+    image: ghcr.io/ten-framework/ten_agent_build:0.2.4
     container_name: ten_agent_dev
     platform: linux/amd64
     tty: true
     stdin_open: true
     restart: always
-    command: "make run-gd-server"
     ports:
       - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
       - "${SERVER_PORT}:${SERVER_PORT}"

@@ -1,0 +1,1395 @@
+{
+  "_ten": {
+    "log_level": 3,
+    "predefined_graphs": [
+      {
+        "name": "va_openai_azure",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "agora_rtc",
+            "name": "agora_rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "interrupt_detector",
+            "name": "interrupt_detector"
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "openai_chatgpt",
+            "name": "openai_chatgpt",
+            "property": {
+              "base_url": "${env:OPENAI_API_BASE}",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "${env:OPENAI_MODEL}",
+              "max_tokens": 512,
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "max_memory_length": 10
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tts",
+            "addon": "azure_tts",
+            "name": "azure_tts",
+            "property": {
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "transcriber",
+            "addon": "message_collector",
+            "name": "message_collector"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "azure_tts",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "camera_va_openai_azure",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "agora_rtc",
+            "name": "agora_rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "interrupt_detector",
+            "name": "interrupt_detector"
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "openai_chatgpt_python",
+            "name": "openai_chatgpt",
+            "property": {
+              "base_url": "${env:OPENAI_API_BASE}",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o",
+              "max_tokens": 512,
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "vision_tool_python",
+            "name": "vision_tool"
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "weatherapi_tool_python",
+            "name": "weatherapi_tool_python",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "bingsearch_tool_python",
+            "name": "bingsearch_tool_python",
+            "property": {
+              "api_key": "${env:BING_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tts",
+            "addon": "azure_tts",
+            "name": "azure_tts",
+            "property": {
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "transcriber",
+            "addon": "message_collector",
+            "name": "message_collector"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "weatherapi_tool_python"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "bingsearch_tool_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "vision_tool",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "bingsearch_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "azure_tts",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "va_openai_v2v",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "extension_group": "rtc",
+            "addon": "agora_rtc",
+            "name": "agora_rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "subscribe_audio_sample_rate": 24000,
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "llm",
+            "addon": "openai_v2v_python",
+            "name": "openai_v2v_python",
+            "property": {
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "temperature": 0.9,
+              "model": "gpt-4o-realtime-preview",
+              "max_tokens": 2048,
+              "voice": "alloy",
+              "language": "en-US",
+              "server_vad": true,
+              "dump": true,
+              "history": 10
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "llm",
+            "addon": "openai_chatgpt_python",
+            "name": "openai_chatgpt",
+            "property": {
+              "base_url": "${env:OPENAI_API_BASE}",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "${env:OPENAI_MODEL}",
+              "max_tokens": 512,
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "transcriber",
+            "addon": "message_collector",
+            "name": "message_collector"
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "weatherapi_tool_python",
+            "name": "weatherapi_tool_python",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "bingsearch_tool_python",
+            "name": "bingsearch_tool_python",
+            "property": {
+              "api_key": "${env:BING_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "vision_analyze_tool_python",
+            "name": "vision_analyze_tool_python"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "rtc",
+            "extension": "agora_rtc",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "vision_analyze_tool_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "bingsearch_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "vision_analyze_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              },
+              {
+                "name": "chat_completion_call",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "llm",
+            "extension": "openai_v2v_python",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_current_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_past_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_future_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_bing_search",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "bingsearch_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_vision_chat_completion",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "vision_analyze_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "va_openai_v2v_fish",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "extension_group": "rtc",
+            "addon": "agora_rtc",
+            "name": "agora_rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "subscribe_audio_sample_rate": 24000,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "llm",
+            "addon": "openai_v2v_python",
+            "name": "openai_v2v_python",
+            "property": {
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "temperature": 0.9,
+              "model": "gpt-4o-realtime-preview",
+              "max_tokens": 2048,
+              "audio_out": false,
+              "input_transcript": false,
+              "language": "en-US",
+              "server_vad": true,
+              "dump": true,
+              "history": 10
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tts",
+            "addon": "fish_audio_tts",
+            "name": "fish_audio_tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "transcriber",
+            "addon": "message_collector",
+            "name": "message_collector"
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "weatherapi_tool_python",
+            "name": "weatherapi_tool_python",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "bingsearch_tool_python",
+            "name": "bingsearch_tool_python",
+            "property": {
+              "api_key": "${env:BING_API_KEY}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "rtc",
+            "extension": "agora_rtc",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "bingsearch_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "llm",
+            "extension": "openai_v2v_python",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_current_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_past_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_get_future_weather",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_bing_search",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "bingsearch_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "rtc",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "camera_va_openai_azure_rtm",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "agora_rtc",
+            "name": "agora_rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "rtm",
+            "addon": "agora_rtm",
+            "name": "agora_rtm",
+            "property": {
+              "channel": "ten_agent_test",
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "user_id": "0",
+              "rtm_enabled": true,
+              "rtm_is_stream": false,
+              "rtm_presence_enabled": false,
+              "rtm_metadata_enabled": false,
+              "rtm_lock_enabled": false
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "default",
+            "addon": "interrupt_detector",
+            "name": "interrupt_detector"
+          },
+          {
+            "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "openai_chatgpt_python",
+            "name": "openai_chatgpt",
+            "property": {
+              "base_url": "${env:OPENAI_API_BASE}",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "${env:OPENAI_MODEL}",
+              "max_tokens": 512,
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tts",
+            "addon": "azure_tts",
+            "name": "azure_tts",
+            "property": {
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "message_collector_rtm",
+            "addon": "message_collector_rtm",
+            "name": "message_collector_rtm"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  },
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_audio_track_state_changed",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "agora_rtm",
+            "extension_group": "rtm",
+            "data": [
+              {
+                "name": "rtm_message_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_storage_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_presence_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "rtm_lock_event",
+                "dest": [
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  },
+                  {
+                    "extension_group": "message_collector_rtm",
+                    "extension": "message_collector_rtm"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "azure_tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "azure_tts",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "message_collector_rtm",
+            "extension": "message_collector_rtm",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "publish",
+                "dest": [
+                  {
+                    "extension_group": "rtm",
+                    "extension": "agora_rtm"
+                  }
+                ]
+              },
+              {
+                "name": "set_presence_state",
+                "dest": [
+                  {
+                    "extension_group": "rtm",
+                    "extension": "agora_rtm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
