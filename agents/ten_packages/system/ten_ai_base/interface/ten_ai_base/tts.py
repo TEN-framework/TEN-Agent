@@ -35,11 +35,6 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
         self.queue = AsyncQueue()
         self.current_task = None
         self.loop_task = None
-        self.bytes = b""
-        self.bytes_cursor = 0
-        self.sample_rate = 16000
-        self.bytes_per_sample = 2
-        self.number_of_channels = 1
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -95,67 +90,62 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
             ten_env.log_info("Cancelling the current task during flush.")
             self.current_task.cancel()
 
-    def begin_send_audio_out(self, ten_env: AsyncTenEnv, **args: TTSPcmOptions) -> None:
-        """Begin sending audio out."""
-        self.bytes = b""
-        self.bytes_cursor = 0
-        self.sample_rate = args.get("sample_rate", 16000)
-        self.bytes_per_sample = args.get("bytes_per_sample", 2)
-        self.number_of_channels = args.get("number_of_channels", 1)
+    # def begin_send_audio_out(self, ten_env: AsyncTenEnv, **args: TTSPcmOptions) -> None:
+    #     """Begin sending audio out."""
+    #     self.bytes = b""
+    #     self.bytes_cursor = 0
+    #     self.sample_rate = args.get("sample_rate", 16000)
+    #     self.bytes_per_sample = args.get("bytes_per_sample", 2)
+    #     self.number_of_channels = args.get("number_of_channels", 1)
 
-    def send_audio_out(self, ten_env: AsyncTenEnv, audio_data: bytes) -> None:
+    # def send_audio_out(self, ten_env: AsyncTenEnv, audio_data: bytes) -> None:
+    #     try:
+    #         sample_rate = self.sample_rate
+    #         bytes_per_sample = self.bytes_per_sample
+    #         number_of_channels = self.number_of_channels
+    #         samples_per_channel_per_10ms = sample_rate // 100 * number_of_channels
+
+    #         frame_size = samples_per_channel_per_10ms * bytes_per_sample
+
+    #         self.bytes += audio_data
+
+    #         while len(self.bytes) - self.bytes_cursor >= frame_size:
+    #             audio_data = self.bytes[self.bytes_cursor:self.bytes_cursor + frame_size]
+    #             self.bytes_cursor += frame_size
+
+    #             f = AudioFrame.create("pcm_frame")
+    #             f.set_sample_rate(sample_rate)
+    #             f.set_bytes_per_sample(bytes_per_sample)
+    #             f.set_number_of_channels(number_of_channels)
+    #             f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
+    #             f.set_samples_per_channel(samples_per_channel_per_10ms)
+    #             f.alloc_buf(frame_size)
+    #             buff = f.lock_buf()
+    #             buff[:] = audio_data
+    #             f.unlock_buf(buff)
+    #             ten_env.send_audio_frame(f)
+    #     except Exception as e:
+    #         ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
+
+    def send_audio_out(self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions) -> None:
+        """End sending audio out."""
+        sample_rate = args.get("sample_rate", 16000)
+        bytes_per_sample = args.get("bytes_per_sample", 2)
+        number_of_channels = args.get("number_of_channels", 1)
         try:
-            sample_rate = self.sample_rate
-            bytes_per_sample = self.bytes_per_sample
-            number_of_channels = self.number_of_channels
-            samples_per_channel_per_10ms = sample_rate // 100 * number_of_channels
-
-            frame_size = samples_per_channel_per_10ms * bytes_per_sample
-
-            self.bytes += audio_data
-
-            while len(self.bytes) - self.bytes_cursor >= frame_size:
-                audio_data = self.bytes[self.bytes_cursor:self.bytes_cursor + frame_size]
-                self.bytes_cursor += frame_size
-
-                f = AudioFrame.create("pcm_frame")
-                f.set_sample_rate(sample_rate)
-                f.set_bytes_per_sample(bytes_per_sample)
-                f.set_number_of_channels(number_of_channels)
-                f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-                f.set_samples_per_channel(samples_per_channel_per_10ms)
-                f.alloc_buf(frame_size)
-                buff = f.lock_buf()
-                buff[:] = audio_data
-                f.unlock_buf(buff)
-                ten_env.send_audio_frame(f)
+            f = AudioFrame.create("pcm_frame")
+            f.set_sample_rate(sample_rate)
+            f.set_bytes_per_sample(bytes_per_sample)
+            f.set_number_of_channels(number_of_channels)
+            f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
+            f.set_samples_per_channel(len(audio_data) // (bytes_per_sample * number_of_channels))
+            f.alloc_buf(len(audio_data))
+            buff = f.lock_buf()
+            buff[:] = audio_data
+            f.unlock_buf(buff)
+            ten_env.send_audio_frame(f)
         except Exception as e:
             ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
-
-    def end_send_audio_out(self, ten_env: AsyncTenEnv) -> None:
-        """End sending audio out."""
-        sample_rate = self.sample_rate
-        bytes_per_sample = self.bytes_per_sample
-        number_of_channels = self.number_of_channels
-        if self.bytes_cursor < len(self.bytes):
-            try:
-                audio_data = self.bytes[self.bytes_cursor:]
-
-                f = AudioFrame.create("pcm_frame")
-                f.set_sample_rate(sample_rate)
-                f.set_bytes_per_sample(bytes_per_sample)
-                f.set_number_of_channels(number_of_channels)
-                f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-                f.set_samples_per_channel(len(audio_data) // (bytes_per_sample * number_of_channels))
-                f.alloc_buf(len(audio_data))
-                buff = f.lock_buf()
-                buff[:] = audio_data
-                f.unlock_buf(buff)
-                ten_env.send_audio_frame(f)
-            except Exception as e:
-                ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")    
-        self.bytes = b""
-        self.bytes_cursor = 0
 
     @abstractmethod
     async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:

@@ -46,11 +46,9 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
 
     async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
         try:
-            self.begin_send_audio_out(ten_env, sample_rate=self.client.config.sample_rate)
             data = self.client.get(ten_env, input_text)
             async for frame in data:
-                self.send_audio_out(ten_env, frame)
-            self.end_send_audio_out(ten_env)
+                self.send_audio_out(ten_env, frame, sample_rate=self.client.config.sample_rate)
         except Exception as err:
             ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
 

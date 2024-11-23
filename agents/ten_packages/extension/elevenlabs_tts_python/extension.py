@@ -46,10 +46,8 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
     async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
         audio_stream = await self.client.text_to_speech_stream(input_text)
 
-        self.begin_send_audio_out(ten_env)
         async for audio_data in audio_stream:
             self.send_audio_out(ten_env, audio_data)
-        self.end_send_audio_out(ten_env)
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)
