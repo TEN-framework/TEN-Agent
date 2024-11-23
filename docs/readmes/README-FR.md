@@ -133,9 +133,9 @@ task use AGENT=agents/examples/demo
 ```
 
 #### 5. Démarrer le serveur
-Une fois la construction terminée, exécutez `task run-server` sur le port `8080` :
+Une fois la construction terminée, exécutez `task run` sur le port `8080/48493` :
 ```bash
-task run-server
+task run
 ```
 
 ### Terminé et vérifié 🎉

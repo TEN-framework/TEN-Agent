@@ -132,9 +132,9 @@ task use AGENT=agents/examples/demo
 ```
 
 #### 5. Avvia il server
-Una volta completata la build, esegui `task run-server` sulla porta `8080`:
+Una volta completata la build, esegui `task run` sulla porta `8080/49483`:
 ```bash
-task run-server
+task run
 ```
 
 ### Finisci e verifica 🎉

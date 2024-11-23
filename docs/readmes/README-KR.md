@@ -134,9 +134,9 @@ task use AGENT=agents/examples/demo
 ```
 
 #### 5. Start the server
-Once the build is done, `task run-server` on port `8080`:
+Once the build is done, `task run` on port `8080/49483`:
 ```bash
-task run-server
+task run
 ```
 
 ### Finish and verify 🎉

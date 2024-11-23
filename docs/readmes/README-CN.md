@@ -162,7 +162,7 @@ task use AGENT=agents/examples/demo
 
 #### 5.开启服务
 ```bash
-task run-server
+task run
 ```
 
 ### 构建完成 🎉
