@@ -34,3 +34,6 @@ xdump_config
 .vscode
 *.pyc
 *.pyc.*
+/manifest.json
+/manifest-lock.json
+/property.json
