@@ -129,13 +129,14 @@ docker compose up
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
 docker exec -it ten_agent_dev bash
-make build
+
+task use AGENT=agents/examples/demo
 ```
 
 #### 5. Start the server
-Once the build is done, `make run-server` on port `8080`:
+Once the build is done, `task run-server` on port `8080`:
 ```bash
-make run-server
+task run-server
 ```
 
 ### Finish and verify 🎉

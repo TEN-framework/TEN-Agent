@@ -23,9 +23,15 @@ tasks:
       - task: build
 
   run-server:
-    desc: run server
+    desc: run backend http server
     cmds:
       - /app/server/bin/api
+
+  run-gd-server:
+    desc: run tman dev http server for graph designer
+    dir: ./agents
+    cmds:
+      - tman dev-server
 
   build-agent:
     desc: build agent

@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN make clean && make build && \
+RUN task clean && task use && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
