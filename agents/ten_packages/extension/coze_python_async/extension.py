@@ -23,7 +23,7 @@ from ten import (
     Data,
 )
 
-from ten_ai_base import BaseConfig
+from ten_ai_base import BaseConfig, ChatMemory
 from ten_ai_base.llm import AsyncLLMBaseExtension, LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolResult
 
@@ -66,8 +66,8 @@ class CozeConfig(BaseConfig):
     bot_id: str = ""
     token: str = ""
     user_id: str = "TenAgent"
-    prompt: str = ""
     greeting: str = ""
+    max_history: int = 32
 
 class AsyncCozeExtension(AsyncLLMBaseExtension):
     config : CozeConfig = None
@@ -76,9 +76,10 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
     loop: asyncio.AbstractEventLoop = None
     stopped: bool = False
     users_count = 0
+    memory: ChatMemory = None
 
     acoze: AsyncCoze = None
-    conversation: str = ""
+    #conversation: str = ""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -96,12 +97,15 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         if not self.config.bot_id or not self.config.token:
             ten_env.log_error("Missing required configuration")
             return
-    
+        
+        self.memory = ChatMemory(self.config.max_history)
         try:
             self.acoze = AsyncCoze(auth=TokenAuth(token=self.config.token), base_url=self.config.base_url)
+            '''
             self.conversation = await self.acoze.conversations.create(messages = [
                     Message.build_user_question_text(self.config.prompt)
                 ] if self.config.prompt else [])
+            '''
         except Exception as e:
             ten_env.log_error(f"Failed to create conversation {e}")
 
@@ -148,18 +152,26 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         raise Exception("Not implemented")
 
     async def on_data_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs) -> None:
-        if not self.conversation:
+        if not self.acoze:
             await self._send_text("Coze is not connected. Please check your configuration.")
             return
-
+        
         input: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
+        messages = self.memory.get()
+        if not input:
+            ten_env.log_warn("No message in data")
+        else:
+            messages.extend(input)
+            for i in input:
+                self.memory.put(i)
 
         total_output = ""
         sentence_fragment = ""
         calls = {}
 
         sentences = []
-        response = self._stream_chat(messages=input)
+        self.ten_env.log_info(f"messages: {messages}")
+        response = self._stream_chat(messages=messages)
         async for message in response:
             self.ten_env.log_info(f"content: {message}")
             try:
@@ -175,6 +187,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         if sentence_fragment:
             await self._send_text(sentence_fragment)
         
+        self.memory.put({"role": "assistant", "content": total_output})
         self.ten_env.log_info(f"total_output: {total_output} {calls}")
 
     async def on_tools_update(self, ten_env: AsyncTenEnv, tool: LLMToolMetadata) -> None:
@@ -224,7 +237,12 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         self.ten_env.send_data(data)
 
     async def _stream_chat(self, messages: List[Any]) -> AsyncGenerator[ChatEvent, None]:
-        additionals = [Message.build_user_question_text(m["content"]).model_dump() for m in messages]
+        additionals = []
+        for m in messages:
+            if m["role"] == "user":
+                additionals.append(Message.build_user_question_text(m["content"]).model_dump())
+            elif m["role"] == "assistant":
+                additionals.append(Message.build_assistant_answer(m["content"]).model_dump())
 
         def chat_stream_handler(event:str, event_data:Any) -> ChatEvent:
             if event == ChatEventType.DONE:
@@ -259,7 +277,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     "additional_messages": additionals,
                     "stream": True,
                     "auto_save_history": True,
-                    "conversation_id": self.conversation.id
+                    #"conversation_id": self.conversation.id
                 }
                 event = ""
                 async with session.post(url, json=params, headers=headers) as response:
