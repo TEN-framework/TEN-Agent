@@ -18,8 +18,8 @@ tasks:
     vars:
       AGENT: '{{.AGENT| default "agents/examples/demo"}}'
     cmds:
-      - if [ ! -f ./agents/manifest.json ]; then ln -s {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/ ; fi
-      - if [ ! -f ./agents/property.json ]; then ln -s {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/ ; fi
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
       - task: build
 
   run-server:
