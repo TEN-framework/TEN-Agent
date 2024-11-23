@@ -7,6 +7,7 @@ import asyncio
 import traceback
 import aiohttp
 import json
+import copy
 
 from typing import List, Any, AsyncGenerator
 from dataclasses import dataclass
@@ -157,7 +158,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             return
         
         input: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
-        messages = self.memory.get()
+        messages = copy.copy(self.memory.get())
         if not input:
             ten_env.log_warn("No message in data")
         else:
