@@ -33,6 +33,12 @@ tasks:
     cmds:
       - tman dev-server
 
+  run:
+    desc: run servers
+    deps:
+      - task: run-server
+      - task: run-gd-server
+
   build-agent:
     desc: build agent
     dir: ./agents

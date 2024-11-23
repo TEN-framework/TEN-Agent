@@ -6,7 +6,6 @@ services:
     tty: true
     stdin_open: true
     restart: always
-    command: "task run-gd-server"
     ports:
       - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
       - "${SERVER_PORT}:${SERVER_PORT}"
