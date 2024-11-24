@@ -1,11 +1,6 @@
 #
-#
-# Agora Real Time Engagement
-# Created by Tomas Liu/XinHui Li in 2024.
-# Copyright (c) 2024 Agora IO. All rights reserved.
-#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
 #
 from . import addon
-from .log import logger
-
-logger.info("minimax_tts_python extension loaded")

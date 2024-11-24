@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "minimax_tts_python",
+  "name": "cosy_tts_python",
   "version": "0.4.2",
   "dependencies": [
     {
@@ -25,23 +25,14 @@
       "api_key": {
         "type": "string"
       },
-      "group_id": {
+      "voice": {
         "type": "string"
       },
       "model": {
         "type": "string"
       },
-      "request_timeout_seconds": {
-        "type": "int64"
-      },
       "sample_rate": {
         "type": "int64"
-      },
-      "url": {
-        "type": "string"
-      },
-      "voice_id": {
-        "type": "string"
       }
     },
     "data_in": [

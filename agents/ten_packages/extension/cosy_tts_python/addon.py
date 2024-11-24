@@ -10,10 +10,10 @@ from ten import (
 )
 
 
-@register_addon_as_extension("minimax_tts_python")
-class MinimaxTTSExtensionAddon(Addon):
+@register_addon_as_extension("cosy_tts_python")
+class CosyTTSExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import MinimaxTTSExtension
-        ten_env.log_info("MinimaxTTSExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(MinimaxTTSExtension(name), context)
+        from .extension import CosyTTSExtension
+        ten_env.log_info("CosyTTSExtensionAddon on_create_instance")
+        ten_env.on_create_instance_done(CosyTTSExtension(name), context)

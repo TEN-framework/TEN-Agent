@@ -369,7 +369,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "elevenlabs_tts",
+            "addon": "elevenlabs_tts_python",
             "name": "elevenlabs_tts",
             "property": {
               "api_key": "${env:ELEVENLABS_TTS_KEY}",
@@ -379,7 +379,6 @@
               "similarity_boost": 0.75,
               "speaker_boost": false,
               "stability": 0.5,
-              "style": 0.0,
               "voice_id": "pNInz6obpgDQGcFmaJgB"
             }
           },
@@ -878,7 +877,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",
@@ -1080,7 +1079,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",
@@ -2077,7 +2076,7 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "cosy_tts",
+            "addon": "cosy_tts_python",
             "name": "cosy_tts",
             "property": {
               "api_key": "${env:QWEN_API_KEY}",
@@ -3651,7 +3650,7 @@
           {
             "type": "extension",
             "extension_group": "chatgpt",
-            "addon": "openai_chatgpt",
+            "addon": "openai_chatgpt_python",
             "name": "openai_chatgpt",
             "property": {
               "base_url": "${env:OPENAI_API_BASE}",
