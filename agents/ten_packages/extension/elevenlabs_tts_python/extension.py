@@ -4,6 +4,8 @@
 # See the LICENSE file for more information.
 #
 import traceback
+
+from ten_ai_base.helper import PCMWriter
 from .elevenlabs_tts import ElevenLabsTTS, ElevenLabsTTSConfig
 from ten import (
     AsyncTenEnv,
@@ -36,8 +38,6 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
-
-        # TODO: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
