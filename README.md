@@ -170,6 +170,9 @@ Once you save the graph, you can return to [localhost:3000]( http://localhost:30
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
+### How components work together in this repository
+
+![Components Diagram](https://raw.githubusercontent.com/TEN-framework/docs/refs/heads/main/assets/png/arc.png)
 
 <br>
 <h2>Stay Tuned</h2>
