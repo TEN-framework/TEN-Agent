@@ -1,6 +1,6 @@
 {
   "type": "app",
-  "name": "ten_agent",
+  "name": "agent_experimental",
   "version": "0.4.0",
   "dependencies": [
     {

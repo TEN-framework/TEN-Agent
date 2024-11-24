@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.2.3 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.2.4 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN make clean && make build && \
+RUN task clean && task use && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
