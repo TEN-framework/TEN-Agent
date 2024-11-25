@@ -1,9 +1,9 @@
 // import { ConfigProvider } from "antd";
-import { StoreProvider } from "@/store";
-import type { Metadata, Viewport } from "next";
-import { Toaster } from "@/components/ui/sonner";
+import { StoreProvider } from "@/store"
+import type { Metadata, Viewport } from "next"
+import { Toaster } from "@/components/ui/sonner"
 
-import "./global.css";
+import "./global.css"
 
 export const metadata: Metadata = {
   title: "TEN Agent | Real-Time Multimodal AI Agent",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black",
   },
-};
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -22,12 +22,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en">
@@ -43,8 +43,8 @@ export default function RootLayout({
         > */}
         <StoreProvider>{children}</StoreProvider>
         {/* </ConfigProvider> */}
-        <Toaster />
+        <Toaster richColors closeButton theme="dark" />
       </body>
     </html>
-  );
+  )
 }
