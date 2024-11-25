@@ -54,7 +54,7 @@ class FashionAIExtension(Extension):
 
         if len(self.token) > 0:
             self.app_id = self.token
-        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1", self.service_id)
+        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node5/agoramultimodel2", self.service_id)
 
         def thread_target():
             self.threadWebsocketLoop = asyncio.new_event_loop() 
