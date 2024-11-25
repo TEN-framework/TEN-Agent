@@ -148,6 +148,7 @@ export default function Action(props: { className?: string }) {
             onClick={onClickConnect}
             variant={!agentConnected ? "default" : "destructive"}
             size="sm"
+            disabled={graphName === ""}
             className="w-fit min-w-24"
             loading={loading}
             svgProps={{ className: "h-4 w-4 text-muted-foreground" }}

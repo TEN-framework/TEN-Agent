@@ -100,7 +100,7 @@ export default function ChatCard(props: { className?: string }) {
   }, []);
 
   React.useEffect(() => {
-    if (!extensions[graphName]) {
+    if (graphName !== "" && !extensions[graphName]) {
       apiGetNodes(graphName).then((res: any) => {
         let nodes = res["data"];
         let nodesMap: Record<string, any> = {};

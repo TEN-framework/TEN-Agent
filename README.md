@@ -148,7 +148,7 @@ Open up a separate terminal window, enter the container and build the agent:
 ```bash
 docker exec -it ten_agent_dev bash
 
-task use AGENT=agents/examples/demo
+task use AGENT=agents/examples/default
 ```
 
 #### 5. Start the server
