@@ -1,23 +1,26 @@
 import { ReactElement, useEffect, useContext, useState } from "react"
 import ChatItem from "./chatItem"
 import { IChatItem } from "@/types"
-import { useAppDispatch, useAutoScroll, LANGUAGE_OPTIONS, useAppSelector, GRAPH_OPTIONS, isRagGraph } from "@/common"
-import { setGraphName, setLanguage } from "@/store/reducers/global"
+import { useAppDispatch, useAutoScroll, LANGUAGE_OPTIONS, useAppSelector,isRagGraph,
+  apiGetGraphs,
+  apiGetNodes,
+  apiGetExtensionMetadata,
+  apiReloadGraph,
+ } from "@/common"
+import { setExtensionMetadata,  setGraphName,setGraphs,setExtensions, setLanguage } from "@/store/reducers/global"
 import { Select, } from 'antd';
 import { MenuContext } from "../menu/context"
 import PdfSelect from "@/components/pdfSelect"
-
 import styles from "./index.module.scss"
 
-
 const Chat = () => {
+  const extensions = useAppSelector(state => state.global.extensions)
   const chatItems = useAppSelector(state => state.global.chatItems)
   const language = useAppSelector(state => state.global.language)
   const agentConnected = useAppSelector(state => state.global.agentConnected)
   const graphName = useAppSelector(state => state.global.graphName)
+  const graphs = useAppSelector(state => state.global.graphs)
   const dispatch = useAppDispatch()
-  // genRandomChatList
-  // const [chatItems, setChatItems] = useState<IChatItem[]>([])
   const context = useContext(MenuContext);
 
   if (!context) {
@@ -26,6 +29,36 @@ const Chat = () => {
 
   const { scrollToBottom } = context;
 
+
+  useEffect(() => {
+    apiReloadGraph().then(() => {
+      Promise.all([apiGetGraphs(), apiGetExtensionMetadata()]).then((res: any) => {
+        let [graphRes, metadataRes] = res
+        let graphs = graphRes["data"].map((item: any) => item["name"])
+
+        let metadata = metadataRes["data"]
+        let metadataMap: Record<string, any> = {}
+        metadata.forEach((item: any) => {
+          metadataMap[item["name"]] = item
+        })
+        dispatch(setGraphs(graphs))
+        dispatch(setExtensionMetadata(metadataMap))
+      })
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!extensions[graphName]) {
+      apiGetNodes(graphName).then((res: any) => {
+        let nodes = res["data"]
+        let nodesMap: Record<string, any> = {}
+        nodes.forEach((item: any) => {
+          nodesMap[item["name"]] = item
+        })
+        dispatch(setExtensions({ graphName, nodesMap }))
+      })
+    }
+  }, [graphName])
 
   useEffect(() => {
     scrollToBottom()
@@ -45,7 +78,7 @@ const Chat = () => {
   return <section className={styles.chat}>
     <div className={styles.header}>
       <Select className={styles.graphName}
-        disabled={agentConnected} options={GRAPH_OPTIONS}
+        disabled={agentConnected} options={graphs.map((item) => { return { label: item, value: item } })}
         value={graphName} onChange={onGraphNameChange}></Select>
       <Select className={styles.languageSelect}
         options={LANGUAGE_OPTIONS}
