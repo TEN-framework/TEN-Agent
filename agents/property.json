@@ -14,9 +14,9 @@
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
               "token": "",
-              "channel": "ten_agent_test",
+              "channel": "benten",
               "stream_id": 1234,
-              "remote_stream_id": 123,
+              "remote_stream_id": 0,
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
@@ -72,6 +72,21 @@
             "addon": "ssml_tool_python",
             "name": "ssml_tool_python",
             "property": {"api_key": "test"}
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
+            "addon": "pstn_tool_python",
+            "name": "pstn_tool_python",
+            "property": {
+              "channel": "test",
+              "auth_key": "${env:PSTN_AUTH_KEY}",
+              "app_id": "${env:AGORA_APP_ID}",
+              "region": "${env:PSTN_SIP_REGION}",
+              "uid": "${env:PSTN_SIP_UID}",
+              "cfrom": "${env:PSTN_SIP_FROM}",
+              "sip": "${env:PSTN_SIP_GW}"
+            }
           },
           {
             "type": "extension",
@@ -193,6 +208,32 @@
               }
             ]
           },
+          {
+            "extension_group": "tools",
+            "extension": "pstn_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },          
           {
             "extension_group": "llm",
             "extension": "openai_v2v_python",
@@ -327,6 +368,26 @@
                     }
                   }
                 ]
+              },
+              {
+                "name": "tool_call_set_pstn",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "pstn_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -361,7 +422,7 @@
               "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
-              "remote_stream_id": 123,
+              "remote_stream_id": 0,
               "subscribe_audio": true,
               "subscribe_video": true,
               "publish_audio": true,
@@ -620,8 +681,9 @@
               "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
-              "remote_stream_id": 123,
+              "remote_stream_id": 0,
               "subscribe_audio": true,
+              "subscribe_audio_frame_source":"on_playback",
               "publish_audio": true,
               "publish_data": true,
               "enable_agora_asr": false,

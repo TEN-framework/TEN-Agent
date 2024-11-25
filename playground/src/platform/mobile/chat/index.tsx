@@ -74,7 +74,6 @@ const Chat = () => {
     dispatch(setGraphName(val))
   }
 
-
   return <section className={styles.chat}>
     <div className={styles.header}>
       <Select className={styles.graphName}

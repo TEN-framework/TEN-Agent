@@ -1,14 +1,10 @@
 import { setAgentConnected } from "@/store/reducers/global"
-import { setExtensionMetadata, setGraphName, setGraphs, setLanguage, setExtensions, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
+import { setGraphName,  setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import {
   useAppDispatch, useAppSelector, apiPing, genUUID,
   apiStartService, apiStopService,
   isRagGraph,
-  apiGetGraphs,
-  apiGetNodes,
   useGraphExtensions,
-  apiGetExtensionMetadata,
-  apiReloadGraph,
 } from "@/common"
 import { message, Upload } from "antd"
 import { useEffect, useState, MouseEventHandler } from "react"

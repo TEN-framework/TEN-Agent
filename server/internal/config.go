@@ -31,10 +31,12 @@ var (
 		"ChannelName": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
 			{ExtensionName: extensionNameAgoraRTM, Property: "channel"},
+			{ExtensionName: "pstn_tool_python", Property: "channel"},
 		},
+		/*
 		"RemoteStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "remote_stream_id"},
-		},
+		},*/
 		"BotStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "uid"},
 		},

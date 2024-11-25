@@ -105,14 +105,23 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     })
     this.client.on("user-published", async (user, mediaType) => {
       await this.client.subscribe(user, mediaType)
+     
       if (mediaType === "audio") {
-        this._playAudio(user.audioTrack)
+        if (user.uid=="1234") { // agent
+          console.error('in 1234',user);
+          this.emit("remoteUserChanged", {
+            userId: user.uid,
+            audioTrack: user.audioTrack,
+            videoTrack: user.videoTrack,
+          })
+        } else {
+          console.error(user.uid,user);
+          if (user.audioTrack && !user.audioTrack.isPlaying) {
+              user.audioTrack.play()
+            }
+        }
       }
-      this.emit("remoteUserChanged", {
-        userId: user.uid,
-        audioTrack: user.audioTrack,
-        videoTrack: user.videoTrack,
-      })
+
     })
     this.client.on("user-unpublished", async (user, mediaType) => {
       await this.client.unsubscribe(user, mediaType)
