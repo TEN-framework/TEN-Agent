@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.4.1",
-      "hash": "716a281c46e58939d5f91599d095840290790d1dd34b0296df8db4422907e053",
+      "version": "0.4.2",
+      "hash": "95c63fc8dba91c66cb9e7f442c2780e96029458517f8b8713cdeb0c61ac71a8d",
       "dependencies": [
         {
           "type": "system",
@@ -22,8 +22,8 @@
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.4.1",
-      "hash": "8fdc759b3d64920362cb1cd9daa0a85826a6e084ca7cd595afe8db16aeb352f7",
+      "version": "0.4.2",
+      "hash": "509ec4fc3c4966ac207cd17a94cc64f641f23ce5c68efdba5e694564afc4c67a",
       "dependencies": [
         {
           "type": "system",
@@ -134,8 +134,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.4.1",
-      "hash": "2d87b932a07f2375ca5fa019d0e518af55ac17de5d41ca82d66102a18cdc5d3f",
+      "version": "0.4.2",
+      "hash": "bc54b7337ff808d5e087354645d99a00c75e3f1bd9f286bca437950a368a02bf",
       "supports": [
         {
           "os": "linux",
@@ -165,8 +165,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4.1",
-      "hash": "b805a787aa3f0bf4b499d7a1f5c8af503d1ade1db284a6159a9c971dd1be642c",
+      "version": "0.4.2",
+      "hash": "b55ae6060ddb359f3fa0c74842f1d31f620da118ad5dd062cdb0611fb44dd8bf",
       "dependencies": [
         {
           "type": "system",
