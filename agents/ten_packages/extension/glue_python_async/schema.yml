@@ -81,6 +81,9 @@ components:
         stream:
           type: boolean
           default: true
+        ssml_enabled:
+          type: boolean
+          default: false
 
     SystemMessage:
       type: object

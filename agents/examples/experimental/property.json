@@ -233,11 +233,11 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10,
+              "max_history": 10,
               "vendor": "azure",
               "base_uri": "${env:AZURE_OPENAI_REALTIME_BASE_URI}",
               "path": "/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime-preview",
-              "system_message": ""
+              "prompt": ""
             }
           },
           {
@@ -2444,7 +2444,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10
+              "max_history": 10
             }
           },
           {
@@ -2566,7 +2566,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10
+              "max_history": 10
             }
           },
           {
@@ -2724,7 +2724,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10,
+              "max_history": 10,
               "enable_storage": true
             }
           },

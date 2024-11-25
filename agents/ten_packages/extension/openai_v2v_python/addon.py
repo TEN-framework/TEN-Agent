@@ -13,10 +13,9 @@ from ten import (
 
 
 @register_addon_as_extension("openai_v2v_python")
-class OpenAIV2VExtensionAddon(Addon):
+class OpenAIRealtimeExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import OpenAIV2VExtension
-        from .log import logger
-        logger.info("OpenAIV2VExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(OpenAIV2VExtension(name), context)
+        from .extension import OpenAIRealtimeExtension
+        ten_env.log_info("OpenAIRealtimeExtensionAddon on_create_instance")
+        ten_env.on_create_instance_done(OpenAIRealtimeExtension(name), context)

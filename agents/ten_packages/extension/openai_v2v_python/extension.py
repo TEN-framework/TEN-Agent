@@ -6,331 +6,296 @@
 #
 #
 import asyncio
-import threading
 import base64
+import traceback
 from datetime import datetime
-from typing import Awaitable, Iterable
-from functools import partial
+from typing import Iterable
 
 from ten import (
     AudioFrame,
-    VideoFrame,
-    Extension,
-    TenEnv,
+    AsyncTenEnv,
     Cmd,
     StatusCode,
     CmdResult,
     Data,
 )
 from ten.audio_frame import AudioFrameDataFmt
-from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_PROPERTY_TOOL
+from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
+from ten_ai_base.llm import AsyncLLMBaseExtension
+from dataclasses import dataclass, field
+from ten_ai_base import BaseConfig, ChatMemory, EVENT_MEMORY_EXPIRED, EVENT_MEMORY_APPENDED, LLMUsage
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult, LLMChatCompletionContentPartParam
-from .log import logger
-
-from .tools import ToolRegistry
-from .conf import RealtimeApiConfig, BASIC_PROMPT, DEFAULT_GREETING
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import *
-from .tools import ToolRegistry
 
-# properties
-PROPERTY_API_KEY = "api_key"  # Required
-PROPERTY_BASE_URI = "base_uri"  # Optional
-PROPERTY_PATH = "path"  # Optional
-PROPERTY_VENDOR = "vendor"  # Optional
-PROPERTY_MODEL = "model"  # Optional
-PROPERTY_SYSTEM_MESSAGE = "system_message"  # Optional
-PROPERTY_TEMPERATURE = "temperature"  # Optional
-PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
-PROPERTY_ENABLE_STORAGE = "enable_storage"  # Optional
-PROPERTY_VOICE = "voice"  # Optional
-PROPERTY_AUDIO_OUT = "audio_out"  # Optional
-PROPERTY_INPUT_TRANSCRIPT = "input_transcript"
-PROPERTY_SERVER_VAD = "server_vad"  # Optional
-PROPERTY_STREAM_ID = "stream_id"
-PROPERTY_LANGUAGE = "language"
-PROPERTY_DUMP = "dump"
-PROPERTY_GREETING = "greeting"
-PROPERTY_HISTORY = "history"
-
-DEFAULT_VOICE = Voices.Alloy
-
-CMD_TOOL_REGISTER = "tool_register"
-CMD_TOOL_CALL = "tool_call"
-CMD_PROPERTY_NAME = "name"
-CMD_PROPERTY_ARGS = "arguments"
-
-TOOL_REGISTER_PROPERTY_NAME = "name"
-TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
-TOOL_REGISTER_PROPERTY_PARAMETERS = "parameters"
-
+CMD_IN_FLUSH = "flush"
+CMD_IN_ON_USER_JOINED = "on_user_joined"
+CMD_IN_ON_USER_LEFT = "on_user_left"
+CMD_OUT_FLUSH = "flush"
 
 class Role(str, Enum):
     User = "user"
     Assistant = "assistant"
 
+@dataclass
+class OpenAIRealtimeConfig(BaseConfig):
+    base_uri: str = "wss://api.openai.com"
+    api_key: str = ""
+    path: str = "/v1/realtime"
+    model: str = "gpt-4o-realtime-preview"
+    language: str = "en-US"
+    prompt: str = ""
+    temperature: float = 0.5
+    max_tokens: int = 1024
+    voice: str = "alloy"
+    server_vad: bool = True
+    audio_out: bool = True
+    input_transcript: bool = True
+    sample_rate: int = 24000
 
-class OpenAIV2VExtension(Extension):
-    def __init__(self, name: str):
-        super().__init__(name)
+    vendor: str = ""
+    stream_id: int = 0
+    dump: bool = False
+    greeting: str = ""
+    max_history: int = 20
+    enable_storage: bool = False
 
-        # handler
-        self.loop = asyncio.new_event_loop()
-        self.thread: threading.Thread = None
+    def build_ctx(self) -> dict:
+        return {
+            "language": self.language,
+            "model": self.model,
+        }
 
-        # openai related
-        self.config: RealtimeApiConfig = RealtimeApiConfig()
-        self.conn: RealtimeApiConnection = None
-        self.connected: bool = False
-        self.session_id: str = ""
-        self.session: SessionUpdateParams = None
-        self.last_updated = None
-        self.ctx: dict = {}
+class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
+    config: OpenAIRealtimeConfig = None
+    stopped: bool = False
+    connected: bool = False
+    buffer: bytearray = b''
+    memory: ChatMemory = None
+    retrieved: list = []
+    total_usage: LLMUsage = LLMUsage()
+    users_count = 0
 
-        # audo related
-        self.sample_rate: int = 24000
-        self.out_audio_buff: bytearray = b''
-        self.audio_len_threshold: int = 10240
-        self.transcript: str = ''
+    stream_id: int = 0
+    remote_stream_id: int = 0
+    channel_name: str = ""
+    audio_len_threshold: int = 5120
 
-        # misc.
-        self.greeting : str = DEFAULT_GREETING
-        self.vendor: str = ""
-        # max history store in context
-        self.max_history = 0
-        self.history = []
-        self.enable_storage: bool = False
-        self.retrieved = []
-        self.remote_stream_id: int = 0
-        self.stream_id: int = 0
-        self.channel_name: str = ""
-        self.dump: bool = False
-        self.registry = ToolRegistry()
+    completion_times = []
+    connect_times = []
+    first_token_times = []
 
-    def on_start(self, ten_env: TenEnv) -> None:
-        logger.info("OpenAIV2VExtension on_start")
+    buff: bytearray = b''
+    transcript: str = ""
+    ctx: dict = {}
 
-        self._fetch_properties(ten_env)
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_init(ten_env)
+        ten_env.log_debug("on_init")
 
-        # Start async handler
-        def start_event_loop(loop):
-            asyncio.set_event_loop(loop)
-            loop.run_forever()
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_start(ten_env)
+        ten_env.log_debug("on_start")
 
-        self.thread = threading.Thread(
-            target=start_event_loop, args=(self.loop,))
-        self.thread.start()
+        self.loop = asyncio.get_event_loop()
 
-        if self.enable_storage:
-            r = Cmd.create("retrieve")
-            ten_env.send_cmd(r, self.on_retrieved)
+        self.config = OpenAIRealtimeConfig.create(ten_env=ten_env)
+        ten_env.log_info(f"config: {self.config}")
 
-        # self._register_local_tools()
+        if not self.config.api_key:
+            ten_env.log_error("api_key is required")
+            return
 
-        asyncio.run_coroutine_threadsafe(self._init_connection(), self.loop)
+        try:
+            self.memory = ChatMemory(self.config.max_history)
+            self.memory.on(EVENT_MEMORY_EXPIRED, self._on_memory_expired)
+            self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
 
-        ten_env.on_start_done()
-
-    def on_stop(self, ten_env: TenEnv) -> None:
-        logger.info("OpenAIV2VExtension on_stop")
-
-        self.connected = False
-
-        if self.thread:
-            self.loop.call_soon_threadsafe(self.loop.stop)
-            self.thread.join()
-            self.thread = None
-
-        ten_env.on_stop_done()
-
-    def on_retrieved(self, ten_env:TenEnv, result:CmdResult) -> None:
-        if result.get_status_code() == StatusCode.OK:
-            try:
-                history = json.loads(result.get_property_string("response"))
-                if not self.last_updated:
-                    # cache the history
-                    # FIXME need to have json
-                    if self.max_history and len(history) > self.max_history:
-                        self.retrieved = history[len(history) - self.max_history:]
-                    else:
+            if self.config.enable_storage:
+                result = await ten_env.send_cmd(Cmd.create("retrieve"))
+                if result.get_status_code() == StatusCode.OK:
+                    try:
+                        history = json.loads(result.get_property_string("response"))
                         self.retrieved = history
-                logger.info(f"on retrieve context {history} {self.retrieved}")
-            except:
-                logger.exception("Failed to handle retrieve result")
-        else:
-            logger.warning("Failed to retrieve content")
+                        ten_env.log_info(f"on retrieve context {history}")
+                    except Exception as e:
+                        ten_env.log_error("Failed to handle retrieve result {e}")
+                else:
+                    ten_env.log_warn("Failed to retrieve content")
 
-    def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
+        
+            self.conn = RealtimeApiConnection(
+                ten_env=ten_env,
+                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.config.vendor)
+            ten_env.log_info(f"Finish init client")
+
+            self.loop.create_task(self._loop())
+        except Exception as e:
+            traceback.print_exc()
+            self.ten_env.log_error(f"Failed to init client {e}")
+
+        self.ten_env = ten_env
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_stop(ten_env)
+        ten_env.log_info("on_stop")
+
+        self.stopped = True
+
+    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
         try:
             stream_id = audio_frame.get_property_int("stream_id")
-            # logger.debug(f"on_audio_frame {stream_id}")
             if self.channel_name == "":
                 self.channel_name = audio_frame.get_property_string("channel")
 
             if self.remote_stream_id == 0:
                 self.remote_stream_id = stream_id
-                asyncio.run_coroutine_threadsafe(
-                    self._run_client_loop(ten_env), self.loop)
-                logger.info(f"Start session for {stream_id}")
 
             frame_buf = audio_frame.get_buf()
             self._dump_audio_if_need(frame_buf, Role.User)
 
-            asyncio.run_coroutine_threadsafe(
-                self._on_audio(frame_buf), self.loop)
-        except:
-            logger.exception(f"OpenAIV2VExtension on audio frame failed")
+            await self._on_audio(frame_buf)
+        except Exception as e:
+            traceback.print_exc()
+            self.ten_env.log_error(f"OpenAIV2VExtension on audio frame failed {e}")
 
-    # Should not be here
-    def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
-        pass
-
-    # Should not be here
-    def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_info(f"on_cmd name {cmd_name}")
+        ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
-        if cmd_name == CMD_TOOL_REGISTER:
-            self._on_tool_register(ten_env, cmd)
+        status = StatusCode.OK
+        detail = "success"
 
-        cmd_result = CmdResult.create(StatusCode.OK)
+        if cmd_name == CMD_IN_FLUSH:
+            # Will only flush if it is client side vad
+            await self._flush()
+            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
+            ten_env.log_info("on flush")
+        elif cmd_name == CMD_IN_ON_USER_JOINED:
+            self.users_count += 1
+            # Send greeting when first user joined
+            if self.connected and self.users_count == 1:
+                await self._greeting()
+        elif cmd_name == CMD_IN_ON_USER_LEFT:
+            self.users_count -= 1
+        else:
+            # Register tool
+            await super().on_cmd(ten_env, cmd)
+            return
+
+        cmd_result = CmdResult.create(status)
+        cmd_result.set_property_string("detail", detail)
         ten_env.return_result(cmd_result, cmd)
 
-    # Should not be here
-    def on_data(self, ten_env: TenEnv, data: Data) -> None:
+    # Not support for now
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass
 
-    def on_config_changed(self) -> None:
-        # update session again
-        return
-
-    async def _init_connection(self):
-        try:
-            self.conn = RealtimeApiConnection(
-                base_uri=self.config.base_uri, path=self.config.path, api_key=self.config.api_key, model=self.config.model, vendor=self.vendor, verbose=False)
-            logger.info(f"Finish init client {self.config} {self.conn}")
-        except:
-            logger.exception(f"Failed to create client {self.config}")
-
-    async def _run_client_loop(self, ten_env: TenEnv):
+    async def _loop(self):
         def get_time_ms() -> int:
             current_time = datetime.now()
             return current_time.microsecond // 1000
 
         try:
             await self.conn.connect()
-            self.connected = True
             item_id = ""  # For truncate
             response_id = ""
             content_index = 0
             relative_start_ms = get_time_ms()
             flushed = set()
 
-            logger.info("Client loop started")
+            self.ten_env.log_info("Client loop started")
             async for message in self.conn.listen():
                 try:
-                    # logger.info(f"Received message: {message.type}")
+                    # self.ten_env.log_info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            ten_env.log_info(
-                                f"Session is created: {message.session}")
+                            self.connected = True
+                            self.ten_env.log_info(f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
-                            update_msg = self._update_session(ten_env)
-                            await self.conn.send_request(update_msg)
+                            await self._update_session()
 
                             if self.retrieved:
-                                await self._append_retrieve()
-                                logger.info(f"after append retrieve: {len(self.retrieved)}")
+                                for r in self.retrieved:
+                                    if r["role"] == MessageRole.User:
+                                        await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
+                                    elif r["role"] == MessageRole.Assistant:
+                                        await self.conn.send_request(ItemCreate(item=AssistantMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
+                                self.ten_env.log_info(f"after append retrieve: {len(self.retrieved)}")
 
-                            text = self._greeting_text()
-                            await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
-                            await self.conn.send_request(ResponseCreate())
-
-                            # update_conversation = self.update_conversation()
-                            # await self.conn.send_request(update_conversation)
+                            if not self.connected:
+                                self.connected = True
+                                await self._greeting()
                         case ItemInputAudioTranscriptionCompleted():
-                            logger.info(
-                                f"On request transcript {message.transcript}")
-                            self._send_transcript(
-                                ten_env, message.transcript, Role.User, True)
-                            self._append_context(ten_env, message.transcript, self.remote_stream_id, Role.User)
+                            self.ten_env.log_info(f"On request transcript {message.transcript}")
+                            self._send_transcript(message.transcript, Role.User, True)
+                            self.memory.put({"role": "user", "content": message.transcript, "id": message.item_id})
                         case ItemInputAudioTranscriptionFailed():
-                            logger.warning(
-                                f"On request transcript failed {message.item_id} {message.error}")
+                            self.ten_env.log_warn(f"On request transcript failed {message.item_id} {message.error}")
                         case ItemCreated():
-                            logger.info(f"On item created {message.item}")
-
-                            if self.max_history and ("status" not in message.item or message.item["status"] == "completed"):
-                                # need maintain the history
-                                await self._append_history(message.item)
+                            self.ten_env.log_info(f"On item created {message.item}")
                         case ResponseCreated():
                             response_id = message.response.id
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response created {response_id}")
                         case ResponseDone():
                             id = message.response.id
                             status = message.response.status
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response done {id} {status}")
-                            for item in message.response.output:
-                                await self._append_history(item)
                             if id == response_id:
                                 response_id = ""
                         case ResponseAudioTranscriptDelta():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                             if message.response_id in flushed:
-                                logger.warning(
+                                self.ten_env.log_warn(
                                     f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
-                            self._send_transcript(
-                                ten_env, message.delta, Role.Assistant, False)
+                            self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseTextDelta():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                             if message.response_id in flushed:
-                                logger.warning(
+                                self.ten_env.log_warn(
                                     f"On flushed text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
-                            self._send_transcript(
-                                ten_env, message.delta, Role.Assistant, False)
+                            self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}")
                             if message.response_id in flushed:
-                                logger.warning(
+                                self.ten_env.log_warn(
                                     f"On flushed transcript done {message.response_id}")
                                 continue
-                            self._append_context(ten_env, message.transcript, self.stream_id, Role.Assistant)
+                            self.memory.put({"role": "assistant", "content": message.transcript, "id": message.item_id})
                             self.transcript = ""
-                            self._send_transcript(
-                                ten_env, "", Role.Assistant, True)
+                            self._send_transcript("", Role.Assistant, True)
                         case ResponseTextDone():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On response text done {message.output_index} {message.content_index} {message.text}")
                             if message.response_id in flushed:
-                                logger.warning(
+                                self.ten_env.log_warn(
                                     f"On flushed text done {message.response_id}")
                                 continue
                             self.transcript = ""
-                            self._send_transcript(
-                                ten_env, "", Role.Assistant, True)
+                            self._send_transcript("", Role.Assistant, True)
                         case ResponseOutputItemDone():
-                            logger.info(f"Output item done {message.item}")
+                            self.ten_env.log_info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"Output item added {message.output_index} {message.item}")
                         case ResponseAudioDelta():
                             if message.response_id in flushed:
-                                logger.warning(
+                                self.ten_env.log_warn(
                                     f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}")
                                 continue
                             item_id = message.item_id
                             content_index = message.content_index
-                            self._on_audio_delta(ten_env, message.delta)
+                            self._on_audio_delta(message.delta)
                         case InputAudioBufferSpeechStarted():
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On server listening, in response {response_id}, last item {item_id}")
                             # Tuncate the on-going audio stream
                             end_ms = get_time_ms() - relative_start_ms
@@ -338,210 +303,116 @@ class OpenAIV2VExtension(Extension):
                                 truncate = ItemTruncate(
                                     item_id=item_id, content_index=content_index, audio_end_ms=end_ms)
                                 await self.conn.send_request(truncate)
-                            self._flush(ten_env)
+                            if self.config.server_vad:
+                                await self._flush()
                             if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
-                                self._send_transcript(
-                                    ten_env, transcript, Role.Assistant, True)
+                                self._send_transcript(transcript, Role.Assistant, True)
                                 self.transcript = ""
                                 # memory leak, change to lru later
                                 flushed.add(response_id)
                             item_id = ""
                         case InputAudioBufferSpeechStopped():
                             relative_start_ms = get_time_ms() - message.audio_end_ms
-                            logger.info(
+                            self.ten_env.log_info(
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}")
                         case ResponseFunctionCallArgumentsDone():
                             tool_call_id = message.call_id
                             name = message.name
                             arguments = message.arguments
-                            logger.info(f"need to call func {name}")
-                            # TODO rebuild this into async, or it will block the thread
-                            await self.registry.on_func_call(tool_call_id, name, arguments, self._on_tool_output)
+                            self.ten_env.log_info(f"need to call func {name}")
+                            self.loop.create_task(self._handle_tool_call(tool_call_id, name, arguments))
                         case ErrorMessage():
-                            logger.error(
+                            self.ten_env.log_error(
                                 f"Error message received: {message.error}")
                         case _:
-                            logger.debug(f"Not handled message {message}")
-                except:
-                    logger.exception(
-                        f"Error processing message: {message}")
+                            self.ten_env.log_debug(f"Not handled message {message}")
+                except Exception as e:
+                    traceback.print_exc()
+                    self.ten_env.log_error(
+                        f"Error processing message: {message} {e}")
 
-            logger.info("Client loop finished")
-        except:
-            logger.exception(f"Failed to handle loop")
+            self.ten_env.log_info("Client loop finished")
+        except Exception as e:
+            traceback.print_exc()
+            self.ten_env.log_error(f"Failed to handle loop {e}")
 
         # clear so that new session can be triggered
         self.connected = False
         self.remote_stream_id = 0
     
-    async def _append_history(self, item: ItemParam) -> None:
-        logger.info(f"append item {item}")
-        self.history.append(item["id"])
-        if len(self.history) > self.max_history:
-            to_remove = self.history[0]
-            logger.info(f"remove history {to_remove}")
-            await self.conn.send_request(ItemDelete(item_id=to_remove))
-            self.history = self.history[1:]
+    async def _on_memory_expired(self, message: dict) -> None:
+        self.ten_env.log_info(f"Memory expired: {message}")
+        item_id = message.get("item_id")
+        if item_id:
+            await self.conn.send_request(ItemDelete(item_id=item_id))
 
-    async def _on_audio(self, buff: bytearray):
-        self.out_audio_buff += buff
-        # Buffer audio
-        if len(self.out_audio_buff) >= self.audio_len_threshold and self.session_id != "":
-            await self.conn.send_audio_data(self.out_audio_buff)
-            # logger.info(
-            #     f"Send audio frame to OpenAI: {len(self.out_audio_buff)}")
-            self.out_audio_buff = b''
-
-    def _fetch_properties(self, ten_env: TenEnv):
-        try:
-            api_key = ten_env.get_property_string(PROPERTY_API_KEY)
-            self.config.api_key = api_key
-        except Exception as err:
-            logger.info(
-                f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
+    async def _on_memory_appended(self, message: dict) -> None:
+        self.ten_env.log_info(f"Memory appended: {message}")
+        if not self.config.enable_storage:
             return
-
-        try:
-            base_uri = ten_env.get_property_string(PROPERTY_BASE_URI)
-            if base_uri:
-                self.config.base_uri = base_uri
-        except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_BASE_URI} error: {err}")
         
+        role = message.get("role")
+        stream_id = self.remote_stream_id if role == Role.User else 0
         try:
-            path = ten_env.get_property_string(PROPERTY_PATH)
-            if path:
-                self.config.path = path
-        except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_PATH} error: {err}")
-        
-        try:
-            self.vendor = ten_env.get_property_string(PROPERTY_VENDOR)
-        except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_VENDOR} error: {err}") 
+            d = Data.create("append")
+            d.set_property_string("text", message.get("content"))
+            d.set_property_string("role", role)
+            d.set_property_int("stream_id", stream_id)
+            self.ten_env.send_data(d)
+        except Exception as e:
+            self.ten_env.log_error(f"Error send append_context data {message} {e}")
 
-        try:
-            model = ten_env.get_property_string(PROPERTY_MODEL)
-            if model:
-                self.config.model = model
-        except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_MODEL} error: {err}")
-
-        try:
-            system_message = ten_env.get_property_string(
-                PROPERTY_SYSTEM_MESSAGE)
-            if system_message:
-                self.config.instruction = BASIC_PROMPT + "\n" + system_message
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_SYSTEM_MESSAGE} error: {err}")
-
-        try:
-            temperature = ten_env.get_property_float(PROPERTY_TEMPERATURE)
-            self.config.temperature = float(temperature)
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_TEMPERATURE} failed, err: {err}"
-            )
-
-        try:
-            audio_out = ten_env.get_property_bool(PROPERTY_AUDIO_OUT)
-            self.config.audio_out = audio_out
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_AUDIO_OUT} failed, err: {err}"
-            )
-
-        try:
-            input_transcript = ten_env.get_property_bool(PROPERTY_INPUT_TRANSCRIPT)
-            self.config.input_transcript = input_transcript
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_INPUT_TRANSCRIPT} failed, err: {err}"
-            )
-
-        try:
-            max_tokens = ten_env.get_property_int(PROPERTY_MAX_TOKENS)
-            if max_tokens > 0:
-                self.config.max_tokens = int(max_tokens)
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_MAX_TOKENS} failed, err: {err}"
-            )
-        
-        try:
-            self.enable_storage = ten_env.get_property_bool(PROPERTY_ENABLE_STORAGE)
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_ENABLE_STORAGE} failed, err: {err}"
-            )
-
-        try:
-            voice = ten_env.get_property_string(PROPERTY_VOICE)
-            if voice:
-                # v = DEFAULT_VOICE
-                # if voice == "alloy":
-                #     v = Voices.Alloy
-                # elif voice == "echo":
-                #     v = Voices.Echo
-                # elif voice == "shimmer":
-                #     v = Voices.Shimmer
-                self.config.voice = voice
-        except Exception as err:
-            logger.info(f"GetProperty optional {PROPERTY_VOICE} error: {err}")
-
-        try:
-            language = ten_env.get_property_string(PROPERTY_LANGUAGE)
-            if language:
-                self.config.language = language
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_LANGUAGE} error: {err}")
-
-        try:
-            greeting = ten_env.get_property_string(PROPERTY_GREETING)
-            if greeting:
-                self.greeting = greeting
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_GREETING} error: {err}")
-
-        try:
-            server_vad = ten_env.get_property_bool(PROPERTY_SERVER_VAD)
-            self.config.server_vad = server_vad
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_SERVER_VAD} failed, err: {err}"
-            )
-
-        try:
-            self.dump = ten_env.get_property_bool(PROPERTY_DUMP)
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_DUMP} error: {err}")
-        
-        try:
-            history = ten_env.get_property_int(PROPERTY_HISTORY)
-            if history:
-                self.max_history = history
-        except Exception as err:
-            logger.info(
-                f"GetProperty optional {PROPERTY_HISTORY} error: {err}")
+    # Direction: IN
+    async def _on_audio(self, buff: bytearray):
+        self.buff += buff
+        # Buffer audio
+        if self.connected and len(self.buff) >= self.audio_len_threshold:
+            await self.conn.send_audio_data(self.buff)
+            self.buff = b''
 
         self.ctx = self.config.build_ctx()
-        self.ctx["greeting"] = self.greeting
+        self.ctx["greeting"] = self.config.greeting
 
-    def _update_session(self, ten_env: TenEnv) -> SessionUpdate:
-        self.ctx["tools"] = self.registry.to_prompt()
-        prompt = self._replace(self.config.instruction)
-        self.last_updated = datetime.now()
-        tools = self.registry.get_tools()
-        ten_env.log_info(f"update session {prompt} {tools}")
+    async def _update_session(self) -> None:
+        tools = []
+
+        def tool_dict(tool: LLMToolMetadata):
+            t = {
+                "type": "function",
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": False
+                }
+            }
+
+            for param in tool.parameters:
+                t["parameters"]["properties"][param.name] = {
+                    "type": param.type,
+                    "description": param.description
+                }
+                if param.required:
+                    t["parameters"]["required"].append(param.name)
+
+            return t
+        
+        if self.available_tools:
+            tool_prompt = "You have several tools that you can get help from:\n"
+            for t in self.available_tools:
+                tool_prompt += f"- ***{t.name}***: {t.description}"
+            self.ctx["tools"] = tool_prompt
+            tools = [tool_dict(t) for t in self.available_tools]
+        prompt = self._replace(self.config.prompt)
+        
+        self.ten_env.log_info(f"update session {prompt} {tools}")
         su = SessionUpdate(session=SessionUpdateParams(
                 instructions=prompt,
                 model=self.config.model,
-                tool_choice="auto",
+                tool_choice="auto" if self.available_tools else "none",
                 tools=tools
             ))
         if self.config.audio_out:
@@ -552,43 +423,27 @@ class OpenAIV2VExtension(Extension):
         if self.config.input_transcript:
             su.session.input_audio_transcription=InputAudioTranscription(
                     model="whisper-1")
-        return su
+        await self.conn.send_request(su)
     
-    async def _append_retrieve(self):
-        if self.retrieved:
-            for r in self.retrieved:
-                if r["role"] == MessageRole.User:
-                    await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
-                elif r["role"] == MessageRole.Assistant:
-                    await self.conn.send_request(ItemCreate(item=AssistantMessageItemParam(content=[{"type": ContentType.InputText, "text": r["input"]}])))
-
-    '''
-    def _update_conversation(self) -> UpdateConversationConfig:
-        prompt = self._replace(self.config.system_message)
-        conf = UpdateConversationConfig()
-        conf.system_message = prompt
-        conf.temperature = self.config.temperature
-        conf.max_tokens = self.config.max_tokens
-        conf.tool_choice = "none"
-        conf.disable_audio = False
-        conf.output_audio_format = AudioFormats.PCM16
-        return conf
-    '''
-
+    async def on_tools_update(self, ten_env: AsyncTenEnv, tool: LLMToolMetadata) -> None:
+        """Called when a new tool is registered. Implement this method to process the new tool."""
+        self.ten_env.log_info(f"on tools update {tool}")
+        await self._update_session()
+    
     def _replace(self, prompt: str) -> str:
         result = prompt
         for token, value in self.ctx.items():
             result = result.replace("{"+token+"}", value)
         return result
 
-    def _on_audio_delta(self, ten_env: TenEnv, delta: bytes) -> None:
+    # Direction: OUT
+    def _on_audio_delta(self, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
-        logger.debug("on_audio_delta audio_data len {} samples {}".format(
-            len(audio_data), len(audio_data) // 2))
+        self.ten_env.log_debug(f"on_audio_delta audio_data len {len(audio_data)} samples {len(audio_data) // 2}")
         self._dump_audio_if_need(audio_data, Role.Assistant)
 
         f = AudioFrame.create("pcm_frame")
-        f.set_sample_rate(self.sample_rate)
+        f.set_sample_rate(self.config.sample_rate)
         f.set_bytes_per_sample(2)
         f.set_number_of_channels(1)
         f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
@@ -597,23 +452,9 @@ class OpenAIV2VExtension(Extension):
         buff = f.lock_buf()
         buff[:] = audio_data
         f.unlock_buf(buff)
-        ten_env.send_audio_frame(f)
+        self.ten_env.send_audio_frame(f)
 
-    def _append_context(self, ten_env: TenEnv, sentence: str, stream_id: int, role: str):
-        if not self.enable_storage:
-            return
-        
-        try:
-            d = Data.create("append")
-            d.set_property_string("text", sentence)
-            d.set_property_string("role", role)
-            d.set_property_int("stream_id", stream_id)
-            logger.info(f"append_contexttext [{sentence}] stream_id {stream_id} role {role}")
-            ten_env.send_data(d)
-        except:
-            logger.exception(f"Error send append_context data {role}: {sentence}")
-
-    def _send_transcript(self, ten_env: TenEnv, content: str, role: Role, is_final: bool) -> None:
+    def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
                 return True
@@ -634,111 +475,64 @@ class OpenAIV2VExtension(Extension):
             remain = current_sentence  # Any remaining characters form the incomplete sentence
             return sentences, remain
 
-        def send_data(ten_env: TenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
+        def send_data(ten_env: AsyncTenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
             try:
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
                 d.set_property_bool("end_of_segment", is_final)
                 d.set_property_string("role", role)
                 d.set_property_int("stream_id", stream_id)
-                logger.info(
+                ten_env.log_info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
                 ten_env.send_data(d)
-            except:
-                logger.exception(
-                    f"Error send text data {role}: {sentence} {is_final}")
+            except Exception as e:
+                ten_env.log_error(f"Error send text data {role}: {sentence} {is_final} {e}")
 
         stream_id = self.remote_stream_id if role == Role.User else 0
         try:
             if role == Role.Assistant and not is_final:
                 sentences, self.transcript = parse_sentences(self.transcript, content)
                 for s in sentences:
-                    send_data(ten_env, s, stream_id, role, is_final)
+                    send_data(self.ten_env, s, stream_id, role, is_final)
             else:
-                send_data(ten_env, content, stream_id, role, is_final)
-        except:
-            logger.exception(f"Error send text data {role}: {content} {is_final}")
-
-    def _flush(self, ten_env: TenEnv) -> None:
-        try:
-            c = Cmd.create("flush")
-            ten_env.send_cmd(c, lambda ten, result: logger.info("flush done"))
-        except:
-            logger.exception(f"Error flush")
+                send_data(self.ten_env, content, stream_id, role, is_final)
+        except Exception as e:
+            self.ten_env.log_error(f"Error send text data {role}: {content} {is_final} {e}")
 
     def _dump_audio_if_need(self, buf: bytearray, role: Role) -> None:
-        if not self.dump:
+        if not self.config.dump:
             return
 
         with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
             dump_file.write(buf)
 
-    #def _register_local_tools(self) -> None:
-    #    self.ctx["tools"] = self.registry.to_prompt()
+    async def _handle_tool_call(self, tool_call_id: str, name: str, arguments: str) -> None:
+        self.ten_env.log_info(f"_handle_tool_call {tool_call_id} {name} {arguments}")
+        cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
+        cmd.set_property_string("name", name)
+        cmd.set_property_from_json("arguments", arguments)
+        result: CmdResult = await self.ten_env.send_cmd(cmd)
 
-    def _on_tool_register(self, ten_env: TenEnv, cmd: Cmd):
-        try:
-            # name = cmd.get_property_string(TOOL_REGISTER_PROPERTY_NAME)
-            # description = cmd.get_property_string(
-            #     TOOL_REGISTER_PROPERTY_DESCRIPTON)
-            # pstr = cmd.get_property_string(TOOL_REGISTER_PROPERTY_PARAMETERS)
-            # parameters = json.loads(pstr)
-            tool_metadata_json = json.loads(
-                    cmd.get_property_to_json(CMD_PROPERTY_TOOL))
-            ten_env.log_info(f"register tool: {tool_metadata_json}")
-            tool_metadata = LLMToolMetadata.model_validate_json(
-                tool_metadata_json)
-            p = partial(self._remote_tool_call, ten_env)
-            name = tool_metadata.name
-            description = tool_metadata.description
-            parameters = self._convert_tool_params_to_dict(tool_metadata)
-            self.registry.register(
-                name=name, description=description,
-                callback=p,
-                parameters=parameters)
-            logger.info(f"on tool register {name} {description}")
-            self.on_config_changed()
-        except:
-            logger.exception(f"Failed to register")
-
-    async def _remote_tool_call(self, ten_env: TenEnv, name: str, args: str, callback: Awaitable):
-        logger.info(f"_remote_tool_call {name} {args}")
-        c:Cmd = Cmd.create(f"{CMD_TOOL_CALL}_{name}")
-        c.set_property_string(CMD_PROPERTY_NAME, name)
-        c.set_property_from_json(CMD_PROPERTY_ARGS, args)
-        ten_env.send_cmd(c, lambda ten, result: asyncio.run_coroutine_threadsafe(
-                callback(result), self.loop))
-        logger.info(f"_remote_tool_call finish {name} {args}")
-    
-    async def _on_tool_output(self, tool_call_id:str,  result:CmdResult):
-        state = result.get_status_code()
         tool_response = ItemCreate(
             item=FunctionCallOutputItemParam(
                 call_id=tool_call_id,
                 output="{\"success\":false}",
             )
         )
-        try:
-            if state == StatusCode.OK:
-                tool_result: LLMToolResult = json.loads(result.get_property_to_json(CMD_PROPERTY_RESULT))
-                logger.info(f"_on_tool_output {tool_call_id} {tool_result}")
-            
-                result_content = tool_result["content"]
-                output = json.dumps(self._convert_to_content_parts(result_content))
-                tool_response = ItemCreate(
-                    item=FunctionCallOutputItemParam(
-                        call_id=tool_call_id,
-                        output=output,
-                    )
-                )
-            else:
-                logger.error(f"Failed to call function {tool_call_id}")
-                
-            await self.conn.send_request(tool_response)
-            await self.conn.send_request(ResponseCreate())
-        except:
-            logger.exception("Failed to handle tool output")
-
+        if result.get_status_code() == StatusCode.OK:
+            tool_result: LLMToolResult = json.loads(
+                result.get_property_to_json(CMD_PROPERTY_RESULT))
+        
+            result_content = tool_result["content"]
+            tool_response.item.output = json.dumps(self._convert_to_content_parts(result_content))
+            self.ten_env.log_info(f"tool_result: {tool_call_id} {tool_result}")
+        else:
+            self.ten_env.log_error(f"Tool call failed")
+        
+        await self.conn.send_request(tool_response)
+        await self.conn.send_request(ResponseCreate())
+        self.ten_env.log_info(f"_remote_tool_call finish {name} {arguments}")
+    
     def _greeting_text(self) -> str:
         text = "Hi, there."
         if self.config.language == "zh-CN":
@@ -783,3 +577,16 @@ class OpenAIV2VExtension(Extension):
                 if part["type"] == "text":
                     content_parts.append(part)
         return content_parts
+    
+    async def _greeting(self) -> None:
+        if self.config.greeting:
+            text = self._greeting_text()
+            await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
+            await self.conn.send_request(ResponseCreate())
+
+    async def _flush(self) -> None:
+        try:
+            c = Cmd.create("flush")
+            await self.ten_env.send_cmd(c)
+        except:
+            self.ten_env.log_error(f"Error flush")
