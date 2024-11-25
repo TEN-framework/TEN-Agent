@@ -134,6 +134,20 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         ten_env.log_info(f"config: {self.config}")
 
         self.memory = ChatMemory(self.config.max_history)
+
+        if self.config.enable_storage:
+            result = await ten_env.send_cmd(Cmd.create("retrieve"))
+            if result.get_status_code() == StatusCode.OK:
+                try:
+                    history = json.loads(result.get_property_string("response"))
+                    for i in history:
+                        self.memory.put(i)
+                    ten_env.log_info(f"on retrieve context {history}")
+                except Exception as e:
+                    ten_env.log_error("Failed to handle retrieve result {e}")
+            else:
+                ten_env.log_warn("Failed to retrieve content")
+
         self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
 
         self.ten_env = ten_env
