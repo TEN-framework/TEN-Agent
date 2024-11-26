@@ -3,7 +3,7 @@
     "log_level": 3,
     "predefined_graphs": [
       {
-        "name": "va_deepgram_openai_fish",
+        "name": "voice_assistant",
         "auto_start": false,
         "nodes": [
           {
@@ -30,9 +30,9 @@
           },
           {
             "type": "extension",
-            "extension_group": "asr",
+            "extension_group": "stt",
             "addon": "deepgram_asr_python",
-            "name": "deepgram_asr",
+            "name": "stt",
             "property": {
               "api_key": "${env:DEEPGRAM_API_KEY}",
               "language": "en-US",
@@ -44,7 +44,7 @@
             "type": "extension",
             "extension_group": "chatgpt",
             "addon": "openai_chatgpt_python",
-            "name": "openai_chatgpt",
+            "name": "llm",
             "property": {
               "base_url": "",
               "api_key": "${env:OPENAI_API_KEY}",
@@ -61,7 +61,7 @@
             "type": "extension",
             "extension_group": "tts",
             "addon": "fish_audio_tts",
-            "name": "fish_audio_tts",
+            "name": "tts",
             "property": {
               "api_key": "${env:FISH_AUDIO_TTS_KEY}",
               "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
@@ -92,8 +92,8 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "asr",
-                    "extension": "deepgram_asr"
+                    "extension_group": "stt",
+                    "extension": "stt"
                   }
                 ]
               }
@@ -103,8 +103,8 @@
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "asr",
-                    "extension": "deepgram_asr"
+                    "extension_group": "stt",
+                    "extension": "stt"
                   }
                 ]
               },
@@ -112,8 +112,8 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "asr",
-                    "extension": "deepgram_asr"
+                    "extension_group": "stt",
+                    "extension": "stt"
                   }
                 ]
               },
@@ -121,16 +121,16 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "asr",
-                    "extension": "deepgram_asr"
+                    "extension_group": "stt",
+                    "extension": "stt"
                   }
                 ]
               }
             ]
           },
           {
-            "extension_group": "asr",
-            "extension": "deepgram_asr",
+            "extension_group": "stt",
+            "extension": "stt",
             "data": [
               {
                 "name": "text_data",
@@ -149,14 +149,14 @@
           },
           {
             "extension_group": "chatgpt",
-            "extension": "openai_chatgpt",
+            "extension": "llm",
             "data": [
               {
                 "name": "text_data",
                 "dest": [
                   {
                     "extension_group": "tts",
-                    "extension": "fish_audio_tts"
+                    "extension": "tts"
                   },
                   {
                     "extension_group": "transcriber",
@@ -171,7 +171,7 @@
                 "dest": [
                   {
                     "extension_group": "tts",
-                    "extension": "fish_audio_tts"
+                    "extension": "tts"
                   }
                 ]
               }
@@ -194,7 +194,7 @@
           },
           {
             "extension_group": "tts",
-            "extension": "fish_audio_tts",
+            "extension": "tts",
             "audio_frame": [
               {
                 "name": "pcm_frame",
@@ -227,7 +227,7 @@
                 "dest": [
                   {
                     "extension_group": "chatgpt",
-                    "extension": "openai_chatgpt"
+                    "extension": "llm"
                   }
                 ]
               }
@@ -238,7 +238,7 @@
                 "dest": [
                   {
                     "extension_group": "chatgpt",
-                    "extension": "openai_chatgpt"
+                    "extension": "llm"
                   }
                 ]
               }
