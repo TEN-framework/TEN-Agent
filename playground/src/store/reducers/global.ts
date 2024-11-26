@@ -26,7 +26,7 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "camera_va_openai_azure",
+    graphName: "va_openai_v2v",
     graphs: [],
     extensions: {},
     overridenProperties: {},
