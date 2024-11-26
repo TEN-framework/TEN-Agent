@@ -28,8 +28,7 @@ const Avatar = (props: AvatarProps) => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const avatarIdFromURL = urlParams.get('avatarId');
-  const finalAvatarId =
-  avatarIdFromURL || process.env.NEXT_PUBLIC_avatarId || '';
+  const finalAvatarId = avatarIdFromURL || process.env.NEXT_PUBLIC_avatarId || '';
 
 
   // Keep track of the agent connection status.
@@ -97,6 +96,10 @@ const Avatar = (props: AvatarProps) => {
             let ssml = "";
             if (textItem.text.includes('SSML_DANCE')) {
               ssml = getDance();
+            } else if (textItem.text.includes('SSML_CONTENT_HIDE')) {
+              ssml = "<trl-content position='DefaultCenter' />";
+            } else if (textItem.text.includes('SSML_CONTENT_SHOW')) {
+              ssml = "<trl-content position='ScreenAngledMediumLeft' screen='https://www.youtube.com/embed/BHACKCNDMW8?autoplay=1' pointer='true' x='10' y='10' w='50' h='50' index='0' />";             
             } else if (textItem.text.includes('SSML_KISS')) {
               ssml = "<trl-anim immediate='true' type='aux' id='kiss' audio='"+process.env.NEXT_PUBLIC_animationURL+"/assets/audio/female/kiss.mp3' />";
             } else if (textItem.text.includes('SSML_BACKGROUND')) {
