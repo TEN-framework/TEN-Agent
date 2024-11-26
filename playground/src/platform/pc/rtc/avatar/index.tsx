@@ -133,6 +133,9 @@ const Avatar = (props: AvatarProps) => {
 
     if (!agentConnected && trulienceAvatarRef.current) {
       trulienceAvatarRef.current?.getTrulienceObject()?.sendMessageToAvatar("<trl-stop-background-audio immediate='true' />");
+      trulienceAvatarRef.current?.getTrulienceObject()?.sendMessageToAvatar("<trl-content position='DefaultCenter' />");
+
+      
     }
 
     return () => {

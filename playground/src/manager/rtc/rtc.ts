@@ -108,15 +108,16 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
      
       if (mediaType === "audio") {
         if (user.uid=="1234") { // agent
-          console.error('in 1234',user);
+          console.log('in 1234',user);
           this.emit("remoteUserChanged", {
             userId: user.uid,
             audioTrack: user.audioTrack,
             videoTrack: user.videoTrack,
           })
         } else {
-          console.error(user.uid,user);
+          
           if (user.audioTrack && !user.audioTrack.isPlaying) {
+            console.log("play ",user.uid,user);
               user.audioTrack.play()
             }
         }
