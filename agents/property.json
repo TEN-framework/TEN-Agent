@@ -51,6 +51,15 @@
           {
             "type": "extension",
             "extension_group": "tools",
+            "addon": "example_tool_python",
+            "name": "example_tool_python",
+            "property": {
+              "api_key": "test"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
             "addon": "weatherapi_tool_python",
             "name": "weatherapi_tool_python",
             "property": {
@@ -132,6 +141,32 @@
           },
           {
             "extension_group": "tools",
+            "extension": "example_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
@@ -192,6 +227,26 @@
                   {
                     "extension_group": "rtc",
                     "extension": "agora_rtc"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_run_example",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "example_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
                   }
                 ]
               },
