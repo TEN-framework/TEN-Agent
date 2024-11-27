@@ -3253,7 +3253,7 @@
               "api_key": "${env:DEEPGRAM_API_KEY}",
               "language": "en-US",
               "model": "nova-2",
-              "sample_rate": "16000"
+              "sample_rate": 16000
             }
           },
           {
