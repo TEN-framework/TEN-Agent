@@ -3009,7 +3009,7 @@
               "api_key": "${env:DEEPGRAM_API_KEY}",
               "language": "en-US",
               "model": "nova-2",
-              "sample_rate": "16000"
+              "sample_rate": 16000
             }
           },
           {
@@ -3036,10 +3036,10 @@
             "name": "cartesia_tts",
             "property": {
               "api_key": "${env:CARTESIA_API_KEY}",
-              "cartesia_version": "2024-06-10",
+              "language": "en",
               "model_id": "sonic-english",
-              "voice_id": "f9836c6e-a0bd-460e-9d3c-f7299fa60f94",
-              "sample_rate": "16000"
+              "sample_rate": 16000,
+              "voice_id": "f9836c6e-a0bd-460e-9d3c-f7299fa60f94"
             }
           },
           {
@@ -3253,7 +3253,7 @@
               "api_key": "${env:DEEPGRAM_API_KEY}",
               "language": "en-US",
               "model": "nova-2",
-              "sample_rate": "16000"
+              "sample_rate": 16000
             }
           },
           {
