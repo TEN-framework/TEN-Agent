@@ -163,3 +163,9 @@ export const useGraphExtensions = () => {
 
   return graphExtensions;
 };
+
+
+export const useExtensionsMetadataNames = (): string[] => {
+  const metadata = useAppSelector((state) => state.global.extensionMetadata);
+  return Object.keys(metadata)
+};

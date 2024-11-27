@@ -139,7 +139,6 @@ export default function Action(props: { className?: string }) {
               </TabsTrigger>
             ))}
           </TabsList>
-          yarn
         </Tabs>
 
         {/* -- Action Button */}

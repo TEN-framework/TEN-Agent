@@ -4,7 +4,8 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
   RemoteGraphSelect,
-  RemoteGraphCfgSheet,
+  RemoteModuleCfgSheet,
+  RemotePropertyCfgSheet,
 } from "@/components/Chat/ChatCfgSelect";
 import PdfSelect from "@/components/Chat/PdfSelect";
 import {
@@ -166,7 +167,8 @@ export default function ChatCard(props: { className?: string }) {
           {/* Action Bar */}
           <div className="flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
             <RemoteGraphSelect />
-            <RemoteGraphCfgSheet />
+            <RemoteModuleCfgSheet />
+            <RemotePropertyCfgSheet />
             {isRagGraph(graphName) && <PdfSelect />}
           </div>
           {/* Chat messages would go here */}

@@ -42,6 +42,7 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   useGraphExtensions,
+  useExtensionsMetadataNames,
 } from "@/common"
 import type { Language } from "@/types"
 import {
@@ -50,7 +51,7 @@ import {
   setOverridenPropertiesByGraph,
 } from "@/store/reducers/global"
 import { cn } from "@/lib/utils"
-import { SettingsIcon, LoaderCircleIcon } from "lucide-react"
+import { SettingsIcon, LoaderCircleIcon, BoxesIcon } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -93,7 +94,89 @@ export function RemoteGraphSelect() {
   )
 }
 
-export function RemoteGraphCfgSheet() {
+export function RemoteModuleCfgSheet() {
+  const dispatch = useAppDispatch()
+  const graphExtensions = useGraphExtensions()
+  const graphName = useAppSelector((state) => state.global.graphName)
+  const extensionMetadata = useAppSelector(
+    (state) => state.global.extensionMetadata,
+  )
+  const extensionMetadataNames = useExtensionsMetadataNames()
+  const overridenProperties = useAppSelector(
+    (state) => state.global.overridenProperties,
+  )
+
+  const sttExtensionNames = React.useMemo(() => {
+    return extensionMetadataNames.filter((item) =>
+      item.includes("stt") || item.includes("asr"),
+    )
+  }, [extensionMetadata])
+
+  const llmExtensionNames = React.useMemo(() => {
+    return extensionMetadataNames.filter((item) =>
+      item.includes("llm"),
+    )
+  }, [extensionMetadata])
+
+  const ttsExtensionNames = React.useMemo(() => {
+    return extensionMetadataNames.filter((item) =>
+      item.includes("tts"),
+    )
+  }, [extensionMetadata])
+
+  console.log(extensionMetadataNames)
+
+  const metadata = {
+    STT: { type: "string", options: sttExtensionNames },
+    LLM: { type: "string", options: llmExtensionNames },
+    TTS: { type: "string", options: ttsExtensionNames },
+  }
+
+  const initialData = {
+    STT: null,
+    LLM: null,
+    TTS: null,
+  }
+
+  return (
+    <Sheet>
+      <SheetTrigger
+        className={cn(
+          buttonVariants({ variant: "outline", size: "icon" }),
+          "bg-transparent",
+        )}
+      >
+        <BoxesIcon />
+      </SheetTrigger>
+      <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
+        <SheetHeader>
+          <SheetTitle>Module Picker</SheetTitle>
+          <SheetDescription>
+            You can adjust extension modules here, the values will be
+            overridden when the agent starts using "Connect." Note that this
+            won't modify the property.json file.
+          </SheetDescription>
+        </SheetHeader>
+        
+        <div className="my-4">
+          <GraphModuleCfgForm 
+            initialData={initialData}
+            metadata={metadata}
+            onUpdate={(data) => {}}
+          />
+        </div>
+
+        {/* <SheetFooter>
+          <SheetClose asChild>
+            <Button type="submit">Save changes</Button>
+          </SheetClose>
+        </SheetFooter> */}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
   const graphExtensions = useGraphExtensions()
   const graphName = useAppSelector((state) => state.global.graphName)
@@ -205,6 +288,143 @@ const convertToType = (value: any, type: string) => {
       return value
   }
 }
+
+const GraphModuleCfgForm = ({
+  initialData,
+  metadata,
+  onUpdate,
+}: {
+  initialData: Record<string, string | null>
+  metadata: Record<string, { type: string; options: string[] }>
+  onUpdate: (data: Record<string, string | null>) => void
+}) => {
+  const formSchema = z.object({
+    STT: z.string().nullable(),
+    LLM: z.string().nullable(),
+    TTS: z.string().nullable(),
+  })
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialData,
+  })
+
+  const onSubmit = (data: z.infer<typeof formSchema>) => {
+    onUpdate(data)
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* STT Section */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold">STT (Speech to Text)</h3>
+          <FormField
+            control={form.control}
+            name="STT"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Speech-to-Text</FormLabel>
+                <FormControl>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an STT option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {metadata["STT"].options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* LLM Section */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold">LLM (Large Language Model)</h3>
+          <FormField
+            control={form.control}
+            name="LLM"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Large Language Model</FormLabel>
+                <FormControl>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an LLM option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {metadata["LLM"].options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* TTS Section */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-bold">TTS (Text to Speech)</h3>
+          <FormField
+            control={form.control}
+            name="TTS"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Text-to-Speech</FormLabel>
+                <FormControl>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a TTS option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {metadata["TTS"].options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Submit Button */}
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? (
+            <>
+              <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
+      </form>
+    </Form>
+  )
+}
+
 
 const GraphCfgForm = ({
   initialData,
