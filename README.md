@@ -103,8 +103,10 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 #### Windows: Configuring Git to handle line endings
 To avoid problems in `task run` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
 
+**Only do this if you are running into line-ending trouble.**
+
 ```bash
-git config --global core.autocrlf true
+git config --global core.autocrlf false
 ```
 
 ### Next step
