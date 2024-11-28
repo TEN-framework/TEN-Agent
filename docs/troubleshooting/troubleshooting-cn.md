@@ -30,10 +30,3 @@ curl www.google.com
 </body>
 </html>
 ```
-
-## 遇到 /app/agents/bin/start: not found 错误怎么办？
-
-1. 有可能是权限的问题，所以可以 `cd /app/agents/bin/start` 过去，看下文件是否存在。
-如果存在，可以尝试 `chmod +x start` 赋予权限。
-
-1. 如果 `cd /app/agents/bin/start` 文件不存在， 有可能是因为 Windows line-ending 的问题，可以尝试 `git config --global core.autocrlf true` 来解决。 然后再重新 clone 代码。
