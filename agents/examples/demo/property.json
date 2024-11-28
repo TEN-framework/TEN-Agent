@@ -3,216 +3,6 @@
     "log_level": 3,
     "predefined_graphs": [
       {
-        "name": "va_transcribe_bedrock_polly",
-        "auto_start": false,
-        "nodes": [
-          {
-            "type": "extension",
-            "extension_group": "default",
-            "addon": "agora_rtc",
-            "name": "agora_rtc",
-            "property": {
-              "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
-              "channel": "ten_agent_test",
-              "stream_id": 1234,
-              "remote_stream_id": 123,
-              "subscribe_audio": true,
-              "publish_audio": true,
-              "publish_data": false,
-              "enable_agora_asr": false,
-              "agora_asr_vendor_name": "microsoft",
-              "agora_asr_language": "en-US",
-              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
-              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
-              "agora_asr_session_control_file_path": "session_control.conf"
-            }
-          },
-          {
-            "type": "extension",
-            "extension_group": "asr",
-            "addon": "transcribe_asr_python",
-            "name": "transcribe_asr",
-            "property": {
-              "region": "us-east-1",
-              "access_key": "${env:AWS_ACCESS_KEY_ID}",
-              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
-              "sample_rate": 16000,
-              "lang_code": "en-US"
-            }
-          },
-          {
-            "type": "extension",
-            "extension_group": "bedrock",
-            "addon": "bedrock_llm_python",
-            "name": "bedrock_llm",
-            "property": {
-              "region": "us-east-1",
-              "access_key": "${env:AWS_ACCESS_KEY_ID}",
-              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
-              "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-              "max_tokens": 512,
-              "prompt": "",
-              "greeting": "TEN Agent connected. How can I help you today?",
-              "max_memory_length": 10
-            }
-          },
-          {
-            "type": "extension",
-            "extension_group": "tts",
-            "addon": "polly_tts",
-            "name": "polly_tts",
-            "property": {
-              "region": "us-east-1",
-              "access_key": "${env:AWS_ACCESS_KEY_ID}",
-              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
-              "engine": "generative",
-              "voice": "Ruth",
-              "sample_rate": 16000,
-              "lang_code": "en-US"
-            }
-          },
-          {
-            "type": "extension",
-            "extension_group": "default",
-            "addon": "interrupt_detector_python",
-            "name": "interrupt_detector"
-          }
-        ],
-        "connections": [
-          {
-            "extension_group": "default",
-            "extension": "agora_rtc",
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "asr",
-                    "extension": "transcribe_asr"
-                  }
-                ]
-              }
-            ],
-            "cmd": [
-              {
-                "name": "on_user_joined",
-                "dest": [
-                  {
-                    "extension_group": "asr",
-                    "extension": "transcribe_asr"
-                  }
-                ]
-              },
-              {
-                "name": "on_user_left",
-                "dest": [
-                  {
-                    "extension_group": "asr",
-                    "extension": "transcribe_asr"
-                  }
-                ]
-              },
-              {
-                "name": "on_connection_failure",
-                "dest": [
-                  {
-                    "extension_group": "asr",
-                    "extension": "transcribe_asr"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "asr",
-            "extension": "transcribe_asr",
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "interrupt_detector"
-                  },
-                  {
-                    "extension_group": "bedrock",
-                    "extension": "bedrock_llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "bedrock",
-            "extension": "bedrock_llm",
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "polly_tts"
-                  }
-                ]
-              }
-            ],
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "polly_tts"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "tts",
-            "extension": "polly_tts",
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ],
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "interrupt_detector",
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "bedrock",
-                    "extension": "bedrock_llm"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
         "name": "va_openai_azure",
         "auto_start": false,
         "nodes": [
@@ -264,16 +54,12 @@
           {
             "type": "extension",
             "extension_group": "tts",
-            "addon": "polly_tts",
-            "name": "polly_tts",
+            "addon": "azure_tts",
+            "name": "azure_tts",
             "property": {
-              "region": "us-east-1",
-              "access_key": "${env:AWS_ACCESS_KEY_ID}",
-              "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
-              "engine": "generative",
-              "voice": "Ruth",
-              "sample_rate": 16000,
-              "lang_code": "en-US"
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
             }
           },
           {
@@ -316,7 +102,7 @@
                 "dest": [
                   {
                     "extension_group": "tts",
-                    "extension": "polly_tts"
+                    "extension": "azure_tts"
                   },
                   {
                     "extension_group": "transcriber",
@@ -331,7 +117,7 @@
                 "dest": [
                   {
                     "extension_group": "tts",
-                    "extension": "polly_tts"
+                    "extension": "azure_tts"
                   }
                 ]
               }
@@ -339,7 +125,7 @@
           },
           {
             "extension_group": "tts",
-            "extension": "polly_tts",
+            "extension": "azure_tts",
             "audio_frame": [
               {
                 "name": "pcm_frame",
