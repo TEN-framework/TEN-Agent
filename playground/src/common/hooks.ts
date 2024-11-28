@@ -129,7 +129,7 @@ export const usePrevious = (value: any) => {
 };
 
 export const useGraphExtensions = () => {
-  const graphName = useAppSelector((state) => state.global.graphName);
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const nodes = useAppSelector((state) => state.global.extensions);
   const overridenProperties = useAppSelector(
     (state) => state.global.overridenProperties
@@ -169,3 +169,8 @@ export const useExtensionsMetadataNames = (): string[] => {
   const metadata = useAppSelector((state) => state.global.extensionMetadata);
   return Object.keys(metadata)
 };
+
+export const useGraph = (graphId: string) => {
+  const graph = useAppSelector((state) => state.global.graphMap[graphId]);
+  return graph;
+}

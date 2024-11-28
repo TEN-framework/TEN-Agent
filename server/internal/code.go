@@ -23,6 +23,8 @@ var (
 	codeErrStopWorkerFailed      = NewCode("10102", "stop worker failed")
 	codeErrHttpStatusNotOk       = NewCode("10103", "http status not 200")
 	codeErrUpdateWorkerFailed    = NewCode("10104", "update worker failed")
+	codeErrReadDirectoryFailed   = NewCode("10105", "read directory failed")
+	codeErrReadFileFailed        = NewCode("10106", "read file failed")
 )
 
 func NewCode(code string, msg string) *Code {

@@ -54,7 +54,6 @@ type StartReq struct {
 	Token                string                            `json:"token,omitempty"`
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
-	Addons               map[string]interface{}            `json:"addons,omitempty"`
 	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
 }
 
@@ -109,6 +108,47 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 	s.output(c, codeSuccess, filtered)
 }
 
+func (s *HttpServer) handleAddonDefaultProperties(c *gin.Context) {
+	// Get the base directory path
+	baseDir := "./agents/ten_packages/extension"
+
+	// Read all folders under the base directory
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		slog.Error("failed to read extension directory", "err", err, logTag)
+		s.output(c, codeErrReadDirectoryFailed, http.StatusInternalServerError)
+		return
+	}
+
+	// Iterate through each folder and read the property.json file
+	var addons []map[string]interface{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			addonName := entry.Name()
+			propertyFilePath := fmt.Sprintf("%s/%s/property.json", baseDir, addonName)
+			content, err := os.ReadFile(propertyFilePath)
+			if err != nil {
+				slog.Warn("failed to read property file", "addon", addonName, "err", err, logTag)
+				continue
+			}
+
+			var properties map[string]interface{}
+			err = json.Unmarshal(content, &properties)
+			if err != nil {
+				slog.Warn("failed to parse property file", "addon", addonName, "err", err, logTag)
+				continue
+			}
+
+			addons = append(addons, map[string]interface{}{
+				"addon":    addonName,
+				"property": properties,
+			})
+		}
+	}
+
+	s.output(c, codeSuccess, addons)
+}
+
 func (s *HttpServer) handlerPing(c *gin.Context) {
 	var req PingReq
 
@@ -146,6 +186,7 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 	slog.Info("handlerStart start", "workersRunning", workersRunning, logTag)
 
 	var req StartReq
+
 	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		slog.Error("handlerStart params invalid", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
@@ -450,20 +491,6 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		graphMap["auto_start"] = true
 	}
 
-	// Process Addons property
-	for addonKey, addonValue := range req.Addons {
-		for _, graph := range newGraphs {
-			graphMap, _ := graph.(map[string]interface{})
-			nodes, _ := graphMap["nodes"].([]interface{})
-			for _, node := range nodes {
-				nodeMap, _ := node.(map[string]interface{})
-				if nodeMap["name"] == addonKey {
-					nodeMap["addon"] = addonValue
-				}
-			}
-		}
-	}
-
 	// Set additional properties to property.json
 	for extensionName, props := range req.Properties {
 		if extensionName != "" {
@@ -530,6 +557,7 @@ func (s *HttpServer) Start() {
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/ping", s.handlerPing)
+	r.GET("/dev-tmp/addons/default-properties", s.handleAddonDefaultProperties)
 	r.POST("/token/generate", s.handlerGenerateToken)
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
 	r.POST("/vector/document/update", s.handlerVectorDocumentUpdate)

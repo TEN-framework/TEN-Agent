@@ -16,18 +16,13 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
-  apiGetGraphs,
-  apiGetNodes,
   useGraphExtensions,
-  apiGetExtensionMetadata,
-  apiReloadGraph,
 } from "@/common";
 import {
   setRtmConnected,
   addChatItem,
   setExtensionMetadata,
-  setGraphName,
-  setGraphs,
+  setSelectedGraphId,
   setLanguage,
   setExtensions,
   setOverridenPropertiesByGraph,
@@ -46,9 +41,9 @@ export default function ChatCard(props: { className?: string }) {
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
-  const graphs = useAppSelector((state) => state.global.graphs);
+  const graphs = useAppSelector((state) => state.global.graphList);
   const extensions = useAppSelector((state) => state.global.extensions);
-  const graphName = useAppSelector((state) => state.global.graphName);
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const chatItems = useAppSelector((state) => state.global.chatItems);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
   const graphExtensions = useGraphExtensions();
@@ -81,43 +76,7 @@ export default function ChatCard(props: { className?: string }) {
   // const chatItems = genRandomChatList(10)
   const chatRef = React.useRef(null);
 
-  React.useEffect(() => {
-    apiReloadGraph().then(() => {
-      Promise.all([apiGetGraphs(), apiGetExtensionMetadata()]).then(
-        (res: any) => {
-          let [graphRes, metadataRes] = res;
-          let graphs = graphRes["data"].map((item: any) => item["name"]);
-
-          let metadata = metadataRes["data"];
-          let metadataMap: Record<string, any> = {};
-          metadata.forEach((item: any) => {
-            metadataMap[item["name"]] = item;
-          });
-          dispatch(setGraphs(graphs));
-          dispatch(setExtensionMetadata(metadataMap));
-        }
-      );
-    });
-  }, []);
-
-  React.useEffect(() => {
-    if (graphName !== "" && !extensions[graphName]) {
-      apiGetNodes(graphName).then((res: any) => {
-        let nodes = res["data"];
-        let nodesMap: Record<string, any> = {};
-        nodes.forEach((item: any) => {
-          nodesMap[item["name"]] = item;
-        });
-        dispatch(setExtensions({ graphName, nodesMap }));
-      });
-    }
-  }, [graphName]);
-
   useAutoScroll(chatRef);
-
-  const onGraphNameChange = (val: any) => {
-    dispatch(setGraphName(val));
-  };
 
   const onTextChanged = (text: IRTMTextItem) => {
     console.log("[rtm] onTextChanged", text);

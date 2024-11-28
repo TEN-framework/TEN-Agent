@@ -99,36 +99,3 @@ export const apiPing = async (channel: string) => {
   resp = (resp.data) || {}
   return resp
 }
-
-export const apiGetGraphs = async () => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/dev/v1/graphs`
-  let resp: any = await axios.get(url)
-  resp = (resp.data) || {}
-  return resp
-}
-
-export const apiGetExtensionMetadata = async () => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/dev/v1/addons/extensions`
-  let resp: any = await axios.get(url)
-  resp = (resp.data) || {}
-  return resp
-}
-
-export const apiGetNodes = async (graphName: string) => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/dev/v1/graphs/${graphName}/nodes`
-  let resp: any = await axios.get(url)
-  resp = (resp.data) || {}
-  return resp
-}
-
-
-export const apiReloadGraph = async (): Promise<any> => {
-  // look at app/apis/route.tsx for the server-side implementation
-  const url = `/api/dev/v1/packages/reload`
-  let resp: any = await axios.post(url)
-  resp = (resp.data) || {}
-  return resp
-}

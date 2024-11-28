@@ -27,7 +27,7 @@ export default function Action(props: { className?: string }) {
   const userId = useAppSelector((state) => state.global.options.userId);
   const language = useAppSelector((state) => state.global.language);
   const voiceType = useAppSelector((state) => state.global.voiceType);
-  const graphName = useAppSelector((state) => state.global.graphName);
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const overridenProperties = useAppSelector(
     (state) => state.global.overridenProperties
   );

@@ -15,6 +15,8 @@ import {
   setOverridenPropertiesToLocal,
   deepMerge,
 } from "@/common";
+import { AddonDef, Graph } from "@/common/graph";
+import { set } from "react-hook-form";
 
 export interface InitialState {
   options: IOptions;
@@ -25,11 +27,13 @@ export interface InitialState {
   language: Language;
   voiceType: VoiceType;
   chatItems: IChatItem[];
-  graphName: string;
-  graphs: string[];
+  selectedGraphId: string;
+  graphList: string[];
   extensions: Record<string, any>;
   overridenProperties: Record<string, any>;
   extensionMetadata: Record<string, any>;
+  graphMap: Record<string, Graph>;
+  addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
 }
 
@@ -43,11 +47,13 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "",
-    graphs: [],
+    selectedGraphId: "",
+    graphList: [],
     extensions: {},
     overridenProperties: {},
     extensionMetadata: {},
+    graphMap: {},
+    addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
   };
 };
@@ -136,11 +142,11 @@ export const globalSlice = createSlice({
     setLanguage: (state, action: PayloadAction<Language>) => {
       state.language = action.payload;
     },
-    setGraphName: (state, action: PayloadAction<string>) => {
-      state.graphName = action.payload;
+    setSelectedGraphId: (state, action: PayloadAction<string>) => {
+      state.selectedGraphId = action.payload;
     },
-    setGraphs: (state, action: PayloadAction<string[]>) => {
-      state.graphs = action.payload;
+    setGraphList: (state, action: PayloadAction<string[]>) => {
+      state.graphList = action.payload;
     },
     setExtensions: (state, action: PayloadAction<Record<string, any>>) => {
       let { graphName, nodesMap } = action.payload;
@@ -183,6 +189,14 @@ export const globalSlice = createSlice({
         COLOR_LIST[0].active
       );
     },
+    setGraph: (state, action: PayloadAction<Graph>) => {
+      let graphMap = JSON.parse(JSON.stringify(state.graphMap));
+      graphMap[action.payload.id] = action.payload;
+      state.graphMap = graphMap;
+    },
+    setAddonModules: (state, action: PayloadAction<Record<string, any>[]>) => {
+      state.addonModules = JSON.parse(JSON.stringify(action.payload));
+    }
   },
 });
 
@@ -196,13 +210,15 @@ export const {
   addChatItem,
   setThemeColor,
   setLanguage,
-  setGraphName,
-  setGraphs,
+  setSelectedGraphId,
+  setGraphList,
   setExtensions,
   setExtensionMetadata,
   setOverridenProperties,
   setOverridenPropertiesByGraph,
   setMobileActiveTab,
+  setGraph,
+  setAddonModules,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;

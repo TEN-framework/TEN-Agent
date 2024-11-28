@@ -43,11 +43,13 @@ import {
   GRAPH_OPTIONS,
   useGraphExtensions,
   useExtensionsMetadataNames,
+  useGraph,
 } from "@/common"
 import type { Language } from "@/types"
 import {
-  setGraphName,
+  setSelectedGraphId,
   setLanguage,
+  setOverridenAddonsByGraph,
   setOverridenPropertiesByGraph,
 } from "@/store/reducers/global"
 import { cn } from "@/lib/utils"
@@ -56,15 +58,16 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
+import { Graph, useGraphManager } from "@/common/graph"
 
 export function RemoteGraphSelect() {
   const dispatch = useAppDispatch()
-  const graphName = useAppSelector((state) => state.global.graphName)
-  const graphs = useAppSelector((state) => state.global.graphs)
+  const graphName = useAppSelector((state) => state.global.selectedGraphId)
+  const graphs = useAppSelector((state) => state.global.graphList)
   const agentConnected = useAppSelector((state) => state.global.agentConnected)
 
   const onGraphNameChange = (val: string) => {
-    dispatch(setGraphName(val))
+    dispatch(setSelectedGraphId(val))
   }
 
   const graphOptions = graphs.map((item) => ({
@@ -95,47 +98,39 @@ export function RemoteGraphSelect() {
 }
 
 export function RemoteModuleCfgSheet() {
-  const dispatch = useAppDispatch()
-  const graphExtensions = useGraphExtensions()
-  const graphName = useAppSelector((state) => state.global.graphName)
-  const extensionMetadata = useAppSelector(
-    (state) => state.global.extensionMetadata,
-  )
-  const extensionMetadataNames = useExtensionsMetadataNames()
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties,
-  )
+  const addonModules = useAppSelector((state) => state.global.addonModules)
+  const {getModuleAddonValueByName, selectedGraph, updateGraph} = useGraphManager()
 
-  const sttExtensionNames = React.useMemo(() => {
-    return extensionMetadataNames.filter((item) =>
-      item.includes("stt") || item.includes("asr"),
-    )
-  }, [extensionMetadata])
+  const modules = React.useMemo(() => {
+    let result: { stt: string[], llm: string[], tts: string[] } = {
+      stt: [],
+      llm: [],
+      tts: [],
+    }
 
-  const llmExtensionNames = React.useMemo(() => {
-    return extensionMetadataNames.filter((item) =>
-      item.includes("llm"),
-    )
-  }, [extensionMetadata])
+    addonModules.forEach((module) => {
+      if (module.name.includes("stt") || module.name.includes("asr")) {
+        result.stt.push(module.name)
+      } else if (module.name.includes("llm")) {
+        result.llm.push(module.name)
+      } else if (module.name.includes("tts")) {
+        result.tts.push(module.name)
+      }
+    })
+    return result
+  }, [addonModules])
 
-  const ttsExtensionNames = React.useMemo(() => {
-    return extensionMetadataNames.filter((item) =>
-      item.includes("tts"),
-    )
-  }, [extensionMetadata])
-
-  console.log(extensionMetadataNames)
 
   const metadata = {
-    STT: { type: "string", options: sttExtensionNames },
-    LLM: { type: "string", options: llmExtensionNames },
-    TTS: { type: "string", options: ttsExtensionNames },
+    stt: { type: "string", options: modules.stt },
+    llm: { type: "string", options: modules.llm },
+    tts: { type: "string", options: modules.tts },
   }
 
   const initialData = {
-    STT: null,
-    LLM: null,
-    TTS: null,
+    stt: getModuleAddonValueByName("stt")?.addon,
+    llm: getModuleAddonValueByName("llm")?.addon,
+    tts: getModuleAddonValueByName("tts")?.addon,
   }
 
   return (
@@ -157,12 +152,44 @@ export function RemoteModuleCfgSheet() {
             won't modify the property.json file.
           </SheetDescription>
         </SheetHeader>
-        
+
         <div className="my-4">
-          <GraphModuleCfgForm 
+          <GraphModuleCfgForm
             initialData={initialData}
             metadata={metadata}
-            onUpdate={(data) => {}}
+            onUpdate={async (data) => { 
+              // clone the overridenAddons
+              const selectedGraphCopy:Graph = JSON.parse(JSON.stringify(selectedGraph))
+              const nodes = selectedGraphCopy?.nodes || []
+              let needUpdate = false
+              for (const node of nodes) {
+                if (data.stt && node.name === "stt" && node.addon !== data.stt) {
+                  node.addon = data.stt
+                  node.property = addonModules.find((module) => module.name === data.stt)?.defaultProperty
+                  needUpdate = true
+                }
+                if (data.llm && node.name === "lln" && node.addon !== data.llm) {
+                  node.addon = data.llm
+                  node.property = addonModules.find((module) => module.name === data.llm)?.defaultProperty
+                  needUpdate = true
+                }
+                if (data.tts && node.name === "tts" && node.addon !== data.tts) {
+                  node.addon = data.tts
+                  node.property = addonModules.find((module) => module.name === data.tts)?.defaultProperty
+                  needUpdate = true
+                }
+              }
+              if (needUpdate) {
+                try {
+                  await updateGraph(selectedGraphCopy.id, selectedGraphCopy)
+                  toast.success("Modules updated", {
+                    description: `Graph: ${selectedGraphCopy.id}`,
+                  })
+                } catch (e) {
+                  toast.error("Failed to update modules")
+                }
+              }
+            }}
           />
         </div>
 
@@ -179,7 +206,7 @@ export function RemoteModuleCfgSheet() {
 export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
   const graphExtensions = useGraphExtensions()
-  const graphName = useAppSelector((state) => state.global.graphName)
+  const graphName = useAppSelector((state) => state.global.selectedGraphId)
   const extensionMetadata = useAppSelector(
     (state) => state.global.extensionMetadata,
   )
@@ -294,7 +321,7 @@ const GraphModuleCfgForm = ({
   metadata,
   onUpdate,
 }: {
-  initialData: Record<string, string | null>
+  initialData: Record<string, string | null | undefined>
   metadata: Record<string, { type: string; options: string[] }>
   onUpdate: (data: Record<string, string | null>) => void
 }) => {
@@ -312,6 +339,7 @@ const GraphModuleCfgForm = ({
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     onUpdate(data)
   }
+
 
   return (
     <Form {...form}>
