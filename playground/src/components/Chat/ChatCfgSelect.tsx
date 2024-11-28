@@ -299,9 +299,9 @@ const GraphModuleCfgForm = ({
   onUpdate: (data: Record<string, string | null>) => void
 }) => {
   const formSchema = z.object({
-    STT: z.string().nullable(),
-    LLM: z.string().nullable(),
-    TTS: z.string().nullable(),
+    stt: z.string().nullable(),
+    llm: z.string().nullable(),
+    tts: z.string().nullable(),
   })
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -321,7 +321,7 @@ const GraphModuleCfgForm = ({
           <h3 className="text-lg font-bold">STT (Speech to Text)</h3>
           <FormField
             control={form.control}
-            name="STT"
+            name="stt"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Speech-to-Text</FormLabel>
@@ -334,7 +334,7 @@ const GraphModuleCfgForm = ({
                       <SelectValue placeholder="Select an STT option" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metadata["STT"].options.map((option) => (
+                      {metadata["stt"].options.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -352,7 +352,7 @@ const GraphModuleCfgForm = ({
           <h3 className="text-lg font-bold">LLM (Large Language Model)</h3>
           <FormField
             control={form.control}
-            name="LLM"
+            name="llm"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Large Language Model</FormLabel>
@@ -365,7 +365,7 @@ const GraphModuleCfgForm = ({
                       <SelectValue placeholder="Select an LLM option" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metadata["LLM"].options.map((option) => (
+                      {metadata["llm"].options.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -383,7 +383,7 @@ const GraphModuleCfgForm = ({
           <h3 className="text-lg font-bold">TTS (Text to Speech)</h3>
           <FormField
             control={form.control}
-            name="TTS"
+            name="tts"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Text-to-Speech</FormLabel>
@@ -396,7 +396,7 @@ const GraphModuleCfgForm = ({
                       <SelectValue placeholder="Select a TTS option" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metadata["TTS"].options.map((option) => (
+                      {metadata["tts"].options.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>

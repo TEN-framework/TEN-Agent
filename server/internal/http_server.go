@@ -54,6 +54,7 @@ type StartReq struct {
 	Token                string                            `json:"token,omitempty"`
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
+	Addons               map[string]interface{}            `json:"addons,omitempty"`
 	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
 }
 
@@ -447,6 +448,20 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	for _, graph := range newGraphs {
 		graphMap, _ := graph.(map[string]interface{})
 		graphMap["auto_start"] = true
+	}
+
+	// Process Addons property
+	for addonKey, addonValue := range req.Addons {
+		for _, graph := range newGraphs {
+			graphMap, _ := graph.(map[string]interface{})
+			nodes, _ := graphMap["nodes"].([]interface{})
+			for _, node := range nodes {
+				nodeMap, _ := node.(map[string]interface{})
+				if nodeMap["name"] == addonKey {
+					nodeMap["addon"] = addonValue
+				}
+			}
+		}
 	}
 
 	// Set additional properties to property.json
