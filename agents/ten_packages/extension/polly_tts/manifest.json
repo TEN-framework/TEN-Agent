@@ -38,7 +38,7 @@
                 "type": "string"
             },
             "sample_rate": {
-                "type": "string"
+                "type": "int64"
             },
             "lang_code": {
                 "type": "string"

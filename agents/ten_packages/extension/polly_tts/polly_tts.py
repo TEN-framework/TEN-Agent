@@ -17,18 +17,18 @@ class PollyTTSConfig(BaseConfig):
     voice: str = "Matthew" # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
     sample_rate: int = 16000
     lang_code: str = 'en-US'
+    bytes_per_sample: int = 2
+    include_visemes: bool = False
+    number_of_channels: int = 1
+    audio_format: str = 'pcm'
 
 class PollyTTS:
-    def __init__(self, config: PollyTTSConfig):
+    def __init__(self, config: PollyTTSConfig, ten_env: AsyncTenEnv) -> None:
         """
         :param config: A PollyConfig
         """
-
+        ten_env.log_info("startinit polly tts")
         self.config = config
-        self.include_visemes = False
-        self.bytes_per_sample = 2
-        self.number_of_channels = 1
-        self.audio_format = 'pcm'
         if config.access_key and config.secret_key:
             self.client = boto3.client(service_name='polly', 
                                     region_name=config.region,
@@ -40,8 +40,8 @@ class PollyTTS:
         self.voice_metadata = None
         self.frame_size = int(
             int(config.sample_rate)
-            * self.number_of_channels
-            * self.bytes_per_sample
+            * self.config.number_of_channels
+            * self.config.bytes_per_sample
             / 100
         )
 
@@ -56,7 +56,7 @@ class PollyTTS:
         try:
             kwargs = {
                 "Engine": self.config.engine,
-                "OutputFormat": self.audio_format,
+                "OutputFormat": self.config.audio_format,
                 "Text": text,
                 "VoiceId": self.config.voice,
             }
@@ -64,9 +64,8 @@ class PollyTTS:
                 kwargs["LanguageCode"] = self.config.lang_code
             response = self.client.synthesize_speech(**kwargs)
             audio_stream = response["AudioStream"]
-            ten_env.log_info("Got audio stream spoken by %s.", self.config.voice)
             visemes = None
-            if self.include_visemes:
+            if self.config.include_visemes:
                 kwargs["OutputFormat"] = "json"
                 kwargs["SpeechMarkTypes"] = ["viseme"]
                 response = self.client.synthesize_speech(**kwargs)
@@ -75,14 +74,14 @@ class PollyTTS:
                     for v in response["AudioStream"].read().decode().split()
                     if v
                 ]
-                ten_env.log_info("Got %s visemes.", len(visemes))
+                ten_env.log_debug("Got %s visemes.", len(visemes))
         except ClientError:
-            ten_env.log_info("Couldn't get audio stream.")
+            ten_env.log_error("Couldn't get audio stream.")
             raise
         else:
             return audio_stream, visemes
 
-    async def get(self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool) -> AsyncIterator[bytes]:
+    async def text_to_speech_stream(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
         inputText = text
         if len(inputText) == 0:
              ten_env.log_warning("async_polly_handler: empty input detected.")
@@ -90,12 +89,6 @@ class PollyTTS:
             audio_stream, visemes = self._synthesize(inputText, ten_env)
             with closing(audio_stream) as stream:
                  for chunk in stream.iter_chunks(chunk_size=self.frame_size):
-                    if end_of_segment:
-                        ten_env.log_info("Streaming complete")
-                        self.client = None
-                        break
-
-                    yield chunk
+                     yield chunk
         except Exception as e:
-            ten_env.log_info(e)
-            ten_env.log_info(traceback.format_exc())
+            ten_env.log_error(traceback.format_exc())

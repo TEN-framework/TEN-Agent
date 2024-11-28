@@ -13,5 +13,5 @@ from ten import (
 class PollyTTSExtensionAddon(Addon):
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import PollyTTSExtension
-        ten_env.log_info("on_create_instance")
+        ten_env.log_info("polly tts on_create_instance")
         ten_env.on_create_instance_done(PollyTTSExtension(name), context)

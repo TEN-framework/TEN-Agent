@@ -23,19 +23,17 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_init")
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_start(ten_env)
-        ten_env.log_debug("on_start")
+        try:
+            await super().on_start(ten_env)
+            ten_env.log_debug("on_start")
+            self.config = PollyTTSConfig.create(ten_env=ten_env)
 
-        self.config = PollyTTSConfig.create(ten_env=ten_env)
-
-        ten_env.log_info(f"config: {self.config.api_key}, {self.config.group_id}")
-
-        if not self.config.access_key or not self.config.secret_key:
-            ten_env.log_info("access_key and secret_key are required")
-            raise ValueError("access_key and secret_key are required")
-        
-        ten_env.log_info(f"start init client")
-        self.client = PollyTTS(self.config)
+            if not self.config.access_key or not self.config.secret_key:
+                raise ValueError("access_key and secret_key are required")
+            
+            self.client = PollyTTS(self.config, ten_env)
+        except Exception as err:
+            ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
@@ -48,9 +46,8 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
-        ten_env.log_info(f"on_request_tts: {input_text}")
         try:
-            data = self.client.get(ten_env, input_text, end_of_segment)
+            data = self.client.text_to_speech_stream(ten_env, input_text)
             async for frame in data:
                 self.send_audio_out(ten_env, frame, sample_rate=self.client.config.sample_rate)
         except Exception as err:

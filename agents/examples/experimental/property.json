@@ -1273,7 +1273,7 @@
               "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
               "engine": "generative",
               "voice": "Ruth",
-              "sample_rate": "16000",
+              "sample_rate": 16000,
               "lang_code": "en-US"
             }
           },
@@ -1439,7 +1439,7 @@
               "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
               "engine": "generative",
               "voice": "Ruth",
-              "sample_rate": "16000",
+              "sample_rate": 16000,
               "lang_code": "en-US"
             }
           },
