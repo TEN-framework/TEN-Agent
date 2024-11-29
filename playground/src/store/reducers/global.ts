@@ -3,7 +3,6 @@ import {
   IChatItem,
   Language,
   VoiceType,
-  IAgentSettings,
 } from "@/types";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
@@ -11,9 +10,6 @@ import {
   DEFAULT_OPTIONS,
   COLOR_LIST,
   setOptionsToLocal,
-  genRandomChatList,
-  setOverridenPropertiesToLocal,
-  deepMerge,
 } from "@/common";
 import { AddonDef, Graph } from "@/common/graph";
 import { set } from "react-hook-form";

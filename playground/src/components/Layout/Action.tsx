@@ -28,9 +28,6 @@ export default function Action(props: { className?: string }) {
   const language = useAppSelector((state) => state.global.language);
   const voiceType = useAppSelector((state) => state.global.voiceType);
   const graphName = useAppSelector((state) => state.global.selectedGraphId);
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab
   );
@@ -60,15 +57,12 @@ export default function Action(props: { className?: string }) {
       toast.success("Agent disconnected");
       stopPing();
     } else {
-      let properties: Record<string, any> =
-        overridenProperties[graphName] || {};
       const res = await apiStartService({
         channel,
         userId,
         graphName,
         language,
         voiceType,
-        properties,
       });
       const { code, msg } = res || {};
       if (code != 0) {

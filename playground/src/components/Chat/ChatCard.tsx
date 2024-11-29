@@ -20,12 +20,8 @@ import {
 import {
   setRtmConnected,
   addChatItem,
-  setExtensionMetadata,
   setSelectedGraphId,
   setLanguage,
-  setExtensions,
-  setOverridenPropertiesByGraph,
-  setOverridenProperties,
 } from "@/store/reducers/global";
 import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
@@ -40,17 +36,8 @@ export default function ChatCard(props: { className?: string }) {
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
-  const graphs = useAppSelector((state) => state.global.graphList);
-  const extensions = useAppSelector((state) => state.global.extensions);
   const graphName = useAppSelector((state) => state.global.selectedGraphId);
-  const chatItems = useAppSelector((state) => state.global.chatItems);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
-  const extensionMetadata = useAppSelector(
-    (state) => state.global.extensionMetadata
-  );
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
   const options = useAppSelector((state) => state.global.options);
 
   const disableInputMemo = React.useMemo(() => {
