@@ -7,6 +7,7 @@ import {
   setGraphList,
 } from "@/store/reducers/global"
 import path from "path"
+import { deepMerge } from "./utils"
 
 export namespace AddonDef {
   export type AttributeType =
@@ -136,9 +137,11 @@ const useGraphManager = () => {
   const selectedGraphId = useAppSelector(
     (state) => state.global.selectedGraphId,
   )
-  const selectedGraph = useAppSelector(
-    (state) => state.global.graphMap[selectedGraphId],
+  const graphMap = useAppSelector(
+    (state) => state.global.graphMap,
   )
+  const selectedGraph = graphMap[selectedGraphId]
+  const addonModules = useAppSelector((state) => state.global.addonModules)
 
   useEffect(() => {
     if (selectedGraphId) {

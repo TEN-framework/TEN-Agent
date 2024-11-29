@@ -16,7 +16,6 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
-  useGraphExtensions,
 } from "@/common";
 import {
   setRtmConnected,
@@ -46,7 +45,6 @@ export default function ChatCard(props: { className?: string }) {
   const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const chatItems = useAppSelector((state) => state.global.chatItems);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
-  const graphExtensions = useGraphExtensions();
   const extensionMetadata = useAppSelector(
     (state) => state.global.extensionMetadata
   );

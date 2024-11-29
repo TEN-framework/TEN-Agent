@@ -29,9 +29,6 @@ export interface InitialState {
   chatItems: IChatItem[];
   selectedGraphId: string;
   graphList: string[];
-  extensions: Record<string, any>;
-  overridenProperties: Record<string, any>;
-  extensionMetadata: Record<string, any>;
   graphMap: Record<string, Graph>;
   addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
@@ -49,9 +46,6 @@ const getInitialState = (): InitialState => {
     chatItems: [],
     selectedGraphId: "",
     graphList: [],
-    extensions: {},
-    overridenProperties: {},
-    extensionMetadata: {},
     graphMap: {},
     addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
@@ -148,34 +142,6 @@ export const globalSlice = createSlice({
     setGraphList: (state, action: PayloadAction<string[]>) => {
       state.graphList = action.payload;
     },
-    setExtensions: (state, action: PayloadAction<Record<string, any>>) => {
-      let { graphName, nodesMap } = action.payload;
-      state.extensions[graphName] = nodesMap;
-    },
-    setOverridenProperties: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      state.overridenProperties = action.payload;
-      setOverridenPropertiesToLocal(state.overridenProperties);
-    },
-    setOverridenPropertiesByGraph: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      let { graphName, nodesMap } = action.payload;
-      state.overridenProperties[graphName] = deepMerge(
-        state.overridenProperties[graphName] || {},
-        nodesMap
-      );
-      setOverridenPropertiesToLocal(state.overridenProperties);
-    },
-    setExtensionMetadata: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      state.extensionMetadata = action.payload;
-    },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload;
     },
@@ -212,10 +178,6 @@ export const {
   setLanguage,
   setSelectedGraphId,
   setGraphList,
-  setExtensions,
-  setExtensionMetadata,
-  setOverridenProperties,
-  setOverridenPropertiesByGraph,
   setMobileActiveTab,
   setGraph,
   setAddonModules,

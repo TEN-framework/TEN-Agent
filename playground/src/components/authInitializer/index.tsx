@@ -1,8 +1,8 @@
 "use client"
 
 import { ReactNode, useEffect } from "react"
-import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId, getOverridenPropertiesFromLocal } from "@/common"
-import { setOptions, reset, setOverridenProperties } from "@/store/reducers/global"
+import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId } from "@/common"
+import { setOptions, reset } from "@/store/reducers/global"
 import { useGraphManager } from "@/common/graph";
 
 interface AuthInitializerProps {
@@ -18,7 +18,6 @@ const AuthInitializer = (props: AuthInitializerProps) => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal()
       initializeGraphData()
-      const overridenProperties = getOverridenPropertiesFromLocal()
       if (options && options.channel) {
         dispatch(reset())
         dispatch(setOptions(options))
@@ -29,7 +28,6 @@ const AuthInitializer = (props: AuthInitializerProps) => {
           userId: getRandomUserId(),
         }))
       }
-      dispatch(setOverridenProperties(overridenProperties))
     }
   }, [dispatch])
 

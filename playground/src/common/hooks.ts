@@ -5,6 +5,7 @@ import { deepMerge, normalizeFrequencies } from "./utils";
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { AppDispatch, AppStore, RootState } from "../store";
 import { useDispatch, useSelector, useStore } from "react-redux";
+import { Node, AddonDef } from "./graph";
 // import { Grid } from "antd"
 
 // const { useBreakpoint } = Grid;
@@ -127,50 +128,3 @@ export const usePrevious = (value: any) => {
 
   return ref.current;
 };
-
-export const useGraphExtensions = () => {
-  const graphName = useAppSelector((state) => state.global.selectedGraphId);
-  const nodes = useAppSelector((state) => state.global.extensions);
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
-  const [graphExtensions, setGraphExtensions] = useState<Record<string, any>>(
-    {}
-  );
-
-  useEffect(() => {
-    if (nodes && nodes[graphName]) {
-      let extensions: Record<string, any> = {};
-      let extensionsByGraph = JSON.parse(JSON.stringify(nodes[graphName]));
-      let overriden = overridenProperties[graphName] || {};
-      for (const key of Object.keys(extensionsByGraph)) {
-        if (!overriden[key]) {
-          extensions[key] = extensionsByGraph[key];
-          continue;
-        }
-        extensions[key] = {
-          addon: extensionsByGraph[key].addon,
-          name: extensionsByGraph[key].name,
-        };
-        extensions[key].property = deepMerge(
-          extensionsByGraph[key].property,
-          overriden[key]
-        );
-      }
-      setGraphExtensions(extensions);
-    }
-  }, [graphName, nodes, overridenProperties]);
-
-  return graphExtensions;
-};
-
-
-export const useExtensionsMetadataNames = (): string[] => {
-  const metadata = useAppSelector((state) => state.global.extensionMetadata);
-  return Object.keys(metadata)
-};
-
-export const useGraph = (graphId: string) => {
-  const graph = useAppSelector((state) => state.global.graphMap[graphId]);
-  return graph;
-}
