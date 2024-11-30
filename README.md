@@ -151,8 +151,7 @@ docker compose up -d
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
 docker exec -it ten_agent_dev bash
-
-task use AGENT=agents/examples/default
+task use
 ```
 
 #### 5. Start the server
@@ -165,14 +164,6 @@ task run
 
 #### TEN Agent
 Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
-
-#### TEN Graph Designer
-
-Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Graph Designer to create, connect and edit extensions on canvas.
-
-Once you save the graph, you can return to [localhost:3000]( http://localhost:3000 ) and select the corresponding graph to view the changes.
-
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
 <br>
 <h2>How components work together</h2>
