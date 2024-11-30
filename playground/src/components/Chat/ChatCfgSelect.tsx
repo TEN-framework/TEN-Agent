@@ -92,15 +92,17 @@ export function RemoteGraphSelect() {
 }
 export function RemoteModuleCfgSheet() {
   const addonModules = useAppSelector((state) => state.global.addonModules);
-  const { getGraphNodeAddonByName, selectedGraph, updateGraph } = useGraphManager();
+  const { getGraphNodeAddonByName, selectedGraph, update: updateGraph } = useGraphManager();
 
   const modules = React.useMemo(() => {
     const result: Record<string, string[]> = {};
 
     addonModules.forEach((module) => {
       const matchingNode = selectedGraph?.nodes.find((node) =>
-        ["stt", "tts", "llm"].some((type) =>
-          node.name === type && (module.name.includes(type) || (type === "stt" && module.name.includes("asr")))
+        ["stt", "tts", "llm", "llmv2v"].some((type) =>
+          node.name === type &&
+          (module.name.includes(type) ||
+            (type === "stt" && module.name.includes("asr")))
         )
       );
       if (matchingNode) {
@@ -148,8 +150,8 @@ export function RemoteModuleCfgSheet() {
         <SheetHeader>
           <SheetTitle>Module Picker</SheetTitle>
           <SheetDescription>
-            You can adjust extension modules here, the values will be
-            written into property.json file.
+            You can adjust STT/TTS/LLM/LLMv2v extension modules here, the values will be
+            written into property.json file when you save.
           </SheetDescription>
         </SheetHeader>
 
@@ -192,7 +194,7 @@ export function RemoteModuleCfgSheet() {
 
 export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
-  const { selectedGraph, updateGraph } = useGraphManager()
+  const { selectedGraph, update: updateGraph } = useGraphManager()
   const graphName = useAppSelector((state) => state.global.selectedGraphId)
 
   const [selectedExtension, setSelectedExtension] = React.useState<string>("")
@@ -217,8 +219,8 @@ export function RemotePropertyCfgSheet() {
         <SheetHeader>
           <SheetTitle>Properties Setting</SheetTitle>
           <SheetDescription>
-            You can adjust extension properties here, the values will be
-            written into property.json file.
+            You can adjust extension properties for selected graph here, the values will be
+            written into property.json file when you save.
           </SheetDescription>
         </SheetHeader>
 
@@ -413,41 +415,48 @@ const GraphModuleCfgForm = ({
     stt: "STT (Speech to Text)",
     llm: "LLM (Large Language Model)",
     tts: "TTS (Text to Speech)",
+    llmv2v: "LLM v2v (Voice to Voice Large Language Model)",
   };
 
+
+  // Desired field order
+  const fieldOrder = ["stt", "llm", "llmv2v", "tts"];
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {Object.entries(metadata).map(([key, meta]) => (
-          <div key={key} className="space-y-2">
-            <FormField
-              control={form.control}
-              name={key}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{fieldLabels[key] || key.toUpperCase()}</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={`Select a ${key.toUpperCase()} option`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {meta.options.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        ))}
+        {fieldOrder.map(
+          (key) =>
+            metadata[key] && ( // Check if the field exists in metadata
+              <div key={key} className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name={key}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{fieldLabels[key]}</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value ?? ""}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Select a ${key.toUpperCase()} option`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {metadata[key].options.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )
+        )}
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (

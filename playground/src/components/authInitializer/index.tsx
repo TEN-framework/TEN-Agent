@@ -1,8 +1,8 @@
 "use client"
 
 import { ReactNode, useEffect } from "react"
-import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId } from "@/common"
-import { setOptions, reset } from "@/store/reducers/global"
+import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId, useAppSelector } from "@/common"
+import { setOptions, reset, fetchGraphDetails } from "@/store/reducers/global"
 import { useGraphManager } from "@/common/graph";
 
 interface AuthInitializerProps {
@@ -12,12 +12,13 @@ interface AuthInitializerProps {
 const AuthInitializer = (props: AuthInitializerProps) => {
   const { children } = props;
   const dispatch = useAppDispatch()
-  const {initializeGraphData} = useGraphManager()
+  const {initialize} = useGraphManager()
+  const selectedGraphId = useAppSelector((state) => state.global.selectedGraphId)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal()
-      initializeGraphData()
+      initialize()
       if (options && options.channel) {
         dispatch(reset())
         dispatch(setOptions(options))
@@ -30,6 +31,12 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       }
     }
   }, [dispatch])
+
+  useEffect(() => {
+    if (selectedGraphId) {
+      dispatch(fetchGraphDetails(selectedGraphId));
+    }
+  }, [selectedGraphId, dispatch]); // Automatically fetch details when `selectedGraphId` changes
 
   return children
 }

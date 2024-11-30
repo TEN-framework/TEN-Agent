@@ -2,9 +2,12 @@ import axios from "axios"
 import { useCallback, useEffect, useState } from "react"
 import { useAppDispatch, useAppSelector } from "./hooks"
 import {
+  fetchGraphDetails,
+  initializeGraphData,
   setAddonModules,
   setGraph,
   setGraphList,
+  updateGraph,
 } from "@/store/reducers/global"
 import { apiFetchAddonsExtensions, apiFetchGraphDetails, apiFetchGraphs, apiFetchInstalledAddons, apiReloadPackage, apiSaveProperty, apiUpdateGraph } from "./request"
 
@@ -139,23 +142,19 @@ const useGraphManager = () => {
   )
   const selectedGraph = graphMap[selectedGraphId]
 
-  useEffect(() => {
-    if (selectedGraphId) {
-      apiFetchGraphDetails(selectedGraphId).then((graph) => {
-        dispatch(setGraph(graph))
-      })
-    }
-  }, [selectedGraphId])
+  const initialize = async () => {
+    await dispatch(initializeGraphData());
+  };
 
-  const initializeGraphData = useCallback(async () => {
-    await apiReloadPackage()
-    const [fetchedGraphs, modules] = await Promise.all([
-      apiFetchGraphs(),
-      apiFetchInstalledAddons(),
-    ])
-    dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)))
-    dispatch(setAddonModules(modules))
-  }, [])
+  const fetchDetails = async () => {
+    if (selectedGraphId) {
+      await dispatch(fetchGraphDetails(selectedGraphId));
+    }
+  };
+
+  const update = async (graphId: string, updates: Partial<Graph>) => {
+    await dispatch(updateGraph({ graphId, updates }));
+  };
 
   const getGraphNodeAddonByName = useCallback(
     (nodeName: string) => {
@@ -171,23 +170,24 @@ const useGraphManager = () => {
     [selectedGraph],
   )
 
-  const updateGraph = useCallback(
-    async (graphId: string, updates: Partial<Graph>): Promise<void> => {
-      await apiUpdateGraph(graphId, updates)
+  // const updateGraph = useCallback(
+  //   async (graphId: string, updates: Partial<Graph>): Promise<void> => {
+  //     await apiUpdateGraph(graphId, updates)
 
-      // Save additional properties if needed
-      await apiSaveProperty()
+  //     // Save additional properties if needed
+  //     await apiSaveProperty()
 
-      // Update the local state with the latest graph details
-      const updatedGraph = await apiFetchGraphDetails(graphId)
-      dispatch(setGraph(updatedGraph))
-    },
-    [],
-  )
+  //     // Update the local state with the latest graph details
+  //     const updatedGraph = await apiFetchGraphDetails(graphId)
+  //     dispatch(setGraph(updatedGraph))
+  //   },
+  //   [],
+  // )
 
   return {
-    initializeGraphData,
-    updateGraph,
+    initialize,
+    fetchDetails,
+    update,
     getGraphNodeAddonByName,
     selectedGraph,
   }

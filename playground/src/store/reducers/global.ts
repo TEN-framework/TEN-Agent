@@ -4,12 +4,18 @@ import {
   Language,
   VoiceType,
 } from "@/types";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
   COLOR_LIST,
   setOptionsToLocal,
+  apiReloadPackage,
+  apiFetchGraphs,
+  apiFetchInstalledAddons,
+  apiFetchGraphDetails,
+  apiUpdateGraph,
+  apiSaveProperty,
 } from "@/common";
 import { AddonDef, Graph } from "@/common/graph";
 import { set } from "react-hook-form";
@@ -161,6 +167,43 @@ export const globalSlice = createSlice({
     }
   },
 });
+
+// Initialize graph data
+export const initializeGraphData = createAsyncThunk(
+  "global/initializeGraphData",
+  async (_, { dispatch }) => {
+    await apiReloadPackage();
+    const [fetchedGraphs, modules] = await Promise.all([
+      apiFetchGraphs(),
+      apiFetchInstalledAddons(),
+    ]);
+    dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+    dispatch(setAddonModules(modules));
+  }
+);
+
+// Fetch graph details
+export const fetchGraphDetails = createAsyncThunk(
+  "global/fetchGraphDetails",
+  async (graphId: string, { dispatch }) => {
+    const graph = await apiFetchGraphDetails(graphId);
+    dispatch(setGraph(graph));
+  }
+);
+
+// Update a graph
+export const updateGraph = createAsyncThunk(
+  "global/updateGraph",
+  async (
+    { graphId, updates }: { graphId: string; updates: Partial<Graph> },
+    { dispatch }
+  ) => {
+    await apiUpdateGraph(graphId, updates);
+    await apiSaveProperty();
+    const updatedGraph = await apiFetchGraphDetails(graphId);
+    dispatch(setGraph(updatedGraph));
+  }
+);
 
 export const {
   reset,
