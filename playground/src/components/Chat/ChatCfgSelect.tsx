@@ -410,6 +410,21 @@ const convertToType = (value: any, type: string) => {
   }
 }
 
+const defaultTypeValue = (type: string) => {
+  switch (type) {
+    case "int64":
+    case "int32":
+      return 0
+    case "float64":
+      return 0.1
+    case "bool":
+      return false
+    case "string":
+    default:
+      return ""
+  }
+}
+
 const GraphModuleCfgForm = ({
   initialData,
   metadata,
@@ -524,7 +539,7 @@ const GraphCfgForm = ({
     const convertedData = Object.entries(data).reduce(
       (acc, [key, value]) => {
         const type = metadata[key]?.type || "string"
-        acc[key] = value === "" ? null : convertToType(value, type)
+        acc[key] = value === "" ? defaultTypeValue(type) : convertToType(value, type)
         return acc
       },
       {} as Record<string, string | number | boolean | null>
