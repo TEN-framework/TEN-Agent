@@ -42,7 +42,6 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
 } from "@/common"
-import type { Language } from "@/types"
 import {
   setSelectedGraphId,
   setLanguage,
@@ -54,7 +53,6 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
 import { AddonDef, Graph, useGraphManager } from "@/common/graph"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 
 export function RemoteGraphSelect() {
   const dispatch = useAppDispatch()
@@ -95,7 +93,7 @@ export function RemoteGraphSelect() {
 
 export function RemoteModuleCfgSheet() {
   const addonModules = useAppSelector((state) => state.global.addonModules)
-  const { getModuleAddonValueByName, selectedGraph, updateGraph } = useGraphManager()
+  const { getGraphNodeAddonByName, selectedGraph, updateGraph } = useGraphManager()
 
   const modules = React.useMemo(() => {
     let result: { stt: string[], llm: string[], tts: string[] } = {
@@ -124,9 +122,9 @@ export function RemoteModuleCfgSheet() {
   }
 
   const initialData = {
-    stt: getModuleAddonValueByName("stt")?.addon,
-    llm: getModuleAddonValueByName("llm")?.addon,
-    tts: getModuleAddonValueByName("tts")?.addon,
+    stt: getGraphNodeAddonByName("stt")?.addon,
+    llm: getGraphNodeAddonByName("llm")?.addon,
+    tts: getGraphNodeAddonByName("tts")?.addon,
   }
 
   return (
@@ -144,8 +142,7 @@ export function RemoteModuleCfgSheet() {
           <SheetTitle>Module Picker</SheetTitle>
           <SheetDescription>
             You can adjust extension modules here, the values will be
-            overridden when the agent starts using "Connect." Note that this
-            won't modify the property.json file.
+            written into property.json file.
           </SheetDescription>
         </SheetHeader>
 
@@ -201,7 +198,7 @@ export function RemoteModuleCfgSheet() {
 
 export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
-  const {selectedGraph, updateGraph} = useGraphManager()
+  const { selectedGraph, updateGraph } = useGraphManager()
   const graphName = useAppSelector((state) => state.global.selectedGraphId)
 
   const [selectedExtension, setSelectedExtension] = React.useState<string>("")
@@ -223,11 +220,10 @@ export function RemotePropertyCfgSheet() {
       </SheetTrigger>
       <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Properties Override</SheetTitle>
+          <SheetTitle>Properties Setting</SheetTitle>
           <SheetDescription>
             You can adjust extension properties here, the values will be
-            overridden when the agent starts using "Connect." Note that this
-            won't modify the property.json file.
+            written into property.json file.
           </SheetDescription>
         </SheetHeader>
 
@@ -280,27 +276,9 @@ export function RemotePropertyCfgSheet() {
                   description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
                 })
               }
-
-              // let nodesMap = JSON.parse(
-              //   JSON.stringify(overridenProperties[selectedExtension] || {}),
-              // )
-              // // Update initial data with any existing overridden values
-              // if (overridenProperties[selectedExtension]) {
-              //   Object.assign(nodesMap, overridenProperties[selectedExtension])
-              // }
-              // nodesMap[selectedExtension] = data
-              // toast.success("Properties updated", {
-              //   description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
-              // })
             }}
           />
         )}
-
-        {/* <SheetFooter>
-          <SheetClose asChild>
-            <Button type="submit">Save changes</Button>
-          </SheetClose>
-        </SheetFooter> */}
       </SheetContent>
     </Sheet>
   )
@@ -312,13 +290,13 @@ export function RemotePropertyAddCfgSheet({
   selectedExtension,
   extensionNodeData,
   onUpdate,
-}:{
+}: {
   selectedExtension: string,
   extensionNodeData: Record<string, string | number | boolean | null>,
   onUpdate: (data: string) => void
 }) {
   const dispatch = useAppDispatch()
-  const {selectedGraph} = useGraphManager()
+  const { selectedGraph } = useGraphManager()
 
   const selectedExtensionNode = selectedGraph?.nodes.find(n => n.name === selectedExtension)
   const addonModules = useAppSelector((state) => state.global.addonModules)
@@ -336,10 +314,10 @@ export function RemotePropertyAddCfgSheet({
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-      <SheetTrigger
+      <SheetTrigger asChild
       >
         <div>
-          <Button type="button" variant="secondary" onClick={() => {setSheetOpen(true)}}>Add</Button>
+          <Button type="button" variant="secondary" onClick={() => { setSheetOpen(true) }}>Add</Button>
         </div>
       </SheetTrigger>
       <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
@@ -360,10 +338,10 @@ export function RemotePropertyAddCfgSheet({
           </SelectTrigger>
           <SelectContent>
             {remainingProperties.map((item) => (
-            <SelectItem key={item} value={item}>
-              {item}
-            </SelectItem>
-          ))}
+              <SelectItem key={item} value={item}>
+                {item}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button type="submit" onClick={() => {
@@ -575,6 +553,7 @@ const GraphCfgForm = ({
     const updatedData = { ...formData }
     delete updatedData[key] // Remove the specific key
     setFormData(updatedData) // Update state
+    form.reset(updatedData) // Reset the form
   }
 
   const initialDataWithType = Object.entries(formData).reduce(
@@ -636,30 +615,32 @@ const GraphCfgForm = ({
             )}
           />
         ))}
-        <RemotePropertyAddCfgSheet 
-          selectedExtension={selectedExtension}
-          extensionNodeData={formData}
-          onUpdate={(key:string) => {
-            let defaultProperty = selectedAddonModule?.defaultProperty || {}
-            let updatedData = {...formData}
-            updatedData[key] = defaultProperty[key]
-            setFormData(updatedData)
-          }}
-        />
-        <Button
-          className="mx-2"
-          type="submit"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? (
-            <>
-              <LoaderCircleIcon className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
-            </>
-          ) : (
-            "Save changes"
-          )}
-        </Button>
+        <div className="flex">
+          <RemotePropertyAddCfgSheet
+            selectedExtension={selectedExtension}
+            extensionNodeData={formData}
+            onUpdate={(key: string) => {
+              let defaultProperty = selectedAddonModule?.defaultProperty || {}
+              let updatedData = { ...formData }
+              updatedData[key] = defaultProperty[key]
+              setFormData(updatedData)
+            }}
+          />
+          <Button
+            className="mx-2"
+            type="submit"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? (
+              <>
+                <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              "Save changes"
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   )
