@@ -308,9 +308,9 @@ export function CozeSettingsTab(props: {
                     <SelectItem value={ECozeBaseUrl.GLOBAL}>
                       {ECozeBaseUrl.GLOBAL}
                     </SelectItem>
-                    <SelectItem value={ECozeBaseUrl.CN}>
+                    {/* <SelectItem value={ECozeBaseUrl.CN}>
                       {ECozeBaseUrl.CN}
-                    </SelectItem>
+                    </SelectItem> */}
                   </SelectContent>
                 </Select>
               </FormControl>

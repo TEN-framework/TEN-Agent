@@ -154,7 +154,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
 
     async def on_data_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs) -> None:
         if not self.acoze:
-            await self._send_text("Coze is not connected. Please check your configuration.")
+            await self._send_text("Coze is not connected. Please check your configuration.", True)
             return
         
         input: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
@@ -181,12 +181,21 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                     sentences, sentence_fragment = parse_sentences(
                             sentence_fragment, message.message.content)
                     for s in sentences:
-                        await self._send_text(s)
+                        await self._send_text(s, False)
+                elif message.event == ChatEventType.CONVERSATION_MESSAGE_COMPLETED:
+                    if sentence_fragment:
+                        await self._send_text(sentence_fragment, True)
+                    else:
+                        await self._send_text("", True)
+                elif message.event == ChatEventType.CONVERSATION_CHAT_FAILED:
+                    last_error = message.chat.last_error
+                    if last_error and last_error.code == 4011:
+                        await self._send_text("The Coze token has been depleted. Please check your token usage.", True)
+                    else:
+                        await self._send_text(last_error.msg, True)
             except Exception as e:
                 self.ten_env.log_error(f"Failed to parse response: {message} {e}")
                 traceback.print_exc()
-        if sentence_fragment:
-            await self._send_text(sentence_fragment)
         
         self.memory.put({"role": "assistant", "content": total_output})
         self.ten_env.log_info(f"total_output: {total_output} {calls}")
@@ -231,10 +240,10 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
     async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
         pass
 
-    async def _send_text(self, text: str) -> None:
+    async def _send_text(self, text: str, end_of_segment: bool) -> None:
         data = Data.create("text_data")
         data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, True)
+        data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, end_of_segment)
         self.ten_env.send_data(data)
 
     async def _stream_chat(self, messages: List[Any]) -> AsyncGenerator[ChatEvent, None]:
@@ -300,10 +309,10 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
                                         result = json.loads(decoded_line)
                                         code = result.get("code", 0)
                                         if code == 4000:
-                                            await self._send_text("Coze bot is not published.")
+                                            await self._send_text("Coze bot is not published.", True)
                                         else:
                                             self.ten_env.log_error(f"Failed to stream chat: {result['code']}")
-                                            await self._send_text("Coze bot is not connected. Please check your configuration.")
+                                            await self._send_text("Coze bot is not connected. Please check your configuration.", True)
                             except Exception as e:
                                 self.ten_env.log_error(f"Failed to stream chat: {e}")
             except Exception as e:
