@@ -94,18 +94,38 @@ export function RemoteModuleCfgSheet() {
   const addonModules = useAppSelector((state) => state.global.addonModules);
   const { getGraphNodeAddonByName, selectedGraph, update: updateGraph } = useGraphManager();
 
+  const moduleMapping: Record<string, string[]> = {
+    stt: [],
+    llm: ["openai_chatgpt_python"],
+    v2v: [],
+    tts: [],
+  };
+  
+  // Define the exclusion map for modules
+  const exclusionMapping: Record<string, string[]> = {
+    stt: [],
+    llm: ["qwen_llm_python"],
+    v2v: ["minimax_v2v_python"],
+    tts: [],
+  };
+  
   const modules = React.useMemo(() => {
     const result: Record<string, string[]> = {};
 
     addonModules.forEach((module) => {
       const matchingNode = selectedGraph?.nodes.find((node) =>
-        ["stt", "tts", "llm", "llmv2v"].some((type) =>
+        ["stt", "tts", "llm", "v2v"].some((type) =>
           node.name === type &&
           (module.name.includes(type) ||
-            (type === "stt" && module.name.includes("asr")))
+            (type === "stt" && module.name.includes("asr")) ||
+            (moduleMapping[type]?.includes(module.name)))
         )
       );
-      if (matchingNode) {
+
+      if (
+        matchingNode &&
+        !exclusionMapping[matchingNode.name]?.includes(module.name)
+      ) {
         if (!result[matchingNode.name]) {
           result[matchingNode.name] = [];
         }
@@ -415,12 +435,12 @@ const GraphModuleCfgForm = ({
     stt: "STT (Speech to Text)",
     llm: "LLM (Large Language Model)",
     tts: "TTS (Text to Speech)",
-    llmv2v: "LLM v2v (Voice to Voice Large Language Model)",
+    v2v: "LLM v2v (Voice to Voice Large Language Model)",
   };
 
 
   // Desired field order
-  const fieldOrder = ["stt", "llm", "llmv2v", "tts"];
+  const fieldOrder = ["stt", "llm", "v2v", "tts"];
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
