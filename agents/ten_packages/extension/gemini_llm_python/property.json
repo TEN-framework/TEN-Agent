@@ -1,0 +1,11 @@
+{
+    "api_key": "$GEMINI_API_KEY",
+    "greeting": "TEN Agent connected. How can I help you today?",
+    "max_memory_length": 10,
+    "max_output_tokens": 512,
+    "model": "gemini-1.5-flash",
+    "prompt": "",
+    "temperature": 0.9,
+    "top_k": 40,
+    "top_p": 0.95
+}
