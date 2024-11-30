@@ -101,7 +101,7 @@ You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silico
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 #### Windows: Configuring Git to handle line endings
-To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
+To avoid problems in `task run` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
 
 ```bash
 git config --global core.autocrlf true
@@ -148,13 +148,13 @@ Open up a separate terminal window, enter the container and build the agent:
 ```bash
 docker exec -it ten_agent_dev bash
 
-make build
+task use AGENT=agents/examples/demo
 ```
 
 #### 5. Start the server
-Once the build is done, `make run-server` on port `8080`:
+Once the build is done, `task run` on port `8080/49483`:
 ```bash
-make run-server
+task run
 ```
 
 ### Finish and verify
@@ -170,6 +170,9 @@ Once you save the graph, you can return to [localhost:3000]( http://localhost:30
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
 
+### How components work together in this repository
+
+![Components Diagram](https://raw.githubusercontent.com/TEN-framework/docs/refs/heads/main/assets/png/arc.png)
 
 <br>
 <h2>Stay Tuned</h2>

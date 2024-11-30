@@ -98,7 +98,7 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_stop")
 
         # TODO: clean up resources
-        if self.session:
+        if self.session and not self.session.closed:
             await self.session.close()
             self.session = None  # Ensure it can't be reused accidentally
 
@@ -145,7 +145,13 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
         return snippets
 
+    async def _initialize_session(self):
+        if self.session is None or self.session.closed:
+            logger.debug("Initializing new session")
+            self.session = aiohttp.ClientSession()
+
     async def _bing_search_results(self, search_term: str, count: int) -> List[dict]:
+        await self._initialize_session()
         headers = {"Ocp-Apim-Subscription-Key": self.api_key}
         params = {
             "q": search_term,

@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { buttonVariants } from "@/components/ui/button";
+import * as React from "react"
+import { buttonVariants } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -10,7 +10,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -20,7 +20,7 @@ import {
   SheetTrigger,
   SheetFooter,
   SheetClose,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet"
 import {
   Form,
   FormControl,
@@ -29,46 +29,47 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/ui/form"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   useAppDispatch,
   LANGUAGE_OPTIONS,
   useAppSelector,
   GRAPH_OPTIONS,
   useGraphExtensions,
-} from "@/common";
-import type { Language } from "@/types";
+} from "@/common"
+import type { Language } from "@/types"
 import {
   setGraphName,
   setLanguage,
   setOverridenPropertiesByGraph,
-} from "@/store/reducers/global";
-import { cn } from "@/lib/utils";
-import { SettingsIcon } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+} from "@/store/reducers/global"
+import { cn } from "@/lib/utils"
+import { SettingsIcon, LoaderCircleIcon } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { toast } from "sonner"
 
 export function RemoteGraphSelect() {
-  const dispatch = useAppDispatch();
-  const graphName = useAppSelector((state) => state.global.graphName);
-  const graphs = useAppSelector((state) => state.global.graphs);
-  const agentConnected = useAppSelector((state) => state.global.agentConnected);
+  const dispatch = useAppDispatch()
+  const graphName = useAppSelector((state) => state.global.graphName)
+  const graphs = useAppSelector((state) => state.global.graphs)
+  const agentConnected = useAppSelector((state) => state.global.agentConnected)
 
   const onGraphNameChange = (val: string) => {
-    dispatch(setGraphName(val));
-  };
+    dispatch(setGraphName(val))
+  }
 
   const graphOptions = graphs.map((item) => ({
     label: item,
     value: item,
-  }));
+  }))
 
   return (
     <>
@@ -89,33 +90,33 @@ export function RemoteGraphSelect() {
         </SelectContent>
       </Select>
     </>
-  );
+  )
 }
 
 export function RemoteGraphCfgSheet() {
-  const dispatch = useAppDispatch();
-  const graphExtensions = useGraphExtensions();
-  const graphName = useAppSelector((state) => state.global.graphName);
+  const dispatch = useAppDispatch()
+  const graphExtensions = useGraphExtensions()
+  const graphName = useAppSelector((state) => state.global.graphName)
   const extensionMetadata = useAppSelector(
-    (state) => state.global.extensionMetadata
-  );
+    (state) => state.global.extensionMetadata,
+  )
   const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
+    (state) => state.global.overridenProperties,
+  )
 
-  const [selectedExtension, setSelectedExtension] = React.useState<string>("");
+  const [selectedExtension, setSelectedExtension] = React.useState<string>("")
 
   return (
     <Sheet>
       <SheetTrigger
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
-          "bg-transparent"
+          "bg-transparent",
         )}
       >
         <SettingsIcon />
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+      <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Properties Override</SheetTitle>
           <SheetDescription>
@@ -131,7 +132,7 @@ export function RemoteGraphCfgSheet() {
             onValueChange={setSelectedExtension}
             value={selectedExtension}
           >
-            <SelectTrigger className="w-full mt-2">
+            <SelectTrigger className="mt-2 w-full">
               <SelectValue placeholder="Select extension" />
             </SelectTrigger>
             <SelectContent>
@@ -146,6 +147,7 @@ export function RemoteGraphCfgSheet() {
 
         {graphExtensions?.[selectedExtension]?.["property"] && (
           <GraphCfgForm
+            key={`${graphName}-${selectedExtension}`}
             initialData={
               graphExtensions?.[selectedExtension]?.["property"] || {}
             }
@@ -157,20 +159,22 @@ export function RemoteGraphCfgSheet() {
             onUpdate={(data) => {
               // clone the overridenProperties
               let nodesMap = JSON.parse(
-                JSON.stringify(overridenProperties[selectedExtension] || {})
-              );
+                JSON.stringify(overridenProperties[selectedExtension] || {}),
+              )
               // Update initial data with any existing overridden values
               if (overridenProperties[selectedExtension]) {
-                Object.assign(nodesMap, overridenProperties[selectedExtension]);
+                Object.assign(nodesMap, overridenProperties[selectedExtension])
               }
-              nodesMap[selectedExtension] = data;
-              console.log("nodesMap", nodesMap);
+              nodesMap[selectedExtension] = data
+              toast.success("Properties updated", {
+                description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
+              })
               dispatch(
                 setOverridenPropertiesByGraph({
-                  graphName: selectedExtension,
+                  graphName,
                   nodesMap,
-                })
-              );
+                }),
+              )
             }}
           />
         )}
@@ -182,7 +186,7 @@ export function RemoteGraphCfgSheet() {
         </SheetFooter> */}
       </SheetContent>
     </Sheet>
-  );
+  )
 }
 
 // Helper to convert values based on type
@@ -190,59 +194,59 @@ const convertToType = (value: any, type: string) => {
   switch (type) {
     case "int64":
     case "int32":
-      return parseInt(value, 10);
+      return parseInt(value, 10)
     case "float64":
-      return parseFloat(value);
+      return parseFloat(value)
     case "bool":
-      return value === true || value === "true";
+      return value === true || value === "true"
     case "string":
-      return String(value);
+      return String(value)
     default:
-      return value;
+      return value
   }
-};
+}
 
 const GraphCfgForm = ({
   initialData,
   metadata,
   onUpdate,
 }: {
-  initialData: Record<string, string | number | boolean | null>;
-  metadata: Record<string, { type: string }>;
-  onUpdate: (data: Record<string, string | number | boolean | null>) => void;
+  initialData: Record<string, string | number | boolean | null>
+  metadata: Record<string, { type: string }>
+  onUpdate: (data: Record<string, string | number | boolean | null>) => void
 }) => {
   const formSchema = z.record(
     z.string(),
-    z.union([z.string(), z.number(), z.boolean(), z.null()])
-  );
+    z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  )
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
-  });
+  })
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const convertedData = Object.entries(data).reduce(
       (acc, [key, value]) => {
-        const type = metadata[key]?.type || "string";
-        acc[key] = value === "" ? null : convertToType(value, type);
-        return acc;
+        const type = metadata[key]?.type || "string"
+        acc[key] = value === "" ? null : convertToType(value, type)
+        return acc
       },
-      {} as Record<string, string | number | boolean | null>
-    );
-    onUpdate(convertedData);
-  };
+      {} as Record<string, string | number | boolean | null>,
+    )
+    onUpdate(convertedData)
+  }
 
   const initialDataWithType = Object.entries(initialData).reduce(
     (acc, [key, value]) => {
-      acc[key] = { value, type: metadata[key]?.type || "string" };
-      return acc;
+      acc[key] = { value, type: metadata[key]?.type || "string" }
+      return acc
     },
     {} as Record<
       string,
       { value: string | number | boolean | null; type: string }
-    >
-  );
+    >,
+  )
 
   return (
     <Form {...form}>
@@ -279,8 +283,17 @@ const GraphCfgForm = ({
             )}
           />
         ))}
-        <Button type="submit">Save changes</Button>
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? (
+            <>
+              <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            "Save changes"
+          )}
+        </Button>
       </form>
     </Form>
-  );
-};
+  )
+}

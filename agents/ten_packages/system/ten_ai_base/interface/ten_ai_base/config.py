@@ -28,6 +28,7 @@ class BaseConfig:
             # if not ten_env.is_property_exist(field.name):
             #     continue
             try:
+                ten_env.log_info(f"init field.name: {field.name}")
                 match field.type:
                     case builtins.str:
                         val = ten_env.get_property_string(field.name)
@@ -45,4 +46,4 @@ class BaseConfig:
                     case _:
                         pass
             except Exception as e:
-                pass
+                ten_env.log_error(f"Error: {e}")

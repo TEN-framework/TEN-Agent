@@ -157,12 +157,12 @@ docker compose up
 ```bash
 docker exec -it ten_agent_dev bash
 
-make build
+task use AGENT=agents/examples/demo
 ```
 
 #### 5.开启服务
 ```bash
-make run-server
+task run
 ```
 
 ### 构建完成 🎉

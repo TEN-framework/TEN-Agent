@@ -13,7 +13,7 @@ from ten import (
 from ten.async_ten_env import AsyncTenEnv
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
-from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUTPUT_NAME, DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, DATA_OUTPUT_PROPERTY_TEXT, CMD_CHAT_COMPLETION_CALL
+from .const import CMD_PROPERTY_TOOL, CMD_TOOL_REGISTER, DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT, CMD_CHAT_COMPLETION_CALL
 from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from .helper import AsyncQueue
 import json
@@ -108,11 +108,11 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
 
     def send_text_output(self, ten_env: AsyncTenEnv, sentence: str, end_of_segment: bool):
         try:
-            output_data = Data.create(DATA_OUTPUT_NAME)
+            output_data = Data.create(DATA_OUT_NAME)
             output_data.set_property_string(
-                DATA_OUTPUT_PROPERTY_TEXT, sentence)
+                DATA_OUT_PROPERTY_TEXT, sentence)
             output_data.set_property_bool(
-                DATA_OUTPUT_PROPERTY_END_OF_SEGMENT, end_of_segment
+                DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
             )
             ten_env.send_data(output_data)
             ten_env.log_info(
