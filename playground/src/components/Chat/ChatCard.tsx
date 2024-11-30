@@ -109,7 +109,7 @@ export default function ChatCard(props: { className?: string }) {
       <div className={cn("flex-grow", className)}>
         <div className="flex h-full w-full flex-col p-4">
           {/* Action Bar */}
-          <div className="flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
             <RemoteGraphSelect />
             <RemoteModuleCfgSheet />
             <RemotePropertyCfgSheet />

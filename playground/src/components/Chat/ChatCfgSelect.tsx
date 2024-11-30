@@ -207,6 +207,7 @@ export function RemotePropertyCfgSheet() {
   const selectedAddonModule = addonModules.find(
     (module) => module.name === selectedExtensionNode?.addon,
   )
+  const hasProperty = !!selectedAddonModule?.api?.property && Object.keys(selectedAddonModule?.api?.property).length > 0
 
   return (
     <Sheet>
@@ -246,7 +247,7 @@ export function RemotePropertyCfgSheet() {
           </Select>
         </div>
 
-        {selectedExtensionNode?.["property"] && (
+        {hasProperty ? selectedExtensionNode?.["property"] && (
           <GraphCfgForm
             selectedAddonModule={selectedAddonModule}
             selectedExtension={selectedExtension}
@@ -278,6 +279,10 @@ export function RemotePropertyCfgSheet() {
               }
             }}
           />
+        ) : (
+          <SheetDescription>
+            No properties found for the selected extension.
+          </SheetDescription>
         )}
       </SheetContent>
     </Sheet>
@@ -308,6 +313,7 @@ export function RemotePropertyAddCfgSheet({
   const remainingProperties = allProperties.filter(
     (prop) => !usedProperties.includes(prop),
   )
+  const hasRemainingProperties = remainingProperties.length > 0
 
   const [selectedProperty, setSelectedProperty] = React.useState<string>("")
   const [isSheetOpen, setSheetOpen] = React.useState(false) // State to control the sheet
@@ -327,30 +333,45 @@ export function RemotePropertyAddCfgSheet({
             You can add a property into a graph extension node and configure its value.
           </SheetDescription>
         </SheetHeader>
-        <Select
-          onValueChange={(key) => {
-            setSelectedProperty(key)
-          }}
-          value={selectedProperty}
-        >
-          <SelectTrigger className="w-full my-4">
-            <SelectValue placeholder="Select a property" />
-          </SelectTrigger>
-          <SelectContent>
-            {remainingProperties.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button type="submit" onClick={() => {
-          if (selectedProperty !== "") {
-            onUpdate(selectedProperty)
-            setSelectedProperty("")
-          }
-          setSheetOpen(false)
-        }}>Add</Button>
+        {hasRemainingProperties ? (
+          <>
+            <Select
+              onValueChange={(key) => {
+                setSelectedProperty(key)
+              }}
+              value={selectedProperty}
+            >
+              <SelectTrigger className="w-full my-4">
+                <SelectValue placeholder="Select a property" />
+              </SelectTrigger>
+              <SelectContent>
+                {remainingProperties.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button type="submit" onClick={() => {
+              setSheetOpen(false)
+              if (selectedProperty !== "") {
+                onUpdate(selectedProperty)
+                setSelectedProperty("")
+              }
+            }}>Add</Button>
+          </>
+        ) : (
+          <>
+            <SheetDescription className="my-4">
+              No remaining properties to add.
+            </SheetDescription>
+            <Button type="submit" onClick={() => {
+              setSheetOpen(false)
+            }}>OK</Button>
+          </>
+        )}
+
       </SheetContent>
     </Sheet>
   )
@@ -621,9 +642,19 @@ const GraphCfgForm = ({
             extensionNodeData={formData}
             onUpdate={(key: string) => {
               let defaultProperty = selectedAddonModule?.defaultProperty || {}
+              let defaultValue = defaultProperty[key]
+
+              if (defaultValue === undefined) {
+                let schema = selectedAddonModule?.api?.property || {}
+                let schemaType = schema[key]?.type
+                if (schemaType === "bool") {
+                  defaultValue = false
+                }
+              }
               let updatedData = { ...formData }
-              updatedData[key] = defaultProperty[key]
+              updatedData[key] = defaultValue
               setFormData(updatedData)
+              form.reset(updatedData)
             }}
           />
           <Button
