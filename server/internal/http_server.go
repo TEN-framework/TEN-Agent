@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -529,6 +530,51 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 					}
 				}
 			}
+		}
+	}
+
+	// Validate environment variables in the "nodes" section
+	envPattern := regexp.MustCompile(`\${env:([^}|]+)}`)
+	for _, graph := range newGraphs {
+		graphMap, _ := graph.(map[string]interface{})
+		nodes, ok := graphMap["nodes"].([]interface{})
+		if !ok {
+			slog.Info("No nodes section in the graph", "graph", graphName, "requestId", req.RequestId, logTag)
+			continue
+		}
+		for _, node := range nodes {
+			nodeMap, _ := node.(map[string]interface{})
+			properties, ok := nodeMap["property"].(map[string]interface{})
+			if !ok {
+				// slog.Info("No property section in the node", "node", nodeMap, "requestId", req.RequestId, logTag)
+				continue
+			}
+			for key, val := range properties {
+				strVal, ok := val.(string)
+				if !ok {
+					continue
+				}
+				// Log the property value being processed
+				// slog.Info("Processing property", "key", key, "value", strVal)
+
+				matches := envPattern.FindAllStringSubmatch(strVal, -1)
+				// if len(matches) == 0 {
+				// 	slog.Info("No environment variable patterns found in property", "key", key, "value", strVal)
+				// }
+
+				for _, match := range matches {
+					if len(match) < 2 {
+						continue
+					}
+					variable := match[1]
+					exists := os.Getenv(variable) != ""
+					// slog.Info("Checking environment variable", "variable", variable, "exists", exists)
+					if !exists {
+						slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+					}
+				}
+			}
+
 		}
 	}
 
