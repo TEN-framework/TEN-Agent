@@ -1,1 +1,2 @@
 elevenlabs
+pydantic<2

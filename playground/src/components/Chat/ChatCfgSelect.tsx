@@ -90,49 +90,56 @@ export function RemoteGraphSelect() {
     </>
   )
 }
-
 export function RemoteModuleCfgSheet() {
-  const addonModules = useAppSelector((state) => state.global.addonModules)
-  const { getGraphNodeAddonByName, selectedGraph, updateGraph } = useGraphManager()
+  const addonModules = useAppSelector((state) => state.global.addonModules);
+  const { getGraphNodeAddonByName, selectedGraph, updateGraph } = useGraphManager();
 
   const modules = React.useMemo(() => {
-    let result: { stt: string[], llm: string[], tts: string[] } = {
-      stt: [],
-      llm: [],
-      tts: [],
-    }
+    const result: Record<string, string[]> = {};
 
     addonModules.forEach((module) => {
-      if (module.name.includes("stt") || module.name.includes("asr")) {
-        result.stt.push(module.name)
-      } else if (module.name.includes("llm")) {
-        result.llm.push(module.name)
-      } else if (module.name.includes("tts")) {
-        result.tts.push(module.name)
+      const matchingNode = selectedGraph?.nodes.find((node) =>
+        ["stt", "tts", "llm"].some((type) =>
+          node.name === type && (module.name.includes(type) || (type === "stt" && module.name.includes("asr")))
+        )
+      );
+      if (matchingNode) {
+        if (!result[matchingNode.name]) {
+          result[matchingNode.name] = [];
+        }
+        result[matchingNode.name].push(module.name);
       }
-    })
-    return result
-  }, [addonModules])
+    });
 
+    return result;
+  }, [addonModules, selectedGraph]);
 
-  const metadata = {
-    stt: { type: "string", options: modules.stt },
-    llm: { type: "string", options: modules.llm },
-    tts: { type: "string", options: modules.tts },
-  }
+  const metadata = React.useMemo(() => {
+    const dynamicMetadata: Record<string, { type: string; options: string[] }> = {};
 
-  const initialData = {
-    stt: getGraphNodeAddonByName("stt")?.addon,
-    llm: getGraphNodeAddonByName("llm")?.addon,
-    tts: getGraphNodeAddonByName("tts")?.addon,
-  }
+    Object.keys(modules).forEach((key) => {
+      dynamicMetadata[key] = { type: "string", options: modules[key] };
+    });
+
+    return dynamicMetadata;
+  }, [modules]);
+
+  const initialData = React.useMemo(() => {
+    const dynamicInitialData: Record<string, string | null | undefined> = {};
+
+    Object.keys(modules).forEach((key) => {
+      dynamicInitialData[key] = getGraphNodeAddonByName(key)?.addon;
+    });
+
+    return dynamicInitialData;
+  }, [modules, getGraphNodeAddonByName]);
 
   return (
     <Sheet>
       <SheetTrigger
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
-          "bg-transparent",
+          "bg-transparent"
         )}
       >
         <BoxesIcon />
@@ -151,49 +158,36 @@ export function RemoteModuleCfgSheet() {
             initialData={initialData}
             metadata={metadata}
             onUpdate={async (data) => {
-              // clone the overridenAddons
-              const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph))
-              const nodes = selectedGraphCopy?.nodes || []
-              let needUpdate = false
-              for (const node of nodes) {
-                if (data.stt && node.name === "stt" && node.addon !== data.stt) {
-                  node.addon = data.stt
-                  node.property = addonModules.find((module) => module.name === data.stt)?.defaultProperty
-                  needUpdate = true
+              // clone the overriddenAddons
+              const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
+              const nodes = selectedGraphCopy?.nodes || [];
+              let needUpdate = false;
+
+              Object.entries(data).forEach(([key, value]) => {
+                const node = nodes.find((n) => n.name === key);
+                if (node && value && node.addon !== value) {
+                  node.addon = value;
+                  node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
+                  needUpdate = true;
                 }
-                if (data.llm && node.name === "lln" && node.addon !== data.llm) {
-                  node.addon = data.llm
-                  node.property = addonModules.find((module) => module.name === data.llm)?.defaultProperty
-                  needUpdate = true
-                }
-                if (data.tts && node.name === "tts" && node.addon !== data.tts) {
-                  node.addon = data.tts
-                  node.property = addonModules.find((module) => module.name === data.tts)?.defaultProperty
-                  needUpdate = true
-                }
-              }
+              });
+
               if (needUpdate) {
                 try {
-                  await updateGraph(selectedGraphCopy.id, selectedGraphCopy)
+                  await updateGraph(selectedGraphCopy.id, selectedGraphCopy);
                   toast.success("Modules updated", {
                     description: `Graph: ${selectedGraphCopy.id}`,
-                  })
+                  });
                 } catch (e) {
-                  toast.error("Failed to update modules")
+                  toast.error("Failed to update modules");
                 }
               }
             }}
           />
         </div>
-
-        {/* <SheetFooter>
-          <SheetClose asChild>
-            <Button type="submit">Save changes</Button>
-          </SheetClose>
-        </SheetFooter> */}
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 export function RemotePropertyCfgSheet() {
@@ -399,123 +393,62 @@ const GraphModuleCfgForm = ({
   metadata,
   onUpdate,
 }: {
-  initialData: Record<string, string | null | undefined>
-  metadata: Record<string, { type: string; options: string[] }>
-  onUpdate: (data: Record<string, string | null>) => void
+  initialData: Record<string, string | null | undefined>;
+  metadata: Record<string, { type: string; options: string[] }>;
+  onUpdate: (data: Record<string, string | null>) => void;
 }) => {
-  const formSchema = z.object({
-    stt: z.string().nullable(),
-    llm: z.string().nullable(),
-    tts: z.string().nullable(),
-  })
+  const formSchema = z.record(z.string(), z.string().nullable());
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
-  })
+  });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    onUpdate(data)
-  }
+    onUpdate(data);
+  };
 
+  // Custom labels for specific keys
+  const fieldLabels: Record<string, string> = {
+    stt: "STT (Speech to Text)",
+    llm: "LLM (Large Language Model)",
+    tts: "TTS (Text to Speech)",
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* STT Section */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">STT (Speech to Text)</h3>
-          <FormField
-            control={form.control}
-            name="stt"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Speech-to-Text</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value ?? ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an STT option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {metadata["stt"].options.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
+        {Object.entries(metadata).map(([key, meta]) => (
+          <div key={key} className="space-y-2">
+            <FormField
+              control={form.control}
+              name={key}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{fieldLabels[key] || key.toUpperCase()}</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select a ${key.toUpperCase()} option`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {meta.options.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        ))}
 
-        {/* LLM Section */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">LLM (Large Language Model)</h3>
-          <FormField
-            control={form.control}
-            name="llm"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Large Language Model</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value ?? ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an LLM option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {metadata["llm"].options.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* TTS Section */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">TTS (Text to Speech)</h3>
-          <FormField
-            control={form.control}
-            name="tts"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Text-to-Speech</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value ?? ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a TTS option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {metadata["tts"].options.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Submit Button */}
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
             <>
@@ -528,8 +461,8 @@ const GraphModuleCfgForm = ({
         </Button>
       </form>
     </Form>
-  )
-}
+  );
+};
 
 import { useState } from "react"
 
