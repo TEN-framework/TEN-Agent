@@ -60,7 +60,11 @@ install_python_requirements() {
   if [[ -d "ten_packages/extension" ]]; then
     for extension in ten_packages/extension/*; do
       if [[ -f "$extension/requirements.txt" ]]; then
-        pip install -r $extension/requirements.txt
+        local extension_name=$(basename $extension)
+        local exists_in_manifest=$(cat manifest.json | jq --arg ext_name "${extension_name}" 'any(.dependencies[].name == $ext_name ; .)' )
+        if [[ "$exists_in_manifest" == "true" ]]; then
+          pip install -r $extension/requirements.txt
+        fi
       fi
     done
   fi
@@ -73,10 +77,6 @@ install_python_requirements() {
       fi
     done
   fi
-
-  # pre-import llama-index as it cloud download additional resources during the first import
-  echo "pre-import python modules..."
-  python3.10 -c "import llama_index.core;"
 }
 
 build_go_app() {
