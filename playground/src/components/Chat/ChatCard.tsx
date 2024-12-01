@@ -3,10 +3,8 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
-  RemoteGraphSelect,
-  RemoteModuleCfgSheet,
   RemotePropertyCfgSheet,
-} from "@/components/Chat/ChatCfgSelect";
+} from "@/components/Chat/ChatCfgPropertySelect";
 import PdfSelect from "@/components/Chat/PdfSelect";
 import {
   genRandomChatList,
@@ -28,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { rtmManager } from "@/manager/rtm";
 import { type IRTMTextItem, EMessageType, ERTMTextType } from "@/types";
+import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
+import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
