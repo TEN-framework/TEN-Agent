@@ -194,4 +194,4 @@ const useGraphManager = () => {
 }
 
 export { useGraphManager }
-export type { Graph, Node, Connection, Command }
+export type { Graph, Node, Connection, Command, Destination }

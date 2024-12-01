@@ -31,7 +31,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import { AddonDef, Graph, useGraphManager } from "@/common/graph"
+import { AddonDef, Graph, useGraphManager, Destination } from "@/common/graph"
 import { toast } from "sonner"
 import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon } from "lucide-react"
 import { useForm } from "react-hook-form"
