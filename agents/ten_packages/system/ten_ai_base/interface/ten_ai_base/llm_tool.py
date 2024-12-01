@@ -21,12 +21,13 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
 
-        tools = self.get_tool_metadata(ten_env)
+        tools:list[LLMToolMetadata] = self.get_tool_metadata(ten_env)
         for tool in tools:
             ten_env.log_info(f"tool: {tool}")
             c: Cmd = Cmd.create(CMD_TOOL_REGISTER)
             c.set_property_from_json(
                 CMD_PROPERTY_TOOL, json.dumps(tool.model_dump_json()))
+            ten_env.log_info(f"begin tool register, {tool}")
             await ten_env.send_cmd(c)
             ten_env.log_info(f"tool registered, {tool}")
 

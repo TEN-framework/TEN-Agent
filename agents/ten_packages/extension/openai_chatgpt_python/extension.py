@@ -174,10 +174,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 self.memory_cache = self.memory_cache + \
                     [message, {"role": "assistant", "content": ""}]
 
-            tools = [] if not no_tool and len(
-                self.available_tools) > 0 else None
-            for tool in self.available_tools:
-                tools.append(self._convert_tools_to_dict(tool))
+            tools = None
+            if not no_tool and len(self.available_tools) > 0:
+                tools = []
+                for tool in self.available_tools:
+                    tools.append(self._convert_tools_to_dict(tool))
+                    ten_env.log_info(f"tool: {tool}")
 
             self.sentence_fragment = ""
 
