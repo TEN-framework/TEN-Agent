@@ -1,0 +1,20 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+
+ten_package("glue_python_async") {
+  package_kind = "extension"
+
+  resources = [
+    "__init__.py",
+    "addon.py",
+    "extension.py",
+    "log.py",
+    "manifest.json",
+    "property.json",
+    "tests",
+  ]
+}

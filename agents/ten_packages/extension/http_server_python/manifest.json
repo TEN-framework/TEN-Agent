@@ -1,0 +1,63 @@
+{
+  "type": "extension",
+  "name": "http_server_python",
+  "version": "0.5.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.4"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py"
+    ]
+  },
+  "api": {
+    "property": {
+      "listen_addr": {
+        "type": "string"
+      },
+      "listen_port": {
+        "type": "int32"
+      }
+    },
+    "cmd_out": [
+      {
+        "name": "update_querying_collection",
+        "property": {
+          "filename": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "collection"
+        ]
+      },
+      {
+        "name": "file_chunk",
+        "property": {
+          "filename": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    ]
+  }
+}
