@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
 import { AddonDef, Graph, useGraphManager, Destination } from "@/common/graph"
 import { toast } from "sonner"
-import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon } from "lucide-react"
+import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -136,7 +136,7 @@ export function RemoteModuleCfgSheet() {
                             let needUpdate = false;
 
                             // Retrieve current tools in the graph
-                            const toolModules = addonModules.filter((module) => module.name.includes("tool"));
+                            const {toolModules} = useGraphManager();
                             const currentToolsInGraph = nodes
                                 .filter((node) => toolModules.map((module) => module.name).includes(node.addon))
                                 .map((node) => node.addon);
@@ -398,8 +398,7 @@ const GraphModuleCfgForm = ({
     onUpdate: (data: Record<string, string | null>, tools: string[]) => void;
 }) => {
     const formSchema = z.record(z.string(), z.string().nullable());
-    const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { selectedGraph } = useGraphManager();
+    const { selectedGraph, toolModules } = useGraphManager();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -419,11 +418,6 @@ const GraphModuleCfgForm = ({
         v2v: "LLM v2v (Voice to Voice Large Language Model)",
     };
 
-    // Extract tool modules from addonModules
-    const toolModules = React.useMemo(
-        () => addonModules.filter((module) => module.name.includes("tool")),
-        [addonModules]
-    );
 
     // Initialize selectedTools by extracting tool addons used in graph nodes
     const initialSelectedTools = React.useMemo(() => {
@@ -457,7 +451,7 @@ const GraphModuleCfgForm = ({
                                                             <DropdownMenuTrigger className={cn(
                                                                 buttonVariants({ variant: "outline", size: "icon" }),
                                                                 "bg-transparent",
-                                                            )}><SettingsIcon />
+                                                            )}><WrenchIcon />
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent>
                                                                 <DropdownMenuSub>

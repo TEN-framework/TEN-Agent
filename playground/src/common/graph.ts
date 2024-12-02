@@ -1,5 +1,5 @@
 import axios from "axios"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useAppDispatch, useAppSelector } from "./hooks"
 import {
   fetchGraphDetails,
@@ -9,7 +9,15 @@ import {
   setGraphList,
   updateGraph,
 } from "@/store/reducers/global"
-import { apiFetchAddonsExtensions, apiFetchGraphDetails, apiFetchGraphs, apiFetchInstalledAddons, apiReloadPackage, apiSaveProperty, apiUpdateGraph } from "./request"
+import {
+  apiFetchAddonsExtensions,
+  apiFetchGraphDetails,
+  apiFetchGraphs,
+  apiFetchInstalledAddons,
+  apiReloadPackage,
+  apiSaveProperty,
+  apiUpdateGraph,
+} from "./request"
 
 export namespace AddonDef {
   export type AttributeType =
@@ -137,24 +145,31 @@ const useGraphManager = () => {
   const selectedGraphId = useAppSelector(
     (state) => state.global.selectedGraphId,
   )
-  const graphMap = useAppSelector(
-    (state) => state.global.graphMap,
-  )
+  const graphMap = useAppSelector((state) => state.global.graphMap)
   const selectedGraph = graphMap[selectedGraphId]
+  const addonModules = useAppSelector((state) => state.global.addonModules)
+
+  // Extract tool modules from addonModules
+  const toolModules = useMemo(
+    () => addonModules.filter((module) => module.name.includes("tool")
+    && module.name !== "vision_analyze_tool_python"
+  ),
+    [addonModules],
+  )
 
   const initialize = async () => {
-    await dispatch(initializeGraphData());
-  };
+    await dispatch(initializeGraphData())
+  }
 
   const fetchDetails = async () => {
     if (selectedGraphId) {
-      await dispatch(fetchGraphDetails(selectedGraphId));
+      await dispatch(fetchGraphDetails(selectedGraphId))
     }
-  };
+  }
 
   const update = async (graphId: string, updates: Partial<Graph>) => {
-    await dispatch(updateGraph({ graphId, updates }));
-  };
+    await dispatch(updateGraph({ graphId, updates }))
+  }
 
   const getGraphNodeAddonByName = useCallback(
     (nodeName: string) => {
@@ -170,26 +185,13 @@ const useGraphManager = () => {
     [selectedGraph],
   )
 
-  // const updateGraph = useCallback(
-  //   async (graphId: string, updates: Partial<Graph>): Promise<void> => {
-  //     await apiUpdateGraph(graphId, updates)
-
-  //     // Save additional properties if needed
-  //     await apiSaveProperty()
-
-  //     // Update the local state with the latest graph details
-  //     const updatedGraph = await apiFetchGraphDetails(graphId)
-  //     dispatch(setGraph(updatedGraph))
-  //   },
-  //   [],
-  // )
-
   return {
     initialize,
     fetchDetails,
     update,
     getGraphNodeAddonByName,
     selectedGraph,
+    toolModules,
   }
 }
 
