@@ -108,8 +108,8 @@ type Connection = {
   extension: string // Extension name
   cmd?: Array<Command> // Optional command connections
   data?: Array<Data> // Optional data connections
-  audioFrame?: Array<AudioFrame> // Optional audio frame connections
-  videoFrame?: Array<VideoFrame> // Optional video frame connections
+  audio_frame?: Array<AudioFrame> // Optional audio frame connections
+  video_frame?: Array<VideoFrame> // Optional video frame connections
 }
 
 type Graph = {
@@ -122,8 +122,8 @@ type Graph = {
 enum GraphConnProtocol {
   CMD = "cmd",
   DATA = "data",
-  AUDIO_FRAME = "audioFrame",
-  VIDEO_FRAME = "videoFrame",
+  AUDIO_FRAME = "audio_frame",
+  VIDEO_FRAME = "video_frame",
 }
 
 class GraphEditor {
@@ -231,7 +231,7 @@ class GraphEditor {
   }
 
   /**
-   * Add a connection to the graph across all protocols (cmd, data, audioFrame, videoFrame)
+   * Add a connection to the graph across all protocols (cmd, data, audio_frame, video_frame)
    */
   static addConnection(
     graph: Graph,
@@ -356,7 +356,7 @@ class GraphEditor {
     }
   }
   /**
-   * Remove a connection from the graph across all protocols (cmd, data, audioFrame, videoFrame)
+   * Remove a connection from the graph across all protocols (cmd, data, audio_frame, video_frame)
    */
   static removeConnection(
     graph: Graph,
@@ -441,24 +441,38 @@ class GraphEditor {
 
   static removeEmptyConnections(graph: Graph): void {
     graph.connections = graph.connections.filter((connection) => {
-      connection.cmd =
-        connection.cmd?.filter((cmd) => cmd.dest.length > 0) || []
-      connection.data =
-        connection.data?.filter((data) => data.dest.length > 0) || []
-      connection.audioFrame =
-        connection.audioFrame?.filter((audio) => audio.dest.length > 0) || []
-      connection.videoFrame =
-        connection.videoFrame?.filter((video) => video.dest.length > 0) || []
-
-      // Remove the entire connection if all protocols are empty
+      // Filter each protocol to remove empty destination objects
+      connection.cmd = Array.isArray(connection.cmd)
+        ? connection.cmd.filter((cmd) => cmd.dest?.length > 0)
+        : undefined;
+      if (!connection.cmd?.length) delete connection.cmd;
+  
+      connection.data = Array.isArray(connection.data)
+        ? connection.data.filter((data) => data.dest?.length > 0)
+        : undefined;
+      if (!connection.data?.length) delete connection.data;
+  
+      connection.audio_frame = Array.isArray(connection.audio_frame)
+        ? connection.audio_frame.filter((audio) => audio.dest?.length > 0)
+        : undefined;
+      if (!connection.audio_frame?.length) delete connection.audio_frame;
+  
+      connection.video_frame = Array.isArray(connection.video_frame)
+        ? connection.video_frame.filter((video) => video.dest?.length > 0)
+        : undefined;
+      if (!connection.video_frame?.length) delete connection.video_frame;
+  
+      // Check if at least one protocol remains
       return (
-        connection.cmd.length > 0 ||
-        connection.data.length > 0 ||
-        connection.audioFrame.length > 0 ||
-        connection.videoFrame.length > 0
-      )
-    })
+        connection.cmd?.length ||
+        connection.data?.length ||
+        connection.audio_frame?.length ||
+        connection.video_frame?.length
+      );
+    });
   }
+  
+  
 
   static removeNodeAndConnections(graph: Graph, nodeName: string): void {
     // Remove the node
@@ -468,7 +482,7 @@ class GraphEditor {
     graph.connections = graph.connections.filter((connection) => {
       const isSource =
         connection.extensionGroup + "." + connection.extension === nodeName
-      const protocols = ["cmd", "data", "audioFrame", "videoFrame"] as const
+      const protocols = ["cmd", "data", "audio_frame", "video_frame"] as const
 
       protocols.forEach((protocol) => {
         if (connection[protocol]) {
@@ -483,8 +497,8 @@ class GraphEditor {
         !isSource &&
         (connection.cmd?.length ||
           connection.data?.length ||
-          connection.audioFrame?.length ||
-          connection.videoFrame?.length)
+          connection.audio_frame?.length ||
+          connection.video_frame?.length)
       )
     })
   }
