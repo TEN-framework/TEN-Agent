@@ -1,7 +1,10 @@
-from dataclasses import dataclass, fields
 import builtins
-from typing import TypeVar, Type
+import json
+
+from typing import TypeVar, Type, List
 from ten import TenEnv
+from dataclasses import dataclass, fields
+
 
 T = TypeVar('T', bound='BaseConfig')
 
@@ -28,7 +31,6 @@ class BaseConfig:
             # if not ten_env.is_property_exist(field.name):
             #     continue
             try:
-                ten_env.log_info(f"init field.name: {field.name}")
                 match field.type:
                     case builtins.str:
                         val = ten_env.get_property_string(field.name)
@@ -44,6 +46,7 @@ class BaseConfig:
                         val = ten_env.get_property_float(field.name)
                         setattr(obj, field.name, val)
                     case _:
-                        pass
+                        val = ten_env.get_property_to_json(field.name)
+                        setattr(obj, field.name, json.loads(val))
             except Exception as e:
-                ten_env.log_error(f"Error: {e}")
+                pass

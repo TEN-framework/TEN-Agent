@@ -518,7 +518,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10
+              "max_history": 10
             }
           },
           {
@@ -848,7 +848,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "history": 10
+              "max_history": 10
             }
           },
           {

@@ -23,29 +23,29 @@
   },
   "api": {
     "property": {
-      "api_key": {
+      "base_uri": {
         "type": "string"
       },
-      "base_uri": {
+      "api_key": {
         "type": "string"
       },
       "path": {
         "type": "string"
       },
-      "vendor": {
-        "type": "string"
-      },
-      "temperature": {
-        "type": "float64"
-      },
       "model": {
         "type": "string"
       },
-      "max_tokens": {
-        "type": "int64"
-      },
-      "system_message": {
+      "language": {
         "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "temperature": {
+        "type": "float32"
+      },
+      "max_tokens": {
+        "type": "int32"
       },
       "voice": {
         "type": "string"
@@ -53,8 +53,20 @@
       "server_vad": {
         "type": "bool"
       },
-      "language": {
+      "audio_out": {
+        "type": "bool"
+      },
+      "input_transcript": {
+        "type": "bool"
+      },
+      "sample_rate": {
+        "type": "int32"
+      },
+      "vendor": {
         "type": "string"
+      },
+      "stream_id": {
+        "type": "int32"
       },
       "dump": {
         "type": "bool"
@@ -62,8 +74,8 @@
       "greeting": {
         "type": "string"
       },
-      "history": {
-        "type": "int64"
+      "max_history": {
+        "type": "int32"
       },
       "enable_storage": {
         "type": "bool"
