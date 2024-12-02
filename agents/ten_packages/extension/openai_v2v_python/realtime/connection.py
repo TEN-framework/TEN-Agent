@@ -3,11 +3,11 @@ import base64
 import json
 import os
 import aiohttp
-import uuid
+
+from ten import AsyncTenEnv
 
 from typing import Any, AsyncGenerator
 from .struct import InputAudioBufferAppend, ClientToServerMessage, ServerToClientMessage, parse_server_message, to_json
-from ..log import logger
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
@@ -34,13 +34,15 @@ def smart_str(s: str, max_field_len: int = 128) -> str:
 class RealtimeApiConnection:
     def __init__(
         self,
+        ten_env: AsyncTenEnv,
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
         vendor: str = "",
-        verbose: bool = False,
+        verbose: bool = False
     ):
+        self.ten_env = ten_env
         self.vendor = vendor
         self.url = f"{base_uri}{path}"
         if not self.vendor and "model=" not in self.url:
@@ -84,30 +86,30 @@ class RealtimeApiConnection:
         assert self.websocket is not None
         message_str = to_json(message)
         if self.verbose:
-            logger.info(f"-> {smart_str(message_str)}")
+            self.ten_env.log_info(f"-> {smart_str(message_str)}")
         await self.websocket.send_str(message_str)
 
     async def listen(self) -> AsyncGenerator[ServerToClientMessage, None]:
         assert self.websocket is not None
         if self.verbose:
-            logger.info("Listening for realtimeapi messages")
+            self.ten_env.log_info("Listening for realtimeapi messages")
         try:
             async for msg in self.websocket:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     if self.verbose:
-                        logger.info(f"<- {smart_str(msg.data)}")
+                        self.ten_env.log_info(f"<- {smart_str(msg.data)}")
                     yield self.handle_server_message(msg.data)
                 elif msg.type == aiohttp.WSMsgType.ERROR:
-                    logger.error("Error during receive: %s", self.websocket.exception())
+                    self.ten_env.log_error("Error during receive: %s", self.websocket.exception())
                     break
         except asyncio.CancelledError:
-            logger.info("Receive messages task cancelled")
+            self.ten_env.log_info("Receive messages task cancelled")
 
     def handle_server_message(self, message: str) -> ServerToClientMessage:
         try:
             return parse_server_message(message)
-        except:
-            logger.exception("Error handling message")
+        except Exception as e:
+            self.ten_env.log_info(f"Error handling message {e}")
 
     async def close(self):
         # Close the websocket connection if it exists

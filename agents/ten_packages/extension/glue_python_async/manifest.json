@@ -33,6 +33,31 @@
       },
       "prompt": {
         "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "failure_info": {
+        "type": "string"
+      },
+      "modalities": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "rtm_enabled": {
+        "type": "bool"
+      },
+      "ssml_enabled": {
+        "type": "bool"
+      },
+      "context_enabled": {
+        "type": "bool"
+      },
+      "extra_context": {
+        "type": "object",
+        "properties": {}
       }
     },
     "data_in": [
@@ -51,6 +76,19 @@
         "property": {
           "text": {
             "type": "string"
+          }
+        }
+      },
+      {
+        "name": "llm_stat",
+        "property": {
+          "usage": {
+            "type": "object",
+            "properties": {}
+          },
+          "latency": {
+            "type": "object",
+            "properties": {}
           }
         }
       }
