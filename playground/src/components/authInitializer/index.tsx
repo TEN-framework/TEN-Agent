@@ -3,7 +3,7 @@
 import { ReactNode, useEffect } from "react"
 import { useAppDispatch, getOptionsFromLocal, getRandomChannel, getRandomUserId, useAppSelector } from "@/common"
 import { setOptions, reset, fetchGraphDetails } from "@/store/reducers/global"
-import { useGraphManager } from "@/common/graph";
+import { useGraphs } from "@/common/hooks";
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface AuthInitializerProps {
 const AuthInitializer = (props: AuthInitializerProps) => {
   const { children } = props;
   const dispatch = useAppDispatch()
-  const {initialize} = useGraphManager()
+  const {initialize} = useGraphs()
   const selectedGraphId = useAppSelector((state) => state.global.selectedGraphId)
 
   useEffect(() => {

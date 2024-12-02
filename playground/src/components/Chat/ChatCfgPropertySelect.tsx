@@ -46,11 +46,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
-import { AddonDef, Graph, useGraphManager } from "@/common/graph"
+import { useGraphs } from "@/common/hooks"
+import { AddonDef, Graph } from "@/common/graph"
 
 export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
-  const { selectedGraph, update: updateGraph } = useGraphManager()
+  const { selectedGraph, update: updateGraph } = useGraphs()
   const graphName = useAppSelector((state) => state.global.selectedGraphId)
 
   const [selectedExtension, setSelectedExtension] = React.useState<string>("")
@@ -153,7 +154,7 @@ export function RemotePropertyAddCfgSheet({
   onUpdate: (data: string) => void
 }) {
   const dispatch = useAppDispatch()
-  const { selectedGraph } = useGraphManager()
+  const { selectedGraph } = useGraphs()
 
   const selectedExtensionNode = selectedGraph?.nodes.find(n => n.name === selectedExtension)
   const addonModules = useAppSelector((state) => state.global.addonModules)
