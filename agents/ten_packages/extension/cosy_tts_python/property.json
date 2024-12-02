@@ -1,1 +1,6 @@
-{}
+{
+    "api_key": "${env:QWEN_API_KEY}",
+    "model": "cosyvoice-v1",
+    "voice": "longxiaochun",
+    "sample_rate": 16000
+}

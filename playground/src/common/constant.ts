@@ -112,3 +112,7 @@ export const MOBILE_ACTIVE_TAB_MAP = {
   [EMobileActiveTab.AGENT]: "Agent",
   [EMobileActiveTab.CHAT]: "Chat",
 };
+
+export const isLLM = (extensionName: string) => {
+  return extensionName === "llm" || extensionName === "v2v";
+}

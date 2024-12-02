@@ -17,7 +17,7 @@ from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_proper
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from ten_ai_base.types import LLMCallCompletionArgs, LLMChatCompletionContentPartParam, LLMChatCompletionUserMessageParam, LLMChatCompletionMessageParam, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
 
-from .helper import parse_sentences, rgb2base64jpeg
+from .helper import parse_sentences
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     Cmd,
@@ -35,29 +35,17 @@ DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
 
-PROPERTY_BASE_URL = "base_url"  # Optional
-PROPERTY_API_KEY = "api_key"  # Required
-PROPERTY_MODEL = "model"  # Optional
-PROPERTY_PROMPT = "prompt"  # Optional
-PROPERTY_FREQUENCY_PENALTY = "frequency_penalty"  # Optional
-PROPERTY_PRESENCE_PENALTY = "presence_penalty"  # Optional
-PROPERTY_TEMPERATURE = "temperature"  # Optional
-PROPERTY_TOP_P = "top_p"  # Optional
-PROPERTY_MAX_TOKENS = "max_tokens"  # Optional
-PROPERTY_GREETING = "greeting"  # Optional
-PROPERTY_PROXY_URL = "proxy_url"  # Optional
-PROPERTY_MAX_MEMORY_LENGTH = "max_memory_length"  # Optional
-
 
 class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self.memory = []
         self.memory_cache = []
-        self.max_memory_length = 10
-        self.openai_chatgpt = None
+        self.config = None
+        self.client = None
         self.sentence_fragment = ""
         self.toolcall_future = None
+        self.users_count = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_init")
@@ -67,35 +55,19 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         ten_env.log_info("on_start")
         await super().on_start(ten_env)
 
-        # Prepare configuration
-        openai_chatgpt_config = OpenAIChatGPTConfig.default_config()
+        self.config = OpenAIChatGPTConfig.create(ten_env=ten_env)
+
 
         # Mandatory properties
-        get_properties_string(ten_env, [PROPERTY_BASE_URL, PROPERTY_API_KEY], lambda name, value: setattr(
-            openai_chatgpt_config, name, value or getattr(openai_chatgpt_config, name)))
-        if not openai_chatgpt_config.api_key:
+        if not self.config.api_key:
             ten_env.log_info(f"API key is missing, exiting on_start")
             return
 
-        # Optional properties
-        get_properties_string(ten_env, [PROPERTY_MODEL, PROPERTY_PROMPT, PROPERTY_PROXY_URL], lambda name, value: setattr(
-            openai_chatgpt_config, name, value or getattr(openai_chatgpt_config, name)))
-        get_properties_float(ten_env, [PROPERTY_FREQUENCY_PENALTY, PROPERTY_PRESENCE_PENALTY, PROPERTY_TEMPERATURE, PROPERTY_TOP_P], lambda name, value: setattr(
-            openai_chatgpt_config, name, value or getattr(openai_chatgpt_config, name)))
-        get_properties_int(ten_env, [PROPERTY_MAX_TOKENS], lambda name, value: setattr(
-            openai_chatgpt_config, name, value or getattr(openai_chatgpt_config, name)))
-
-        # Properties that don't affect openai_chatgpt_config
-        self.greeting = get_property_string(ten_env, PROPERTY_GREETING)
-        self.max_memory_length = get_property_int(
-            ten_env, PROPERTY_MAX_MEMORY_LENGTH)
-        self.users_count = 0
-
         # Create instance
         try:
-            self.openai_chatgpt = OpenAIChatGPT(openai_chatgpt_config)
+            self.client = OpenAIChatGPT(ten_env, self.config)
             ten_env.log_info(
-                f"initialized with max_tokens: {openai_chatgpt_config.max_tokens}, model: {openai_chatgpt_config.model}")
+                f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}")
         except Exception as err:
             ten_env.log_info(f"Failed to initialize OpenAIChatGPT: {err}")
 
@@ -122,8 +94,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
-            if self.greeting and self.users_count == 1:
-                self.send_text_output(ten_env, self.greeting, True)
+            if self.config.greeting and self.users_count == 1:
+                self.send_text_output(ten_env, self.config.greeting, True)
 
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
@@ -168,7 +140,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             "messages", [])
 
         ten_env.log_info(f"on_call_chat_completion: {kmessages}")
-        response = await self.openai_chatgpt.get_chat_completions(
+        response = await self.client.get_chat_completions(
             kmessages, None)
         return response.to_json()
 
@@ -202,10 +174,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 self.memory_cache = self.memory_cache + \
                     [message, {"role": "assistant", "content": ""}]
 
-            tools = [] if not no_tool and len(
-                self.available_tools) > 0 else None
-            for tool in self.available_tools:
-                tools.append(self._convert_tools_to_dict(tool))
+            tools = None
+            if not no_tool and len(self.available_tools) > 0:
+                tools = []
+                for tool in self.available_tools:
+                    tools.append(self._convert_tools_to_dict(tool))
+                    ten_env.log_info(f"tool: {tool}")
 
             self.sentence_fragment = ""
 
@@ -271,7 +245,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             listener.on("content_finished", handle_content_finished)
 
             # Make an async API call to get chat completions
-            await self.openai_chatgpt.get_chat_completions_stream(memory + [message], tools, listener)
+            await self.client.get_chat_completions_stream(memory + [message], tools, listener)
 
             # Wait for the content to be finished
             await content_finished_event.wait()
@@ -336,6 +310,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         return message
 
     def _append_memory(self, message: str):
-        if len(self.memory) > self.max_memory_length:
+        if len(self.memory) > self.config.max_memory_length:
             self.memory.pop(0)
         self.memory.append(message)

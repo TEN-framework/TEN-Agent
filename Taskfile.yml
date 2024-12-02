@@ -16,7 +16,7 @@ tasks:
   use:
     desc: use agent, default 'agents/examples/demo'
     vars:
-      AGENT: '{{.AGENT| default "agents/examples/demo"}}'
+      AGENT: '{{.AGENT| default "agents/examples/default"}}'
     cmds:
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
@@ -49,7 +49,6 @@ tasks:
   build-server:
     desc: build server
     dir: ./server
-    internal: true
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 

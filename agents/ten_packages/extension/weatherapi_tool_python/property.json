@@ -1,1 +1,3 @@
-{}
+{
+    "api_key": "${env:WEATHERAPI_API_KEY|}"
+}

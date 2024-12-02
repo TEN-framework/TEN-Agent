@@ -1,1 +1,10 @@
-{}
+{
+    "region": "us-east-1",
+    "access_key": "${env:AWS_ACCESS_KEY_ID}",
+    "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
+    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    "max_tokens": 512,
+    "prompt": "",
+    "greeting": "TEN Agent connected. How can I help you today?",
+    "max_memory_length": 10
+}
