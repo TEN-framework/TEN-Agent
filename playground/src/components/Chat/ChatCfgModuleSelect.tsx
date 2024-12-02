@@ -86,6 +86,8 @@ export function RemoteModuleCfgSheet() {
         return result;
     }, [addonModules, selectedGraph]);
 
+    const { toolModules } = useGraphManager();
+
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: string[] }> = {};
 
@@ -137,7 +139,6 @@ export function RemoteModuleCfgSheet() {
                             let needUpdate = false;
 
                             // Retrieve current tools in the graph
-                            const {toolModules} = useGraphManager();
                             const currentToolsInGraph = nodes
                                 .filter((node) => toolModules.map((module) => module.name).includes(node.addon))
                                 .map((node) => node.addon);
@@ -162,7 +163,7 @@ export function RemoteModuleCfgSheet() {
                                     nodes.splice(toolNodeIndex, 1);
                                     needUpdate = true;
                                 }
-                            
+
                                 // Remove connections involving the tool
                                 connections.forEach((connection, connIndex) => {
                                     // If the connection extension matches the tool, remove the entire connection
@@ -171,14 +172,14 @@ export function RemoteModuleCfgSheet() {
                                         needUpdate = true;
                                         return; // Skip further processing for this connection
                                     }
-                            
+
                                     // Remove tool from cmd, data, audioFrame, and videoFrame destinations
                                     const removeEmptyDestObjects = (array: Array<{ name: string; dest: Array<Destination> }> | undefined) => {
                                         if (!array) return;
-                            
+
                                         array.forEach((object, objIndex) => {
                                             object.dest = object.dest.filter((dest) => dest.extension !== tool);
-                            
+
                                             // If `dest` is empty, remove the object
                                             if (object.dest.length === 0) {
                                                 array.splice(objIndex, 1);
@@ -186,13 +187,13 @@ export function RemoteModuleCfgSheet() {
                                             }
                                         });
                                     };
-                            
+
                                     // Clean up cmd, data, audioFrame, and videoFrame
                                     removeEmptyDestObjects(connection.cmd);
                                     removeEmptyDestObjects(connection.data);
                                     removeEmptyDestObjects(connection.audioFrame);
                                     removeEmptyDestObjects(connection.videoFrame);
-                            
+
                                     // Remove the entire connection if it has no `cmd`, `data`, `audioFrame`, or `videoFrame`
                                     if (
                                         (!connection.cmd || connection.cmd.length === 0) &&
@@ -205,7 +206,7 @@ export function RemoteModuleCfgSheet() {
                                     }
                                 });
                             });
-                            
+
                             // Process tool modules
                             if (tools.length > 0) {
                                 if (tools.some((tool) => tool.includes("vision"))) {
@@ -256,7 +257,7 @@ export function RemoteModuleCfgSheet() {
 
                                         const llmExtensionGroup = llmNode?.extensionGroup;
 
-                                        
+
 
                                         if (llmConnection) {
                                             // If the connection exists, ensure it has a cmd array
@@ -424,7 +425,7 @@ const GraphModuleCfgForm = ({
         stt: "STT (Speech to Text)",
         llm: "LLM (Large Language Model)",
         tts: "TTS (Text to Speech)",
-        v2v: "LLM v2v (Voice to Voice Large Language Model)",
+        v2v: "LLM v2v (V2V Large Language Model)",
     };
 
 
