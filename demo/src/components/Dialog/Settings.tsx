@@ -231,7 +231,7 @@ export const cozeSettingsFormSchema = z.object({
       message: "Bot ID is required",
     })
     .min(1),
-  base_url: z.nativeEnum(ECozeBaseUrl).default(ECozeBaseUrl.CN),
+  base_url: z.nativeEnum(ECozeBaseUrl).default(ECozeBaseUrl.GLOBAL),
 })
 
 export const isCozeGraph = (graphName: string) => {
@@ -329,7 +329,7 @@ export function CozeSettingsTab(props: {
                 form.reset({
                   token: "",
                   bot_id: "",
-                  base_url: ECozeBaseUrl.CN,
+                  base_url: ECozeBaseUrl.GLOBAL,
                 })
                 dispatch(resetCozeSettings())
                 toast.success("Coze settings reset")
