@@ -38,6 +38,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
+import { isLLM } from "@/common"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
@@ -242,12 +243,20 @@ export function RemoteModuleCfgSheet() {
 
                                         // 2. Find or create a connection for node name "llm" with cmd dest "tool_call"
                                         let llmConnection = connections.find(
-                                            (connection) => connection.extension === "llm"
+                                            (connection) => isLLM(connection.extension)
                                         );
 
                                         // Retrieve the extensionGroup dynamically from the graph
-                                        const llmNode = nodes.find((node) => node.name === "llm");
-                                        const llmExtensionGroup = llmNode?.extensionGroup || "default";
+                                        const llmNode = nodes.find((node) => isLLM(node.name));
+
+                                        if (!llmNode) {
+                                            toast.error("LLM node not found in the graph");
+                                            return;
+                                        }
+
+                                        const llmExtensionGroup = llmNode?.extensionGroup;
+
+                                        
 
                                         if (llmConnection) {
                                             // If the connection exists, ensure it has a cmd array
@@ -282,7 +291,7 @@ export function RemoteModuleCfgSheet() {
                                             connections.push({
                                                 app: agoraApp,
                                                 extensionGroup: llmExtensionGroup,
-                                                extension: "llm",
+                                                extension: llmNode.name,
                                                 cmd: [
                                                     {
                                                         name: "tool_call",
@@ -312,7 +321,7 @@ export function RemoteModuleCfgSheet() {
                                                         {
                                                             app: agoraApp,
                                                             extensionGroup: llmExtensionGroup,
-                                                            extension: "llm",
+                                                            extension: llmNode.name,
                                                         },
                                                     ],
                                                 },
@@ -446,7 +455,7 @@ const GraphModuleCfgForm = ({
                                             <FormLabel>
                                                 <div className="flex justify-between items-center justify-center ">
                                                     <div className="py-3">{fieldLabels[key]}</div>
-                                                    {(key === "llm" || key === "v2v") && (
+                                                    {isLLM(key) && (
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger className={cn(
                                                                 buttonVariants({ variant: "outline", size: "icon" }),
@@ -507,7 +516,7 @@ const GraphModuleCfgForm = ({
                                         </FormItem>
                                     )}
                                 />
-                                {key === "llm" && selectedTools.length > 0 && (
+                                {isLLM(key) && selectedTools.length > 0 && (
                                     <div className="mt-2">
                                         {selectedTools.map((tool) => (
                                             <div
