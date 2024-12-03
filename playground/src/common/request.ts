@@ -186,7 +186,7 @@ export const apiFetchGraphConnections = async (graphId: string): Promise<Connect
             : undefined,
         })),
       })),
-      audioFrame: connection.audio_frame?.map((audioFrame: any) => ({
+      audio_frame: connection.audio_frame?.map((audioFrame: any) => ({
         name: audioFrame.name,
         dest: audioFrame.dest.map((dest: any) => ({
           app: dest.app,
@@ -206,7 +206,7 @@ export const apiFetchGraphConnections = async (graphId: string): Promise<Connect
             : undefined,
         })),
       })),
-      videoFrame: connection.videoFrame?.map((videoFrame: any) => ({
+      video_frame: connection.video_frame?.map((videoFrame: any) => ({
         name: videoFrame.name,
         dest: videoFrame.dest.map((dest: any) => ({
           app: dest.app,
@@ -294,7 +294,7 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
             : undefined,
         })),
       })),
-      audio_frame: connection.audioFrame?.map((audioFrame) => ({
+      audio_frame: connection.audio_frame?.map((audioFrame) => ({
         name: audioFrame.name,
         dest: audioFrame.dest.map((dest) => ({
           app: dest.app,
@@ -314,7 +314,7 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
             : undefined,
         })),
       })),
-      video_frame: connection.videoFrame?.map((videoFrame) => ({
+      video_frame: connection.video_frame?.map((videoFrame) => ({
         name: videoFrame.name,
         dest: videoFrame.dest.map((dest) => ({
           app: dest.app,

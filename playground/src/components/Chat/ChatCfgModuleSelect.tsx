@@ -30,8 +30,8 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import { AddonDef, Graph, useGraphManager, Destination } from "@/common/graph"
+import { useAppSelector, useGraphs } from "@/common/hooks"
+import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol } from "@/common/graph"
 import { toast } from "sonner"
 import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -42,7 +42,7 @@ import { isLLM } from "@/common"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph } = useGraphManager();
+    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph } = useGraphs();
 
     const moduleMapping: Record<string, string[]> = {
         stt: [],
@@ -86,7 +86,7 @@ export function RemoteModuleCfgSheet() {
         return result;
     }, [addonModules, selectedGraph]);
 
-    const { toolModules } = useGraphManager();
+    const { toolModules } = useGraphs();
 
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: string[] }> = {};
@@ -134,239 +134,52 @@ export function RemoteModuleCfgSheet() {
                         onUpdate={async (data, tools) => {
                             // Clone the selectedGraph to avoid mutating the original graph
                             const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
-                            const nodes = selectedGraphCopy?.nodes || [];
-                            const connections = selectedGraphCopy?.connections || [];
+                            const nodes = selectedGraphCopy.nodes;
                             let needUpdate = false;
 
-                            // Retrieve current tools in the graph
-                            const currentToolsInGraph = nodes
-                                .filter((node) => toolModules.map((module) => module.name).includes(node.addon))
-                                .map((node) => node.addon);
-
-                            // Retrieve the app value from the agora_rtc node
-                            const agoraRtcNode = nodes.find((node) => node.name === "agora_rtc");
-
+                            // Retrieve the agora_rtc node
+                            const agoraRtcNode = GraphEditor.findNode(selectedGraphCopy, "agora_rtc");
                             if (!agoraRtcNode) {
                                 toast.error("agora_rtc node not found in the graph");
                                 return;
                             }
 
-                            const agoraApp = agoraRtcNode?.app || "localhost";
+                            // Identify removed tools and process them
+                            const currentToolsInGraph = nodes
+                                .filter((node) => toolModules.map((module) => module.name).includes(node.addon))
+                                .map((node) => node.addon);
 
-                            // Identify removed tools
                             const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
-
                             removedTools.forEach((tool) => {
-                                // Remove the tool node
-                                const toolNodeIndex = nodes.findIndex((node) => node.addon === tool);
-                                if (toolNodeIndex !== -1) {
-                                    nodes.splice(toolNodeIndex, 1);
-                                    needUpdate = true;
-                                }
-
-                                // Remove connections involving the tool
-                                connections.forEach((connection, connIndex) => {
-                                    // If the connection extension matches the tool, remove the entire connection
-                                    if (connection.extension === tool) {
-                                        connections.splice(connIndex, 1);
-                                        needUpdate = true;
-                                        return; // Skip further processing for this connection
-                                    }
-
-                                    // Remove tool from cmd, data, audioFrame, and videoFrame destinations
-                                    const removeEmptyDestObjects = (array: Array<{ name: string; dest: Array<Destination> }> | undefined) => {
-                                        if (!array) return;
-
-                                        array.forEach((object, objIndex) => {
-                                            object.dest = object.dest.filter((dest) => dest.extension !== tool);
-
-                                            // If `dest` is empty, remove the object
-                                            if (object.dest.length === 0) {
-                                                array.splice(objIndex, 1);
-                                                needUpdate = true;
-                                            }
-                                        });
-                                    };
-
-                                    // Clean up cmd, data, audioFrame, and videoFrame
-                                    removeEmptyDestObjects(connection.cmd);
-                                    removeEmptyDestObjects(connection.data);
-                                    removeEmptyDestObjects(connection.audioFrame);
-                                    removeEmptyDestObjects(connection.videoFrame);
-
-                                    // Remove the entire connection if it has no `cmd`, `data`, `audioFrame`, or `videoFrame`
-                                    if (
-                                        (!connection.cmd || connection.cmd.length === 0) &&
-                                        (!connection.data || connection.data.length === 0) &&
-                                        (!connection.audioFrame || connection.audioFrame.length === 0) &&
-                                        (!connection.videoFrame || connection.videoFrame.length === 0)
-                                    ) {
-                                        connections.splice(connIndex, 1);
-                                        needUpdate = true;
-                                    }
-                                });
+                                GraphEditor.removeNodeAndConnections(selectedGraphCopy, tool);
+                                needUpdate = true;
                             });
 
                             // Process tool modules
                             if (tools.length > 0) {
-                                if (tools.some((tool) => tool.includes("vision"))) {
-                                    agoraRtcNode.property = {
-                                        ...agoraRtcNode.property,
-                                        subscribe_video_pix_fmt: 4,
-                                        subscribe_video: true,
-                                    }
-                                    needUpdate = true;
-                                } else {
-                                    delete agoraRtcNode.property?.subscribe_video_pix_fmt;
-                                    delete agoraRtcNode.property?.subscribe_video;
-                                }
+                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, tools.some((tool) => tool.includes("vision")));
 
                                 tools.forEach((tool) => {
                                     if (!currentToolsInGraph.includes(tool)) {
-                                        // 1. Remove existing node for the tool if it exists
-                                        const existingNodeIndex = nodes.findIndex((node) => node.name === tool);
-                                        if (existingNodeIndex >= 0) {
-                                            nodes.splice(existingNodeIndex, 1);
-                                        }
-
-                                        // Add new node for the tool
                                         const toolModule = addonModules.find((module) => module.name === tool);
-                                        if (toolModule) {
-                                            nodes.push({
-                                                app: agoraApp,
-                                                name: tool,
-                                                addon: tool,
-                                                extensionGroup: "default",
-                                                property: toolModule.defaultProperty,
-                                            });
-                                            needUpdate = true;
-                                        }
 
-                                        // 2. Find or create a connection for node name "llm" with cmd dest "tool_call"
-                                        let llmConnection = connections.find(
-                                            (connection) => isLLM(connection.extension)
-                                        );
-
-                                        // Retrieve the extensionGroup dynamically from the graph
-                                        const llmNode = nodes.find((node) => isLLM(node.name));
-
-                                        if (!llmNode) {
-                                            toast.error("LLM node not found in the graph");
+                                        if (!toolModule) {
+                                            toast.error(`Module ${tool} not found`);
                                             return;
                                         }
 
-                                        const llmExtensionGroup = llmNode?.extensionGroup;
+                                        const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
 
-
-
-                                        if (llmConnection) {
-                                            // If the connection exists, ensure it has a cmd array
-                                            if (!llmConnection.cmd) {
-                                                llmConnection.cmd = [];
-                                            }
-
-                                            // Find the tool_call command
-                                            let toolCallCommand = llmConnection.cmd.find((cmd) => cmd.name === "tool_call");
-
-                                            if (!toolCallCommand) {
-                                                // If tool_call command doesn't exist, create it
-                                                toolCallCommand = {
-                                                    name: "tool_call",
-                                                    dest: [],
-                                                };
-                                                llmConnection.cmd.push(toolCallCommand);
-                                                needUpdate = true;
-                                            }
-
-                                            // Add the tool to the dest array if not already present
-                                            if (!toolCallCommand.dest.some((dest) => dest.extension === tool)) {
-                                                toolCallCommand.dest.push({
-                                                    app: agoraApp,
-                                                    extensionGroup: "default",
-                                                    extension: tool,
-                                                });
-                                                needUpdate = true;
-                                            }
-                                        } else {
-                                            // If llmConnection doesn't exist, create it with the tool_call command
-                                            connections.push({
-                                                app: agoraApp,
-                                                extensionGroup: llmExtensionGroup,
-                                                extension: llmNode.name,
-                                                cmd: [
-                                                    {
-                                                        name: "tool_call",
-                                                        dest: [
-                                                            {
-                                                                app: agoraApp,
-                                                                extensionGroup: "default",
-                                                                extension: tool,
-                                                            },
-                                                        ],
-                                                    },
-                                                ],
-                                            });
-                                            needUpdate = true;
-                                        }
-
-
-                                        // 3. Create a connection for the tool node with cmd dest "tool_register"
-                                        connections.push({
-                                            app: agoraApp,
-                                            extensionGroup: "default",
-                                            extension: tool,
-                                            cmd: [
-                                                {
-                                                    name: "tool_register",
-                                                    dest: [
-                                                        {
-                                                            app: agoraApp,
-                                                            extensionGroup: llmExtensionGroup,
-                                                            extension: llmNode.name,
-                                                        },
-                                                    ],
-                                                },
-                                            ],
-                                        });
-                                        needUpdate = true;
-
-                                        // Create videoFrame connection for tools with "visual" in the name
-                                        if (tool.includes("vision")) {
-                                            const rtcConnection = connections.find(
-                                                (connection) =>
-                                                    connection.extension === "agora_rtc"
-                                            );
-
-                                            if (rtcConnection) {
-                                                if (!rtcConnection?.videoFrame) {
-                                                    rtcConnection.videoFrame = []
-                                                }
-
-                                                if (!rtcConnection.videoFrame.some((frame) => frame.name === "video_frame")) {
-                                                    rtcConnection.videoFrame.push({
-                                                        name: "video_frame",
-                                                        dest: [
-                                                            {
-                                                                app: agoraApp,
-                                                                extensionGroup: "default",
-                                                                extension: tool,
-                                                            },
-                                                        ],
-                                                    });
-                                                    needUpdate = true;
-                                                } else if (!rtcConnection.videoFrame.some((frame) => frame.dest.some((dest) => dest.extension === tool))) {
-                                                    rtcConnection.videoFrame.find((frame) => frame.name === "video_frame")?.dest.push({
-                                                        app: agoraApp,
-                                                        extensionGroup: "default",
-                                                        extension: tool,
-                                                    });
-                                                    needUpdate = true;
-                                                }
-                                            }
+                                        // Create or update connections
+                                        const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
+                                        if (llmNode) {
+                                            GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
                                         }
                                     }
                                 });
+                                needUpdate = true;
                             }
+
 
                             // Update graph nodes with selected modules
                             Object.entries(data).forEach(([key, value]) => {
@@ -408,7 +221,7 @@ const GraphModuleCfgForm = ({
     onUpdate: (data: Record<string, string | null>, tools: string[]) => void;
 }) => {
     const formSchema = z.record(z.string(), z.string().nullable());
-    const { selectedGraph, toolModules } = useGraphManager();
+    const { selectedGraph, toolModules } = useGraphs();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),

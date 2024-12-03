@@ -2,10 +2,11 @@
 
 import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 import { deepMerge, normalizeFrequencies } from "./utils";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { AppDispatch, AppStore, RootState } from "../store";
 import { useDispatch, useSelector, useStore } from "react-redux";
-import { Node, AddonDef } from "./graph";
+import { Node, AddonDef, Graph } from "@/common/graph";
+import { fetchGraphDetails, initializeGraphData, updateGraph } from "@/store/reducers/global";
 // import { Grid } from "antd"
 
 // const { useBreakpoint } = Grid;
@@ -128,3 +129,62 @@ export const usePrevious = (value: any) => {
 
   return ref.current;
 };
+
+
+
+const useGraphs = () => {
+  const dispatch = useAppDispatch()
+  const selectedGraphId = useAppSelector(
+    (state) => state.global.selectedGraphId,
+  )
+  const graphMap = useAppSelector((state) => state.global.graphMap)
+  const selectedGraph = graphMap[selectedGraphId]
+  const addonModules = useAppSelector((state) => state.global.addonModules)
+
+  // Extract tool modules from addonModules
+  const toolModules = useMemo(
+    () => addonModules.filter((module) => module.name.includes("tool")
+    && module.name !== "vision_analyze_tool_python"
+  ),
+    [addonModules],
+  )
+
+  const initialize = async () => {
+    await dispatch(initializeGraphData())
+  }
+
+  const fetchDetails = async () => {
+    if (selectedGraphId) {
+      await dispatch(fetchGraphDetails(selectedGraphId))
+    }
+  }
+
+  const update = async (graphId: string, updates: Partial<Graph>) => {
+    await dispatch(updateGraph({ graphId, updates }))
+  }
+
+  const getGraphNodeAddonByName = useCallback(
+    (nodeName: string) => {
+      if (!selectedGraph) {
+        return null
+      }
+      const node = selectedGraph.nodes.find((node) => node.name === nodeName)
+      if (!node) {
+        return null
+      }
+      return node
+    },
+    [selectedGraph],
+  )
+
+  return {
+    initialize,
+    fetchDetails,
+    update,
+    getGraphNodeAddonByName,
+    selectedGraph,
+    toolModules,
+  }
+}
+
+export { useGraphs }
