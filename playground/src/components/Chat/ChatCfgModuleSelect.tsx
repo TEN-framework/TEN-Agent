@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppDispatch, useAppSelector, useGraphs } from "@/common/hooks"
+import { useAppSelector, useGraphs } from "@/common/hooks"
 import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol } from "@/common/graph"
 import { toast } from "sonner"
 import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
@@ -157,17 +157,7 @@ export function RemoteModuleCfgSheet() {
 
                             // Process tool modules
                             if (tools.length > 0) {
-                                if (tools.some((tool) => tool.includes("vision"))) {
-                                    GraphEditor.updateNodeProperty(selectedGraphCopy, "agora_rtc", {
-                                        subscribe_video_pix_fmt: 4,
-                                        subscribe_video: true,
-                                    });
-                                } else {
-                                    GraphEditor.removeNodeProperties(selectedGraphCopy, "agora_rtc", [
-                                        "subscribe_video_pix_fmt",
-                                        "subscribe_video",
-                                    ]);
-                                }
+                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, tools.some((tool) => tool.includes("vision")));
 
                                 tools.forEach((tool) => {
                                     if (!currentToolsInGraph.includes(tool)) {
@@ -183,39 +173,12 @@ export function RemoteModuleCfgSheet() {
                                         // Create or update connections
                                         const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                         if (llmNode) {
-                                            const llmExtensionGroup = llmNode.extensionGroup;
-                                            GraphEditor.addOrUpdateConnection(
-                                                selectedGraphCopy,
-                                                `${llmExtensionGroup}.${llmNode.name}`,
-                                                `${toolNode.extensionGroup}.${toolNode.name}`,
-                                                GraphConnProtocol.CMD,
-                                                "tool_call"
-                                            );
-                                            GraphEditor.addOrUpdateConnection(
-                                                selectedGraphCopy,
-                                                `${toolNode.extensionGroup}.${toolNode.name}`,
-                                                `${llmExtensionGroup}.${llmNode.name}`,
-                                                GraphConnProtocol.CMD,
-                                                "tool_register"
-                                            );
-                                        }
-
-                                        if (tool.includes("vision")) {
-                                            GraphEditor.addOrUpdateConnection(
-                                                selectedGraphCopy,
-                                                `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                                `${toolNode.extensionGroup}.${toolNode.name}`,
-                                                GraphConnProtocol.VIDEO_FRAME,
-                                                "video_frame"
-                                            );
+                                            GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
                                         }
                                     }
                                 });
                                 needUpdate = true;
                             }
-
-                            // Remove empty connections
-                            GraphEditor.removeEmptyConnections(selectedGraphCopy);
 
 
                             // Update graph nodes with selected modules

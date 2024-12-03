@@ -24,7 +24,9 @@
               "agora_asr_language": "en-US",
               "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
               "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
-              "agora_asr_session_control_file_path": "session_control.conf"
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4,
+              "subscribe_video": true
             }
           },
           {
@@ -85,6 +87,13 @@
           },
           {
             "type": "extension",
+            "name": "vision_tool_python",
+            "addon": "vision_tool_python",
+            "extension_group": "default",
+            "property": {}
+          },
+          {
+            "type": "extension",
             "name": "weatherapi_tool_python",
             "addon": "weatherapi_tool_python",
             "extension_group": "default",
@@ -136,6 +145,17 @@
                   }
                 ]
               }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
             ]
           },
           {
@@ -173,6 +193,10 @@
               {
                 "name": "tool_call",
                 "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "vision_tool_python"
+                  },
                   {
                     "extension_group": "default",
                     "extension": "weatherapi_tool_python"
@@ -265,6 +289,21 @@
           },
           {
             "extension_group": "default",
+            "extension": "vision_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
@@ -327,11 +366,11 @@
           },
           {
             "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
+            "name": "bingsearch_tool_python",
+            "addon": "bingsearch_tool_python",
             "extension_group": "default",
             "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
+              "api_key": "${env:BING_API_KEY|}"
             }
           }
         ],
@@ -369,7 +408,7 @@
                 "dest": [
                   {
                     "extension_group": "default",
-                    "extension": "weatherapi_tool_python"
+                    "extension": "bingsearch_tool_python"
                   }
                 ]
               }
@@ -414,7 +453,7 @@
           },
           {
             "extension_group": "default",
-            "extension": "weatherapi_tool_python",
+            "extension": "bingsearch_tool_python",
             "cmd": [
               {
                 "name": "tool_register",

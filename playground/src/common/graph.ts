@@ -451,22 +451,22 @@ class GraphEditor {
         ? connection.cmd.filter((cmd) => cmd.dest?.length > 0)
         : undefined;
       if (!connection.cmd?.length) delete connection.cmd;
-  
+
       connection.data = Array.isArray(connection.data)
         ? connection.data.filter((data) => data.dest?.length > 0)
         : undefined;
       if (!connection.data?.length) delete connection.data;
-  
+
       connection.audio_frame = Array.isArray(connection.audio_frame)
         ? connection.audio_frame.filter((audio) => audio.dest?.length > 0)
         : undefined;
       if (!connection.audio_frame?.length) delete connection.audio_frame;
-  
+
       connection.video_frame = Array.isArray(connection.video_frame)
         ? connection.video_frame.filter((video) => video.dest?.length > 0)
         : undefined;
       if (!connection.video_frame?.length) delete connection.video_frame;
-  
+
       // Check if at least one protocol remains
       return (
         connection.cmd?.length ||
@@ -476,8 +476,8 @@ class GraphEditor {
       );
     });
   }
-  
-  
+
+
 
   static removeNodeAndConnections(graph: Graph, addon: string): void {
     // Remove the node
@@ -506,26 +506,61 @@ class GraphEditor {
           connection.video_frame?.length)
       )
     })
+    // Clean up empty connections
+    GraphEditor.removeEmptyConnections(graph);
   }
 
   /**
-   * Link a tool to an LLM in the graph
-   */
-  static linkLLMTool(
-    graph: Graph,
-    llmExtension: string,
-    toolExtension: string,
-  ): void {
-    const llmNode = graph.nodes.find((node) => node.name === llmExtension)
-    const toolNode = graph.nodes.find((node) => node.name === toolExtension)
+ * Link a tool to an LLM node by creating the appropriate connections.
+ */
+  static linkTool(graph: Graph, llmNode: Node, toolNode: Node): void {
+    const llmExtensionGroup = llmNode.extensionGroup;
 
-    if (!llmNode || !toolNode) {
-      throw new Error(
-        `Either LLM "${llmExtension}" or Tool "${toolExtension}" does not exist in graph "${graph.id}".`,
-      )
+    // Create the connection from the LLM node to the tool node
+    GraphEditor.addOrUpdateConnection(
+      graph,
+      `${llmExtensionGroup}.${llmNode.name}`,
+      `${toolNode.extensionGroup}.${toolNode.name}`,
+      GraphConnProtocol.CMD,
+      "tool_call"
+    );
+
+    // Create the connection from the tool node back to the LLM node
+    GraphEditor.addOrUpdateConnection(
+      graph,
+      `${toolNode.extensionGroup}.${toolNode.name}`,
+      `${llmExtensionGroup}.${llmNode.name}`,
+      GraphConnProtocol.CMD,
+      "tool_register"
+    );
+
+    const rtcModule = GraphEditor.findNodeByPredicate(graph, (node) => node.addon.includes("rtc"));
+    if (toolNode.addon.includes("vision") && rtcModule) {
+      // Create the connection from the RTC node to the tool node to deliver video frame
+      GraphEditor.addOrUpdateConnection(
+        graph,
+        `${rtcModule.extensionGroup}.${rtcModule.name}`,
+        `${toolNode.extensionGroup}.${toolNode.name}`,
+        GraphConnProtocol.VIDEO_FRAME,
+        "video_frame"
+      );
+    }
+  }
+
+  static enableRTCVideoSubscribe(graph: Graph, enabled: Boolean): void {
+    const rtcNode = GraphEditor.findNodeByPredicate(graph, (node) => node.addon.includes("rtc"));
+    if (!rtcNode) {
+      throw new Error("RTC node not found in the graph.");
     }
 
-    // this.addConnection(graph, llmExtension, toolExtension, "llm_tool_link")
+    if (enabled) {
+      GraphEditor.updateNodeProperty(graph, rtcNode.name, {
+        subscribe_video_pix_fmt: 4,
+        subscribe_video: true,
+      });
+    } else {
+      GraphEditor.removeNodeProperties(graph, rtcNode.name, ["subscribe_video_pix_fmt", "subscribe_video"]);
+    }
   }
 }
 
