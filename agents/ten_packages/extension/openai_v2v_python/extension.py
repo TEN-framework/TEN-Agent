@@ -179,7 +179,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
-            if self.connected and self.users_count == 1:
+            if self.users_count == 1:
                 await self._greeting()
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
@@ -217,7 +217,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                     # self.ten_env.log_info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            self.connected = True
                             self.ten_env.log_info(f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
@@ -610,8 +609,11 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         return content_parts
     
     async def _greeting(self) -> None:
-        if self.config.greeting:
+        if self.connected and self.users_count == 1:
             text = self._greeting_text()
+            if self.config.greeting:
+                text = self.config.greeting
+            self.ten_env.log_info(f"send greeting {text}")
             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
             await self.conn.send_request(ResponseCreate())
 
