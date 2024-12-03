@@ -24,9 +24,7 @@
               "agora_asr_language": "en-US",
               "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
               "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
-              "agora_asr_session_control_file_path": "session_control.conf",
-              "subscribe_video_pix_fmt": 4,
-              "subscribe_video": true
+              "agora_asr_session_control_file_path": "session_control.conf"
             }
           },
           {
@@ -50,7 +48,7 @@
               "base_url": "",
               "api_key": "${env:OPENAI_API_KEY}",
               "frequency_penalty": 0.9,
-              "model": "gpt-4o-mini",
+              "model": "gpt-4o",
               "max_tokens": 512,
               "prompt": "",
               "proxy_url": "${env:OPENAI_PROXY_URL|}",
@@ -83,13 +81,6 @@
             "name": "message_collector",
             "addon": "message_collector",
             "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "vision_tool_python",
-            "addon": "vision_tool_python",
-            "extension_group": "default",
             "property": {}
           },
           {
@@ -145,17 +136,6 @@
                   }
                 ]
               }
-            ],
-            "video_frame": [
-              {
-                "name": "video_frame",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "vision_tool_python"
-                  }
-                ]
-              }
             ]
           },
           {
@@ -187,19 +167,6 @@
                   {
                     "extension_group": "tts",
                     "extension": "tts"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "vision_tool_python"
-                  },
-                  {
-                    "extension_group": "default",
-                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -278,21 +245,6 @@
             "data": [
               {
                 "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "vision_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
                 "dest": [
                   {
                     "extension_group": "chatgpt",
