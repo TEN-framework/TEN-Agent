@@ -166,6 +166,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         ]
 
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+        ten_env.log_info(f"run_tool name: {name}, args: {args}")
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
@@ -183,17 +184,21 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         if "location" not in args:
             raise Exception("Failed to get property")
 
-        location = args["location"]
-        url = f"http://api.weatherapi.com/v1/current.json?key={self.config.api_key}&q={location}&aqi=no"
+        try:
+            location = args["location"]
+            url = f"http://api.weatherapi.com/v1/current.json?key={self.config.api_key}&q={location}&aqi=no"
 
-        async with self.session.get(url) as response:
-            result = await response.json()
-            return {
-                "location": result.get("location", {}).get("name", ""),
-                "temperature": result.get("current", {}).get("temp_c", ""),
-                "humidity": result.get("current", {}).get("humidity", ""),
-                "wind_speed": result.get("current", {}).get("wind_kph", ""),
-            }
+            async with self.session.get(url) as response:
+                result = await response.json()
+                return {
+                    "location": result.get("location", {}).get("name", ""),
+                    "temperature": result.get("current", {}).get("temp_c", ""),
+                    "humidity": result.get("current", {}).get("humidity", ""),
+                    "wind_speed": result.get("current", {}).get("wind_kph", ""),
+                }
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to get current weather: {e}")
+            return None
 
     async def _get_past_weather(self, args: dict) -> Any:
         if "location" not in args or "datetime" not in args:

@@ -45,15 +45,15 @@
             "addon": "openai_chatgpt_python",
             "extension_group": "chatgpt",
             "property": {
-              "base_url": "",
               "api_key": "${env:OPENAI_API_KEY}",
+              "base_url": "",
               "frequency_penalty": 0.9,
-              "model": "gpt-4o",
-              "max_tokens": 512,
-              "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL|}",
               "greeting": "TEN Agent connected. How can I help you today?",
-              "max_memory_length": 10
+              "max_memory_length": 10,
+              "max_tokens": 512,
+              "model": "${env:OPENAI_MODEL}",
+              "prompt": "",
+              "proxy_url": "${env:OPENAI_PROXY_URL}"
             }
           },
           {
@@ -167,6 +167,15 @@
                   {
                     "extension_group": "tts",
                     "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
