@@ -36,6 +36,7 @@ const Avatar = (props: AvatarProps) => {
   const options = useAppSelector(state => state.global.options)
   const { userId } = options
   const appDispatch = useAppDispatch()
+  var board=false;
 
   const animStrings = [
     "<trl-anim immediate='true' type='core' id='BubblePop_Dance' />",
@@ -88,6 +89,7 @@ const Avatar = (props: AvatarProps) => {
     if (trulienceAvatarRef.current) {
       console.log('adding listener', trulienceAvatarRef);
       rtcManager.on("textChanged", (textItem: ITextItem) => {
+        console.error(textItem.text);
         if (textItem.isFinal && textItem.dataType == "transcribe" && textItem.time != lastChatTime) {
           const isAgent = Number(textItem.uid) != Number(userId);
           if (isAgent) {
@@ -96,10 +98,23 @@ const Avatar = (props: AvatarProps) => {
             let ssml = "";
             if (textItem.text.includes('SSML_DANCE')) {
               ssml = getDance();
+            } else if (textItem.text.includes('SSML_CHESSBOARD')) {
+              if (!board) {
+                board=true;
+                ssml = "<trl-content position='ScreenAngledSmallLeft' screen='https://sa-utils.agora.io/svg/fen.html?fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'  aspect='1'  />";             
+              }
+              const newText = textItem.text.replace(/SSML_CHESSBOARD/g, '');
+              let arr=document.querySelectorAll('iframe');
+                if (arr && arr[0] && arr[0].contentWindow) {
+                  console.error('new positions',newText);
+                  arr[0].contentWindow.postMessage({ type: 'updateChessboard', fen: newText }, '*');
+                }          
             } else if (textItem.text.includes('SSML_CONTENT_HIDE')) {
+              board=false;
               ssml = "<trl-content position='DefaultCenter' />";
             } else if (textItem.text.includes('SSML_CONTENT_SHOW')) {
-              ssml = "<trl-content position='ScreenAngledMediumLeft' screen='https://www.youtube.com/embed/BHACKCNDMW8?autoplay=1' pointer='true' x='10' y='10' w='50' h='50' index='0' />";             
+              board=true;
+              ssml = "<trl-content position='ScreenAngledSmallLeft' screen='https://sa-utils.agora.io/svg/fen.html?fen=rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'  aspect='1'  />";             
             } else if (textItem.text.includes('SSML_KISS')) {
               ssml = "<trl-anim immediate='true' type='aux' id='kiss' audio='"+process.env.NEXT_PUBLIC_animationURL+"/assets/audio/female/kiss.mp3' />";
             } else if (textItem.text.includes('SSML_BACKGROUND')) {

@@ -60,6 +60,15 @@
           {
             "type": "extension",
             "extension_group": "tools",
+            "addon": "chess_tool_python",
+            "name": "chess_tool_python",
+            "property": {
+              "api_key": "chess"
+            }
+          },
+          {
+            "type": "extension",
+            "extension_group": "tools",
             "addon": "bingsearch_tool_python",
             "name": "bingsearch_tool_python",
             "property": {
@@ -169,6 +178,32 @@
                   {
                     "extension_group": "llm",
                     "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tools",
+            "extension": "chess_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
                   }
                 ]
               }
@@ -348,6 +383,66 @@
                   {
                     "extension_group": "tools",
                     "extension": "weatherapi_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_draw_chessboard",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "chess_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_validate_chess_move",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "chess_tool_python",
+                    "msg_conversion": {
+                      "type": "per_property",
+                      "keep_original": true,
+                      "rules": [
+                        {
+                          "path": "_ten.name",
+                          "conversion_mode": "fixed_value",
+                          "value": "tool_call"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "tool_call_suggest_next_chess_move",
+                "dest": [
+                  {
+                    "extension_group": "tools",
+                    "extension": "chess_tool_python",
                     "msg_conversion": {
                       "type": "per_property",
                       "keep_original": true,
