@@ -8,17 +8,20 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
-  COLOR_LIST,
-  setOptionsToLocal,
+  COLOR_LIST
+} from "@/common/constant";
+import {
   apiReloadPackage,
   apiFetchGraphs,
   apiFetchInstalledAddons,
   apiFetchGraphDetails,
   apiUpdateGraph,
   apiSaveProperty,
-} from "@/common";
+} from "@/common/request"
+import {
+  setOptionsToLocal,
+} from "@/common/storage"
 import { AddonDef, Graph } from "@/common/graph";
-import { set } from "react-hook-form";
 
 export interface InitialState {
   options: IOptions;

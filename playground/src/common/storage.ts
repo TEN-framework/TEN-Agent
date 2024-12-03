@@ -1,5 +1,5 @@
 import { IOptions } from "@/types"
-import { OPTIONS_KEY, DEFAULT_OPTIONS, OVERRIDEN_PROPERTIES_KEY } from "./constant"
+import { OPTIONS_KEY, DEFAULT_OPTIONS } from "./constant"
 
 export const getOptionsFromLocal = () => {
   if (typeof window !== "undefined") {
