@@ -167,12 +167,13 @@ class GraphEditor {
   /**
    * Remove a node from the graph
    */
-  static removeNode(graph: Graph, nodeName: string): void {
+  static removeNode(graph: Graph, nodeName: string): Node {
     const nodeIndex = graph.nodes.findIndex((node) => node.name === nodeName)
     if (nodeIndex === -1) {
       throw new Error(`Node "${nodeName}" not found in graph "${graph.id}".`)
     }
-    graph.nodes.splice(nodeIndex, 1)
+    const node = graph.nodes.splice(nodeIndex, 1)[0]
+    return node;
   }
 
   /**
@@ -425,6 +426,10 @@ class GraphEditor {
     return graph.nodes.find((node) => node.name === nodeName) || null
   }
 
+  static findNodeByPredicate(graph: Graph, predicate: (node: Node) => boolean): Node | null {
+    return graph.nodes.find(predicate) || null
+  }
+
   static findConnection(
     graph: Graph,
     extensionGroup: string,
@@ -474,20 +479,20 @@ class GraphEditor {
   
   
 
-  static removeNodeAndConnections(graph: Graph, nodeName: string): void {
+  static removeNodeAndConnections(graph: Graph, addon: string): void {
     // Remove the node
-    this.removeNode(graph, nodeName)
+    const node = this.removeNode(graph, addon)
 
     // Remove all connections involving this node
     graph.connections = graph.connections.filter((connection) => {
       const isSource =
-        connection.extensionGroup + "." + connection.extension === nodeName
+        connection.extensionGroup + "." + connection.extension === `${node.extensionGroup}.${node.name}`
       const protocols = ["cmd", "data", "audio_frame", "video_frame"] as const
 
       protocols.forEach((protocol) => {
         if (connection[protocol]) {
           connection[protocol] = connection[protocol]?.filter(
-            (item) => !item.dest.some((dest) => dest.extension === nodeName),
+            (item) => !item.dest.some((dest) => dest.extension === node.name && dest.extensionGroup === node.extensionGroup),
           )
         }
       })

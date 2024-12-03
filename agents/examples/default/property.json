@@ -3,7 +3,7 @@
     "predefined_graphs": [
       {
         "name": "voice_assistant",
-        "auto_start": false,
+        "auto_start": true,
         "nodes": [
           {
             "type": "extension",
@@ -73,13 +73,24 @@
             "type": "extension",
             "name": "interrupt_detector",
             "addon": "interrupt_detector_python",
-            "extension_group": "default"
+            "extension_group": "default",
+            "property": {}
           },
           {
             "type": "extension",
             "name": "message_collector",
             "addon": "message_collector",
-            "extension_group": "transcriber"
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY|}"
+            }
           }
         ],
         "connections": [
@@ -156,6 +167,15 @@
                   {
                     "extension_group": "tts",
                     "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -242,6 +262,21 @@
                 ]
               }
             ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -292,11 +327,11 @@
           },
           {
             "type": "extension",
-            "name": "bingsearch_tool_python",
-            "addon": "bingsearch_tool_python",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
             "extension_group": "default",
             "property": {
-              "api_key": "${env:BING_API_KEY|}"
+              "api_key": "${env:WEATHERAPI_API_KEY|}"
             }
           }
         ],
@@ -326,6 +361,15 @@
                   {
                     "extension_group": "rtc",
                     "extension": "agora_rtc"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -369,23 +413,8 @@
             ]
           },
           {
-            "extension_group": "llm",
-            "extension": "v2v",
-            "cmd": [
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "bingsearch_tool_python"
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "extension_group": "default",
-            "extension": "bingsearch_tool_python",
+            "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",

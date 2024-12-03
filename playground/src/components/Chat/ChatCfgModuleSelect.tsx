@@ -181,7 +181,7 @@ export function RemoteModuleCfgSheet() {
                                         const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
 
                                         // Create or update connections
-                                        const llmNode = GraphEditor.findNode(selectedGraphCopy, "llm");
+                                        const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                         if (llmNode) {
                                             const llmExtensionGroup = llmNode.extensionGroup;
                                             GraphEditor.addOrUpdateConnection(
