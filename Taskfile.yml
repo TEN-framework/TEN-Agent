@@ -1,0 +1,67 @@
+version: '3'
+
+tasks:
+  clean:
+    desc: clean up
+    cmds:
+      - task: clean-agents
+      - task: clean-server
+
+  build:
+    desc: build
+    cmds:
+      - task: build-agent
+      - task: build-server
+
+  use:
+    desc: use agent, default 'agents/examples/demo'
+    vars:
+      AGENT: '{{.AGENT| default "agents/examples/default"}}'
+    cmds:
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
+      - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
+      - task: build
+
+  run-server:
+    desc: run backend http server
+    cmds:
+      - /app/server/bin/api
+
+  run-gd-server:
+    desc: run tman dev http server for graph designer
+    dir: ./agents
+    cmds:
+      - tman dev-server
+
+  run:
+    desc: run servers
+    deps:
+      - task: run-server
+      - task: run-gd-server
+
+  build-agent:
+    desc: build agent
+    dir: ./agents
+    internal: true
+    cmds:
+      - ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
+
+  build-server:
+    desc: build server
+    dir: ./server
+    cmds:
+      - go mod tidy && go mod download && go build -o bin/api main.go
+
+  clean-agents:
+    desc: clean up agents
+    dir: ./agents
+    internal: true
+    cmds:
+      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system/ten_runtime* ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/extension/py_init_extension_cpp
+
+  clean-server:
+    desc: clean up server
+    dir: ./server
+    internal: true
+    cmds:
+      - rm -rf bin

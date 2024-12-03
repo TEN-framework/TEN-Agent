@@ -1,12 +1,11 @@
 services:
   ten_agent_dev:
-    image: ghcr.io/ten-framework/ten_agent_build:0.2.3
+    image: ghcr.io/ten-framework/ten_agent_build:0.2.4
     container_name: ten_agent_dev
     platform: linux/amd64
     tty: true
     stdin_open: true
     restart: always
-    command: "make run-gd-server"
     ports:
       - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
       - "${SERVER_PORT}:${SERVER_PORT}"
@@ -19,7 +18,7 @@ services:
     networks:
       - ten_agent_network
   ten_agent_playground:
-    image: ghcr.io/ten-framework/ten_agent_playground:0.5.0-88-g7db7dce
+    image: ghcr.io/ten-framework/ten_agent_playground:0.6.1-41-g7292256
     container_name: ten_agent_playground
     restart: always
     ports:
@@ -39,27 +38,6 @@ services:
       - ten_agent_network
     environment:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
-
-  # use this when you want to run the playground in local development mode
-  # ten_agent_playground_dev:
-  #     image: node:20-alpine
-  #     container_name: ten_agent_playground_dev
-  #     restart: always
-  #     command: sh -c "cd /app/playground && npm i && npm run dev" #build && npm run start"
-  #     ports:
-  #     - "3002:3000"
-  #     volumes:
-  #     - ./:/app
-  ten_graph_designer:
-    image: ghcr.io/ten-framework/ten_graph_designer:dde0ff1
-    container_name: ten_graph_designer
-    restart: always
-    ports:
-      - "3001:3000"
-    networks:
-      - ten_agent_network
-    environment:
-      - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
 networks:
   ten_agent_network:
     driver: bridge

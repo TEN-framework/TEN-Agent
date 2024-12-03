@@ -3,9 +3,8 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
-  RemoteGraphSelect,
-  RemoteGraphCfgSheet,
-} from "@/components/Chat/ChatCfgSelect";
+  RemotePropertyCfgSheet,
+} from "@/components/Chat/ChatCfgPropertySelect";
 import PdfSelect from "@/components/Chat/PdfSelect";
 import {
   genRandomChatList,
@@ -15,28 +14,20 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
-  apiGetGraphs,
-  apiGetNodes,
-  useGraphExtensions,
-  apiGetExtensionMetadata,
-  apiReloadGraph,
 } from "@/common";
 import {
   setRtmConnected,
   addChatItem,
-  setExtensionMetadata,
-  setGraphName,
-  setGraphs,
+  setSelectedGraphId,
   setLanguage,
-  setExtensions,
-  setOverridenPropertiesByGraph,
-  setOverridenProperties,
 } from "@/store/reducers/global";
 import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { rtmManager } from "@/manager/rtm";
 import { type IRTMTextItem, EMessageType, ERTMTextType } from "@/types";
+import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
+import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
@@ -45,18 +36,8 @@ export default function ChatCard(props: { className?: string }) {
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
-  const graphs = useAppSelector((state) => state.global.graphs);
-  const extensions = useAppSelector((state) => state.global.extensions);
-  const graphName = useAppSelector((state) => state.global.graphName);
-  const chatItems = useAppSelector((state) => state.global.chatItems);
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
-  const graphExtensions = useGraphExtensions();
-  const extensionMetadata = useAppSelector(
-    (state) => state.global.extensionMetadata
-  );
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
   const options = useAppSelector((state) => state.global.options);
 
   const disableInputMemo = React.useMemo(() => {
@@ -80,43 +61,7 @@ export default function ChatCard(props: { className?: string }) {
   // const chatItems = genRandomChatList(10)
   const chatRef = React.useRef(null);
 
-  React.useEffect(() => {
-    apiReloadGraph().then(() => {
-      Promise.all([apiGetGraphs(), apiGetExtensionMetadata()]).then(
-        (res: any) => {
-          let [graphRes, metadataRes] = res;
-          let graphs = graphRes["data"].map((item: any) => item["name"]);
-
-          let metadata = metadataRes["data"];
-          let metadataMap: Record<string, any> = {};
-          metadata.forEach((item: any) => {
-            metadataMap[item["name"]] = item;
-          });
-          dispatch(setGraphs(graphs));
-          dispatch(setExtensionMetadata(metadataMap));
-        }
-      );
-    });
-  }, []);
-
-  React.useEffect(() => {
-    if (!extensions[graphName]) {
-      apiGetNodes(graphName).then((res: any) => {
-        let nodes = res["data"];
-        let nodesMap: Record<string, any> = {};
-        nodes.forEach((item: any) => {
-          nodesMap[item["name"]] = item;
-        });
-        dispatch(setExtensions({ graphName, nodesMap }));
-      });
-    }
-  }, [graphName]);
-
   useAutoScroll(chatRef);
-
-  const onGraphNameChange = (val: any) => {
-    dispatch(setGraphName(val));
-  };
 
   const onTextChanged = (text: IRTMTextItem) => {
     console.log("[rtm] onTextChanged", text);
@@ -164,9 +109,10 @@ export default function ChatCard(props: { className?: string }) {
       <div className={cn("flex-grow", className)}>
         <div className="flex h-full w-full flex-col p-4">
           {/* Action Bar */}
-          <div className="flex w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
             <RemoteGraphSelect />
-            <RemoteGraphCfgSheet />
+            <RemoteModuleCfgSheet />
+            <RemotePropertyCfgSheet />
             {isRagGraph(graphName) && <PdfSelect />}
           </div>
           {/* Chat messages would go here */}

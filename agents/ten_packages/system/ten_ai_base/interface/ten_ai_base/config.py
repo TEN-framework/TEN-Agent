@@ -1,7 +1,10 @@
-from dataclasses import dataclass, fields
 import builtins
-from typing import TypeVar, Type
+import json
+
+from typing import TypeVar, Type, List
 from ten import TenEnv
+from dataclasses import dataclass, fields
+
 
 T = TypeVar('T', bound='BaseConfig')
 
@@ -43,6 +46,7 @@ class BaseConfig:
                         val = ten_env.get_property_float(field.name)
                         setattr(obj, field.name, val)
                     case _:
-                        pass
+                        val = ten_env.get_property_to_json(field.name)
+                        setattr(obj, field.name, json.loads(val))
             except Exception as e:
                 pass

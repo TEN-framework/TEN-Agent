@@ -1,1 +1,3 @@
-{}
+{
+    "api_key": "${env:BING_API_KEY|}"
+}

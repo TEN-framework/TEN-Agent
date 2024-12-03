@@ -1,0 +1,42 @@
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.4.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.4"
+    },
+    {
+      "type": "extension",
+      "name": "py_init_extension_cpp",
+      "version": "0.4"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.9.0-rc1"
+    },
+    {
+      "type": "extension",
+      "name": "agora_sess_ctrl",
+      "version": "0.3.0-rc1"
+    },
+    {
+      "type": "system",
+      "name": "azure_speech_sdk",
+      "version": "1.38.0"
+    },
+    {
+      "type": "extension",
+      "name": "azure_tts",
+      "version": "=0.6.2"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "=0.3.0"
+    }
+  ]
+}

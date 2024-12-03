@@ -17,6 +17,12 @@ Local playground for Ten Agent.
 - Node.js >= 20
 - [pnpm 9.12.3](https://pnpm.io/installation)
 
+### Run local server
+
+First, make sure you have started the Ten Agent server by following the instructions in the [root README](../README.md#3-start-agent-development-containers).
+
+Then, you can start the playground web UI by running the following steps.
+
 ### Install dependencies
 
 ```bash

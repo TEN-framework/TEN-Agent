@@ -94,3 +94,14 @@ class LLMCallCompletionArgs(TypedDict, total=False):
 class LLMDataCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]
     no_tool: bool = False
+
+
+class TTSPcmOptions(TypedDict, total=False):
+    sample_rate: int
+    """The sample rate of the audio data in Hz."""
+
+    num_channels: int
+    """The number of audio channels."""
+
+    bytes_per_sample: int
+    """The number of bytes per sample."""

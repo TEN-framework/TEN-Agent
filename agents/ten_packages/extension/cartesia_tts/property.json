@@ -1,1 +1,7 @@
-{}
+{
+    "api_key": "${env:CARTESIA_API_KEY}",
+    "language": "en",
+    "model_id": "sonic-english",
+    "sample_rate": 16000,
+    "voice_id": "f9836c6e-a0bd-460e-9d3c-f7299fa60f94"
+}

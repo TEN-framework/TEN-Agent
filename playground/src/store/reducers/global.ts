@@ -3,18 +3,25 @@ import {
   IChatItem,
   Language,
   VoiceType,
-  IAgentSettings,
 } from "@/types";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
-  COLOR_LIST,
+  COLOR_LIST
+} from "@/common/constant";
+import {
+  apiReloadPackage,
+  apiFetchGraphs,
+  apiFetchInstalledAddons,
+  apiFetchGraphDetails,
+  apiUpdateGraph,
+  apiSaveProperty,
+} from "@/common/request"
+import {
   setOptionsToLocal,
-  genRandomChatList,
-  setOverridenPropertiesToLocal,
-  deepMerge,
-} from "@/common";
+} from "@/common/storage"
+import { AddonDef, Graph } from "@/common/graph";
 
 export interface InitialState {
   options: IOptions;
@@ -25,11 +32,10 @@ export interface InitialState {
   language: Language;
   voiceType: VoiceType;
   chatItems: IChatItem[];
-  graphName: string;
-  graphs: string[];
-  extensions: Record<string, any>;
-  overridenProperties: Record<string, any>;
-  extensionMetadata: Record<string, any>;
+  selectedGraphId: string;
+  graphList: string[];
+  graphMap: Record<string, Graph>;
+  addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
 }
 
@@ -43,11 +49,10 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "camera_va_openai_azure",
-    graphs: [],
-    extensions: {},
-    overridenProperties: {},
-    extensionMetadata: {},
+    selectedGraphId: "",
+    graphList: [],
+    graphMap: {},
+    addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
   };
 };
@@ -136,39 +141,11 @@ export const globalSlice = createSlice({
     setLanguage: (state, action: PayloadAction<Language>) => {
       state.language = action.payload;
     },
-    setGraphName: (state, action: PayloadAction<string>) => {
-      state.graphName = action.payload;
+    setSelectedGraphId: (state, action: PayloadAction<string>) => {
+      state.selectedGraphId = action.payload;
     },
-    setGraphs: (state, action: PayloadAction<string[]>) => {
-      state.graphs = action.payload;
-    },
-    setExtensions: (state, action: PayloadAction<Record<string, any>>) => {
-      let { graphName, nodesMap } = action.payload;
-      state.extensions[graphName] = nodesMap;
-    },
-    setOverridenProperties: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      state.overridenProperties = action.payload;
-      setOverridenPropertiesToLocal(state.overridenProperties);
-    },
-    setOverridenPropertiesByGraph: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      let { graphName, nodesMap } = action.payload;
-      state.overridenProperties[graphName] = deepMerge(
-        state.overridenProperties[graphName] || {},
-        nodesMap
-      );
-      setOverridenPropertiesToLocal(state.overridenProperties);
-    },
-    setExtensionMetadata: (
-      state,
-      action: PayloadAction<Record<string, any>>
-    ) => {
-      state.extensionMetadata = action.payload;
+    setGraphList: (state, action: PayloadAction<string[]>) => {
+      state.graphList = action.payload;
     },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload;
@@ -183,8 +160,53 @@ export const globalSlice = createSlice({
         COLOR_LIST[0].active
       );
     },
+    setGraph: (state, action: PayloadAction<Graph>) => {
+      let graphMap = JSON.parse(JSON.stringify(state.graphMap));
+      graphMap[action.payload.id] = action.payload;
+      state.graphMap = graphMap;
+    },
+    setAddonModules: (state, action: PayloadAction<Record<string, any>[]>) => {
+      state.addonModules = JSON.parse(JSON.stringify(action.payload));
+    }
   },
 });
+
+// Initialize graph data
+export const initializeGraphData = createAsyncThunk(
+  "global/initializeGraphData",
+  async (_, { dispatch }) => {
+    await apiReloadPackage();
+    const [fetchedGraphs, modules] = await Promise.all([
+      apiFetchGraphs(),
+      apiFetchInstalledAddons(),
+    ]);
+    dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+    dispatch(setAddonModules(modules));
+  }
+);
+
+// Fetch graph details
+export const fetchGraphDetails = createAsyncThunk(
+  "global/fetchGraphDetails",
+  async (graphId: string, { dispatch }) => {
+    const graph = await apiFetchGraphDetails(graphId);
+    dispatch(setGraph(graph));
+  }
+);
+
+// Update a graph
+export const updateGraph = createAsyncThunk(
+  "global/updateGraph",
+  async (
+    { graphId, updates }: { graphId: string; updates: Partial<Graph> },
+    { dispatch }
+  ) => {
+    await apiUpdateGraph(graphId, updates);
+    await apiSaveProperty();
+    const updatedGraph = await apiFetchGraphDetails(graphId);
+    dispatch(setGraph(updatedGraph));
+  }
+);
 
 export const {
   reset,
@@ -196,13 +218,11 @@ export const {
   addChatItem,
   setThemeColor,
   setLanguage,
-  setGraphName,
-  setGraphs,
-  setExtensions,
-  setExtensionMetadata,
-  setOverridenProperties,
-  setOverridenPropertiesByGraph,
+  setSelectedGraphId,
+  setGraphList,
   setMobileActiveTab,
+  setGraph,
+  setAddonModules,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;

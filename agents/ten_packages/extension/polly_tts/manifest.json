@@ -9,6 +9,17 @@
             "version": "0.4"
         }
     ],
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "BUILD.gn",
+            "**.tent",
+            "**.py",
+            "README.md",
+            "tests/**"
+        ]
+    },
     "api": {
         "property": {
             "region": {
@@ -27,7 +38,7 @@
                 "type": "string"
             },
             "sample_rate": {
-                "type": "string"
+                "type": "int64"
             },
             "lang_code": {
                 "type": "string"

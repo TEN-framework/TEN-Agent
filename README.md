@@ -36,17 +36,22 @@
 <br>
 <h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
 
-Try OpenAI Realtime API and RTC at [agent.theten.ai](https://agent.theten.ai).
+Try OpenAI Realtime API, **Weather Check** and **Web Search** at [agent.theten.ai](https://agent.theten.ai).
 
 Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
 
 ![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
+<h2>Usecases</h2>
+
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
+
+<br>
 <h2>TEN Agent Features</h2>
 
-* **OpenAI Realtime API and RTC integration**:
-TEN Agent is the world-class multimodal AI agent to integrate the OpenAI Realtime API and RTC.
+* **OpenAI Realtime API and RTC Integration**:
+TEN Agent seamlessly integrates OpenAI's Realtime API with RTC capabilities, enabling natural, responsive conversations with ultra-low latency and high-quality audio processing.
 
 * **High-Performance Real-Time Multimodal Interactions**:
 Offers high-performance, low-latency solutions for complex audio-visual AI applications.
@@ -68,58 +73,43 @@ Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
-<br>
-<h2>Stay Tuned</h2>
-
-Before we get started, be sure to star our repository and get instant notifications for all new releases!
-
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
-
-<!-- <br>
-<h2>TEN Agent</h2>
-
-[TEN Agent](https://agent.theten.ai)
-
-TEN Agent is a multimodal agent powered by [ TEN ](https://theten.ai), demonstrating its capabilities in speech, vision, and reasoning through  RAG from local documentation.
-
-And, if you choose to use OpenAI Realtime API, then the Vision and RAG won't be available.
-
-
-[![Showcase TEN multimodal agent](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
-<br> -->
 
 <br>
 <h2>How to build TEN Agent locally
 
 ### Prerequisites
 
-#### Keys
-- Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(certificate only required if enabled in the Agora Console)
-- [OpenAI](https://openai.com/index/openai-api/) API key
-- [ Deepgram ](https://deepgram.com/) ASR and [ FishAudio ](https://fish.audio/) TTS
-<!-- - Azure [SST(ASR)](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) and [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) API keys -->
+| Category | Requirements |
+|----------|-------------|
+| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
+| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
-#### Installation
-  - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
-  - [Node.js(LTS) v18](https://nodejs.org/en)
+<!-- <br>
 
-#### Minimum system requirements
-  - CPU >= 2 Core
-  - RAM >= 4 GB
+### Windows settings(MUST READ)
 
-#### MacOS: Docker setting on Apple Silicon
+On Windows, Git automatically adds a carriage return(\r) at the end of each line, which causes the `agents/bin/start: not found` error when running the server.
 
-You will need to uncheck "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" option for Docker if you are on Apple Silicon. However, please note that build and connection times will be a little slower due to emulation when running on ARM systems. Once deployed to x64 (e.g. your Linux server) it will be much faster.
+**If you encounter this issue**, follow these steps:
+1. Completely remove the current project folder
+2. Run the following command to disable Git's auto CRLF:
 
+```bash
+git config --global core.autocrlf false
+``` -->
+
+<!-- 3. Re-clone the project and start the process again -->
+
+<br>
+
+### macOS: Docker setting on Apple Silicon
+
+For Apple Silicon Macs, uncheck "Use Rosetta for x86/amd64 emulation" in Docker settings. Note: This may result in slower build times on ARM, but performance will be normal when deployed to x64 servers.
 
 ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
-#### Windows: Configuring Git to handle line endings
-To avoid problems in `make run-server` later, you can configure Git to properly handle line endings on Windows.([more here](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows))
-
-```bash
-git config --global core.autocrlf true
-```
+<br>
 
 ### Next step
 
@@ -134,8 +124,8 @@ cp ./.env.example ./.env
 #### 2. Setup API keys
 Open the `.env` file and fill in the `keys`. We recommend using [ Deepgram ASR ](https://deepgram.com/) and [ FishAudio TTS ](https://fish.audio/) as they are free to sign up for and offer free credits. Of course, you can also use other services, see the list in [.env.example](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
 ```bash
-# Agora App ID 
-# Agora App Certificate(only required if enabled in the Agora Console)
+# Agora App ID and Agora App Certificate
+# These are enabled by default when you create an Agora project
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
@@ -161,14 +151,13 @@ docker compose up -d
 Open up a separate terminal window, enter the container and build the agent:
 ```bash
 docker exec -it ten_agent_dev bash
-
-make build
+task use
 ```
 
 #### 5. Start the server
-Once the build is done, `make run-server` on port `8080`:
+Once the build is done, `task run` on port `8080/49483`:
 ```bash
-make run-server
+task run
 ```
 
 ### Finish and verify
@@ -176,43 +165,26 @@ make run-server
 #### TEN Agent
 Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
 
-#### TEN Graph Designer
+<br>
+<h2>How components work together</h2>
 
-Open up another tab go to [localhost:3001]( http://localhost:3001 ), and use Graph Designer to create, connect and edit extensions on canvas.
+![Components Diagram](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 
-Once you save the graph, you can return to [localhost:3000]( http://localhost:3000 ) and select the corresponding graph to view the changes.
+<br>
+<h2>Stay Tuned</h2>
 
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/hello_world_python.gif?raw=true)
+Before we get started, be sure to star our repository and get instant notifications for all new releases!
 
-<!-- <br>
-<h2>TEN Agent Comparison</h2>
-
-<div align="center">
-
-| **Features**                             | **TEN Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
-| **Vision**                               |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
-| **Rich TTS Support for different languages** |   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
-| **Go support for extension**              |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **C++ support for extension**             |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **RAG support**                          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Workflow builder for extension**        |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
-| **Rich LLM Support**                      |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
-| **Python support for extension**          |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
-| **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
-
-</div> -->
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
 
-
-<br>
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [GitHub Discussion](https://github.com/TEN-framework/ten-agent/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
-- [X (formerly Twitter)](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
+- [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
 
 
  <br>

@@ -27,10 +27,7 @@ export default function Action(props: { className?: string }) {
   const userId = useAppSelector((state) => state.global.options.userId);
   const language = useAppSelector((state) => state.global.language);
   const voiceType = useAppSelector((state) => state.global.voiceType);
-  const graphName = useAppSelector((state) => state.global.graphName);
-  const overridenProperties = useAppSelector(
-    (state) => state.global.overridenProperties
-  );
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab
   );
@@ -60,15 +57,12 @@ export default function Action(props: { className?: string }) {
       toast.success("Agent disconnected");
       stopPing();
     } else {
-      let properties: Record<string, any> =
-        overridenProperties[graphName] || {};
       const res = await apiStartService({
         channel,
         userId,
         graphName,
         language,
         voiceType,
-        properties,
       });
       const { code, msg } = res || {};
       if (code != 0) {
@@ -139,7 +133,6 @@ export default function Action(props: { className?: string }) {
               </TabsTrigger>
             ))}
           </TabsList>
-          yarn
         </Tabs>
 
         {/* -- Action Button */}
@@ -148,6 +141,7 @@ export default function Action(props: { className?: string }) {
             onClick={onClickConnect}
             variant={!agentConnected ? "default" : "destructive"}
             size="sm"
+            disabled={graphName === ""}
             className="w-fit min-w-24"
             loading={loading}
             svgProps={{ className: "h-4 w-4 text-muted-foreground" }}

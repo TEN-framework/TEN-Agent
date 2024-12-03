@@ -14,11 +14,6 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi import Depends, FastAPI, HTTPException, Request
 import asyncio
 
-# Enable Pydantic debug mode
-from pydantic import BaseConfig
-
-BaseConfig.debug = True
-
 # Set up logging
 logging.config.dictConfig({
     "version": 1,

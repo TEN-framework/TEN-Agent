@@ -1,1 +1,11 @@
-{}
+{
+    "base_url": "",
+    "api_key": "${env:OPENAI_API_KEY}",
+    "frequency_penalty": 0.9,
+    "model": "${env:OPENAI_MODEL}",
+    "max_tokens": 512,
+    "prompt": "",
+    "proxy_url": "${env:OPENAI_PROXY_URL}",
+    "greeting": "TEN Agent connected. How can I help you today?",
+    "max_memory_length": 10
+}

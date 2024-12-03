@@ -40,70 +40,42 @@
 </div>
 
 <br>
-<h2>🎉 TEN Agent 兼容了 OpenAI Realtime API 和 RTC</h2>
-
-OpenAI Realtime API 提供超低延迟，而 RTC 提供 AI 噪声抑制。TEN Agent 两者兼备。欢迎在 [agent.theten.ai](https://agent.theten.ai) 上体验。
-
-![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/realtime-api.gif?raw=true)
-
-<br>
-<h2>TEN Agent 特性</h2>
-
-**TEN Agent**，由世界首个实时多模态框架驱动。它是开源的，具有说话、视觉和访问知识库的能力。通过利用 TEN 框架，TEN Agent 具有以下特点：
-
-1. **高性能实时多模态交互**：
-为复杂的音视频 AI 应用提供高性能、低延迟的解决方案。
-
-2. **多语言和多平台支持**：
-支持 C++、Go、Python 等语言的扩展开发。可在 Windows、Mac、Linux 和移动设备上运行。
-
-3. **边缘-云集成**：
-灵活结合边缘和云部署的扩展，平衡隐私、成本和性能。
-
-4. **超越模型限制的灵活性**：
-通过简单的拖放编程，轻松构建复杂的 AI 应用，集成音视频工具、数据库、RAG 等。
-
-5. **实时代理状态管理**：
-实时管理和调整代理行为，实现动态响应。
-
-<br>
-
-<h2>点星收藏</h2>
-
-我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
-
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
-
-<br>
 <h2>如何在本地构建 TEN Agent
 
 ### 先决条件
-#### Keys 
-- Agora App ID 和 App Certificate（[大中华地区点击此处了解详情](https://doc.shengwang.cn/doc/rtc/android/get-started/enable-service)）
-- [OpenAI](https://openai.com/index/openai-api/) API Key
-- [Deepgram](https://deepgram.com/) ASR API Key + [FishAudio](fish.audio) TTS API Key
 
-#### 下载安装
-- [Docker](https://www.docker.com/)	和 [Docker Compose](https://docs.docker.com/compose/install/)
-- [Node.js(LTS) v18](https://nodejs.org/en)
-#### 机器配置
-- CPU >= 2 Core
-- RAM >= 4 GB
+| 类别 | 要求 |
+|----------|-------------|
+| **Keys** | • [ App ID ](https://console.shengwang.cn) 和 [ App Certificate ](https://console.shengwang.cn)（[注册教程](https://doc.shengwang.cn/doc/console/general/quickstart#%E6%B3%A8%E5%86%8C%E8%B4%A6%E5%8F%B7)） <br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥<br>• [ Deepgram ](https://deepgram.com/) ASR（注册即可获得免费额度）<br>• [ FishAudio ](https://fish.audio/) TTS（注册即可获得免费额度）|
+| **安装要求** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **最低系统要求** | • CPU >= 2核<br>• 内存 >= 4 GB |
 
-#### Apple Silicon 上 Docker 设置
-如果您使用的是 Apple Silicon Mac，您需要取消勾选 Docker 的 "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" 选项，否则服务器将无法正常工作。
+<br>
 
-<div align="center">
+<!-- ### Windows 和 macOS 设置
+#### Windows 设置（必读）
 
-![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+强烈建议使用 [Git for Windows](https://git-scm.com/downloads/win) 来避免运行服务器时出现换行符问题。（[详细信息](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows)）
 
-</div>
+如果您更喜欢使用 Windows PowerShell，在遇到换行符问题时，请确保运行以下命令：
 
+**仅在遇到换行符问题时运行此命令。**
+
+```bash
+git config --global core.autocrlf false
+``` -->
+
+#### macOS：Apple Silicon 上的 Docker 设置
+
+对于 Apple Silicon Mac，请在 Docker 设置中取消勾选"使用 Rosetta 进行 x86/amd64 模拟"选项。注意：这可能会导致在 ARM 上的构建时间变慢，但部署到 x64 服务器时性能将恢复正常。
+
+![Docker 设置](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+<br>
 
 #### 设置国内代理
 
-如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
-
+如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。如果遇到更多问题，请参考 [问题排查](../troubleshooting/troubleshooting-cn.md)。
 
 ```bash
 # 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
@@ -124,6 +96,8 @@ export GOPROXY=https://goproxy.cn,direct
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
+<br>
+
 ### 下一步
 #### 1. 创建配置文件
 克隆项目后，在根目录下跑下面的命创建 `.env`:
@@ -134,8 +108,8 @@ cp ./.env.example ./.env
 #### 2. 绑定 extension 的 keys 
 打开 `.env` 文件，绑定对应的 `keys`:
 ```
-# Agora App ID
-# Agora App Certificate 非必须，只有在申请 Agora app ID 的时候开通了才需要填
+# Agora App ID 和 Agora App Certificate
+# 当在账户里面创建项目的时候，默认自动开启 App ID 和 App Certificate
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 
@@ -157,12 +131,12 @@ docker compose up
 ```bash
 docker exec -it ten_agent_dev bash
 
-make build
+task use AGENT=agents/examples/demo
 ```
 
 #### 5.开启服务
 ```bash
-make run-server
+task run
 ```
 
 ### 构建完成 🎉
@@ -178,6 +152,13 @@ make run-server
 同时可以再开一个 tab 在 [localhost:3001]( http://localhost:3001 ) 体验 Graph Designer，通过简单拖拽和动态节点连接轻松定制 TEN Agent。
 
 ![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
+
+<br>
+<h2>点星收藏</h2>
+
+我们更新频繁，不想错过的话，请给我们的 repo 点星，以便获得第一时间的更新.
+
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
 <h2>加入社区</h2>
@@ -201,4 +182,4 @@ make run-server
 <br>
 <h2>许可证授权</h2>
 
-本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](LICENSE)。
+本项目使用 Apache 2.0 许可证授权 - 详细信息请参阅 [LICENSE](../../LICENSE)。

@@ -1,6 +1,6 @@
-from . import elevenlabs_tts_addon
-from .extension import EXTENSION_NAME
-from .log import logger
-
-
-logger.info(f"{EXTENSION_NAME} extension loaded")
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+from . import addon

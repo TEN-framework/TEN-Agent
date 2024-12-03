@@ -140,7 +140,7 @@ export const getGraphProperties = (
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
                 ...localizationOptions,
-                "system_message": prompt,
+                "prompt": prompt,
                 "greeting": greeting,
             }
         }
@@ -151,7 +151,7 @@ export const getGraphProperties = (
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
                 ...localizationOptions,
-                "system_message": prompt,
+                "prompt": prompt,
                 "greeting": greeting,
             },
             "agora_rtc": {

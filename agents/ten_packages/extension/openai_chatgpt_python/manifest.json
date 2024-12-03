@@ -56,6 +56,15 @@
       },
       "max_memory_length": {
         "type": "int64"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "azure_endpoint": {
+        "type": "string"
+      },
+      "azure_api_version": {
+        "type": "string"
       }
     },
     "data_in": [

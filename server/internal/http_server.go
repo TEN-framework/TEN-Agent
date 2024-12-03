@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -108,6 +109,47 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 	s.output(c, codeSuccess, filtered)
 }
 
+func (s *HttpServer) handleAddonDefaultProperties(c *gin.Context) {
+	// Get the base directory path
+	baseDir := "./agents/ten_packages/extension"
+
+	// Read all folders under the base directory
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		slog.Error("failed to read extension directory", "err", err, logTag)
+		s.output(c, codeErrReadDirectoryFailed, http.StatusInternalServerError)
+		return
+	}
+
+	// Iterate through each folder and read the property.json file
+	var addons []map[string]interface{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			addonName := entry.Name()
+			propertyFilePath := fmt.Sprintf("%s/%s/property.json", baseDir, addonName)
+			content, err := os.ReadFile(propertyFilePath)
+			if err != nil {
+				slog.Warn("failed to read property file", "addon", addonName, "err", err, logTag)
+				continue
+			}
+
+			var properties map[string]interface{}
+			err = json.Unmarshal(content, &properties)
+			if err != nil {
+				slog.Warn("failed to parse property file", "addon", addonName, "err", err, logTag)
+				continue
+			}
+
+			addons = append(addons, map[string]interface{}{
+				"addon":    addonName,
+				"property": properties,
+			})
+		}
+	}
+
+	s.output(c, codeSuccess, addons)
+}
+
 func (s *HttpServer) handlerPing(c *gin.Context) {
 	var req PingReq
 
@@ -145,6 +187,7 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 	slog.Info("handlerStart start", "workersRunning", workersRunning, logTag)
 
 	var req StartReq
+
 	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
 		slog.Error("handlerStart params invalid", "err", err, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
@@ -490,6 +533,51 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
+	// Validate environment variables in the "nodes" section
+	envPattern := regexp.MustCompile(`\${env:([^}|]+)}`)
+	for _, graph := range newGraphs {
+		graphMap, _ := graph.(map[string]interface{})
+		nodes, ok := graphMap["nodes"].([]interface{})
+		if !ok {
+			slog.Info("No nodes section in the graph", "graph", graphName, "requestId", req.RequestId, logTag)
+			continue
+		}
+		for _, node := range nodes {
+			nodeMap, _ := node.(map[string]interface{})
+			properties, ok := nodeMap["property"].(map[string]interface{})
+			if !ok {
+				// slog.Info("No property section in the node", "node", nodeMap, "requestId", req.RequestId, logTag)
+				continue
+			}
+			for key, val := range properties {
+				strVal, ok := val.(string)
+				if !ok {
+					continue
+				}
+				// Log the property value being processed
+				// slog.Info("Processing property", "key", key, "value", strVal)
+
+				matches := envPattern.FindAllStringSubmatch(strVal, -1)
+				// if len(matches) == 0 {
+				// 	slog.Info("No environment variable patterns found in property", "key", key, "value", strVal)
+				// }
+
+				for _, match := range matches {
+					if len(match) < 2 {
+						continue
+					}
+					variable := match[1]
+					exists := os.Getenv(variable) != ""
+					// slog.Info("Checking environment variable", "variable", variable, "exists", exists)
+					if !exists {
+						slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+					}
+				}
+			}
+
+		}
+	}
+
 	// Marshal the modified JSON back to a string
 	modifiedPropertyJson, err := json.MarshalIndent(propertyJson, "", "  ")
 	if err != nil {
@@ -515,6 +603,7 @@ func (s *HttpServer) Start() {
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/ping", s.handlerPing)
+	r.GET("/dev-tmp/addons/default-properties", s.handleAddonDefaultProperties)
 	r.POST("/token/generate", s.handlerGenerateToken)
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
 	r.POST("/vector/document/update", s.handlerVectorDocumentUpdate)
