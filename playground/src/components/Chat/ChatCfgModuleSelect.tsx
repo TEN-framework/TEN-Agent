@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppSelector, useGraphs } from "@/common/hooks"
+import { useAppSelector, useGraphs, } from "@/common/hooks"
 import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol } from "@/common/graph"
 import { toast } from "sonner"
 import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
@@ -39,74 +39,60 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
+import { compatibleTools, ModuleRegistry, ModuleTypeLabels } from "@/common/moduleConfig"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph } = useGraphs();
-
-    const moduleMapping: Record<string, string[]> = {
-        stt: [],
-        llm: ["openai_chatgpt_python"],
-        v2v: [],
-        tts: [],
-    };
-
-    // Define the exclusion map for modules
-    const exclusionMapping: Record<string, string[]> = {
-        stt: [],
-        llm: ["qwen_llm_python"],
-        v2v: ["minimax_v2v_python"],
-        tts: [],
-    };
-
-    const modules = React.useMemo(() => {
-        const result: Record<string, string[]> = {};
-
-        addonModules.forEach((module) => {
-            const matchingNode = selectedGraph?.nodes.find((node) =>
-                ["stt", "tts", "llm", "v2v"].some((type) =>
-                    node.name === type &&
-                    (module.name.includes(type) ||
-                        (type === "stt" && module.name.includes("asr")) ||
-                        (moduleMapping[type]?.includes(module.name)))
-                )
-            );
-
-            if (
-                matchingNode &&
-                !exclusionMapping[matchingNode.name]?.includes(module.name)
-            ) {
-                if (!result[matchingNode.name]) {
-                    result[matchingNode.name] = [];
-                }
-                result[matchingNode.name].push(module.name);
-            }
-        });
-
-        return result;
-    }, [addonModules, selectedGraph]);
-
-    const { toolModules } = useGraphs();
+    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
 
     const metadata = React.useMemo(() => {
-        const dynamicMetadata: Record<string, { type: string; options: string[] }> = {};
-
-        Object.keys(modules).forEach((key) => {
-            dynamicMetadata[key] = { type: "string", options: modules[key] };
-        });
-
+        const dynamicMetadata: Record<string, { type: string; options: { value: string; label: string }[] }> = {};
+    
+        if (selectedGraph) {
+            Object.keys(installedAndRegisteredModulesMap).forEach((key) => {
+                const moduleTypeKey = key as ModuleRegistry.ModuleType;
+    
+                // Check if the current graph has a node whose name contains the ModuleType
+                const hasMatchingNode = selectedGraph.nodes.some((node) =>
+                    node.name.includes(moduleTypeKey)
+                );
+    
+                if (hasMatchingNode) {
+                    dynamicMetadata[moduleTypeKey] = {
+                        type: "string",
+                        options: installedAndRegisteredModulesMap[moduleTypeKey].map((module) => ({
+                            value: module.name,
+                            label: module.label,
+                        })),
+                    };
+                }
+            });
+        }
+    
         return dynamicMetadata;
-    }, [modules]);
+    }, [installedAndRegisteredModulesMap, selectedGraph]);
 
     const initialData = React.useMemo(() => {
         const dynamicInitialData: Record<string, string | null | undefined> = {};
-
-        Object.keys(modules).forEach((key) => {
-            dynamicInitialData[key] = getGraphNodeAddonByName(key)?.addon;
-        });
-
+    
+        if (selectedGraph) {
+            Object.keys(installedAndRegisteredModulesMap).forEach((key) => {
+                const moduleTypeKey = key as ModuleRegistry.ModuleType;
+    
+                // Check if the current graph has a node whose name contains the ModuleType
+                const hasMatchingNode = selectedGraph.nodes.some((node) =>
+                    node.name.includes(moduleTypeKey)
+                );
+    
+                if (hasMatchingNode) {
+                    dynamicInitialData[moduleTypeKey] = getGraphNodeAddonByName(moduleTypeKey)?.addon;
+                }
+            });
+        }
+    
         return dynamicInitialData;
-    }, [modules, getGraphNodeAddonByName]);
+    }, [installedAndRegisteredModulesMap, selectedGraph, getGraphNodeAddonByName]);
+    
 
     return (
         <Sheet>
@@ -137,6 +123,17 @@ export function RemoteModuleCfgSheet() {
                             const nodes = selectedGraphCopy.nodes;
                             let needUpdate = false;
 
+
+                            // Update graph nodes with selected modules
+                            Object.entries(data).forEach(([key, value]) => {
+                                const node = nodes.find((n) => n.name === key);
+                                if (node && value && node.addon !== value) {
+                                    node.addon = value;
+                                    node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
+                                    needUpdate = true;
+                                }
+                            });
+
                             // Retrieve the agora_rtc node
                             const agoraRtcNode = GraphEditor.findNode(selectedGraphCopy, "agora_rtc");
                             if (!agoraRtcNode) {
@@ -146,7 +143,7 @@ export function RemoteModuleCfgSheet() {
 
                             // Identify removed tools and process them
                             const currentToolsInGraph = nodes
-                                .filter((node) => toolModules.map((module) => module.name).includes(node.addon))
+                                .filter((node) => installedAndRegisteredToolModules.map((module) => module.name).includes(node.addon))
                                 .map((node) => node.addon);
 
                             const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
@@ -180,17 +177,6 @@ export function RemoteModuleCfgSheet() {
                                 needUpdate = true;
                             }
 
-
-                            // Update graph nodes with selected modules
-                            Object.entries(data).forEach(([key, value]) => {
-                                const node = nodes.find((n) => n.name === key);
-                                if (node && value && node.addon !== value) {
-                                    node.addon = value;
-                                    node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                    needUpdate = true;
-                                }
-                            });
-
                             // Perform the update if changes are detected
                             if (needUpdate) {
                                 try {
@@ -217,43 +203,56 @@ const GraphModuleCfgForm = ({
     onUpdate,
 }: {
     initialData: Record<string, string | null | undefined>;
-    metadata: Record<string, { type: string; options: string[] }>;
+    metadata: Record<string, { type: string; options: { value: string, label: string }[] }>;
     onUpdate: (data: Record<string, string | null>, tools: string[]) => void;
 }) => {
     const formSchema = z.record(z.string(), z.string().nullable());
-    const { selectedGraph, toolModules } = useGraphs();
-
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: initialData,
     });
+    const { selectedGraph, installedAndRegisteredToolModules } = useGraphs();
+    const { watch } = form;
+
+    // Watch for changes in "llm" and "v2v" fields
+    const llmValue = watch("llm");
+    const v2vValue = watch("v2v");
+    const toolModules = React.useMemo(() => {
+        // Step 1: Get installed and registered tool modules
+        const allToolModules = installedAndRegisteredToolModules || [];
+
+        // Step 2: Determine the active module based on form values
+        const activeModule = llmValue || v2vValue;
+
+        // Step 3: Get compatible tools for the active module
+        if (activeModule) {
+            const compatibleToolNames = compatibleTools[activeModule] || [];
+            return allToolModules.filter((module) => compatibleToolNames.includes(module.name));
+        }
+
+        // If no LLM or V2V module is selected, return all tool modules
+        return [];
+    }, [installedAndRegisteredToolModules, selectedGraph, llmValue, v2vValue]);
+
 
     const onSubmit = (data: z.infer<typeof formSchema>) => {
         onUpdate(data, selectedTools);
     };
 
+    const [selectedTools, setSelectedTools] = React.useState<string[]>([]);
 
-    // Custom labels for specific keys
-    const fieldLabels: Record<string, string> = {
-        stt: "STT (Speech to Text)",
-        llm: "LLM (Large Language Model)",
-        tts: "TTS (Text to Speech)",
-        v2v: "LLM v2v (V2V Large Language Model)",
-    };
-
-
-    // Initialize selectedTools by extracting tool addons used in graph nodes
-    const initialSelectedTools = React.useMemo(() => {
+    // Synchronize selectedTools with selectedGraph and toolModules
+    React.useEffect(() => {
         const toolNames = toolModules.map((module) => module.name);
-        return selectedGraph?.nodes
-            .filter((node) => toolNames.includes(node.addon))
-            .map((node) => node.addon) || [];
+        const graphToolAddons =
+            selectedGraph?.nodes
+                .filter((node) => toolNames.includes(node.addon))
+                .map((node) => node.addon) || [];
+        setSelectedTools(graphToolAddons);
     }, [toolModules, selectedGraph]);
 
-    const [selectedTools, setSelectedTools] = React.useState<string[]>(initialSelectedTools);
-
     // Desired field order
-    const fieldOrder = ["stt", "llm", "v2v", "tts"];
+    const fieldOrder: ModuleRegistry.ModuleType[] = ["stt", "llm", "v2v", "tts"];
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -268,7 +267,7 @@ const GraphModuleCfgForm = ({
                                         <FormItem>
                                             <FormLabel>
                                                 <div className="flex justify-between items-center justify-center ">
-                                                    <div className="py-3">{fieldLabels[key]}</div>
+                                                    <div className="py-3">{ModuleTypeLabels[key]}</div>
                                                     {isLLM(key) && (
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger className={cn(
@@ -320,8 +319,8 @@ const GraphModuleCfgForm = ({
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {metadata[key].options.map((option) => (
-                                                            <SelectItem key={option} value={option}>
-                                                                {option}
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
