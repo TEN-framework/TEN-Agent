@@ -14,7 +14,7 @@ tasks:
       - task: build-server
 
   use:
-    desc: use agent, default 'agents/examples/demo'
+    desc: use agent, default 'agents/examples/default'
     vars:
       AGENT: '{{.AGENT| default "agents/examples/default"}}'
     cmds:
