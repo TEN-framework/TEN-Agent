@@ -3,7 +3,11 @@
 import * as React from "react"
 
 import { LoadingButton } from "@/components/Button/LoadingButton"
-import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global"
+import {
+  setAgentConnected,
+  setMobileActiveTab,
+  setGlobalSettingsDialog,
+} from "@/store/reducers/global"
 import {
   useAppDispatch,
   useAppSelector,
@@ -12,11 +16,15 @@ import {
   apiStopService,
   MOBILE_ACTIVE_TAB_MAP,
   EMobileActiveTab,
+  type StartRequestConfig,
 } from "@/common"
 import { toast } from "sonner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import SettingsDialog from "@/components/Dialog/Settings"
+import SettingsDialog, {
+  isCozeGraph,
+  cozeSettingsFormSchema,
+} from "@/components/Dialog/Settings"
 
 let intervalId: NodeJS.Timeout | null = null
 
@@ -30,9 +38,11 @@ export default function Action(props: { className?: string }) {
   const voiceType = useAppSelector((state) => state.global.voiceType)
   const graphName = useAppSelector((state) => state.global.graphName)
   const agentSettings = useAppSelector((state) => state.global.agentSettings)
+  const cozeSettings = useAppSelector((state) => state.global.cozeSettings)
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab,
   )
+
   const [loading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
@@ -53,38 +63,70 @@ export default function Action(props: { className?: string }) {
       return
     }
     setLoading(true)
-    if (agentConnected) {
-      await apiStopService(channel)
-      dispatch(setAgentConnected(false))
-      toast.success("Agent disconnected")
-      stopPing()
-    } else {
-      const res = await apiStartService({
-        channel,
-        userId,
-        graphName,
-        language,
-        voiceType,
-        greeting: agentSettings.greeting,
-        prompt: agentSettings.prompt,
-      })
-      const { code, msg } = res || {}
-      if (code != 0) {
-        if (code == "10001") {
-          toast.error(
-            "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later.",
-          )
-        } else {
-          toast.error(`code:${code},msg:${msg}`)
+    try {
+      if (agentConnected) {
+        // handle disconnect
+        await apiStopService(channel)
+        dispatch(setAgentConnected(false))
+        toast.success("Agent disconnected")
+        stopPing()
+      } else {
+        // handle connect
+        // prepare start service payload
+        const startServicePayload: StartRequestConfig = {
+          channel,
+          userId,
+          graphName,
+          language,
+          voiceType,
+          greeting: agentSettings.greeting,
+          prompt: agentSettings.prompt,
         }
-        setLoading(false)
-        throw new Error(msg)
+        // check graph ---
+        if (isCozeGraph(graphName)) {
+          // check coze settings
+          const cozeSettingsResult =
+            cozeSettingsFormSchema.safeParse(cozeSettings)
+          if (!cozeSettingsResult.success) {
+            dispatch(
+              setGlobalSettingsDialog({
+                open: true,
+                tab: "coze",
+              }),
+            )
+            throw new Error(
+              "Invalid Coze settings. Please check your settings.",
+            )
+          }
+          startServicePayload.coze_token = cozeSettingsResult.data.token
+          startServicePayload.coze_bot_id = cozeSettingsResult.data.bot_id
+          startServicePayload.coze_base_url = cozeSettingsResult.data.base_url
+        }
+        // common -- start service
+        const res = await apiStartService(startServicePayload)
+        const { code, msg } = res || {}
+        if (code != 0) {
+          if (code == "10001") {
+            toast.error(
+              "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later.",
+            )
+          } else {
+            toast.error(`code:${code},msg:${msg}`)
+          }
+          throw new Error(msg)
+        }
+        dispatch(setAgentConnected(true))
+        toast.success("Agent connected")
+        startPing()
       }
-      dispatch(setAgentConnected(true))
-      toast.success("Agent connected")
-      startPing()
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to connect/disconnect agent", {
+        description: (error as Error)?.message,
+      })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const startPing = () => {

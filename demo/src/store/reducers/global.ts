@@ -4,6 +4,7 @@ import {
   Language,
   VoiceType,
   IAgentSettings,
+  ICozeSettings,
 } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import {
@@ -13,7 +14,10 @@ import {
   setOptionsToLocal,
   genRandomChatList,
   DEFAULT_AGENT_SETTINGS,
+  DEFAULT_COZE_SETTINGS,
   setAgentSettingsToLocal,
+  setCozeSettingsToLocal,
+  resetCozeSettings as resetCozeSettingsLocal,
 } from "@/common"
 
 export interface InitialState {
@@ -27,7 +31,12 @@ export interface InitialState {
   chatItems: IChatItem[]
   graphName: string
   agentSettings: IAgentSettings
+  cozeSettings: ICozeSettings
   mobileActiveTab: EMobileActiveTab
+  globalSettingsDialog: {
+    open?: boolean
+    tab?: string
+  }
 }
 
 const getInitialState = (): InitialState => {
@@ -42,7 +51,9 @@ const getInitialState = (): InitialState => {
     chatItems: [],
     graphName: "va_openai_v2v",
     agentSettings: DEFAULT_AGENT_SETTINGS,
+    cozeSettings: DEFAULT_COZE_SETTINGS,
     mobileActiveTab: EMobileActiveTab.AGENT,
+    globalSettingsDialog: { open: false },
   }
 }
 
@@ -140,11 +151,28 @@ export const globalSlice = createSlice({
       state.agentSettings = { ...state.agentSettings, ...action.payload }
       setAgentSettingsToLocal(state.agentSettings)
     },
+    setCozeSettings: (state, action: PayloadAction<Partial<ICozeSettings>>) => {
+      state.cozeSettings = { ...state.cozeSettings, ...action.payload }
+      setCozeSettingsToLocal(state.cozeSettings)
+    },
+    resetCozeSettings: (state) => {
+      state.cozeSettings = DEFAULT_COZE_SETTINGS
+      resetCozeSettingsLocal()
+    },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
     },
     setMobileActiveTab: (state, action: PayloadAction<EMobileActiveTab>) => {
       state.mobileActiveTab = action.payload
+    },
+    setGlobalSettingsDialog: (
+      state,
+      action: PayloadAction<Partial<InitialState["globalSettingsDialog"]>>,
+    ) => {
+      state.globalSettingsDialog = {
+        ...state.globalSettingsDialog,
+        ...action.payload,
+      }
     },
     reset: (state) => {
       Object.assign(state, getInitialState())
@@ -168,7 +196,10 @@ export const {
   setLanguage,
   setGraphName,
   setAgentSettings,
+  setCozeSettings,
+  resetCozeSettings,
   setMobileActiveTab,
+  setGlobalSettingsDialog,
 } = globalSlice.actions
 
 export default globalSlice.reducer
