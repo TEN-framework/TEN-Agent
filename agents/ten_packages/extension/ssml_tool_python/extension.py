@@ -32,7 +32,7 @@ TOOL_PARAMETERS = {
         "properties": {
             "ssml": {
                 "type": "string",
-                "description": "Send one of these words to perform the corresponding action; SSML_KISS: blow a kiss, SSML_STRETCH: perform a stretch, SSML_BACKGROUND: change the scene background, SSML_DANCE: perform a dance, SSML_MUSIC: play some music, SSML_MUSIC_STOP: to stop the music. "
+                "description": "Send one of these words to perform the corresponding action; SSML_KISS: blow a kiss, SSML_STRETCH: perform a stretch, SSML_BACKGROUND: change the scene background, SSML_DANCE: perform a dance, SSML_MUSIC: play some music, SSML_MUSIC_STOP: to stop the music, SSML_CONTENT_SHOW: show additional content window, SSML_CONTENT_HIDE: hide additional content window. "
             }
         },
         "required": ["ssml"],

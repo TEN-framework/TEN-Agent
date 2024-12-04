@@ -273,12 +273,12 @@ class OpenAIV2VExtension(Extension):
                         case ResponseCreated():
                             response_id = message.response.id
                             logger.info(
-                                f"On response created {response_id}")
+                                f"On response created {response_id} {message}")
                         case ResponseDone():
                             id = message.response.id
                             status = message.response.status
                             logger.info(
-                                f"On response done {id} {status}")
+                                f"On response done {id} {status} {message.response}")
                             for item in message.response.output:
                                 await self._append_history(item)
                             if id == response_id:

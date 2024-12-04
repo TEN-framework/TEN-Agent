@@ -29,15 +29,14 @@ TOOL_CALLBACK = "callback"
 
 DRAW_TOOL_NAME = "draw_chessboard"
 DRAW_TOOL_DESCRIPTION = (
-    "Use this function to show the chessboard and draw all the pieces on it. "
-    "You can also call this function to update the position of all the pieces on the board."
+    "Use this function to show the chessboard and to draw all the piece positions on it after each move. "    
 )
 DRAW_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-        "fen": {
+        "current_fen": {
             "type": "string",
-            "description": "The FEN string representing the current chessboard state.",
+            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
         }
     },
     "required": ["fen"],
@@ -50,7 +49,7 @@ VALIDATE_TOOL_PARAMETERS = {
     "properties": {
         "current_fen": {
             "type": "string",
-            "description": "The current FEN string of the chessboard.",
+            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
         },
         "move": {
             "type": "string",
@@ -61,13 +60,13 @@ VALIDATE_TOOL_PARAMETERS = {
 }
 
 MOVE_TOOL_NAME = "suggest_next_chess_move"
-MOVE_TOOL_DESCRIPTION = "Suggest the next move for the virtual agent to make."
+MOVE_TOOL_DESCRIPTION = "Suggest the best next move to make and the new FEN following the move."
 MOVE_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-        "fen": {
+        "current_fen": {
             "type": "string",
-            "description": "The current FEN string of the chessboard.",
+            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
         }
     },
     "required": ["fen"],
@@ -176,7 +175,7 @@ class ChessToolExtension(Extension):
         pass
 
     def _draw_chessboard(self, args: dict) -> Any:
-        fen = args["fen"]
+        fen = args["current_fen"]
         logger.info(f"_draw_chessboard with FEN: {fen}")
         try:
             d = Data.create("text_data")
@@ -188,7 +187,7 @@ class ChessToolExtension(Extension):
             logger.info(f"SSML_CHESSBOARD {d}")
         except Exception:
             logger.exception("Error sending SSML")
-        return "Board positions rendered"
+        return "SUCCESS"
 
     def _validate_chess_move(self, args: dict) -> Any:
         current_fen = args["current_fen"]
@@ -209,10 +208,14 @@ class ChessToolExtension(Extension):
             logger.exception("Error validating move")
             return {"valid": False, "message": f"Error: {str(e)}"}
 
+
     def _suggest_next_chess_move(self, args: dict) -> Any:
-        fen = args["fen"]
+        # apt update
+        # apt-get install stockfish
+
+        fen = args["current_fen"]
         logger.info(f"Suggesting next move for FEN: {fen}")
-        try:            
+        try:
             if fen == "start":
                 board = chess.Board()  # Standard starting position
             else:
@@ -220,11 +223,12 @@ class ChessToolExtension(Extension):
             engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
             limit = chess.engine.Limit(time=0.1)  # Adjust time as needed
             result = engine.play(board, limit)
+            suggested_move = result.move
+            board.push(suggested_move)  # Apply the move to the board
+            new_fen = board.fen()       # Get the updated FEN
             engine.quit()
-            suggested_move = result.move.uci()
-            logger.info(f"Suggested move: {suggested_move}")
-            return {"move": suggested_move}
+            logger.info(f"Suggested move: {suggested_move.uci()}")
+            return {"suggested_move": suggested_move.uci(), "fen_after_move": new_fen}
         except Exception as e:
             logger.exception("Error suggesting next move")
             return {"error": f"Error: {str(e)}"}
-
