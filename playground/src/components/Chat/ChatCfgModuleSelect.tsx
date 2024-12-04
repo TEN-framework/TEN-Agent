@@ -47,16 +47,16 @@ export function RemoteModuleCfgSheet() {
 
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: { value: string; label: string }[] }> = {};
-    
+
         if (selectedGraph) {
             Object.keys(installedAndRegisteredModulesMap).forEach((key) => {
                 const moduleTypeKey = key as ModuleRegistry.ModuleType;
-    
+
                 // Check if the current graph has a node whose name contains the ModuleType
                 const hasMatchingNode = selectedGraph.nodes.some((node) =>
                     node.name.includes(moduleTypeKey)
                 );
-    
+
                 if (hasMatchingNode) {
                     dynamicMetadata[moduleTypeKey] = {
                         type: "string",
@@ -68,31 +68,31 @@ export function RemoteModuleCfgSheet() {
                 }
             });
         }
-    
+
         return dynamicMetadata;
     }, [installedAndRegisteredModulesMap, selectedGraph]);
 
     const initialData = React.useMemo(() => {
         const dynamicInitialData: Record<string, string | null | undefined> = {};
-    
+
         if (selectedGraph) {
             Object.keys(installedAndRegisteredModulesMap).forEach((key) => {
                 const moduleTypeKey = key as ModuleRegistry.ModuleType;
-    
+
                 // Check if the current graph has a node whose name contains the ModuleType
                 const hasMatchingNode = selectedGraph.nodes.some((node) =>
                     node.name.includes(moduleTypeKey)
                 );
-    
+
                 if (hasMatchingNode) {
                     dynamicInitialData[moduleTypeKey] = getGraphNodeAddonByName(moduleTypeKey)?.addon;
                 }
             });
         }
-    
+
         return dynamicInitialData;
     }, [installedAndRegisteredModulesMap, selectedGraph, getGraphNodeAddonByName]);
-    
+
 
     return (
         <Sheet>
@@ -286,7 +286,7 @@ const GraphModuleCfgForm = ({
                                                                             sideOffset={2}
                                                                             alignOffset={-5}
                                                                         >
-                                                                            {toolModules.map((module) => (
+                                                                            {toolModules.length > 0 ? toolModules.map((module) => (
                                                                                 <DropdownMenuItem
                                                                                     key={module.name}
                                                                                     disabled={selectedTools.includes(module.name)} // Disable if the tool is already selected
@@ -300,7 +300,9 @@ const GraphModuleCfgForm = ({
                                                                                     }}>
                                                                                     {module.name}
                                                                                 </DropdownMenuItem>
-                                                                            ))}
+                                                                            )) : (
+                                                                                <DropdownMenuItem disabled>No compatible tools</DropdownMenuItem>
+                                                                            )}
                                                                         </DropdownMenuSubContent>
                                                                     </DropdownMenuPortal>
                                                                 </DropdownMenuSub>
