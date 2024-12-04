@@ -126,6 +126,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             
             self.memory.on(EVENT_MEMORY_EXPIRED, self._on_memory_expired)
             self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
+
+            self.ctx = self.config.build_ctx()
+            self.ctx["greeting"] = self.config.greeting
         
             self.conn = RealtimeApiConnection(
                 ten_env=ten_env,
@@ -179,7 +182,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
-            if self.connected and self.users_count == 1:
+            if self.users_count == 1:
                 await self._greeting()
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
@@ -217,7 +220,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                     # self.ten_env.log_info(f"Received message: {message.type}")
                     match message:
                         case SessionCreated():
-                            self.connected = True
                             self.ten_env.log_info(f"Session is created: {message.session}")
                             self.session_id = message.session.id
                             self.session = message.session
@@ -401,9 +403,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         if self.connected and len(self.buff) >= self.audio_len_threshold:
             await self.conn.send_audio_data(self.buff)
             self.buff = b''
-
-        self.ctx = self.config.build_ctx()
-        self.ctx["greeting"] = self.config.greeting
 
     async def _update_session(self) -> None:
         tools = []
@@ -610,8 +609,11 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         return content_parts
     
     async def _greeting(self) -> None:
-        if self.config.greeting:
+        if self.connected and self.users_count == 1:
             text = self._greeting_text()
+            if self.config.greeting:
+                text = "Say '" + self.config.greeting + "' to me."
+            self.ten_env.log_info(f"send greeting {text}")
             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
             await self.conn.send_request(ResponseCreate())
 
