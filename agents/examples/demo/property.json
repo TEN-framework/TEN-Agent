@@ -518,6 +518,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
+              "greeting": "TEN Agent connected. How can I help you today?",
               "max_history": 10
             }
           },
@@ -534,7 +535,6 @@
               "max_tokens": 512,
               "prompt": "",
               "proxy_url": "${env:OPENAI_PROXY_URL}",
-              "greeting": "TEN Agent connected. How can I help you today?",
               "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
               "max_memory_length": 10,
               "enable_tools": true
@@ -593,6 +593,26 @@
                   {
                     "extension_group": "tools",
                     "extension": "vision_analyze_tool_python"
+                  }
+                ]
+              }
+            ],
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
                   }
                 ]
               }
@@ -688,102 +708,19 @@
                 ]
               },
               {
-                "name": "tool_call_get_current_weather",
+                "name": "tool_call",
                 "dest": [
                   {
                     "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_get_past_weather",
-                "dest": [
+                    "extension": "vision_analyze_tool_python"
+                  },
                   {
                     "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_get_future_weather",
-                "dest": [
+                    "extension": "weatherapi_tool_python"
+                  },
                   {
                     "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_bing_search",
-                "dest": [
-                  {
-                    "extension_group": "tools",
-                    "extension": "bingsearch_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_get_vision_chat_completion",
-                "dest": [
-                  {
-                    "extension_group": "tools",
-                    "extension": "vision_analyze_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension": "bingsearch_tool_python"
                   }
                 ]
               }
@@ -848,6 +785,7 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
+              "greeting": "TEN Agent connected. How can I help you today?",
               "max_history": 10
             }
           },
@@ -975,82 +913,33 @@
                 ]
               },
               {
-                "name": "tool_call_get_current_weather",
+                "name": "tool_call",
                 "dest": [
                   {
                     "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension": "weatherapi_tool_python"
+                  },
+                  {
+                    "extension_group": "tools",
+                    "extension": "bingsearch_tool_python"
                   }
                 ]
               },
               {
-                "name": "tool_call_get_past_weather",
+                "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
                   }
                 ]
               },
               {
-                "name": "tool_call_get_future_weather",
+                "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "tools",
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_bing_search",
-                "dest": [
-                  {
-                    "extension_group": "tools",
-                    "extension": "bingsearch_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension_group": "llm",
+                    "extension": "openai_v2v_python"
                   }
                 ]
               }

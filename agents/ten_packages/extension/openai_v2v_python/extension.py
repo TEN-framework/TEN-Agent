@@ -126,6 +126,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             
             self.memory.on(EVENT_MEMORY_EXPIRED, self._on_memory_expired)
             self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
+
+            self.ctx = self.config.build_ctx()
+            self.ctx["greeting"] = self.config.greeting
         
             self.conn = RealtimeApiConnection(
                 ten_env=ten_env,
@@ -401,9 +404,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             await self.conn.send_audio_data(self.buff)
             self.buff = b''
 
-        self.ctx = self.config.build_ctx()
-        self.ctx["greeting"] = self.config.greeting
-
     async def _update_session(self) -> None:
         tools = []
 
@@ -612,7 +612,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         if self.connected and self.users_count == 1:
             text = self._greeting_text()
             if self.config.greeting:
-                text = self.config.greeting
+                text = "Say '" + self.config.greeting + "' to me."
             self.ten_env.log_info(f"send greeting {text}")
             await self.conn.send_request(ItemCreate(item=UserMessageItemParam(content=[{"type": ContentType.InputText, "text": text}])))
             await self.conn.send_request(ResponseCreate())
