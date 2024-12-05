@@ -26,6 +26,26 @@
                 "name": "text_data"
               }
             ],
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ],
             "extension": "agora_rtc",
             "extension_group": "default"
           },
@@ -33,10 +53,6 @@
             "cmd": [
               {
                 "dest": [
-                  {
-                    "extension": "azure_tts",
-                    "extension_group": "tts"
-                  },
                   {
                     "extension": "fashionai",
                     "extension_group": "default"
@@ -62,32 +78,6 @@
             ],
             "extension": "openai_chatgpt",
             "extension_group": "chatgpt"
-          },
-          {
-            "audio_frame": [
-              {
-                "dest": [
-                  {
-                    "extension": "agora_rtc",
-                    "extension_group": "default"
-                  }
-                ],
-                "name": "pcm_frame"
-              }
-            ],
-            "cmd": [
-              {
-                "dest": [
-                  {
-                    "extension": "agora_rtc",
-                    "extension_group": "default"
-                  }
-                ],
-                "name": "flush"
-              }
-            ],
-            "extension": "azure_tts",
-            "extension_group": "tts"
           },
           {
             "data": [
@@ -128,10 +118,10 @@
             "property": {
               "agora_asr_language": "en-US",
               "agora_asr_session_control_file_path": "session_control.conf",
-              "agora_asr_vendor_key": "$AZURE_STT_KEY",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
               "agora_asr_vendor_name": "microsoft",
-              "agora_asr_vendor_region": "$AZURE_STT_REGION",
-              "app_id": "$AGORA_APP_ID",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "app_id": "${env:AGORA_APP_ID}",
               "channel": "ten_agent_test",
               "enable_agora_asr": true,
               "publish_audio": true,
@@ -150,7 +140,7 @@
             "type": "extension"
           },
           {
-            "addon": "openai_chatgpt",
+            "addon": "openai_chatgpt_python",
             "extension_group": "chatgpt",
             "name": "openai_chatgpt",
             "property": {
@@ -167,17 +157,6 @@
             "type": "extension"
           },
           {
-            "addon": "azure_tts",
-            "extension_group": "tts",
-            "name": "azure_tts",
-            "property": {
-              "azure_subscription_key": "$AZURE_TTS_KEY",
-              "azure_subscription_region": "$AZURE_TTS_REGION",
-              "azure_synthesis_voice_name": "en-US-JaneNeural"
-            },
-            "type": "extension"
-          },
-          {
             "addon": "message_collector",
             "extension_group": "transcriber",
             "name": "message_collector",
@@ -188,11 +167,11 @@
             "extension_group": "default",
             "name": "fashionai",
             "property": {
-              "app_id": "$AGORA_APP_ID",
-              "channel": "ten_agents_test",
+              "app_id": "${env:AGORA_APP_ID}",
+              "channel": "ten_agent_test",
               "stream_id": 12345,
-              "token": "",
-              "service_id": "agora"
+              "token": "<agora_token>",
+              "service_id": "agoramultimodel"
             },
             "type": "extension"
           }
@@ -513,7 +492,7 @@
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
               "token": "<agora_token>",
-              "channel": "ten_agents_test",
+              "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
               "subscribe_audio": true,
@@ -3627,7 +3606,7 @@
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
               "token": "<agora_token>",
-              "channel": "ten_agents_test",
+              "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
               "subscribe_audio": true,

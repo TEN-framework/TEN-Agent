@@ -5,16 +5,18 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
+import traceback
 from ten import (
     AudioFrame,
     VideoFrame,
     Extension,
-    TenEnv,
+    AsyncTenEnv,
     Cmd,
     StatusCode,
     CmdResult,
     Data,
 )
+from ten.async_extension import AsyncExtension
 
 from .log import logger
 import asyncio
@@ -22,22 +24,19 @@ from .fashionai_client import FashionAIClient
 import threading
 from datetime import datetime
 
-class FashionAIExtension(Extension):
+class FashionAIExtension(AsyncExtension):
     app_id = ""
     token = ""
     channel = ""
     stream_id = 0
     service_id = "agora"
 
-    def on_init(self, ten_env: TenEnv) -> None:
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
         logger.info("FASHION_AI on_init *********************************************************")
         self.stopped = False
         self.queue = asyncio.Queue(maxsize=3000)
-        self.threadWebsocketLoop = None
 
-        ten_env.on_init_done()
-
-    def on_start(self, ten_env: TenEnv) -> None:
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
         logger.info("FASHION_AI on_start *********************************************************")
 
         # TODO: read properties, initialize resources
@@ -54,33 +53,19 @@ class FashionAIExtension(Extension):
 
         if len(self.token) > 0:
             self.app_id = self.token
-        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node7/server1", self.service_id)
+        self.client = FashionAIClient("wss://ingress.service.fasionai.com/websocket/node5/agoramultimodel2", self.service_id)
+        asyncio.create_task(self.process_input_text())
+        await self.init_fashionai(self.app_id, self.channel, self.stream_id)
 
-        def thread_target():
-            self.threadWebsocketLoop = asyncio.new_event_loop() 
-            asyncio.set_event_loop(self.threadWebsocketLoop)   
-            self.threadWebsocketLoop.run_until_complete(self.init_fashionai(self.app_id, self.channel, self.stream_id))
-
-        self.threadWebsocket = threading.Thread(target=thread_target)
-        self.threadWebsocket.start()
-
-        ten_env.on_start_done()
-
-    def on_stop(self, ten_env: TenEnv) -> None:
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         logger.info("FASHION_AI on_stop")
         self.stopped = True
-        asyncio.run_coroutine_threadsafe(self.queue.put(None), self.threadWebsocketLoop)
-        asyncio.run_coroutine_threadsafe(self.flush(), self.threadWebsocketLoop)
+        await self.queue.put(None)
 
-        self.threadWebsocket.join()
-
-        ten_env.on_stop_done()
-
-    def on_deinit(self, ten_env: TenEnv) -> None:
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         logger.info("FASHION_AI on_deinit")
-        ten_env.on_deinit_done()
 
-    def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         logger.info("FASHION_AI on_cmd name {}".format(cmd_name))
 
@@ -88,21 +73,22 @@ class FashionAIExtension(Extension):
         if cmd_name == "flush":
             self.outdate_ts = datetime.now()
             try:
-                asyncio.run_coroutine_threadsafe(
-                    self.flush(), self.threadWebsocketLoop
-                ).result(timeout=0.1)
+                await self.client.send_interrupt()
+
             except Exception as e:
-                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                logger.warning(f"flush err: {traceback.format_exc()}")
 
             cmd_out = Cmd.create("flush")
-            ten_env.send_cmd(cmd_out, lambda ten, result: logger.info("send_cmd flush done"))
+            await ten_env.send_cmd(cmd_out)
+            # ten_env.send_cmd(cmd_out, lambda ten, result: logger.info("send_cmd flush done"))
         else:
             logger.info("unknown cmd {}".format(cmd_name))
 
+        logger.info("FASHION_AI on_cmd done")
         cmd_result = CmdResult.create(StatusCode.OK)
         ten_env.return_result(cmd_result, cmd)
 
-    def on_data(self, ten_env: TenEnv, data: Data) -> None:
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         # TODO: process data
         inputText = data.get_property_string("text")
         if len(inputText) == 0:
@@ -111,23 +97,18 @@ class FashionAIExtension(Extension):
 
         logger.info("FASHION_AI on data %s", inputText)
         try:
-            future = asyncio.run_coroutine_threadsafe(
-                self.queue.put(inputText), self.threadWebsocketLoop
-            )
-            future.result(timeout=0.1)
+            await self.queue.put(inputText)
         except asyncio.TimeoutError:
             logger.warning(f"FASHION_AI put inputText={inputText} queue timed out")
         except Exception as e:
             logger.warning(f"FASHION_AI put inputText={inputText} queue err: {e}")
         logger.info("FASHION_AI send_inputText %s", inputText)
 
-        pass
-
-    def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame
         pass
 
-    def on_video_frame(self, ten_env: TenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
         # TODO: process image frame
         pass            
 
@@ -135,9 +116,8 @@ class FashionAIExtension(Extension):
         await self.client.connect()
         await self.client.stream_start(app_id, channel, stream_id)
         await self.client.render_start()
-        await self.async_polly_handler()
         
-    async def async_polly_handler(self):
+    async def process_input_text(self):
         while True:
             inputText = await self.queue.get() 
             if inputText is None:
@@ -151,11 +131,3 @@ class FashionAIExtension(Extension):
                     await self.client.send_inputText(inputText)
                 except Exception as e:
                     logger.exception(e)
-
-    async def flush(self):
-        logger.info("FASHION_AI flush")
-        while not self.queue.empty():
-            value = await self.queue.get()
-            if value is None:
-                break
-            logger.info(f"Flushing value: {value}")
