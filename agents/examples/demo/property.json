@@ -1060,6 +1060,12 @@
           },
           {
             "type": "extension",
+            "extension_group": "chatgpt",
+            "addon": "vision_tool_python",
+            "name": "vision_tool"
+          },
+          {
+            "type": "extension",
             "extension_group": "tts",
             "addon": "azure_tts",
             "name": "azure_tts",
@@ -1124,6 +1130,17 @@
                   {
                     "extension_group": "message_collector_rtm",
                     "extension": "message_collector_rtm"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool"
                   }
                 ]
               }
@@ -1198,6 +1215,15 @@
                     "extension": "azure_tts"
                   }
                 ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool"
+                  }
+                ]
               }
             ]
           },
@@ -1268,6 +1294,21 @@
             "cmd": [
               {
                 "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "vision_tool",
+            "cmd": [
+              {
+                "name": "tool_register",
                 "dest": [
                   {
                     "extension_group": "chatgpt",
