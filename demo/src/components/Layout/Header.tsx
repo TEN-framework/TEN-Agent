@@ -1,5 +1,6 @@
-import { LogoIcon, SmallLogoIcon } from "@/components/Icon"
-import { HeaderRoomInfo, HeaderActions } from "./HeaderComponents"
+// import { LogoIcon, SmallLogoIcon } from "@/components/Icon"
+import { HeaderActions } from "./HeaderComponents"
+import { TenLogo } from "@/components/Icon"
 import { cn } from "@/lib/utils"
 
 export default function Header(props: { className?: string }) {
@@ -13,12 +14,12 @@ export default function Header(props: { className?: string }) {
           className,
         )}
       >
-        <div className="flex items-center space-x-2">
+        <div className="font-roboto flex items-center space-x-2">
+          <TenLogo className="h-3 md:h-5" />
           {/* <LogoIcon className="hidden h-5 md:block" />
           <SmallLogoIcon className="block h-4 md:hidden" /> */}
           <h1 className="text-sm font-bold md:text-xl">TEN Agent</h1>
         </div>
-        <HeaderRoomInfo />
         <HeaderActions />
       </header>
     </>
