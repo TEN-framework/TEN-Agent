@@ -1,5 +1,5 @@
 import { setAgentConnected } from "@/store/reducers/global"
-import { setGraphName,  setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
+import { setGraphName, setOverridenPropertiesByGraph, setOverridenProperties } from "@/store/reducers/global"
 import {
   useAppDispatch, useAppSelector, apiPing, genUUID,
   apiStartService, apiStopService,
@@ -108,15 +108,15 @@ const Description = () => {
     <span className={styles.text}>TEN Agent is a real-time multimodal AI agent that can speak, see, and access a knowledge base.</span>
 
 
-      <span className={styles.right}>
-        <Select className={styles.graphName}
-          disabled={agentConnected} options={graphs.map((item) => { return { label: item, value: item } })}
-          value={graphName} onChange={onGraphNameChange}></Select>
-       
-        <Button className={styles.settinsIcon} icon={<SettingOutlined />} type="primary" onClick={() => { setModal2Open(true) }}></Button>
-        {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
-      </span>
-    
+    <span className={styles.right}>
+      <Select className={styles.graphName}
+        disabled={agentConnected} options={graphs.map((item) => { return { label: item, value: item } })}
+        value={graphName} onChange={onGraphNameChange}></Select>
+
+      <Button className={styles.settinsIcon} icon={<SettingOutlined />} type="primary" onClick={() => { setModal2Open(true) }}></Button>
+      {isRagGraph(graphName) ? <PdfSelect></PdfSelect> : null}
+    </span>
+
     <span className={`${styles.btnConnect} ${agentConnected ? styles.disconnect : ''}`} onClick={onClickConnect}>
       <span className={`${styles.btnText} ${agentConnected ? styles.disconnect : ''}`}>
         {!agentConnected ? "Connect" : "Disconnect"}

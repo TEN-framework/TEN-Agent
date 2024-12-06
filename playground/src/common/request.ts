@@ -34,6 +34,29 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
   // look at app/apis/route.tsx for the server-side implementation
   const url = `/api/agents/start`
   const { channel, userId, graphName, language, voiceType, properties } = config
+
+
+  // add here for mobile or desktop
+  const urlParams = new URLSearchParams(window.location.search);
+  const system_message = urlParams.get('system_message');
+  const greeting = urlParams.get('greeting');
+  const voice = urlParams.get('voice');
+
+  var newProperties = { ...(properties || {}) };
+  newProperties.openai_v2v_python = { ...(newProperties.openai_v2v_python || {}) };
+
+  const params = { system_message, greeting, voice };
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      newProperties.openai_v2v_python[key] = value;
+    }
+  }
+
+  console.error('newProperties', newProperties);
+
+
+  console.error('properties', properties);
+
   const data = {
     request_id: genUUID(),
     channel_name: channel,
@@ -41,7 +64,7 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     graph_name: graphName,
     language,
     voice_type: voiceType,
-    properties,
+    properties: newProperties,
   }
   let resp: any = await axios.post(url, data)
   resp = (resp.data) || {}
