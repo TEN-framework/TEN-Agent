@@ -266,7 +266,7 @@ const GraphModuleCfgForm = ({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                <div className="flex justify-between items-center justify-center ">
+                                                <div className="flex items-center justify-center ">
                                                     <div className="py-3">{ModuleTypeLabels[key]}</div>
                                                     {isLLM(key) && (
                                                         <DropdownMenu>
