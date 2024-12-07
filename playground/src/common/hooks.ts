@@ -7,6 +7,7 @@ import type { AppDispatch, AppStore, RootState } from "../store";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { Node, AddonDef, Graph } from "@/common/graph";
 import { fetchGraphDetails, initializeGraphData, updateGraph } from "@/store/reducers/global";
+import { moduleRegistry, ModuleRegistry, toolModuleRegistry } from "@/common/moduleConfig";
 // import { Grid } from "antd"
 
 // const { useBreakpoint } = Grid;
@@ -139,15 +140,7 @@ const useGraphs = () => {
   )
   const graphMap = useAppSelector((state) => state.global.graphMap)
   const selectedGraph = graphMap[selectedGraphId]
-  const addonModules = useAppSelector((state) => state.global.addonModules)
-
-  // Extract tool modules from addonModules
-  const toolModules = useMemo(
-    () => addonModules.filter((module) => module.name.includes("tool")
-    && module.name !== "vision_analyze_tool_python"
-  ),
-    [addonModules],
-  )
+  const addonModules: AddonDef.Module[] = useAppSelector((state) => state.global.addonModules);
 
   const initialize = async () => {
     await dispatch(initializeGraphData())
@@ -177,13 +170,56 @@ const useGraphs = () => {
     [selectedGraph],
   )
 
+
+  const getInstalledAndRegisteredModulesMap = useCallback(() => {
+    const groupedModules: Record<ModuleRegistry.ModuleType, ModuleRegistry.Module[]> = {
+      stt: [],
+      tts: [],
+      llm: [],
+      v2v: []
+    }
+
+    addonModules.forEach((addonModule) => {
+      const registeredModule = moduleRegistry[addonModule.name];
+      if (registeredModule && registeredModule.type !== "tool") {
+        groupedModules[registeredModule.type].push(registeredModule);
+      }
+    });
+
+    return groupedModules;
+  }, [addonModules]);
+
+  const getInstalledAndRegisteredToolModules = useCallback(() => {
+    const toolModules: ModuleRegistry.ToolModule[] = [];
+
+    addonModules.forEach((addonModule) => {
+      const registeredModule = toolModuleRegistry[addonModule.name];
+      if (registeredModule && registeredModule.type === "tool") {
+        toolModules.push(registeredModule);
+      }
+    });
+
+    return toolModules;
+  }, [addonModules])
+
+  const installedAndRegisteredModulesMap = useMemo(
+    () => getInstalledAndRegisteredModulesMap(),
+    [getInstalledAndRegisteredModulesMap],
+  );
+
+  const installedAndRegisteredToolModules = useMemo(
+    () => getInstalledAndRegisteredToolModules(),
+    [getInstalledAndRegisteredToolModules],
+  );
+
   return {
     initialize,
     fetchDetails,
     update,
     getGraphNodeAddonByName,
     selectedGraph,
-    toolModules,
+    installedAndRegisteredModulesMap,
+    installedAndRegisteredToolModules,
   }
 }
 
