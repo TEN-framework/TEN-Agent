@@ -50,7 +50,7 @@ export function RemoteModuleCfgSheet() {
 
         if (selectedGraph) {
             Object.keys(installedAndRegisteredModulesMap).forEach((key) => {
-                const moduleTypeKey = key as ModuleRegistry.ModuleType;
+                const moduleTypeKey = key as ModuleRegistry.NonToolModuleType;
 
                 // Check if the current graph has a node whose name contains the ModuleType
                 const hasMatchingNode = selectedGraph.nodes.some((node) =>
@@ -252,7 +252,12 @@ const GraphModuleCfgForm = ({
     }, [toolModules, selectedGraph]);
 
     // Desired field order
-    const fieldOrder: ModuleRegistry.ModuleType[] = ["stt", "llm", "v2v", "tts"];
+    const fieldOrder: ModuleRegistry.NonToolModuleType[] = [
+        ModuleRegistry.ModuleType.STT,
+        ModuleRegistry.ModuleType.LLM,
+        ModuleRegistry.ModuleType.V2V,
+        ModuleRegistry.ModuleType.TTS,
+    ];
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -266,7 +271,7 @@ const GraphModuleCfgForm = ({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                <div className="flex items-center justify-center ">
+                                                <div className="flex items-center justify-between ">
                                                     <div className="py-3">{ModuleTypeLabels[key]}</div>
                                                     {isLLM(key) && (
                                                         <DropdownMenu>

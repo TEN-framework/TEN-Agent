@@ -161,7 +161,7 @@ const useGraphs = () => {
       if (!selectedGraph) {
         return null
       }
-      const node = selectedGraph.nodes.find((node) => node.name === nodeName)
+      const node = selectedGraph.nodes.find((node: Node) => node.name === nodeName)
       if (!node) {
         return null
       }
@@ -172,7 +172,7 @@ const useGraphs = () => {
 
 
   const getInstalledAndRegisteredModulesMap = useCallback(() => {
-    const groupedModules: Record<ModuleRegistry.ModuleType, ModuleRegistry.Module[]> = {
+    const groupedModules: Record<ModuleRegistry.NonToolModuleType, ModuleRegistry.Module[]> = {
       stt: [],
       tts: [],
       llm: [],
