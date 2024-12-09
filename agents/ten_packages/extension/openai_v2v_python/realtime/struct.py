@@ -332,6 +332,7 @@ class Response:
     status: ResponseStatus = "in_progress"  # Status of the response
     status_details: Optional[ResponseStatusDetails] = None  # Additional details based on status
     usage: Optional[Usage] = None  # Token usage information
+    metadata: Optional[Dict[str, Any]] = None  # Additional metadata for the response
 
 
 
