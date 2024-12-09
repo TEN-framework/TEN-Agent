@@ -35,7 +35,7 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
 }
 
 export const DESCRIPTION =
-  "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)"
+  "A Realtime Conversational AI Agent powered by TEN"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",
