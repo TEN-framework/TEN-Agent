@@ -149,10 +149,7 @@ task run
 #### 7. Edit playground settings
 Open playground in [localhost:3000]( http://localhost:3000 ), select graph, pick module and edit extension properties.
 
-<video controls>
-  <source src="https://raw.githubusercontent.com/TEN-framework/docs/main/assets/vids/module-example.mov" type="video/mp4">
-</video>
-
+![watch this video](https://raw.githubusercontent.com/TEN-framework/docs/main/assets/vids/module-example.mov)
 
 <br>
 <h2>TEN Agent Components</h2>
