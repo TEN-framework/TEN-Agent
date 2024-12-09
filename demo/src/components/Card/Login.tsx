@@ -90,8 +90,7 @@ export default function LoginCard() {
               TEN Agent
             </CardTitle>
             <CardDescription className="text-md text-center text-inherit md:text-lg">
-              The World's First Multimodal AI Agent with the OpenAI Realtime API
-              (Beta)
+              A Realtime Conversational AI Agent powered by TEN
             </CardDescription>
           </CardHeader>
           <CardContent className="">

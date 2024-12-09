@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner"
 export const metadata: Metadata = {
   title: "TEN Agent",
   description:
-    "The World's First Multimodal AI Agent with the OpenAI Realtime API (Beta)",
+    "A Realtime Conversational AI Agent powered by TEN",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
