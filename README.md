@@ -43,11 +43,11 @@ Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppre
 ![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
-<h2>Usecases</h2>
+<h2>TEN Agent Usecases</h2>
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
 
-<br>
+<!-- <br>
 <h2>TEN Agent Features</h2>
 
 * **OpenAI Realtime API and RTC Integration**:
@@ -66,7 +66,7 @@ Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, a
 Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
 
 * **Real-Time Agent State Management**:
-Manages and adjusts agent behavior in real-time for dynamic responsiveness.
+Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
 
 <br>
 <h2>Ready-to-use Extensions</h2>
@@ -75,7 +75,7 @@ Manages and adjusts agent behavior in real-time for dynamic responsiveness.
 
 
 <br>
-<h2>How to build TEN Agent locally
+<h2>TEN Agent Playground in Local Environment</h2>
 
 ### Prerequisites
 
@@ -113,60 +113,49 @@ For Apple Silicon Macs, uncheck "Use Rosetta for x86/amd64 emulation" in Docker 
 
 ### Next step
 
-#### 1. Modify config files
-In the root of the project, use `cp` command to create `.env` from the [ .env.example ](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
+#### 1. Create `.env` file
 
-It will be used to store environment variables for `docker compose` later, and if you change it, you will need to `source .env` again in the container for the changes to take effect.
 ```bash
 cp ./.env.example ./.env
 ```
 
-#### 2. Setup API keys
-Open the `.env` file and fill in the `keys`. We recommend using [ Deepgram ASR ](https://deepgram.com/) and [ FishAudio TTS ](https://fish.audio/) as they are free to sign up for and offer free credits. Of course, you can also use other services, see the list in [.env.example](https://github.com/TEN-framework/ten-agent/blob/main/.env.example).
+#### 2. Setup Agora App ID and App Certificate in `.env`
+
 ```bash
-# Agora App ID and Agora App Certificate
-# These are enabled by default when you create an Agora project
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
-
-OPENAI_API_KEY=
-
-DEEPGRAM_API_KEY=
-
-FISH_AUDIO_TTS_KEY=
 ```
 
 #### 3. Start agent development containers
-In the same directory, run the `docker compose up` command to compose containers:
-```bash
-docker compose up
-```
-
-Or using the `docker compose up -d` command, start the container in detached mode.([more here](https://doc.theten.ai/ten-agent/setting_up_vscode_for_development_inside_container))
 ```bash
 docker compose up -d
 ```
 
-#### 4. Enter container and build agent
-Open up a separate terminal window, enter the container and build the agent:
+#### 4. Enter container
 ```bash
 docker exec -it ten_agent_dev bash
+```
+
+#### 5. Build agent 
+```bash
 task use
 ```
 
-#### 5. Start the server
-Once the build is done, `task run` on port `8080/49483`:
+#### 6. Start the web server
 ```bash
 task run
 ```
 
-### Finish and verify
+#### 7. Edit playground settings
+Open playground in [localhost:3000]( http://localhost:3000 ), select graph, pick module and edit extension properties.
 
-#### TEN Agent
-Open up [localhost:3000]( http://localhost:3000 ) in browser to play the TEN Agent.
+<video controls>
+  <source src="https://raw.githubusercontent.com/TEN-framework/docs/main/assets/vids/module-example.mov" type="video/mp4">
+</video>
+
 
 <br>
-<h2>How components work together</h2>
+<h2>TEN Agent Components</h2>
 
 ![Components Diagram](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 
