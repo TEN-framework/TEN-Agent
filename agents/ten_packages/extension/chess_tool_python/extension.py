@@ -29,7 +29,7 @@ TOOL_CALLBACK = "callback"
 
 DRAW_TOOL_NAME = "draw_chessboard"
 DRAW_TOOL_DESCRIPTION = (
-    "Use this function to show the chessboard and to draw all the piece positions on it after each move. "    
+    "Use this function to show the chessboard in the additional content window and to draw or update all the piece positions on it. Call this function after each every move by any player. "    
 )
 DRAW_TOOL_PARAMETERS = {
     "type": "object",
@@ -60,7 +60,7 @@ VALIDATE_TOOL_PARAMETERS = {
 }
 
 MOVE_TOOL_NAME = "suggest_next_chess_move"
-MOVE_TOOL_DESCRIPTION = "Suggest the best next move to make and the new FEN following the move."
+MOVE_TOOL_DESCRIPTION = "Suggest the best next move to make and the new FEN following the move. Always call this function to find your next move."
 MOVE_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
