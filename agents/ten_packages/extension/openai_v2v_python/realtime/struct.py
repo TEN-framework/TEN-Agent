@@ -630,7 +630,9 @@ def from_dict(data_class, data):
     """Recursively convert a dictionary to a dataclass instance."""
     if is_dataclass(data_class):  # Check if the target class is a dataclass
         fieldtypes = {f.name: f.type for f in data_class.__dataclass_fields__.values()}
-        return data_class(**{f: from_dict(fieldtypes[f], data[f]) for f in data})
+        # Filter out keys that are not in the dataclass fields
+        valid_data = {f: data[f] for f in fieldtypes if f in data}
+        return data_class(**{f: from_dict(fieldtypes[f], valid_data[f]) for f in valid_data})
     elif isinstance(data, list):  # Handle lists of nested dataclass objects
         return [from_dict(data_class.__args__[0], item) for item in data]
     else:  # For primitive types (str, int, float, etc.), return the value as-is
