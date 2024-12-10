@@ -133,13 +133,6 @@
     },
     {
       "type": "system",
-      "name": "nlohmann_json",
-      "version": "3.11.2",
-      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
-      "supports": []
-    },
-    {
-      "type": "system",
       "name": "ten_runtime",
       "version": "0.3.1",
       "hash": "b39bd74b9ceedfcd356596890c62c239c2dce8d3d83bbca2dcff9912a1b21a88",
@@ -149,6 +142,13 @@
           "arch": "x64"
         }
       ]
+    },
+    {
+      "type": "system",
+      "name": "nlohmann_json",
+      "version": "3.11.2",
+      "hash": "72b15822c7ea9deef5e7ad96216ac55e93f11b00466dd1943afd5ee276e99d19",
+      "supports": []
     },
     {
       "type": "system",

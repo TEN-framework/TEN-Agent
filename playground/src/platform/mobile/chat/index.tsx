@@ -1,13 +1,14 @@
-import { ReactElement, useEffect, useContext, useState } from "react"
+import { useEffect, useContext } from "react"
 import ChatItem from "./chatItem"
 import { IChatItem } from "@/types"
-import { useAppDispatch, useAutoScroll, LANGUAGE_OPTIONS, useAppSelector,isRagGraph,
+import {
+  useAppDispatch, LANGUAGE_OPTIONS, useAppSelector, isRagGraph,
   apiGetGraphs,
   apiGetNodes,
   apiGetExtensionMetadata,
   apiReloadGraph,
- } from "@/common"
-import { setExtensionMetadata,  setGraphName,setGraphs,setExtensions, setLanguage } from "@/store/reducers/global"
+} from "@/common"
+import { setExtensionMetadata, setGraphName, setGraphs, setExtensions, setLanguage } from "@/store/reducers/global"
 import { Select, } from 'antd';
 import { MenuContext } from "../menu/context"
 import PdfSelect from "@/components/pdfSelect"

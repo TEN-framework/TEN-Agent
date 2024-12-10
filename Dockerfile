@@ -26,6 +26,9 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
+# Add the line to source /app/.env in /root/.bashrc
+RUN echo 'source /app/.env' >> /root/.bashrc
+
 WORKDIR /app
 
 COPY --from=builder /app/agents/.release/ agents/
