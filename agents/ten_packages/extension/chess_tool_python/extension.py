@@ -51,12 +51,16 @@ VALIDATE_TOOL_PARAMETERS = {
             "type": "string",
             "description": "The Forsyth string representing all the current chess piece positions, or Forsyth = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' to indicate the standard starting position for all pieces.",
         },
+        "active_color": {
+            "type": "string",
+            "description": "the color making the move i.e. 'black' or 'white'",
+        },
         "move": {
             "type": "string",
             "description": "The proposed move in UCI format (e.g., 'e2e4').",
         },
     },
-    "required": ["current_forsyth", "move"],
+    "required": ["current_forsyth","active_color", "move"],
 }
 
 MOVE_TOOL_NAME = "suggest_next_chess_move"
@@ -67,9 +71,13 @@ MOVE_TOOL_PARAMETERS = {
         "current_forsyth": {
             "type": "string",
             "description": "The Forsyth string representing all the current chess piece positions, or Forsyth = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' to indicate the standard starting position for all pieces.",
+        },
+        "active_color": {
+            "type": "string",
+            "description": "the color making the move i.e. 'black' or 'white'",
         }
     },
-    "required": ["current_forsyth"],
+    "required": ["current_forsyth","active_color"],
 }
 
 PROPERTY_API_KEY = "api_key"  # Required
@@ -189,17 +197,36 @@ class ChessToolExtension(Extension):
             logger.exception("Error sending SSML")
         return "SUCCESS"
 
+    def _map_active_color(self, color: str) -> str:
+        color = color.lower()
+        if color == "white":
+            return "w"
+        elif color == "black":
+            return "b"
+
+
     def _validate_chess_move(self, args: dict) -> Any:
-        current_forsyth = args["current_forsyth"]
+        forsyth = args["current_forsyth"]
         move_uci = args["move"]
-        logger.info(f"Validating move {move_uci} on Forsyth: {current_forsyth}")
+        active_color_input = args["active_color"]
+        active_color = self._map_active_color(active_color_input)
+        logger.info(f"Validating move {move_uci} on Forsyth: {forsyth}")
         try:
             # Handle 'start' as a special case
-            if current_forsyth =="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
+            if forsyth =="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
             else:                
-                fen = f"{forsyth} w KQkq - 0 1"
+                # Define default castling rights, en passant, etc.
+                # If your application tracks these, pass them accordingly
+                castling = "KQkq"  # Default: both sides can castle both ways
+                en_passant = "-"    # Default: no en passant target
+                halfmove = "0"      # Default: no halfmoves
+                fullmove = "1"      # Default: first full move
+
+                # Construct the full FEN string
+                fen = f"{forsyth} {active_color} {castling} {en_passant} {halfmove} {fullmove}"
                 board = chess.Board(fen)
+                logger.info(f"Constructed FEN: {fen}")
             move = chess.Move.from_uci(move_uci)
             if move in board.legal_moves:
                 return {"valid": True, "message": "Move is valid."}
@@ -213,13 +240,25 @@ class ChessToolExtension(Extension):
         # apt update
         # apt-get install stockfish
         forsyth = args["current_forsyth"]
+        active_color_input = args["active_color"]
+        active_color = self._map_active_color(active_color_input)
         logger.info(f"Suggesting next move for Forsyth: {forsyth}")
         try:
             if forsyth == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
             else:
-                fen = f"{forsyth} w KQkq - 0 1"
+                # Define default castling rights, en passant, etc.
+                # If your application tracks these, pass them accordingly
+                castling = "KQkq"  # Default: both sides can castle both ways
+                en_passant = "-"    # Default: no en passant target
+                halfmove = "0"      # Default: no halfmoves
+                fullmove = "1"      # Default: first full move
+
+                # Construct the full FEN string
+                fen = f"{forsyth} {active_color} {castling} {en_passant} {halfmove} {fullmove}"
                 board = chess.Board(fen)
+                logger.info(f"Constructed FEN: {fen}")
+
             engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
             limit = chess.engine.Limit(time=0.1)  # Adjust time as needed
             result = engine.play(board, limit)
