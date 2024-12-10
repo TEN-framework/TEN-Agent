@@ -29,17 +29,17 @@ TOOL_CALLBACK = "callback"
 
 DRAW_TOOL_NAME = "draw_chessboard"
 DRAW_TOOL_DESCRIPTION = (
-    "Use this function to show the chessboard in the additional content window and to draw or update all the piece positions on it. Call this function after each every move by any player. "    
+    "Use this function to show the chessboard in the additional content window and to draw or update all the piece positions on it. Call this function after each player makes his move, do not forget. "    
 )
 DRAW_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-        "current_fen": {
+        "current_forsyth": {
             "type": "string",
-            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
+            "description": "The Forsyth string representing all the current chess piece positions, or Forsyth = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' to indicate the standard starting position for all pieces.",
         }
     },
-    "required": ["fen"],
+    "required": ["current_forsyth"],
 }
 
 VALIDATE_TOOL_NAME = "validate_chess_move"
@@ -47,29 +47,29 @@ VALIDATE_TOOL_DESCRIPTION = "Validate a user's suggested move before allowing it
 VALIDATE_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-        "current_fen": {
+        "current_forsyth": {
             "type": "string",
-            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
+            "description": "The Forsyth string representing all the current chess piece positions, or Forsyth = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' to indicate the standard starting position for all pieces.",
         },
         "move": {
             "type": "string",
             "description": "The proposed move in UCI format (e.g., 'e2e4').",
         },
     },
-    "required": ["current_fen", "move"],
+    "required": ["current_forsyth", "move"],
 }
 
 MOVE_TOOL_NAME = "suggest_next_chess_move"
-MOVE_TOOL_DESCRIPTION = "Suggest the best next move to make and the new FEN following the move. Always call this function to find your next move."
+MOVE_TOOL_DESCRIPTION = "Suggest the best next move to make and the new Forsyth following the move. Always call this function to find your next move."
 MOVE_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-        "current_fen": {
+        "current_forsyth": {
             "type": "string",
-            "description": "The FEN string representing all the current chess piece positions, or FEN = 'start' to indicate the standard starting position for all pieces.",
+            "description": "The Forsyth string representing all the current chess piece positions, or Forsyth = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR' to indicate the standard starting position for all pieces.",
         }
     },
-    "required": ["fen"],
+    "required": ["current_forsyth"],
 }
 
 PROPERTY_API_KEY = "api_key"  # Required
@@ -175,11 +175,11 @@ class ChessToolExtension(Extension):
         pass
 
     def _draw_chessboard(self, args: dict) -> Any:
-        fen = args["current_fen"]
-        logger.info(f"_draw_chessboard with FEN: {fen}")
+        forsyth = args["current_forsyth"]
+        logger.info(f"_draw_chessboard with Forsyth: {forsyth}")
         try:
             d = Data.create("text_data")
-            d.set_property_string("text", f"SSML_CHESSBOARD {fen}")
+            d.set_property_string("text", f"SSML_CHESSBOARD {forsyth}")
             d.set_property_bool("end_of_segment", True)
             d.set_property_int("stream_id", 0)
             d.set_property_bool("is_final", True)
@@ -190,15 +190,15 @@ class ChessToolExtension(Extension):
         return "SUCCESS"
 
     def _validate_chess_move(self, args: dict) -> Any:
-        current_fen = args["current_fen"]
+        current_forsyth = args["current_forsyth"]
         move_uci = args["move"]
-        logger.info(f"Validating move {move_uci} on FEN: {current_fen}")
+        logger.info(f"Validating move {move_uci} on Forsyth: {current_forsyth}")
         try:
             # Handle 'start' as a special case
-            if current_fen == "start":
+            if current_forsyth =="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
             else:
-                board = chess.Board(current_fen)
+                board = chess.Board(current_forsyth)
             move = chess.Move.from_uci(move_uci)
             if move in board.legal_moves:
                 return {"valid": True, "message": "Move is valid."}
@@ -213,22 +213,22 @@ class ChessToolExtension(Extension):
         # apt update
         # apt-get install stockfish
 
-        fen = args["current_fen"]
-        logger.info(f"Suggesting next move for FEN: {fen}")
+        forsyth = args["current_forsyth"]
+        logger.info(f"Suggesting next move for Forsyth: {forsyth}")
         try:
-            if fen == "start":
+            if forsyth == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
             else:
-                board = chess.Board(fen)
+                board = chess.Board(forsyth)
             engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
             limit = chess.engine.Limit(time=0.1)  # Adjust time as needed
             result = engine.play(board, limit)
             suggested_move = result.move
             board.push(suggested_move)  # Apply the move to the board
-            new_fen = board.fen()       # Get the updated FEN
+            new_forsyth = board.forsyth()       # Get the updated Forsyth
             engine.quit()
             logger.info(f"Suggested move: {suggested_move.uci()}")
-            return {"suggested_move": suggested_move.uci(), "fen_after_move": new_fen}
+            return {"suggested_move": suggested_move.uci(), "forsyth_after_move": new_forsyth}
         except Exception as e:
             logger.exception("Error suggesting next move")
             return {"error": f"Error: {str(e)}"}
