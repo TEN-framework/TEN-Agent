@@ -197,8 +197,9 @@ class ChessToolExtension(Extension):
             # Handle 'start' as a special case
             if current_forsyth =="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
-            else:
-                board = chess.Board(current_forsyth)
+            else:                
+                fen = f"{forsyth} w KQkq - 0 1"
+                board = chess.Board(fen)
             move = chess.Move.from_uci(move_uci)
             if move in board.legal_moves:
                 return {"valid": True, "message": "Move is valid."}
@@ -208,24 +209,24 @@ class ChessToolExtension(Extension):
             logger.exception("Error validating move")
             return {"valid": False, "message": f"Error: {str(e)}"}
 
-
     def _suggest_next_chess_move(self, args: dict) -> Any:
         # apt update
         # apt-get install stockfish
-
         forsyth = args["current_forsyth"]
         logger.info(f"Suggesting next move for Forsyth: {forsyth}")
         try:
             if forsyth == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR":
                 board = chess.Board()  # Standard starting position
             else:
-                board = chess.Board(forsyth)
+                fen = f"{forsyth} w KQkq - 0 1"
+                board = chess.Board(fen)
             engine = chess.engine.SimpleEngine.popen_uci("/usr/games/stockfish")
             limit = chess.engine.Limit(time=0.1)  # Adjust time as needed
             result = engine.play(board, limit)
             suggested_move = result.move
             board.push(suggested_move)  # Apply the move to the board
-            new_forsyth = board.forsyth()       # Get the updated Forsyth
+            updated_fen = board.fen()     
+            new_forsyth = updated_fen.split(' ')[0]  # Get the updated Forsyth
             engine.quit()
             logger.info(f"Suggested move: {suggested_move.uci()}")
             return {"suggested_move": suggested_move.uci(), "forsyth_after_move": new_forsyth}
