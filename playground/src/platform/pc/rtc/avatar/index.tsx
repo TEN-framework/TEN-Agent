@@ -9,6 +9,7 @@ import { useRef, useState, useEffect } from "react";
 import { rtcManager } from "@/manager";
 import { ITextItem } from "@/types";
 import { FullScreenIcon } from "@/components/icons/fullsccreen";
+import { LoadingOutlined } from "@ant-design/icons";
 
 let trulienceAvatarInstance: JSX.Element | null = null;
 const trulienceAvatarRef = React.createRef<TrulienceAvatar>();
@@ -19,6 +20,8 @@ interface AvatarProps {
 
 const Avatar = (props: AvatarProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   // Get the received audio track from parent component
   const { audioTrack } = props;
   var lastChatTime = 0;
@@ -179,6 +182,7 @@ const Avatar = (props: AvatarProps) => {
       console.log("In callback loadProgress percent = ", progressDetails.percent);
       console.log("anims loaded in loadProgress");
 
+      setIsLoading(false)
       trulienceAvatarRef.current?.getTrulienceObject()?.sendMessageToAvatar("<trl-load animations='" + process.env.NEXT_PUBLIC_animationURL + process.env.NEXT_PUBLIC_animationPackDance + "' />");
       trulienceAvatarRef.current?.getTrulienceObject()?.sendMessageToAvatar("<trl-load animations='" + process.env.NEXT_PUBLIC_animationURL + process.env.NEXT_PUBLIC_animationPackYoga + "' />");
 
@@ -215,6 +219,7 @@ const Avatar = (props: AvatarProps) => {
         <FullScreenIcon active={isFullscreen} />
       </div>
 
+      {isLoading && <LoadingOutlined className={styles.loader}></LoadingOutlined>}
       {trulienceAvatarInstance}
     </div>
   )

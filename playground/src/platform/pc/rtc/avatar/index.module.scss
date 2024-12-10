@@ -30,6 +30,14 @@
     justify-content: center;
     height: 560px;
   }
+  
+  .loader {
+    position: absolute;
+    z-index: 10000;
+    left: calc(50% - 14px);
+    top: calc(50% - 14px);
+    font-size: 28px;
+  }
 }
 
 .fullscreenContainer {
