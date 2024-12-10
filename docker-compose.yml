@@ -38,6 +38,16 @@ services:
       - ten_agent_network
     environment:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
+  # ten_graph_designer:
+  #   image: ghcr.io/ten-framework/ten_graph_designer:dde0ff1
+  #   container_name: ten_graph_designer
+  #   restart: always
+  #   ports:
+  #     - "3001:3000"
+  #   networks:
+  #     - ten_agent_network
+  #   environment:
+  #     - TEN_DEV_SERVER_URL=http://ten_agent_dev:49483
 networks:
   ten_agent_network:
     driver: bridge
