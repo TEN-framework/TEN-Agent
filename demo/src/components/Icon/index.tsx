@@ -2,6 +2,22 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+export function TenLogo(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 48 34"
+      fill="none"
+      {...props}
+    >
+      <path
+        d="M40.0724 0.706698H40.1247L39.3918 0.052348H38.5543L8.9515 0L8.74211 0.602002L0 25.9646L7.32871 34L16.6205 33.9738L25.8861 7.0408L16.097 6.98845L9.57968 0.602002L39.2348 0.706698L46.4588 7.66898L35.0208 7.25019L25.8075 33.9738L38.2664 33.843L47.2702 7.69515L40.0724 0.706698Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 export const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
     <svg

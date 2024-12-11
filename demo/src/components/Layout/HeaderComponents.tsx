@@ -13,14 +13,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { InfoIcon, GitHubIcon, PaletteIcon } from "@/components/Icon"
+import { Button } from "@/components/ui/button"
+import { GitHubIcon, PaletteIcon } from "@/components/Icon"
+import { MessagesSquareIcon, MessageSquareOffIcon } from "lucide-react"
 import {
   useAppSelector,
   useAppDispatch,
   GITHUB_URL,
   COLOR_LIST,
+  getRandomUserId,
+  getRandomChannel,
+  genRandomString,
 } from "@/common"
-import { setThemeColor } from "@/store/reducers/global"
+import { setThemeColor, setOptions } from "@/store/reducers/global"
 import { cn } from "@/lib/utils"
 import { HexColorPicker } from "react-colorful"
 import dynamic from "next/dynamic"
@@ -28,46 +33,61 @@ import dynamic from "next/dynamic"
 import styles from "./Header.module.css"
 
 export function HeaderRoomInfo() {
+  const dispatch = useAppDispatch()
+
   const options = useAppSelector((state) => state.global.options)
   const { channel, userId } = options
 
   const roomConnected = useAppSelector((state) => state.global.roomConnected)
   const agentConnected = useAppSelector((state) => state.global.agentConnected)
 
-  const roomConnectedText = React.useMemo(() => {
-    return roomConnected ? "TRUE" : "FALSE"
-  }, [roomConnected])
-
-  const agentConnectedText = React.useMemo(() => {
-    return agentConnected ? "TRUE" : "FALSE"
-  }, [agentConnected])
+  const handleRegenerateChannelAndUserId = () => {
+    const newOptions = {
+      userName: genRandomString(8),
+      channel: getRandomChannel(),
+      userId: getRandomUserId(),
+    }
+    dispatch(setOptions(newOptions))
+  }
 
   return (
     <>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger className="flex items-center space-x-2 text-lg font-semibold">
-            <InfoIcon className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="hidden text-sm md:inline-block">
-              Channel Name:{" "}
-            </span>
+            {channel ? (
+              <MessagesSquareIcon className="h-4 w-4 md:h-5 md:w-5" />
+            ) : (
+              <MessageSquareOffIcon className="h-4 w-4 md:h-5 md:w-5" />
+            )}
             <span className="max-w-24 truncate text-ellipsis text-sm md:text-base">
               {channel}
             </span>
           </TooltipTrigger>
-          <TooltipContent className="bg-[var(--background-color,#1C1E22)] text-gray-600">
+          <TooltipContent
+            className="bg-[var(--background-color,#1C1E22)] text-gray-600"
+            align="end"
+          >
             <table className="border-collapse">
               <tbody>
                 <tr>
                   <td className="pr-2 font-bold text-primary">INFO</td>
-                  <td></td>
+                  <td>
+                    <Button
+                      size="sm"
+                      disabled={roomConnected || agentConnected}
+                      onClick={handleRegenerateChannelAndUserId}
+                    >
+                      Regenerate
+                    </Button>
+                  </td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Room:</td>
+                  <td className="pr-2">ChannelName</td>
                   <td className="text-[#0888FF]">{channel}</td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Participant:</td>
+                  <td className="pr-2">UserID</td>
                   <td className="text-[#0888FF]">{userId}</td>
                 </tr>
                 <tr>
@@ -81,12 +101,16 @@ export function HeaderRoomInfo() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Room connected:</td>
-                  <td className="text-[#0888FF]">{roomConnectedText}</td>
+                  <td className="pr-2">Room Status</td>
+                  <td className="text-[#0888FF]">
+                    {roomConnected ? "Connected" : "Disconnected"}
+                  </td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Agent connected:</td>
-                  <td className="text-[#0888FF]">{agentConnectedText}</td>
+                  <td className="pr-2">Agent Status</td>
+                  <td className="text-[#0888FF]">
+                    {agentConnected ? "Connected" : "Disconnected"}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -104,8 +128,9 @@ export function HeaderActions() {
         <GitHubIcon className="h-4 w-4 md:h-5 md:w-5" />
         <span className="sr-only">GitHub</span>
       </NextLink>
-      <ThemePalettePopover />
-      <NetworkIndicator />
+      <HeaderRoomInfo />
+      {/* <ThemePalettePopover />
+      <NetworkIndicator /> */}
     </div>
   )
 }
