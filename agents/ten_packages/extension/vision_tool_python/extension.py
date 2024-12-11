@@ -27,7 +27,7 @@ def rgb2base64jpeg(rgb_data, width, height):
     pil_image = pil_image.convert("RGB")
 
     # Resize the image while maintaining its aspect ratio
-    pil_image = resize_image_keep_aspect(pil_image, 320)
+    pil_image = resize_image_keep_aspect(pil_image, 512)
 
     # Save the image to a BytesIO object in JPEG format
     buffered = BytesIO()
