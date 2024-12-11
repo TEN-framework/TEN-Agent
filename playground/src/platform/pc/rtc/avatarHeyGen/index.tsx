@@ -7,11 +7,20 @@ import { LoadingOutlined } from "@ant-design/icons";
 import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
+  TaskMode,
+  TaskType,
   VoiceEmotion,
 } from "@heygen/streaming-avatar";
 import styles from "./index.module.scss"; // Using the existing index.module.scss
+import { rtcManager } from "@/manager";
+import { ITextItem } from "@/types";
+import { useAppDispatch, useAppSelector, useMultibandTrackVolume } from "@/common"
 
 const AvatarHeyGen: React.FC = () => {
+  var lastChatTime = 0;
+  const options = useAppSelector(state => state.global.options)
+  const { userId } = options
+
   const [isLoading, setIsLoading] = useState(true);
   const [stream, setStream] = useState<MediaStream | undefined>(undefined);
   const [isUserTalking, setIsUserTalking] = useState(false);
@@ -42,6 +51,33 @@ const AvatarHeyGen: React.FC = () => {
       return null;
     }
   };
+
+  useEffect(() => {
+    // Ensure the listener is added only once
+    // if (avatarRef.current) {
+    console.error('adding listener', avatarRef);
+    rtcManager.on("textChanged", (textItem: ITextItem) => {
+      if (textItem.isFinal && textItem.dataType == "transcribe" && textItem.time != lastChatTime) {
+        const isAgent = Number(textItem.uid) != Number(userId);
+        if (textItem.text.includes('SSML_CHESSBOARD')) {
+          const newText = textItem.text.replace(/SSML_CHESSBOARD/g, '');
+          let arr = document.querySelectorAll('iframe');
+          if (arr && arr[0] && arr[0].contentWindow) {
+            console.error('new positions', newText);
+            arr[0].contentWindow.postMessage({ type: 'updateChessboard', fen: newText }, '*');
+          }
+        }
+        else if (!textItem.text.includes('SSML') && isAgent) {
+          lastChatTime = textItem.time;
+          console.error("SPEAK ", textItem.text);
+          //avatarRef.current?.speak({ text: 'ok', taskType: "repeat" });
+          avatarRef.current?.interrupt();
+          avatarRef.current?.speak({ text: textItem.text, taskMode: TaskMode.ASYNC, taskType: TaskType.REPEAT });
+        }
+      }
+    });
+    // }
+  }, []);
 
   // Initialize HeyGen Avatar on component mount
   useEffect(() => {
@@ -91,16 +127,15 @@ const AvatarHeyGen: React.FC = () => {
 
         // Create and start the avatar session with updated parameters
         const response = await avatarRef.current.createStartAvatar({
-          quality: AvatarQuality.High,
+          quality: AvatarQuality.Medium,
           avatarName: "josh_lite3_20230714", // Updated avatarName
-          knowledgeId: "", // Updated knowledgeId to empty string
           voice: {
-            voiceId: "42d598350e7a4d339a3875eb1b0169fd",
-            rate: 1.0, // Updated voice rate
-            emotion: VoiceEmotion.SERIOUS, // Updated voice emotion
+            voiceId: "35f6b6ac010849d38cfc99dc25e0e4b3",
+            rate: 1.1, // Updated voice rate
+            emotion: VoiceEmotion.FRIENDLY, // Updated voice emotion
           },
-          language: "en", // Language code
-          disableIdleTimeout: true,
+          language: "en",
+          disableIdleTimeout: false,
 
         });
 

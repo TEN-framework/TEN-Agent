@@ -2,10 +2,13 @@
 
 import Avatar from "../rtc/avatar";
 import Description from "../description";
+import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+
 import Rtc from "../rtc";
 import Header from "../header";
 import { rtcManager, IRtcUser } from "@/manager";
 import { useState, useEffect, useRef } from "react";
+import CamSection from "../rtc/camSection";
 import styles from "./index.module.scss";
 import Chat from "../chat";
 import AvatarHeyGen from "../rtc/avatarHeyGen";
@@ -15,6 +18,7 @@ let hasInit = false;
 const PCEntry = () => {
   const [remoteuser, setRemoteUser] = useState<IRtcUser | null>(null);
   const lastChatTimeRef = useRef<number | null>(null); // To track last chat time
+  const [videoTrack, setVideoTrack] = useState<ICameraVideoTrack>();
 
   useEffect(() => {
     if (hasInit) {
@@ -30,12 +34,21 @@ const PCEntry = () => {
     };
   }, []); // Empty dependency array ensures this runs once on mount
 
+  const onLocalTracksChanged = (tracks: IUserTracks) => {
+    console.log("[test] onLocalTracksChanged", tracks);
+    const { videoTrack } = tracks;
+    if (videoTrack) {
+      setVideoTrack(videoTrack);
+    }
+  };
+
   const onRemoteUserChanged = (user: IRtcUser) => {
     setRemoteUser(user);
   };
 
   const init = async () => {
     rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+    rtcManager.on("localTracksChanged", onLocalTracksChanged);
     hasInit = true;
   };
 
@@ -79,8 +92,8 @@ const PCEntry = () => {
               flex: 1, // Occupy available width
             }}
           >
-            <Chat />
             <Rtc />
+            <Chat />
           </div>
 
           {/* Right Column: Iframe and AvatarHeyGen Side by Side */}
@@ -120,19 +133,45 @@ const PCEntry = () => {
               />
             </div>
 
-            {/* Container for AvatarHeyGen */}
+            {/* Container for CamSection and AvatarHeyGen */}
             <div
               style={{
                 flex: 1, // Occupy equal space
                 display: 'flex',
-                flexDirection: 'column',
+                flexDirection: 'column', // Stack vertically
+                height: '100%', // Ensure it takes full height
               }}
             >
-              <AvatarHeyGen
+              {/* Wrapper for CamSection */}
+              <div
                 style={{
-                  flex: 1, // Allow AvatarHeyGen to fill the container
+                  flex: 1, // Occupy half of the container
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
-              />
+              >
+                <CamSection
+                  videoTrack={videoTrack}
+                  style={{
+                    flex: 1, // Allow CamSection to fill its container
+                  }}
+                />
+              </div>
+
+              {/* Wrapper for AvatarHeyGen */}
+              <div
+                style={{
+                  flex: 1, // Occupy half of the container
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <AvatarHeyGen
+                  style={{
+                    flex: 1, // Allow AvatarHeyGen to fill its container
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

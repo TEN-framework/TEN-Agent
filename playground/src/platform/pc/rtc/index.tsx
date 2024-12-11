@@ -74,7 +74,7 @@ const Rtc = () => {
     console.log("[test] onLocalTracksChanged", tracks)
     const { videoTrack, audioTrack } = tracks
     if (videoTrack) {
-      setVideoTrack(videoTrack)
+      //  setVideoTrack(videoTrack)
     }
     if (audioTrack) {
       setAudioTrack(audioTrack)
@@ -82,7 +82,7 @@ const Rtc = () => {
   }
 
   const onTextChanged = (text: ITextItem) => {
-    if (text.dataType == "transcribe" && text.text.indexOf('SSML_')==-1) { 
+    if (text.dataType == "transcribe" && text.text.indexOf('SSML_') == -1) {
       const isAgent = Number(text.uid) != Number(userId)
       dispatch(addChatItem({
         userId: text.uid,
@@ -101,8 +101,6 @@ const Rtc = () => {
     <div className={styles.you}>
       {/* microphone */}
       <MicSection audioTrack={audioTrack}></MicSection>
-      {/* camera */}
-      <CamSection videoTrack={videoTrack}></CamSection>
     </div>
   </section>
 }
