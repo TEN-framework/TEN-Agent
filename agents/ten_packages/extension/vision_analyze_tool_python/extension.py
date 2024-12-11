@@ -28,7 +28,7 @@ def rgb2base64jpeg(rgb_data, width, height):
     pil_image = pil_image.convert("RGB")
 
     # Resize the image while maintaining its aspect ratio
-    pil_image = resize_image_keep_aspect(pil_image, 320)
+    pil_image = resize_image_keep_aspect(pil_image, 512)
 
     # Save the image to a BytesIO object in JPEG format
     buffered = BytesIO()
@@ -141,7 +141,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 ],
             ),
         ]
-    
+
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
         if name == "get_vision_chat_completion":
             if self.image_data is None:
@@ -149,9 +149,9 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
 
             if "query" not in args:
                 raise Exception("Failed to get property")
-            
+
             query = args["query"]
-            
+
             base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
