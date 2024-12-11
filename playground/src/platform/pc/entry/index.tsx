@@ -3,10 +3,9 @@
 import Avatar from "../rtc/avatar";
 import Description from "../description";
 import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
-
 import Rtc from "../rtc";
 import Header from "../header";
-import { rtcManager, IRtcUser } from "@/manager";
+import { rtcManager, IUserTracks, IRtcUser } from "@/manager";
 import { useState, useEffect, useRef } from "react";
 import CamSection from "../rtc/camSection";
 import styles from "./index.module.scss";
