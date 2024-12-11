@@ -151,9 +151,7 @@ const PCEntry = () => {
               >
                 <CamSection
                   videoTrack={videoTrack}
-                  style={{
-                    flex: 1, // Allow CamSection to fill its container
-                  }}
+
                 />
               </div>
 
@@ -166,9 +164,6 @@ const PCEntry = () => {
                 }}
               >
                 <AvatarHeyGen
-                  style={{
-                    flex: 1, // Allow AvatarHeyGen to fill its container
-                  }}
                 />
               </div>
             </div>

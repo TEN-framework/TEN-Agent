@@ -146,7 +146,7 @@ const AvatarHeyGen: React.FC = () => {
         //     useSilencePrompt: false,
         //   });
 
-        window.avatarRef = avatarRef.current;
+
       } catch (error: any) {
         console.error("Error initializing HeyGen avatar:", error);
         setDebug(error.message);
