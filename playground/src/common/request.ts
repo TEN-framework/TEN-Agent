@@ -31,6 +31,8 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
 }
 
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
+  console.error('apiStartService');
+
   // look at app/apis/route.tsx for the server-side implementation
   const url = `/api/agents/start`
   const { channel, userId, graphName, language, voiceType, properties } = config

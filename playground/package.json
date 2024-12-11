@@ -11,6 +11,7 @@
     "proto": "pbjs -t json-module -w commonjs -o src/protobuf/SttMessage.js src/protobuf/SttMessage.proto"
   },
   "dependencies": {
+    "@heygen/streaming-avatar": "^2.0.8",
     "@ant-design/icons": "^5.3.7",
     "@reduxjs/toolkit": "^2.2.3",
     "agora-rtc-sdk-ng": "^4.21.0",

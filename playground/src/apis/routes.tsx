@@ -10,6 +10,8 @@ if (!AGENT_SERVER_URL) {
 }
 
 
+console.error("ROOTE");
+
 export const voiceNameMap: LanguageMap = {
     "zh-CN": {
         azure: {
