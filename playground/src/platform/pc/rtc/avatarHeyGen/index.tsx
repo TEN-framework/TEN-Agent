@@ -125,10 +125,16 @@ const AvatarHeyGen: React.FC = () => {
           setIsUserTalking(false);
         });
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const avatarIdFromURL = urlParams.get('avatarId');
+        const finalAvatarId = avatarIdFromURL || process.env.NEXT_PUBLIC_avatarId || 'Wayne_20240711';
+
+
         // Create and start the avatar session with updated parameters
         const response = await avatarRef.current.createStartAvatar({
           quality: AvatarQuality.Medium,
-          avatarName: "josh_lite3_20230714", // Updated avatarName
+          //avatarName: "josh_lite3_20230714", // Updated avatarName
+          avatarName: finalAvatarId, // Updated avatarName          
           voice: {
             voiceId: "35f6b6ac010849d38cfc99dc25e0e4b3",
             rate: 1.1, // Updated voice rate
