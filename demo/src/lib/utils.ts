@@ -20,3 +20,17 @@ export function useIsMobileScreen(breakpoint?: string) {
 
   return isMobileScreen
 }
+
+export function formatNumber(num: number, decimals: number = 1): string {
+  if (num === 0) return "0"
+
+  const k = 1000
+  const sizes = ["", "K", "M", "B", "T"]
+
+  const i = Math.floor(Math.log(Math.abs(num)) / Math.log(k))
+
+  if (i === 0) return num.toString()
+
+  const scaled = num / Math.pow(k, i)
+  return `${scaled.toFixed(decimals)}${sizes[i]}`
+}

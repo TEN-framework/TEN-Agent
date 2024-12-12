@@ -13,61 +13,76 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { InfoIcon, GitHubIcon, PaletteIcon } from "@/components/Icon"
+import { Button } from "@/components/ui/button"
+import { GitHubIcon, PaletteIcon } from "@/components/Icon"
 import {
   useAppSelector,
   useAppDispatch,
   GITHUB_URL,
   COLOR_LIST,
+  // getRandomUserId,
+  // getRandomChannel,
+  // genRandomString,
+  API_GH_GET_REPO_INFO,
 } from "@/common"
-import { setThemeColor } from "@/store/reducers/global"
+import { setThemeColor, setOptions } from "@/store/reducers/global"
 import { cn } from "@/lib/utils"
 import { HexColorPicker } from "react-colorful"
 import dynamic from "next/dynamic"
+import { useCancelableSWR } from "@/hooks"
+import { formatNumber } from "@/lib/utils"
 
 import styles from "./Header.module.css"
 
 export function HeaderRoomInfo() {
+  const dispatch = useAppDispatch()
+
   const options = useAppSelector((state) => state.global.options)
   const { channel, userId } = options
 
   const roomConnected = useAppSelector((state) => state.global.roomConnected)
   const agentConnected = useAppSelector((state) => state.global.agentConnected)
 
-  const roomConnectedText = React.useMemo(() => {
-    return roomConnected ? "TRUE" : "FALSE"
-  }, [roomConnected])
-
-  const agentConnectedText = React.useMemo(() => {
-    return agentConnected ? "TRUE" : "FALSE"
-  }, [agentConnected])
+  // const handleRegenerateChannelAndUserId = () => {
+  //   const newOptions = {
+  //     userName: genRandomString(8),
+  //     channel: getRandomChannel(),
+  //     userId: getRandomUserId(),
+  //   }
+  //   dispatch(setOptions(newOptions))
+  // }
 
   return (
     <>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
-          <TooltipTrigger className="flex items-center space-x-2 text-lg font-semibold">
-            <InfoIcon className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="hidden text-sm md:inline-block">
-              Channel Name:{" "}
-            </span>
-            <span className="max-w-24 truncate text-ellipsis text-sm md:text-base">
-              {channel}
-            </span>
+          <TooltipTrigger className="flex items-center space-x-2 text-xs font-semibold md:text-sm">
+            <span className="max-w-24 truncate text-ellipsis">{channel}</span>
           </TooltipTrigger>
-          <TooltipContent className="bg-[var(--background-color,#1C1E22)] text-gray-600">
+          <TooltipContent
+            className="bg-[var(--background-color,#1C1E22)] text-gray-600"
+            align="end"
+          >
             <table className="border-collapse">
               <tbody>
-                <tr>
+                {/* <tr>
                   <td className="pr-2 font-bold text-primary">INFO</td>
-                  <td></td>
-                </tr>
+                  <td>
+                    <Button
+                      size="sm"
+                      disabled={roomConnected || agentConnected}
+                      onClick={handleRegenerateChannelAndUserId}
+                    >
+                      Regenerate
+                    </Button>
+                  </td>
+                </tr> */}
                 <tr>
-                  <td className="pr-2">Room:</td>
+                  <td className="pr-2">ChannelName</td>
                   <td className="text-[#0888FF]">{channel}</td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Participant:</td>
+                  <td className="pr-2">UserID</td>
                   <td className="text-[#0888FF]">{userId}</td>
                 </tr>
                 <tr>
@@ -81,12 +96,16 @@ export function HeaderRoomInfo() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Room connected:</td>
-                  <td className="text-[#0888FF]">{roomConnectedText}</td>
+                  <td className="pr-2">Room</td>
+                  <td className="text-[#0888FF]">
+                    {roomConnected ? "Connected" : "Disconnected"}
+                  </td>
                 </tr>
                 <tr>
-                  <td className="pr-2">Agent connected:</td>
-                  <td className="text-[#0888FF]">{agentConnectedText}</td>
+                  <td className="pr-2">Agent</td>
+                  <td className="text-[#0888FF]">
+                    {agentConnected ? "Connected" : "Disconnected"}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -100,12 +119,14 @@ export function HeaderRoomInfo() {
 export function HeaderActions() {
   return (
     <div className="flex space-x-2 md:space-x-4">
-      <NextLink href={GITHUB_URL} target="_blank">
+      {/* <NextLink href={GITHUB_URL} target="_blank">
         <GitHubIcon className="h-4 w-4 md:h-5 md:w-5" />
         <span className="sr-only">GitHub</span>
-      </NextLink>
-      <ThemePalettePopover />
-      <NetworkIndicator />
+      </NextLink> */}
+      <GitHubStar />
+      <HeaderRoomInfo />
+      {/* <ThemePalettePopover />
+      <NetworkIndicator /> */}
     </div>
   )
 }
@@ -203,3 +224,32 @@ const NetworkIndicator = dynamic(
     ssr: false,
   },
 )
+
+export const GitHubStar = () => {
+  const [{ data, error, isLoading }] = useCancelableSWR<{
+    stargazers_count: number
+  }>(API_GH_GET_REPO_INFO, {
+    refreshInterval: 1000 * 60 * 60, // 1 hour
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  })
+
+  const starsCntMemo = React.useMemo(() => {
+    if (!data || !data.stargazers_count) return null
+    return formatNumber(data?.stargazers_count || 0)
+  }, [data?.stargazers_count])
+
+  return (
+    <Button size="sm" variant="ghost" asChild>
+      <NextLink href={GITHUB_URL} target="_blank">
+        <GitHubIcon className="h-4 w-4 md:h-5 md:w-5" />
+        <span className="sr-only">GitHub</span>
+        {starsCntMemo && (
+          <span className="text-xs font-semibold md:text-sm">
+            {starsCntMemo}
+          </span>
+        )}
+      </NextLink>
+    </Button>
+  )
+}

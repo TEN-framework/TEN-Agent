@@ -7,6 +7,8 @@ import {
   ICozeSettings,
 } from "@/types"
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
+export const API_GH_GET_REPO_INFO =
+  "https://api.github.com/repos/TEN-framework/TEN-Agent"
 export const OPTIONS_KEY = "__options__"
 export const AGENT_SETTINGS_KEY = "__agent_settings__"
 export const COZE_SETTINGS_KEY = "__coze_settings__"
@@ -34,8 +36,7 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
   base_url: ECozeBaseUrl.GLOBAL,
 }
 
-export const DESCRIPTION =
-  "A Realtime Conversational AI Agent powered by TEN"
+export const DESCRIPTION = "A Realtime Conversational AI Agent powered by TEN"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",
