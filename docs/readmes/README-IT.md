@@ -1,193 +1,192 @@
-![Banner di TEN Agent](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
+![TEN Agent banner](https://github.com/TEN-framework/docs/blob/main/assets/jpg/banner.jpg?raw=true)
 
 <div align="center">
 
-[![Seguici su X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
-![Prezzo del prodotto](https://img.shields.io/badge/prezzo-gratuito-blue.svg?labelColor=%20%239b8afb&color=%20%237a5af8)
-[![Post di discussione](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
-[![Commit](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
-[![Problemi chiusi](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=problemi%20chiusi&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
-[![PR benvenute](https://img.shields.io/badge/PR-benvenute-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-agent/pulls)
-[![Licenza GitHub](https://img.shields.io/badge/Licenza-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-agent/blob/main/LICENSE)
+[![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework)
+[![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten-agent?labelColor=%20%23FDB062&color=%20%23f79009)](https://github.com/TEN-framework/ten-agent/discussions/)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-agent?labelColor=%20%237d89b0&color=%20%235d6b98)](https://github.com/TEN-framework/ten-agent/graphs/commit-activity)
+[![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-agent/pulls)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-agent/blob/main/LICENSE)
 
-[![Comunità Discord TEN](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
+[![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-[![Osservatori GitHub](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Osserva)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
-[![Fork GitHub](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
-[![Stelle GitHub](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Stella)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
+<a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2FTEN-Agent | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
-<a href="https://github.com/TEN-framework/ten-agent/blob/main/README.md"><img alt="README in Inglese" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-CN.md"><img alt="README in Cinese Semplificato" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-JP.md"><img alt="README in Giapponese" src="https://img.shields.io/badge/日本語-lightgrey"></a>
-<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-KR.md"><img alt="README in Coreano" src="https://img.shields.io/badge/한국어-lightgrey"></a>
-<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-ES.md"><img alt="README in Spagnolo" src="https://img.shields.io/badge/Español-lightgrey"></a>
-<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README in Francese" src="https://img.shields.io/badge/Français-lightgrey"></a>
+[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
+[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
+[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Star)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
+
+<a href="https://github.com/TEN-framework/ten-agent/blob/main/README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-KR.md"><img alt="README in 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
+<a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Inizia](https://doc.theten.ai/ten-agent/getting_started)
+[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Crea Estensioni](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
+[Create Extensions](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Repository TEN Framework](https://github.com/TEN-framework/ten_framework)
+[TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
 </div>
 
-**TEN Agent**, alimentato dal primo framework multimodale in tempo reale al mondo. È open-source, con la capacità di parlare, vedere e accedere a una base di conoscenza. Sfruttando il TEN Framework, TEN Agent ha le seguenti caratteristiche:
+<br>
+<h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
 
-1. **Interazioni Multimodali in Tempo Reale ad Alte Prestazioni**:
-Offre soluzioni ad alte prestazioni e bassa latenza per complesse applicazioni AI audio-visive.
+Try OpenAI Realtime API, **Weather Check** and **Web Search** at [agent.theten.ai](https://agent.theten.ai).
 
-2. **Supporto Multi-Linguaggio e Multi-Piattaforma**:
-Supporta lo sviluppo di estensioni in C++, Go, Python, ecc. Funziona su Windows, Mac, Linux e dispositivi mobili.
+Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
 
-3. **Integrazione Edge-Cloud**:
-Combina in modo flessibile estensioni distribuite su edge e cloud, bilanciando privacy, costi e prestazioni.
-
-4. **Flessibilità Oltre i Limiti del Modello**:
-Costruisci facilmente complesse applicazioni AI attraverso una semplice programmazione drag-and-drop, integrando strumenti audio-visivi, database, RAG e altro.
-
-5. **Gestione dello Stato dell'Agente in Tempo Reale**:
-Gestisce e regola il comportamento dell'agente in tempo reale per una reattività dinamica.
+![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
-<h2>Resta Aggiornato</h2>
+<h2>TEN Agent Usecases</h2>
 
-Prima di iniziare, assicurati di mettere una stella al nostro repository per ricevere notifiche istantanee per tutti i nuovi rilasci!
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
 
-![GIF metti una stella a TEN](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
+<!-- <br>
+<h2>TEN Agent Features</h2>
+
+* **OpenAI Realtime API and RTC Integration**:
+TEN Agent seamlessly integrates OpenAI's Realtime API with RTC capabilities, enabling natural, responsive conversations with ultra-low latency and high-quality audio processing.
+
+* **High-Performance Real-Time Multimodal Interactions**:
+Offers high-performance, low-latency solutions for complex audio-visual AI applications.
+
+* **Multi-Language and Multi-Platform Support** :
+Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
+
+* **Edge-Cloud Integration**:
+Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
+
+* **Flexibility Beyond Model Limitations**:
+Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
+
+* **Real-Time Agent State Management**:
+Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
 
 <br>
-<h2>TEN Agent</h2>
+<h2>Ready-to-use Extensions</h2>
 
-[TEN Agent](https://agent.theten.ai)
+![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
-TEN Agent è un agente multimodale alimentato da [TEN](https://theten.ai), che dimostra le sue capacità nel parlato, nella visione e nel ragionamento attraverso RAG dalla documentazione locale.
 
-[![Showcase dell'agente multimodale TEN](https://github.com/TEN-framework/docs/blob/main/assets/gif/features.gif?raw=true)](https://agent.theten.ai)
 <br>
-<h2>Come costruire TEN Agent localmente</h2>
+<h2>TEN Agent Playground in Local Environment</h2>
 
-### Prerequisiti
+### Prerequisites
 
-#### Chiavi
-- Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) e [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (il certificato non è richiesto)
-- Chiavi API Azure [SST](https://azure.microsoft.com/en-us/products/ai-services/speech-to-text) e [TTS](https://azure.microsoft.com/en-us/products/ai-services/text-to-speech) (sentiti libero di usare un altro provider)
-- Chiave API [OpenAI](https://openai.com/index/openai-api/)
+| Category | Requirements |
+|----------|-------------|
+| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
+| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
-#### Installazione
-  - [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
-  - [Node.js(LTS) v18](https://nodejs.org/en)
+<!-- <br>
 
-#### Requisiti minimi di sistema
-  - CPU >= 2 Core
-  - RAM >= 4 GB
+### Windows settings(MUST READ)
 
-#### Impostazione Docker su Apple Silicon
-Dovrai deselezionare l'opzione "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" per Docker se sei su Apple Silicon, altrimenti il server non funzionerà.
+On Windows, Git automatically adds a carriage return(\r) at the end of each line, which causes the `agents/bin/start: not found` error when running the server.
 
-![Impostazione Docker](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+**If you encounter this issue**, follow these steps:
+1. Completely remove the current project folder
+2. Run the following command to disable Git's auto CRLF:
 
-### Prossimo passo
+```bash
+git config --global core.autocrlf false
+``` -->
 
-#### 1. Modifica i file di configurazione
-Nella root del progetto, usa il comando `cp` per creare `.env` dall'esempio.
+<!-- 3. Re-clone the project and start the process again -->
 
-Sarà usato per memorizzare informazioni per `docker compose` più tardi.
+<br>
+
+### macOS: Docker setting on Apple Silicon
+
+For Apple Silicon Macs, uncheck "Use Rosetta for x86/amd64 emulation" in Docker settings. Note: This may result in slower build times on ARM, but performance will be normal when deployed to x64 servers.
+
+![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+<br>
+
+### Next step
+
+#### 1. Create `.env` file
+
 ```bash
 cp ./.env.example ./.env
 ```
 
-#### 2. Configura le chiavi API
-Apri il file `.env` e inserisci le `chiavi` e le `regioni`. Qui puoi anche scegliere di usare qualsiasi `estensione` diversa:
+#### 2. Setup Agora App ID and App Certificate in `.env`
+
 ```bash
-# Agora App ID e Agora App Certificate
 AGORA_APP_ID=
-# Lascia vuoto a meno che tu non abbia abilitato il certificato nell'account Agora.
 AGORA_APP_CERTIFICATE=
-
-# Chiave e regione Azure STT
-AZURE_STT_KEY=
-AZURE_STT_REGION=
-
-# Chiave e regione Azure TTS
-AZURE_TTS_KEY=
-AZURE_TTS_REGION=
-
-# Chiave API OpenAI
-OPENAI_API_KEY=
 ```
 
-#### 3. Avvia i container di sviluppo dell'agente
-Nella stessa directory, esegui il comando `docker compose up` per comporre i container:
+#### 3. Start agent development containers
 ```bash
-docker compose up
+docker compose up -d
 ```
 
-#### 4. Entra nel container e costruisci l'agente
-Apri una finestra di terminale separata, entra nel container e costruisci l'agente:
+#### 4. Enter container
 ```bash
 docker exec -it ten_agent_dev bash
-
-task use AGENT=agents/examples/demo
 ```
 
-#### 5. Avvia il server
-Una volta completata la build, esegui `task run` sulla porta `8080/49483`:
+#### 5. Build agent 
+```bash
+task use
+```
+
+#### 6. Start the web server
 ```bash
 task run
 ```
 
-### Finisci e verifica 🎉
+#### 7. Edit playground settings
+Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
+ 1. Select a graph type (e.g. Voice Agent, Realtime Agent)
+ 2. Choose a corresponding module
+ 3. Select an extension and configure its API key settings
 
-#### TEN Agent
-Apri http://localhost:3000 nel browser per giocare e testare TEN Agent.
-
-#### Graph Designer
-
-Apri un'altra scheda e vai su http://localhost:3001, e usa Graph Designer per creare, connettere e modificare le estensioni sulla tela.
-
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
+![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
 <br>
-<h2>Confronto TEN Agent</h2>
+<h2>TEN Agent Components</h2>
 
-<div align="center">
+![Components Diagram](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 
-| **Caratteristiche**                      | **TEN Agent** | **Pipecat** | **LiveKit:KITT** | **Vapi.ai** | **DailyBots** | **Play.ai** |
-|:----------------------------------------:|:-------:|:--------:|:-------------:|:----------------:|:----------------:|:----------------:|
-| **Visione**                              |   ✅    |    ❌    |      ❌       |     ❌     |     ❌      |     ❌       |
-| **Ricco supporto TTS per diverse lingue**|   ✅    |    ❌    |      ❌       |     ❌      |     ❌      |     ❌      |
-| **Supporto Go per estensione**           |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Supporto C++ per estensione**          |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Supporto RAG**                         |   ✅    |    ❌    |      ❌       |     ❌     |      ❌     |     ❌      |
-| **Costruttore di flussi di lavoro per estensione** |   ✅    |    ❌    |      ❌       |     ✅      |     ❌     |     ❌      |
-| **Ricco supporto LLM**                   |   ✅    |    ✅    |      ✅       |     ✅     |     ✅     |    ✅      |
-| **Supporto Python per estensione**       |   ✅    |    ✅    |      ✅       |     ✅     |     ✅      |     ✅     |
-| **Open source**                          |   ✅    |    ✅    |      ✅       |     ❌     |     ❌      |     ❌      |
+<br>
+<h2>Stay Tuned</h2>
 
-</div>
+Before we get started, be sure to star our repository and get instant notifications for all new releases!
+
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
 
-<br>
-<h2>Unisciti alla Comunità</h2>
+<h2>Join Community</h2>
 
-- [Discord](https://discord.gg/VnPftUzAMJ): Ideale per condividere le tue applicazioni e interagire con la comunità.
-- [Discussione GitHub](https://github.com/TEN-framework/ten-agent/discussions): Perfetto per fornire feedback e porre domande.
-- [Problemi GitHub](https://github.com/TEN-framework/ten-agent/issues): Ottimo per segnalare bug e proporre nuove funzionalità. Consulta le nostre [linee guida per i contributi](./docs/code-of-conduct/contributing.md) per maggiori dettagli.
-- [X (ex Twitter)](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Ottimo per condividere i tuoi agenti e interagire con la comunità.
+- [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
+- [GitHub Discussion](https://github.com/TEN-framework/ten-agent/discussions): Perfect for providing feedback and asking questions.
+- [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
+- [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
 
-<br>
-<h2>Contributori del Codice</h2>
+
+ <br>
+ <h2>Code Contributors</h2>
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <br>
-<h2>Linee Guida per i Contributi</h2>
+<h2>Contribution Guidelines</h2>
 
-I contributi sono benvenuti! Si prega di leggere le [linee guida per i contributi](./docs/code-of-conduct/contributing.md) prima.
+Contributions are welcome! Please read the [contribution guidelines](./docs/code-of-conduct/contributing.md) first.
 
 <br>
-<h2>Licenza</h2>
+<h2>License</h2>
 
-Questo progetto è concesso in licenza sotto la Licenza Apache 2.0 - vedi il file [LICENSE](LICENSE) per i dettagli.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
