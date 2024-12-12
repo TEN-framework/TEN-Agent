@@ -1,0 +1,2 @@
+asyncio
+google-genai

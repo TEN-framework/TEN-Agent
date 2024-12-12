@@ -1,0 +1,12 @@
+{
+    "api_key": "${env:GEMINI_API_KEY}",
+    "temperature": 0.9,
+    "base_uri": "generativelanguage.googleapis.com",
+    "model": "gemini-2.0-flash-exp",
+    "api_version": "v1alpha",
+    "max_tokens": 2048,
+    "voice": "Puck",
+    "language": "en-US",
+    "server_vad": true,
+    "dump": true
+}
