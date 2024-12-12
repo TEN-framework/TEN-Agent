@@ -31,13 +31,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useAppSelector, useGraphs, } from "@/common/hooks"
-import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol } from "@/common/graph"
+import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol, ProtocolLabel } from "@/common/graph"
 import { toast } from "sonner"
 import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
 import { compatibleTools, ModuleRegistry, ModuleTypeLabels } from "@/common/moduleConfig"
 
@@ -122,17 +122,8 @@ export function RemoteModuleCfgSheet() {
                             const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
                             const nodes = selectedGraphCopy.nodes;
                             let needUpdate = false;
+                            let enableRTCVideoSubscribe = false;
 
-
-                            // Update graph nodes with selected modules
-                            Object.entries(data).forEach(([key, value]) => {
-                                const node = nodes.find((n) => n.name === key);
-                                if (node && value && node.addon !== value) {
-                                    node.addon = value;
-                                    node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                    needUpdate = true;
-                                }
-                            });
 
                             // Retrieve the agora_rtc node
                             const agoraRtcNode = GraphEditor.findNode(selectedGraphCopy, "agora_rtc");
@@ -140,6 +131,36 @@ export function RemoteModuleCfgSheet() {
                                 toast.error("agora_rtc node not found in the graph");
                                 return;
                             }
+
+                            // Update graph nodes with selected modules
+                            Object.entries(data).forEach(([key, value]) => {
+                                const node = nodes.find((n) => n.name === key);
+                                if (node && value && node.addon !== value) {
+                                    node.addon = value;
+                                    node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
+                                    
+                                    if(node.addon === "gemini_v2v_python") {
+                                        GraphEditor.addOrUpdateConnection(
+                                            selectedGraphCopy,
+                                            `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
+                                            `${node.extensionGroup}.${node.name}`,
+                                            ProtocolLabel.VIDEO_FRAME,
+                                            "video_frame"
+                                        );
+                                        enableRTCVideoSubscribe = true;
+                                    } else {
+                                        GraphEditor.removeConnection(
+                                            selectedGraphCopy,
+                                            `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
+                                            `${node.extensionGroup}.${node.name}`,
+                                            ProtocolLabel.VIDEO_FRAME,
+                                            "video_frame"
+                                        );
+                                    }
+
+                                    needUpdate = true;
+                                }
+                            });
 
                             // Identify removed tools and process them
                             const currentToolsInGraph = nodes
@@ -154,8 +175,9 @@ export function RemoteModuleCfgSheet() {
 
                             // Process tool modules
                             if (tools.length > 0) {
-                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, tools.some((tool) => tool.includes("vision")));
-
+                                if(!enableRTCVideoSubscribe) {
+                                    enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
+                                }
                                 tools.forEach((tool) => {
                                     if (!currentToolsInGraph.includes(tool)) {
                                         const toolModule = addonModules.find((module) => module.name === tool);
@@ -177,6 +199,8 @@ export function RemoteModuleCfgSheet() {
                                 needUpdate = true;
                             }
 
+                            GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
+
                             // Perform the update if changes are detected
                             if (needUpdate) {
                                 try {
@@ -184,8 +208,8 @@ export function RemoteModuleCfgSheet() {
                                     toast.success("Modules updated", {
                                         description: `Graph: ${selectedGraphCopy.id}`,
                                     });
-                                } catch (e) {
-                                    toast.error("Failed to update modules");
+                                } catch (e:any) {
+                                    toast.error(`Failed to update modules: ${e}`);
                                 }
                             }
                         }}

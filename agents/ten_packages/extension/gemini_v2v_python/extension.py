@@ -34,6 +34,9 @@ from ten_ai_base import BaseConfig, ChatMemory, EVENT_MEMORY_EXPIRED, EVENT_MEMO
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult, LLMChatCompletionContentPartParam, TTSPcmOptions
 from google.genai.types import LiveServerMessage, LiveClientRealtimeInput, Blob, LiveConnectConfig, LiveConnectConfigDict, GenerationConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content, Part, Tool, FunctionDeclaration, Schema, LiveClientToolResponse, FunctionCall, FunctionResponse
 from google.genai.live import AsyncSession
+from PIL import Image
+from io import BytesIO
+from base64 import b64encode
 
 import urllib.parse
 import google.genai._api_client
@@ -48,6 +51,62 @@ CMD_OUT_FLUSH = "flush"
 class Role(str, Enum):
     User = "user"
     Assistant = "assistant"
+
+
+def rgb2base64jpeg(rgb_data, width, height):
+    # Convert the RGB image to a PIL Image
+    pil_image = Image.frombytes("RGBA", (width, height), bytes(rgb_data))
+    pil_image = pil_image.convert("RGB")
+
+    # Resize the image while maintaining its aspect ratio
+    pil_image = resize_image_keep_aspect(pil_image, 512)
+
+    # Save the image to a BytesIO object in JPEG format
+    buffered = BytesIO()
+    pil_image.save(buffered, format="JPEG")
+    pil_image.save("test.jpg", format="JPEG")
+
+    # Get the byte data of the JPEG image
+    jpeg_image_data = buffered.getvalue()
+
+    # Convert the JPEG byte data to a Base64 encoded string
+    base64_encoded_image = b64encode(jpeg_image_data).decode("utf-8")
+
+    # Create the data URL
+    # mime_type = "image/jpeg"
+    return base64_encoded_image
+
+def resize_image_keep_aspect(image, max_size=512):
+    """
+    Resize an image while maintaining its aspect ratio, ensuring the larger dimension is max_size.
+    If both dimensions are smaller than max_size, the image is not resized.
+
+    :param image: A PIL Image object
+    :param max_size: The maximum size for the larger dimension (width or height)
+    :return: A PIL Image object (resized or original)
+    """
+    # Get current width and height
+    width, height = image.size
+
+    # If both dimensions are already smaller than max_size, return the original image
+    if width <= max_size and height <= max_size:
+        return image
+
+    # Calculate the aspect ratio
+    aspect_ratio = width / height
+
+    # Determine the new dimensions
+    if width > height:
+        new_width = max_size
+        new_height = int(max_size / aspect_ratio)
+    else:
+        new_height = max_size
+        new_width = int(max_size * aspect_ratio)
+
+    # Resize the image with the new dimensions
+    resized_image = image.resize((new_width, new_height))
+
+    return resized_image
 
 @dataclass
 class GeminiRealtimeConfig(BaseConfig):
@@ -101,6 +160,9 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.client = None
         self.session:AsyncSession = None
         self.leftover_bytes = b''
+        self.video_task = None
+        self.image_queue = asyncio.Queue()
+        self.video_buff: str = ""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -133,7 +195,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 
             )
             self.loop.create_task(self._loop(ten_env))
-
+            self.loop.create_task(self._on_video(ten_env))
 
             # self.loop.create_task(self._loop())
         except Exception as e:
@@ -231,6 +293,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             await self.session.close()
 
     async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+        await super().on_audio_frame(ten_env, audio_frame)
         try:
             stream_id = audio_frame.get_property_int("stream_id")
             if self.channel_name == "":
@@ -281,6 +344,37 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass
 
+    async def on_video_frame(self, async_ten_env, video_frame):
+        await super().on_video_frame(async_ten_env, video_frame)
+        image_data = video_frame.get_buf()
+        image_width = video_frame.get_width()
+        image_height = video_frame.get_height()
+        await self.image_queue.put([image_data, image_width, image_height])
+    
+
+    async def _on_video(self, ten_env:AsyncTenEnv):
+        while True:
+            
+            # Process the first frame from the queue
+            [image_data, image_width, image_height] = await self.image_queue.get()
+            self.video_buff = rgb2base64jpeg(image_data, image_width, image_height)
+            media_chunks = [{
+                "data": self.video_buff,
+                "mime_type": "image/jpeg",
+            }]
+            try:
+                if self.connected:
+                    await self.session.send(media_chunks)
+            except Exception as e:
+                self.ten_env.log_error(f"Failed to send image {e}")
+            
+            # Skip remaining frames for the second
+            while not self.image_queue.empty():
+                await self.image_queue.get()
+
+            # Wait for 1 second before processing the next frame
+            await asyncio.sleep(1)
+
     # Direction: IN
     async def _on_audio(self, buff: bytearray):
         self.buff += buff
@@ -288,11 +382,16 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         if self.connected and len(self.buff) >= self.audio_len_threshold:
             # await self.conn.send_audio_data(self.buff)
             try:
-                await self.session.send(LiveClientRealtimeInput(media_chunks=[Blob(data=self.buff, mime_type="audio/pcm")]))
+                media_chunks = [{
+                    "data": base64.b64encode(self.buff).decode(),
+                    "mime_type": "audio/pcm",
+                }]
+                # await self.session.send(LiveClientRealtimeInput(media_chunks=media_chunks))
+                await self.session.send(media_chunks)
                 self.buff = b''
             except Exception as e:
-                pass
-                # self.ten_env.log_error(f"Failed to send audio {e}")
+                # pass
+                self.ten_env.log_error(f"Failed to send audio {e}")
 
     def _get_session_config(self) -> LiveConnectConfigDict:
         def tool_dict(tool: LLMToolMetadata):
@@ -553,3 +652,4 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 "first_token_latency_99": np.percentile(self.first_token_times, 99)
             }))
         self.ten_env.send_data(data)
+

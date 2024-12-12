@@ -1,65 +1,63 @@
-# openai_v2v_python
+# gemini_v2v_python
 
-An extension for integrating OpenAI's Next Generation of **Multimodal** AI into your application, providing configurable AI-driven features such as conversational agents, task automation, and tool integration.
+An extension for integrating Gemini's Next Generation of **Multimodal** AI into your application, providing configurable AI-driven features such as conversational agents, task automation, and tool integration.
 
 ## Features
 
-<!-- main features introduction -->
-
-- OpenAI **Multimodal** Integration: Leverage GPT **Multimodal** models for voice to voice as well as text processing.
+- Gemini **Multimodal** Integration: Leverage Gemini **Multimodal** models for voice-to-voice as well as text processing.
 - Configurable: Easily customize API keys, model settings, prompts, temperature, etc.
 - Async Queue Processing: Supports real-time message processing with task cancellation and prioritization.
-<!-- - Tool Support: Integrate external tools like image recognition via OpenAI's API. -->
 
 ## API
 
-Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
-
-<!-- Additional API.md can be referred to if extra introduction needed -->
+Refer to the `api` definition in [manifest.json] and default values in [property.json](property.json).
 
 | **Property**               | **Type**   | **Description**                           |
 |----------------------------|------------|-------------------------------------------|
-| `api_key`                   | `string`   | API key for authenticating with OpenAI    |
-| `temperature`               | `float64`  | Sampling temperature, higher values mean more randomness |
-| `model`                     | `string`   | Model identifier (e.g., GPT-3.5, GPT-4)   |
-| `max_tokens`                | `int64`    | Maximum number of tokens to generate      |
-| `system_message`            | `string`   | Default system message to send to the model       |
-| `voice`                     | `string`   | Voice that OpenAI model speeches, such as `alloy`, `echo`, `shimmer`, etc |
-| `server_vad`                | `bool`     | Flag to enable or disable server vad of OpenAI |
-| `language`                  | `string`   | Language that OpenAO model reponds, such as `en-US`, `zh-CN`, etc | 
-| `dump`                      | `bool`     | Flag to enable or disable audio dump for debugging purpose  |
+| `api_key`                   | `string`   | API key for authenticating with Gemini    |
+| `temperature`               | `float32`  | Sampling temperature, higher values mean more randomness |
+| `model`                     | `string`   | Model identifier (e.g., GPT-4, Gemini-1)  |
+| `max_tokens`                | `int32`    | Maximum number of tokens to generate      |
+| `system_message`            | `string`   | Default system message to send to the model |
+| `voice`                     | `string`   | Voice that Gemini model uses, such as `alloy`, `echo`, `shimmer`, etc. |
+| `server_vad`                | `bool`     | Flag to enable or disable server VAD for Gemini |
+| `language`                  | `string`   | Language that Gemini model responds in, such as `en-US`, `zh-CN`, etc. |
+| `dump`                      | `bool`     | Flag to enable or disable audio dump for debugging purposes |
+| `base_uri`                  | `string`   | Base URI for connecting to the Gemini service |
+| `audio_out`                 | `bool`     | Flag to enable or disable audio output    |
+| `input_transcript`          | `bool`     | Flag to enable input transcript processing |
+| `sample_rate`               | `int32`    | Sample rate for audio processing          |
+| `stream_id`                 | `int32`    | Stream ID for identifying audio streams   |
+| `greeting`                  | `string`   | Greeting message for initial interaction  |
 
-### Data Out:
+### Data Out
+
 | **Name**       | **Property** | **Type**   | **Description**               |
 |----------------|--------------|------------|-------------------------------|
 | `text_data`    | `text`       | `string`   | Outgoing text data             |
+| `append`       | `text`       | `string`   | Additional text appended to the output |
 
-### Command Out:
+### Command Out
+
 | **Name**       | **Description**                             |
 |----------------|---------------------------------------------|
 | `flush`        | Response after flushing the current state    |
+| `tool_call`    | Invokes a tool with specific arguments       |
 
-### Audio Frame In:
+### Audio Frame In
+
 | **Name**         | **Description**                           |
 |------------------|-------------------------------------------|
 | `pcm_frame`      | Audio frame input for voice processing    |
 
-### Audio Frame Out:
+### Video Frame In
+
 | **Name**         | **Description**                           |
 |------------------|-------------------------------------------|
-| `pcm_frame`    | Audio frame output after voice processing    |
+| `video_frame`    | Video frame input for processing          |
 
+### Audio Frame Out
 
-### Azure Support
-
-This extension also support Azure OpenAI Service, the propoerty settings are as follow:
-
-``` json
-{
-    "base_uri": "wss://xxx.openai.azure.com",
-    "path": "/openai/realtime?api-version=xxx&deployment=xxx",
-    "api_key": "xxx",
-    "model": "gpt-4o-realtime-preview",
-    "vendor": "azure"
-}
-```
+| **Name**         | **Description**                           |
+|------------------|-------------------------------------------|
+| `pcm_frame`      | Audio frame output after voice processing |

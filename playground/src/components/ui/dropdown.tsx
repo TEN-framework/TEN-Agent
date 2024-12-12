@@ -4,7 +4,7 @@ import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 
 import { cn } from "@/lib/utils";
-import { ChevronRightIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon } from "lucide-react";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 
@@ -99,6 +99,29 @@ DropdownMenuSubContent.displayName =
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
+
+const DropdownMenuCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+>(({ className, checked, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.CheckboxItem
+    ref={ref}
+    className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    checked={checked}
+    {...props}
+  >
+    {children}
+    <span className="absolute right-2 flex items-center">
+      {checked && <CheckIcon size={15} />}
+    </span>
+  </DropdownMenuPrimitive.CheckboxItem>
+));
+DropdownMenuCheckboxItem.displayName =
+  DropdownMenuPrimitive.CheckboxItem.displayName;
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -108,4 +131,5 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuCheckboxItem,
 };

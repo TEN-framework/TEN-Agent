@@ -82,6 +82,12 @@
         }
       }
     ],
+    "video_frame_in": [
+      {
+        "name": "video_frame",
+        "property": {}
+      }
+    ],
     "data_out": [
       {
         "name": "text_data",

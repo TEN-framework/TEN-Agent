@@ -199,12 +199,19 @@ export const updateGraph = createAsyncThunk(
   "global/updateGraph",
   async (
     { graphId, updates }: { graphId: string; updates: Partial<Graph> },
-    { dispatch }
+    { dispatch, rejectWithValue }
   ) => {
-    await apiUpdateGraph(graphId, updates);
-    await apiSaveProperty();
-    const updatedGraph = await apiFetchGraphDetails(graphId);
-    dispatch(setGraph(updatedGraph));
+    try {
+      await apiUpdateGraph(graphId, updates);
+      await apiSaveProperty();
+      const updatedGraph = await apiFetchGraphDetails(graphId);
+      dispatch(setGraph(updatedGraph));
+      return updatedGraph; // Optionally return the updated graph
+    } catch (error: any) {
+      // Handle error gracefully
+      console.error("Error updating graph:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
