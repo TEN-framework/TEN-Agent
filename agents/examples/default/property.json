@@ -89,7 +89,7 @@
             "addon": "weatherapi_tool_python",
             "extension_group": "default",
             "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
+              "api_key": "${env:WEATHERAPI_API_KEY}"
             }
           }
         ],
