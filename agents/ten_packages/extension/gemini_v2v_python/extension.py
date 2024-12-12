@@ -64,7 +64,7 @@ def rgb2base64jpeg(rgb_data, width, height):
     # Save the image to a BytesIO object in JPEG format
     buffered = BytesIO()
     pil_image.save(buffered, format="JPEG")
-    pil_image.save("test.jpg", format="JPEG")
+    # pil_image.save("test.jpg", format="JPEG")
 
     # Get the byte data of the JPEG image
     jpeg_image_data = buffered.getvalue()
