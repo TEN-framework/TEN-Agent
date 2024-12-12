@@ -128,6 +128,8 @@ const AvatarHeyGen: React.FC = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const avatarIdFromURL = urlParams.get('avatarId');
         const finalAvatarId = avatarIdFromURL || process.env.NEXT_PUBLIC_avatarId || 'Wayne_20240711';
+        const voiceIdFromURL = urlParams.get('voiceId');
+        const finalvoiceId = voiceIdFromURL || process.env.NEXT_PUBLIC_voiceId || '35f6b6ac010849d38cfc99dc25e0e4b3';
 
 
         // Create and start the avatar session with updated parameters
@@ -136,7 +138,7 @@ const AvatarHeyGen: React.FC = () => {
           //avatarName: "josh_lite3_20230714", // Updated avatarName
           avatarName: finalAvatarId, // Updated avatarName          
           voice: {
-            voiceId: "35f6b6ac010849d38cfc99dc25e0e4b3",
+            voiceId: finalvoiceId,
             rate: 1.1, // Updated voice rate
             emotion: VoiceEmotion.FRIENDLY, // Updated voice emotion
           },
