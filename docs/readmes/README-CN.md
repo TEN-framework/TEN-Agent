@@ -40,7 +40,7 @@
 </div>
 
 <br>
-<h2>如何在本地构建 TEN Agent
+<h2>本地跑起 TEN Agent Playground
 
 ### 先决条件
 
@@ -51,19 +51,6 @@
 | **最低系统要求** | • CPU >= 2核<br>• 内存 >= 4 GB |
 
 <br>
-
-<!-- ### Windows 和 macOS 设置
-#### Windows 设置（必读）
-
-强烈建议使用 [Git for Windows](https://git-scm.com/downloads/win) 来避免运行服务器时出现换行符问题。（[详细信息](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings?platform=windows)）
-
-如果您更喜欢使用 Windows PowerShell，在遇到换行符问题时，请确保运行以下命令：
-
-**仅在遇到换行符问题时运行此命令。**
-
-```bash
-git config --global core.autocrlf false
-``` -->
 
 #### macOS：Apple Silicon 上的 Docker 设置
 
@@ -98,60 +85,48 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 <br>
 
-### 下一步
-#### 1. 创建配置文件
-克隆项目后，在根目录下跑下面的命创建 `.env`:
+#### 下一步
+
+#### 1. 创建 `.env` 文件
+
 ```bash
 cp ./.env.example ./.env
 ```
 
-#### 2. 绑定 extension 的 keys 
-打开 `.env` 文件，绑定对应的 `keys`:
-```
-# Agora App ID 和 Agora App Certificate
-# 当在账户里面创建项目的时候，默认自动开启 App ID 和 App Certificate
+#### 2. 在 `.env` 中设置 Agora App ID 和 App Certificate
+
+```bash
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
-
-OPENAI_API_KEY=
-
-DEEPGRAM_API_KEY=
-
-FISH_AUDIO_TTS_KEY=
 ```
 
-#### 3. 创建 Docker 容器
-在根目录下，拉取 Docker 镜像，然后创建 Docker 容器:
+#### 3. 启动代理开发容器
 ```bash
-docker compose up
+docker compose up -d
 ```
 
-#### 4. 在容器内创建 agent 服务
-再打开一个 Terminal 窗口，通过下面的命令进入 Docker 容器，创建 agent 服务：
+#### 4. 进入容器
 ```bash
 docker exec -it ten_agent_dev bash
-
-task use AGENT=agents/examples/demo
 ```
 
-#### 5.开启服务
+#### 5. 构建代理
+```bash
+task use
+```
+
+#### 6. 启动网络服务器
 ```bash
 task run
 ```
 
-### 构建完成 🎉
+#### 7. 编辑 playground 设置
+在 [localhost:3000](http://localhost:3000) 打开 playground 来配置你的代理。
+ 1. 选择图表类型（例如：语音代理、实时代理）
+ 2. 选择对应的模块
+ 3. 选择扩展并配置其 API 密钥设置
 
-走到这里就本地构建完成了，简单 5 步，上手体验拉满！
-
-#### 验证 TEN Agent 
-
-现在可以打开浏览器 [localhost:3000]( http://localhost:3000 ) 体验 TEN Agent。
-
-#### 验证 Graph Designer
-
-同时可以再开一个 tab 在 [localhost:3001]( http://localhost:3001 ) 体验 Graph Designer，通过简单拖拽和动态节点连接轻松定制 TEN Agent。
-
-![TEN Graph Designer](https://github.com/TEN-framework/docs/blob/main/assets/gif/graph_designer.gif?raw=true)
+![模块示例](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
 <br>
 <h2>点星收藏</h2>

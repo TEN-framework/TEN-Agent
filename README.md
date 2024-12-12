@@ -147,13 +147,12 @@ task run
 ```
 
 #### 7. Edit playground settings
-Open the playground at [localhost:3000](http://localhost:3000) to configure your agent. Here you can:
-- Select a graph type (e.g. Voice Agent, Realtime Agent)
-- Choose corresponding modules
-- Customize extension properties and settings
-- Test and validate your configuration
+Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
+ 1. Select a graph type (e.g. Voice Agent, Realtime Agent)
+ 2. Choose a corresponding module
+ 3. Select an extension and configure its API key settings
 
-![Module Example](https://raw.githubusercontent.com/TEN-framework/docs/main/assets/gif/module-example.gif)
+![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
 <br>
 <h2>TEN Agent Components</h2>
