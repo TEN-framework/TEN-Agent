@@ -357,8 +357,8 @@ class GraphEditor {
     }
   }
   /**
-   * Remove a connection from the graph across all protocols (cmd, data, audio_frame, video_frame)
-   */
+ * Remove a connection from the graph across all protocols (cmd, data, audio_frame, video_frame)
+ */
   static removeConnection(
     graph: Graph,
     source: string,
@@ -371,54 +371,57 @@ class GraphEditor {
       (conn) =>
         conn.extensionGroup === source.split(".")[0] &&
         conn.extension === source.split(".")[1],
-    )
+    );
 
     if (connectionIndex === -1) {
-      throw new Error(`Source "${source}" not found in the graph.`)
+      console.warn(`Source "${source}" not found in the graph. Operation ignored.`);
+      return; // Exit the function if the connection does not exist
     }
 
-    const connection = graph.connections[connectionIndex]
+    const connection = graph.connections[connectionIndex];
 
     // If protocolLabel is provided, handle protocol-specific removal
     if (protocolLabel) {
-      const protocolField = protocolLabel.toLowerCase() as keyof Connection
+      const protocolField = protocolLabel.toLowerCase() as keyof Connection;
       const protocolArray = connection[protocolField] as Array<
         Command | Data | AudioFrame | VideoFrame
-      >
+      >;
 
       if (!protocolArray) {
-        throw new Error(
-          `Protocol "${protocolLabel}" does not exist for source "${source}".`,
-        )
+        console.warn(
+          `Protocol "${protocolLabel}" does not exist for source "${source}". Operation ignored.`
+        );
+        return; // Exit the function if the protocol does not exist
       }
 
       const protocolObjectIndex = protocolArray.findIndex(
         (item) => item.name === protocolName,
-      )
+      );
 
       if (protocolObjectIndex === -1) {
-        throw new Error(
-          `Protocol object with name "${protocolName}" not found in protocol "${protocolLabel}".`,
-        )
+        console.warn(
+          `Protocol object with name "${protocolName}" not found in protocol "${protocolLabel}". Operation ignored.`
+        );
+        return; // Exit the function if the protocol object does not exist
       }
 
       if (destination) {
         // Remove a specific destination
         protocolArray[protocolObjectIndex].dest = protocolArray[
           protocolObjectIndex
-        ].dest.filter((dest) => dest.extension !== destination.split(".")[1])
+        ].dest.filter((dest) => dest.extension !== destination.split(".")[1]);
 
         // Remove the protocol object if it has no destinations
         if (protocolArray[protocolObjectIndex].dest.length === 0) {
-          protocolArray.splice(protocolObjectIndex, 1)
+          protocolArray.splice(protocolObjectIndex, 1);
         }
       } else {
         // Remove the entire protocol object
-        protocolArray.splice(protocolObjectIndex, 1)
+        protocolArray.splice(protocolObjectIndex, 1);
       }
     } else {
       // If no protocolLabel is provided, remove the entire connection
-      graph.connections.splice(connectionIndex, 1)
+      graph.connections.splice(connectionIndex, 1);
     }
 
     // Clean up empty connections

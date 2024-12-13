@@ -118,99 +118,99 @@ export function RemoteModuleCfgSheet() {
                         initialData={initialData}
                         metadata={metadata}
                         onUpdate={async (data, tools) => {
-                            // Clone the selectedGraph to avoid mutating the original graph
-                            const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
-                            const nodes = selectedGraphCopy.nodes;
-                            let needUpdate = false;
-                            let enableRTCVideoSubscribe = false;
+                            try {
+                                // Clone the selectedGraph to avoid mutating the original graph
+                                const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
+                                const nodes = selectedGraphCopy.nodes;
+                                let needUpdate = false;
+                                let enableRTCVideoSubscribe = false;
 
 
-                            // Retrieve the agora_rtc node
-                            const agoraRtcNode = GraphEditor.findNode(selectedGraphCopy, "agora_rtc");
-                            if (!agoraRtcNode) {
-                                toast.error("agora_rtc node not found in the graph");
-                                return;
-                            }
-
-                            // Update graph nodes with selected modules
-                            Object.entries(data).forEach(([key, value]) => {
-                                const node = nodes.find((n) => n.name === key);
-                                if (node && value && node.addon !== value) {
-                                    node.addon = value;
-                                    node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                    
-                                    if(node.addon === "gemini_v2v_python") {
-                                        GraphEditor.addOrUpdateConnection(
-                                            selectedGraphCopy,
-                                            `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                            `${node.extensionGroup}.${node.name}`,
-                                            ProtocolLabel.VIDEO_FRAME,
-                                            "video_frame"
-                                        );
-                                        enableRTCVideoSubscribe = true;
-                                    } else {
-                                        GraphEditor.removeConnection(
-                                            selectedGraphCopy,
-                                            `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                            `${node.extensionGroup}.${node.name}`,
-                                            ProtocolLabel.VIDEO_FRAME,
-                                            "video_frame"
-                                        );
-                                    }
-
-                                    needUpdate = true;
+                                // Retrieve the agora_rtc node
+                                const agoraRtcNode = GraphEditor.findNode(selectedGraphCopy, "agora_rtc");
+                                if (!agoraRtcNode) {
+                                    toast.error("agora_rtc node not found in the graph");
+                                    return;
                                 }
-                            });
 
-                            // Identify removed tools and process them
-                            const currentToolsInGraph = nodes
-                                .filter((node) => installedAndRegisteredToolModules.map((module) => module.name).includes(node.addon))
-                                .map((node) => node.addon);
+                                // Update graph nodes with selected modules
+                                Object.entries(data).forEach(([key, value]) => {
+                                    const node = nodes.find((n) => n.name === key);
+                                    if (node && value && node.addon !== value) {
+                                        node.addon = value;
+                                        node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
 
-                            const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
-                            removedTools.forEach((tool) => {
-                                GraphEditor.removeNodeAndConnections(selectedGraphCopy, tool);
-                                needUpdate = true;
-                            });
-
-                            // Process tool modules
-                            if (tools.length > 0) {
-                                if(!enableRTCVideoSubscribe) {
-                                    enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
-                                }
-                                tools.forEach((tool) => {
-                                    if (!currentToolsInGraph.includes(tool)) {
-                                        const toolModule = addonModules.find((module) => module.name === tool);
-
-                                        if (!toolModule) {
-                                            toast.error(`Module ${tool} not found`);
-                                            return;
+                                        if (node.addon === "gemini_v2v_python") {
+                                            GraphEditor.addOrUpdateConnection(
+                                                selectedGraphCopy,
+                                                `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
+                                                `${node.extensionGroup}.${node.name}`,
+                                                ProtocolLabel.VIDEO_FRAME,
+                                                "video_frame"
+                                            );
+                                            enableRTCVideoSubscribe = true;
+                                        } else {
+                                            GraphEditor.removeConnection(
+                                                selectedGraphCopy,
+                                                `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
+                                                `${node.extensionGroup}.${node.name}`,
+                                                ProtocolLabel.VIDEO_FRAME,
+                                                "video_frame"
+                                            );
                                         }
 
-                                        const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
-
-                                        // Create or update connections
-                                        const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
-                                        if (llmNode) {
-                                            GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
-                                        }
+                                        needUpdate = true;
                                     }
                                 });
-                                needUpdate = true;
-                            }
 
-                            GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
+                                // Identify removed tools and process them
+                                const currentToolsInGraph = nodes
+                                    .filter((node) => installedAndRegisteredToolModules.map((module) => module.name).includes(node.addon))
+                                    .map((node) => node.addon);
 
-                            // Perform the update if changes are detected
-                            if (needUpdate) {
-                                try {
+                                const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
+                                removedTools.forEach((tool) => {
+                                    GraphEditor.removeNodeAndConnections(selectedGraphCopy, tool);
+                                    needUpdate = true;
+                                });
+
+                                // Process tool modules
+                                if (tools.length > 0) {
+                                    if (!enableRTCVideoSubscribe) {
+                                        enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
+                                    }
+                                    tools.forEach((tool) => {
+                                        if (!currentToolsInGraph.includes(tool)) {
+                                            const toolModule = addonModules.find((module) => module.name === tool);
+
+                                            if (!toolModule) {
+                                                toast.error(`Module ${tool} not found`);
+                                                return;
+                                            }
+
+                                            const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
+
+                                            // Create or update connections
+                                            const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
+                                            if (llmNode) {
+                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
+                                            }
+                                        }
+                                    });
+                                    needUpdate = true;
+                                }
+
+                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
+
+                                // Perform the update if changes are detected
+                                if (needUpdate) {
                                     await updateGraph(selectedGraphCopy.id, selectedGraphCopy);
                                     toast.success("Modules updated", {
                                         description: `Graph: ${selectedGraphCopy.id}`,
                                     });
-                                } catch (e:any) {
-                                    toast.error(`Failed to update modules: ${e}`);
                                 }
+                            } catch (e: any) {
+                                toast.error(`Failed to update modules: ${e}`);
                             }
                         }}
 
