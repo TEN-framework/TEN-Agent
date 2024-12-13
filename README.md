@@ -34,39 +34,17 @@
 </div>
 
 <br>
-<h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
+<h2>🌟 Gemini Multimodal Live API Extension</h2>
 
-Try OpenAI Realtime API, **Weather Check** and **Web Search** at [agent.theten.ai](https://agent.theten.ai).
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true)
 
-Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
+Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screen detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
-![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
 
 <br>
 <h2>TEN Agent Usecases</h2>
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
-
-<!-- <br>
-<h2>TEN Agent Features</h2>
-
-* **OpenAI Realtime API and RTC Integration**:
-TEN Agent seamlessly integrates OpenAI's Realtime API with RTC capabilities, enabling natural, responsive conversations with ultra-low latency and high-quality audio processing.
-
-* **High-Performance Real-Time Multimodal Interactions**:
-Offers high-performance, low-latency solutions for complex audio-visual AI applications.
-
-* **Multi-Language and Multi-Platform Support** :
-Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
-
-* **Edge-Cloud Integration**:
-Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
-
-* **Flexibility Beyond Model Limitations**:
-Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
-
-* **Real-Time Agent State Management**:
-Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
 
 <br>
 <h2>Ready-to-use Extensions</h2>
@@ -84,22 +62,6 @@ Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
 | **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
 | **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
-
-<!-- <br>
-
-### Windows settings(MUST READ)
-
-On Windows, Git automatically adds a carriage return(\r) at the end of each line, which causes the `agents/bin/start: not found` error when running the server.
-
-**If you encounter this issue**, follow these steps:
-1. Completely remove the current project folder
-2. Run the following command to disable Git's auto CRLF:
-
-```bash
-git config --global core.autocrlf false
-``` -->
-
-<!-- 3. Re-clone the project and start the process again -->
 
 <br>
 
