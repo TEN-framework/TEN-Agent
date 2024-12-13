@@ -364,6 +364,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             }]
             try:
                 if self.connected:
+                    # ten_env.log_info(f"send image")
                     await self.session.send(media_chunks)
             except Exception as e:
                 self.ten_env.log_error(f"Failed to send image {e}")

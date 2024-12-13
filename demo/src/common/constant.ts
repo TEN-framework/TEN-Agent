@@ -76,10 +76,22 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
   },
+  {
+    label: "Voice Agent Gemini 2.0 Realtime",
+    value: "va_gemini_v2v",
+  },
 ]
 
 export const isRagGraph = (graphName: string) => {
   return graphName === "va_qwen_rag"
+}
+
+export const isLanguageSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
+}
+
+export const isVoiceGenderSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
 }
 
 export const VOICE_OPTIONS: VoiceOptionItem[] = [

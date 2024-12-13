@@ -102,7 +102,6 @@ export const getGraphProperties = (
                 "agora_asr_language": language,
             },
             "llm": {
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             },
@@ -117,7 +116,6 @@ export const getGraphProperties = (
                 "agora_asr_language": language,
             },
             "coze_python_async": {
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             },
@@ -132,7 +130,6 @@ export const getGraphProperties = (
             },
             "llm": {
                 "model": "gpt-4o",
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             },
@@ -146,7 +143,6 @@ export const getGraphProperties = (
                 "model": "gpt-4o-realtime-preview",
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             }
@@ -157,7 +153,6 @@ export const getGraphProperties = (
                 "model": "gpt-4o-realtime-preview",
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             },
@@ -172,7 +167,6 @@ export const getGraphProperties = (
             },
             "llm": {
                 "model": "gpt-4o",
-                ...localizationOptions,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             },
@@ -187,6 +181,13 @@ export const getGraphProperties = (
             },
             "azure_tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
+    } else if (graphName == "va_gemini_v2v") {
+        return {
+            "v2v": {
+                "prompt": prompt,
+                "greeting": combined_greeting,
             }
         }
     }
