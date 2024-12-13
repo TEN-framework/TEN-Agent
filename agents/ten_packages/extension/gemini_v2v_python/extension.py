@@ -559,7 +559,11 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             # await self.conn.send_request(tool_response)
             # await self.conn.send_request(ResponseCreate())
             self.ten_env.log_info(f"_remote_tool_call finish {name} {arguments}")
-        await self.session.send(LiveClientToolResponse(function_responses=function_responses))
+        try:
+            self.ten_env.log_info(f"send tool response {function_responses}")
+            await self.session.send(LiveClientToolResponse(function_responses=function_responses))
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send tool response {e}")
     
     def _greeting_text(self) -> str:
         text = "Hi, there."
