@@ -34,7 +34,7 @@
 </div>
 
 <br>
-<h2>🌟 Gemini Multimodal Live API Extension</h2>
+<h2>🌟 Gemini Multimodal Live API Extension with RTC</h2>
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true)
 
