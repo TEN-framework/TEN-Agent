@@ -153,7 +153,7 @@ const useGraphs = () => {
   }
 
   const update = async (graphId: string, updates: Partial<Graph>) => {
-    await dispatch(updateGraph({ graphId, updates }))
+    await dispatch(updateGraph({ graphId, updates })).unwrap()
   }
 
   const getGraphNodeAddonByName = useCallback(

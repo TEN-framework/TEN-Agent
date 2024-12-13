@@ -101,6 +101,11 @@ export const v2vModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "openai_v2v_python",
         type: ModuleRegistry.ModuleType.V2V,
         label: "OpenAI Realtime",
+    },
+    gemini_v2v_python: {
+        name: "gemini_v2v_python",
+        type: ModuleRegistry.ModuleType.V2V,
+        label: "Gemini Realtime",
     }
 }
 
@@ -137,4 +142,5 @@ export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
 export const compatibleTools: Record<string, string[]> = {
     openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python"],
     openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python"],
+    gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python"],
 }

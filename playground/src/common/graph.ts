@@ -420,6 +420,9 @@ class GraphEditor {
       // If no protocolLabel is provided, remove the entire connection
       graph.connections.splice(connectionIndex, 1)
     }
+
+    // Clean up empty connections
+    GraphEditor.removeEmptyConnections(graph);
   }
 
   static findNode(graph: Graph, nodeName: string): Node | null {
