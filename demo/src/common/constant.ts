@@ -57,37 +57,41 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
-    label: "Voice Agent - OpenAI LLM + Azure TTS",
+    label: "Voice Agent / STT + LLM + TTS",
     value: "va_openai_azure",
-  },
-  {
-    label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
-    value: "camera_va_openai_azure",
   },
   // {
   //   label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
   //   value: "va_qwen_rag"
   // },
   {
-    label: "Voice Agent with OpenAI Realtime API (Beta)",
+    label: "Voice Agent OpenAI Realtime",
     value: "va_openai_v2v",
   },
   {
-    label: "Voice Agent with OpenAI Realtime API (Beta) + FishAudio TTS",
+    label: "Voice Agent OpenAI Realtime + Custom STT/TTS",
     value: "va_openai_v2v_fish",
-  },
-  {
-    label: "Voice Agent with Vision - OpenAI LLM + Azure TTS + RTM",
-    value: "camera_va_openai_azure_rtm",
   },
   {
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
   },
+  {
+    label: "Voice Agent Gemini 2.0 Realtime",
+    value: "va_gemini_v2v",
+  },
 ]
 
 export const isRagGraph = (graphName: string) => {
   return graphName === "va_qwen_rag"
+}
+
+export const isLanguageSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
+}
+
+export const isVoiceGenderSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
 }
 
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
