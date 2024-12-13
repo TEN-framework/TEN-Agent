@@ -5,7 +5,7 @@ import AgoraRTC, {
   IAgoraRTCClient,
   IMicrophoneAudioTrack,
   IRemoteAudioTrack,
-  UID,
+  UID, ICameraVideoTrack,
 } from "agora-rtc-sdk-ng"
 import { ITextItem } from "@/types"
 import { AGEventEmitter } from "../events"
@@ -52,18 +52,38 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     }
   }
 
-  async createTracks() {
+  async createCameraTracks() {
     try {
       const videoTrack = await AgoraRTC.createCameraVideoTrack()
       this.localTracks.videoTrack = videoTrack
     } catch (err) {
       console.error("Failed to create video track", err)
     }
+    this.emit("localTracksChanged", this.localTracks)
+  }
+
+  async createMicrophoneTracks() {
     try {
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack()
       this.localTracks.audioTrack = audioTrack
     } catch (err) {
       console.error("Failed to create audio track", err)
+    }
+    this.emit("localTracksChanged", this.localTracks)
+  }
+
+  async createScreenShareTrack() {
+    try {
+      const screenTrack = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: {
+          width: 640,
+          height: 480,
+          frameRate: 5,
+        }
+      }, "disable")
+      this.localTracks.screenTrack = screenTrack
+    } catch (err) {
+      console.error("Failed to create screen track", err)
     }
     this.emit("localTracksChanged", this.localTracks)
   }
@@ -78,6 +98,26 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     }
     if (tracks.length) {
       await this.client.publish(tracks)
+    }
+  }
+
+  async switchVideoTrack() {
+    if (this.localTracks.videoTrack) {
+      await this.createScreenShareTrack()
+      if (this.localTracks.screenTrack) {
+        this.client.unpublish(this.localTracks.videoTrack)
+        this.localTracks.videoTrack.close()
+        this.localTracks.videoTrack = undefined
+        await this.client.publish([this.localTracks.screenTrack])
+      }
+    } else if (this.localTracks.screenTrack) {
+      await this.createCameraTracks()
+      if (this.localTracks.videoTrack) {
+        this.client.unpublish(this.localTracks.screenTrack)
+        this.localTracks.screenTrack.close()
+        this.localTracks.screenTrack = undefined
+        await this.client.publish([this.localTracks.videoTrack])
+      }
     }
   }
 

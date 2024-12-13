@@ -140,28 +140,21 @@ export function RemoteModuleCfgSheet() {
                                         node.addon = value;
                                         node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
 
-                                        if (node.addon === "gemini_v2v_python") {
-                                            GraphEditor.addOrUpdateConnection(
-                                                selectedGraphCopy,
-                                                `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                                `${node.extensionGroup}.${node.name}`,
-                                                ProtocolLabel.VIDEO_FRAME,
-                                                "video_frame"
-                                            );
-                                            enableRTCVideoSubscribe = true;
-                                        } else {
-                                            GraphEditor.removeConnection(
-                                                selectedGraphCopy,
-                                                `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                                `${node.extensionGroup}.${node.name}`,
-                                                ProtocolLabel.VIDEO_FRAME,
-                                                "video_frame"
-                                            );
-                                        }
-
                                         needUpdate = true;
                                     }
                                 });
+
+                                const geminiV2VNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => node.addon === "gemini_v2v_python");
+                                if (geminiV2VNode) {
+                                    GraphEditor.addOrUpdateConnection(
+                                        selectedGraphCopy,
+                                        `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
+                                        `${geminiV2VNode.extensionGroup}.${geminiV2VNode.name}`,
+                                        ProtocolLabel.VIDEO_FRAME,
+                                        "video_frame"
+                                    );
+                                    enableRTCVideoSubscribe = true;
+                                }
 
                                 // Identify removed tools and process them
                                 const currentToolsInGraph = nodes

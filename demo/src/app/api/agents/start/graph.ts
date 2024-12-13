@@ -187,7 +187,7 @@ export const getGraphProperties = (
         return {
             "v2v": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
+                // "greeting": combined_greeting,
             }
         }
     }

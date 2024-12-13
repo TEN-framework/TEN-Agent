@@ -237,7 +237,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                         ten_env.log_info(f"Setup complete")
                                     elif response.tool_call:
                                         func_calls = response.tool_call.function_calls
-                                        await self._handle_tool_call(func_calls)
+                                        self.loop.create_task(self._handle_tool_call(func_calls))
                                 except Exception as e:
                                     traceback.print_exc()
                                     ten_env.log_error(f"Failed to handle response")
@@ -421,7 +421,15 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
             return t
 
-        tools = [tool_dict(t) for t in self.available_tools] if len(self.available_tools) > 0 else None
+        tools = [tool_dict(t) for t in self.available_tools] if len(self.available_tools) > 0 else []
+
+        tools.append(Tool(
+            google_search={}
+        ))
+        tools.append(Tool(
+            code_execution={}
+        ))
+
         config = LiveConnectConfig(
             response_modalities=["AUDIO"],
             system_instruction=Content(parts=[Part(text=self.config.prompt)]),

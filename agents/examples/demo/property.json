@@ -1015,15 +1015,6 @@
           },
           {
             "type": "extension",
-            "name": "bingsearch_tool_python",
-            "addon": "bingsearch_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:BING_API_KEY|}"
-            }
-          },
-          {
-            "type": "extension",
             "name": "weatherapi_tool_python",
             "addon": "weatherapi_tool_python",
             "extension_group": "default",
@@ -1106,10 +1097,6 @@
                 "dest": [
                   {
                     "extension_group": "default",
-                    "extension": "bingsearch_tool_python"
-                  },
-                  {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   }
                 ]
@@ -1148,21 +1135,6 @@
                   {
                     "extension_group": "rtc",
                     "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "bingsearch_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
-                "dest": [
-                  {
-                    "extension_group": "llm",
-                    "extension": "v2v"
                   }
                 ]
               }

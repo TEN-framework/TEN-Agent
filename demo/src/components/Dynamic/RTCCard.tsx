@@ -54,7 +54,8 @@ export default function RTCCard(props: { className?: string }) {
     rtcManager.on("localTracksChanged", onLocalTracksChanged)
     rtcManager.on("textChanged", onTextChanged)
     rtcManager.on("remoteUserChanged", onRemoteUserChanged)
-    await rtcManager.createTracks()
+    await rtcManager.createCameraTracks()
+    await rtcManager.createMicrophoneTracks()
     await rtcManager.join({
       channel,
       userId,
@@ -135,9 +136,6 @@ export default function RTCCard(props: { className?: string }) {
 
           {/* -- You */}
           <div className="w-full space-y-2 px-2">
-            <div className="flex w-full items-center justify-between py-2">
-              <h2 className="mb-2 text-xl font-semibold">You</h2>
-            </div>
             <MicrophoneBlock audioTrack={audioTrack} />
             <CameraBlock videoTrack={videoTrack} />
           </div>
