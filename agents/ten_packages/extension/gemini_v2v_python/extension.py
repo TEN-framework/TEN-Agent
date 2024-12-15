@@ -222,6 +222,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                         try:
                             async for response in session.receive():
                                 response = cast(LiveServerMessage, response)
+                                # ten_env.log_info(f"Received response")
                                 try:
                                     if response.server_content:
                                         if response.server_content.interrupted:

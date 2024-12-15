@@ -63,6 +63,20 @@ export const VOICE_OPTIONS: VoiceOptionItem[] = [
     value: "female",
   },
 ];
+
+export enum VideoSourceType {
+  CAMERA = 'camera',
+  SCREEN = 'screen',
+}
+
+export const VIDEO_SOURCE_OPTIONS = [{
+  label: "Camera",
+  value: VideoSourceType.CAMERA,
+}, {
+  label: "Screen Share",
+  value: VideoSourceType.SCREEN,
+}]
+
 export const COLOR_LIST: ColorItem[] = [
   {
     active: "#0888FF",

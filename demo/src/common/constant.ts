@@ -94,6 +94,20 @@ export const isVoiceGenderSupported = (graphName: string) => {
   return !["va_gemini_v2v"].includes(graphName)
 }
 
+
+export enum VideoSourceType {
+  CAMERA = 'camera',
+  SCREEN = 'screen',
+}
+
+export const VIDEO_SOURCE_OPTIONS = [{
+  label: "Camera",
+  value: VideoSourceType.CAMERA,
+}, {
+  label: "Screen Share",
+  value: VideoSourceType.SCREEN,
+}]
+
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {
     label: "Male",

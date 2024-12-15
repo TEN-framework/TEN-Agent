@@ -3,12 +3,13 @@
 import * as React from "react"
 import {
   ICameraVideoTrack,
+  ILocalVideoTrack,
   IMicrophoneAudioTrack,
   VideoPlayerConfig,
 } from "agora-rtc-sdk-ng"
 
 export interface StreamPlayerProps {
-  videoTrack?: ICameraVideoTrack
+  videoTrack?: ICameraVideoTrack | ILocalVideoTrack
   audioTrack?: IMicrophoneAudioTrack
   style?: React.CSSProperties
   fit?: "cover" | "contain" | "fill"

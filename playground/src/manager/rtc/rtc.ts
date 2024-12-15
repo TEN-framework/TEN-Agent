@@ -9,7 +9,7 @@ import AgoraRTC, {
 import { ITextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 import { RtcEvents, IUserTracks } from "./types";
-import { apiGenAgoraData } from "@/common";
+import { apiGenAgoraData, VideoSourceType } from "@/common";
 
 const TIMEOUT_MS = 5000; // Timeout for incomplete messages
 
@@ -50,13 +50,17 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     }
   }
 
-  async createTracks() {
+  async createCameraTracks() {
     try {
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       this.localTracks.videoTrack = videoTrack;
     } catch (err) {
       console.error("Failed to create video track", err);
     }
+    this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async createMicrophoneAudioTrack() {
     try {
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       this.localTracks.audioTrack = audioTrack;
@@ -64,6 +68,44 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       console.error("Failed to create audio track", err);
     }
     this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async createScreenShareTrack() {
+    try {
+      const screenTrack = await AgoraRTC.createScreenVideoTrack({
+        encoderConfig: {
+          width: 1200,
+          height: 800,
+          frameRate: 5
+        }
+      }, "disable");
+      this.localTracks.screenTrack = screenTrack;
+    } catch (err) {
+      console.error("Failed to create screen track", err);
+    }
+    this.emit("localTracksChanged", this.localTracks);
+  }
+
+  async switchVideoSource(type:VideoSourceType) {
+    if (type === VideoSourceType.SCREEN) {
+      await this.createScreenShareTrack();
+      if(this.localTracks.screenTrack) {
+        this.client.unpublish(this.localTracks.videoTrack);
+        this.localTracks.videoTrack?.close();
+        this.localTracks.videoTrack = undefined;
+        this.client.publish(this.localTracks.screenTrack);
+        this.emit("localTracksChanged", this.localTracks);
+      }
+    } else if (type === VideoSourceType.CAMERA) {
+      await this.createCameraTracks();
+      if(this.localTracks.videoTrack) {
+        this.client.unpublish(this.localTracks.screenTrack);
+        this.localTracks.screenTrack?.close();
+        this.localTracks.screenTrack = undefined;
+        this.client.publish(this.localTracks.videoTrack);
+        this.emit("localTracksChanged", this.localTracks);
+      }
+    }
   }
 
   async publish() {
