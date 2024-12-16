@@ -5,6 +5,7 @@ import {
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
   NetworkQuality,
+  ILocalVideoTrack,
 } from "agora-rtc-sdk-ng"
 import { ITextItem } from "@/types"
 
@@ -21,5 +22,6 @@ export interface RtcEvents {
 
 export interface IUserTracks {
   videoTrack?: ICameraVideoTrack
+  screenTrack?: ILocalVideoTrack
   audioTrack?: IMicrophoneAudioTrack
 }
