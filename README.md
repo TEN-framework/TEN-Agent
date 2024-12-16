@@ -38,7 +38,11 @@
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true)
 
-Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screen detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+
+[agent.theten.ai](https://agent.theten.ai)
+
+Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
 
 <br>
