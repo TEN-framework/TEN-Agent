@@ -25,6 +25,11 @@ export interface ICozeSettings {
   base_url: string
 }
 
+
+export interface IDifySettings {
+  api_key: string
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",

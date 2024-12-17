@@ -190,6 +190,18 @@ export const getGraphProperties = (
                 // "greeting": combined_greeting,
             }
         }
+    } else if (graphName == "va_dify_azure") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "llm": {
+                "greeting": combined_greeting,
+            },
+            "tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     }
     return {}
 }

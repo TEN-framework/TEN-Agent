@@ -1,1 +1,6 @@
-{}
+{
+    "user_id": "User",
+    "api_key": "${env:DIFY_API_KEY}",
+    "base_url": "https://api.dify.ai/v1",
+    "greeting": "TEN Agent connected with Dify. How can I help you today?"
+}

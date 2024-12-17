@@ -5,6 +5,7 @@ import {
   VoiceOptionItem,
   GraphOptionItem,
   ICozeSettings,
+  IDifySettings,
 } from "@/types"
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
 export const API_GH_GET_REPO_INFO =
@@ -12,6 +13,7 @@ export const API_GH_GET_REPO_INFO =
 export const OPTIONS_KEY = "__options__"
 export const AGENT_SETTINGS_KEY = "__agent_settings__"
 export const COZE_SETTINGS_KEY = "__coze_settings__"
+export const DIFY_SETTINGS_KEY = "__dify_settings__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
@@ -36,6 +38,10 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
   base_url: ECozeBaseUrl.GLOBAL,
 }
 
+export const DEFAULT_DIFY_SETTINGS: IDifySettings = {
+  api_key: "",
+}
+
 export const DESCRIPTION = "A Realtime Conversational AI Agent powered by TEN"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
@@ -57,6 +63,14 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
+    label: "Voice Agent Gemini 2.0 Realtime",
+    value: "va_gemini_v2v",
+  },
+  {
+    label: "Voice Agent with Dify",
+    value: "va_dify_azure",
+  },
+  {
     label: "Voice Agent / STT + LLM + TTS",
     value: "va_openai_azure",
   },
@@ -75,10 +89,6 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
-  },
-  {
-    label: "Voice Agent Gemini 2.0 Realtime",
-    value: "va_gemini_v2v",
   },
 ]
 

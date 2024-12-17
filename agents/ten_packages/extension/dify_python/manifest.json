@@ -20,5 +20,20 @@
       "tests/**"
     ]
   },
-  "api": {}
+  "api": {
+    "property": {
+      "user_id": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      }
+    }
+  }
 }
