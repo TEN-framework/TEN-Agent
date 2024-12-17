@@ -142,7 +142,6 @@ Before we get started, be sure to star our repository and get instant notificati
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
-
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
@@ -150,6 +149,10 @@ Before we get started, be sure to star our repository and get instant notificati
 - [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
 
+<br>
+<h2>Star History</h2>
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ten-framework/ten-agent&type=Date)](https://star-history.com/#ten-framework/ten-agent&Date)
 
  <br>
  <h2>Code Contributors</h2>
