@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       coze_token,
       coze_bot_id,
       coze_base_url,
+      dify_api_key,
     } = body;
 
     let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting);
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
       properties["coze_python_async"]["token"] = coze_token;
       properties["coze_python_async"]["bot_id"] = coze_bot_id;
       properties["coze_python_async"]["base_url"] = coze_base_url;
+    }
+    if (graph_name.includes("dify")) {
+      properties["llm"]["api_key"] = dify_api_key;
     }
 
     console.log(`Starting agent for request ID: ${JSON.stringify({

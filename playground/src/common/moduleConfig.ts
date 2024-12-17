@@ -46,6 +46,16 @@ export const llmModuleRegistry: Record<string, ModuleRegistry.Module> = {
         type: ModuleRegistry.ModuleType.LLM,
         label: "OpenAI ChatGPT",
     },
+    dify_python: {
+        name: "dify_python",
+        type: ModuleRegistry.ModuleType.LLM,
+        label: "Dify Chat Bot",
+    },
+    coze_python_async: {
+        name: "coze_python_async",
+        type: ModuleRegistry.ModuleType.LLM,
+        label: "Coze Chat Bot",
+    },
     gemini_llm_python: {
         name: "gemini_llm_python",
         type: ModuleRegistry.ModuleType.LLM,

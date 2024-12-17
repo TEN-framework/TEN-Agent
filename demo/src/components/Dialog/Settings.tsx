@@ -38,12 +38,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
-import { useAppDispatch, useAppSelector, ECozeBaseUrl } from "@/common"
+import { useAppDispatch, useAppSelector } from "@/common/hooks"
+import { ECozeBaseUrl } from "@/common/constant"
 import {
   setAgentSettings,
   setCozeSettings,
   resetCozeSettings,
+  resetDifySettings,
   setGlobalSettingsDialog,
+  setDifySettings,
 } from "@/store/reducers/global"
 
 const TABS_OPTIONS = [
@@ -54,6 +57,10 @@ const TABS_OPTIONS = [
   {
     label: "Coze",
     value: "coze",
+  },
+  {
+    label: "Dify",
+    value: "dify",
   },
 ]
 
@@ -66,19 +73,55 @@ export const useSettingsTabs = () => {
     return isCozeGraph(graphName)
   }, [graphName])
 
+  const enableDifySettingsMemo = React.useMemo(() => {
+    return isDifyGraph(graphName)
+  }, [graphName])
+
+  const enableGreetingsOrPromptMemo: { greeting: boolean, prompt: boolean } = React.useMemo(() => {
+    if (graphName === "va_gemini_v2v") {
+      return {
+        greeting: false,
+        prompt: true,
+      }
+    } else if (graphName === "va_dify_azure") {
+      return {
+        greeting: true,
+        prompt: false,
+      }
+    }
+
+    return {
+      greeting: true,
+      prompt: true,
+    }
+  }, [graphName])
+
+
+
   React.useEffect(() => {
     if (enableCozeSettingsMemo) {
       setTabs((prev) =>
-        prev.find((tab) => tab.value === "coze")
-          ? prev
-          : [...prev, { label: "Coze", value: "coze" }],
+        [
+          { label: "Agent", value: "agent" },
+          { label: "Coze", value: "coze" },
+        ]
+      )
+    } else if (enableDifySettingsMemo) {
+      setTabs((prev) =>
+        [
+          { label: "Agent", value: "agent" },
+          { label: "Dify", value: "dify" },
+        ]
       )
     } else {
-      setTabs((prev) => prev.filter((tab) => tab.value !== "coze"))
+      setTabs((prev) => prev.filter((tab) => tab.value !== "coze" && tab.value !== "dify"))
     }
-  }, [enableCozeSettingsMemo])
+  }, [enableCozeSettingsMemo, enableDifySettingsMemo])
 
-  return tabs
+  return {
+    tabs,
+    enableGreetingsOrPromptMemo,
+  }
 }
 
 export default function SettingsDialog() {
@@ -87,7 +130,7 @@ export default function SettingsDialog() {
     (state) => state.global.globalSettingsDialog,
   )
 
-  const tabs = useSettingsTabs()
+  const { tabs, enableGreetingsOrPromptMemo } = useSettingsTabs()
 
   const handleClose = () => {
     dispatch(setGlobalSettingsDialog({ open: false, tab: undefined }))
@@ -128,12 +171,20 @@ export default function SettingsDialog() {
           )}
           <TabsContent value="agent">
             <CommonAgentSettingsTab
+              enableGreeting={enableGreetingsOrPromptMemo.greeting}
+              enablePrompt={enableGreetingsOrPromptMemo.prompt}
               handleClose={handleClose}
               handleSubmit={handleClose}
             />
           </TabsContent>
           <TabsContent value="coze">
             <CozeSettingsTab
+              handleClose={handleClose}
+              handleSubmit={handleClose}
+            />
+          </TabsContent>
+          <TabsContent value="dify">
+            <DifySettingsTab
               handleClose={handleClose}
               handleSubmit={handleClose}
             />
@@ -150,10 +201,12 @@ const formSchema = z.object({
 })
 
 export function CommonAgentSettingsTab(props: {
+  enableGreeting?: boolean
+  enablePrompt?: boolean
   handleClose?: () => void
   handleSubmit?: (values: z.infer<typeof formSchema>) => void
 }) {
-  const { handleSubmit } = props
+  const { handleSubmit, enableGreeting, enablePrompt } = props
 
   const dispatch = useAppDispatch()
   const agentSettings = useAppSelector((state) => state.global.agentSettings)
@@ -175,7 +228,7 @@ export function CommonAgentSettingsTab(props: {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
+        {enableGreeting && <FormField
           control={form.control}
           name="greeting"
           render={({ field }) => (
@@ -191,8 +244,8 @@ export function CommonAgentSettingsTab(props: {
               <FormMessage />
             </FormItem>
           )}
-        />
-        <FormField
+        />}
+        {enablePrompt && <FormField
           control={form.control}
           name="prompt"
           render={({ field }) => (
@@ -209,7 +262,7 @@ export function CommonAgentSettingsTab(props: {
               <FormMessage />
             </FormItem>
           )}
-        />
+        />}
         <DialogFooter>
           <Button type="submit" disabled={!form.formState.isValid}>
             Save Agent Settings
@@ -342,6 +395,87 @@ export function CozeSettingsTab(props: {
             </Button>
             <Button type="submit" disabled={!form.formState.isValid}>
               Save Coze Settings
+            </Button>
+          </div>
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+            <ShieldCheckIcon className="me-1 size-3" />
+            Settings are saved in your browser only
+          </Label>
+        </div>
+      </form>
+    </Form>
+  )
+}
+
+export const difySettingsFormSchema = z.object({
+  api_key: z
+    .string({
+      message: "API Key is required",
+    })
+    .min(1),
+})
+
+export const isDifyGraph = (graphName: string) => {
+  return graphName.toLowerCase().includes("dify")
+}
+
+export function DifySettingsTab(props: {
+  handleClose?: () => void
+  handleSubmit?: (values: z.infer<typeof difySettingsFormSchema>) => void
+}) {
+  const { handleSubmit } = props
+
+  const dispatch = useAppDispatch()
+  const difySettings = useAppSelector((state) => state.global.difySettings)
+
+  const form = useForm<z.infer<typeof difySettingsFormSchema>>({
+    resolver: zodResolver(difySettingsFormSchema),
+    defaultValues: {
+      api_key: difySettings.api_key,
+    },
+  })
+
+  function onSubmit(values: z.infer<typeof difySettingsFormSchema>) {
+    console.log("Dify Form Values:", values)
+    dispatch(setDifySettings(values))
+    handleSubmit?.(values)
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="api_key"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>API Key*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your Dify API Key" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                form.reset({
+                  api_key: "",
+                })
+                dispatch(resetDifySettings())
+                toast.success("Dify settings reset")
+              }}
+            >
+              <EraserIcon />
+            </Button>
+            <Button type="submit" disabled={!form.formState.isValid}>
+              Save Dify Settings
             </Button>
           </div>
           <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">

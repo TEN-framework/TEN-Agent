@@ -117,7 +117,6 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
         ten_env.log_debug("on_stop")
 
         self.stopped = True
-        await self.queue.put(None)
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)

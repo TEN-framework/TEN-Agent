@@ -1,1 +1,7 @@
-{}
+{
+    "token": "${env:COZE_TOKEN}",
+    "bot_id": "${env:COZE_BOT_ID}",
+    "base_url": "https://api.coze.cn",
+    "prompt": "",
+    "greeting": "TEN Agent connected with Coze. How can I help you today?"
+}
