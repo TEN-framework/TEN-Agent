@@ -127,6 +127,7 @@ Open the playground at [localhost:3000](http://localhost:3000).
  2. Choose Gemini Realtime module
  3. Select v2v extension and enter Gemini API key
 
+![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
 
 <br>
 <h2>TEN Agent Components</h2>
