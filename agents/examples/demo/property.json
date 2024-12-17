@@ -1,6 +1,5 @@
 {
   "_ten": {
-    "log_level": 3,
     "predefined_graphs": [
       {
         "name": "va_openai_azure",
@@ -527,13 +526,13 @@
       },
       {
         "name": "va_openai_v2v_fish",
-        "auto_start": false,
+        "auto_start": true,
         "nodes": [
           {
             "type": "extension",
-            "extension_group": "rtc",
-            "addon": "agora_rtc",
             "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "rtc",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
               "token": "",
@@ -544,7 +543,7 @@
               "publish_audio": true,
               "publish_data": true,
               "subscribe_audio_sample_rate": 24000,
-              "enable_agora_asr": true,
+              "enable_agora_asr": false,
               "agora_asr_vendor_name": "microsoft",
               "agora_asr_language": "en-US",
               "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
@@ -554,9 +553,9 @@
           },
           {
             "type": "extension",
-            "extension_group": "llm",
-            "addon": "openai_v2v_python",
             "name": "v2v",
+            "addon": "openai_v2v_python",
+            "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
               "temperature": 0.9,
@@ -567,43 +566,43 @@
               "language": "en-US",
               "server_vad": true,
               "dump": true,
-              "greeting": "TEN Agent connected. How can I help you today?",
               "max_history": 10
             }
           },
           {
             "type": "extension",
-            "extension_group": "tts",
-            "addon": "fish_audio_tts",
             "name": "tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
             "property": {
               "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "base_url": "https://api.fish.audio",
               "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
               "optimize_streaming_latency": true,
-              "request_timeout_seconds": 30,
-              "base_url": "https://api.fish.audio"
+              "request_timeout_seconds": 30
             }
           },
           {
             "type": "extension",
-            "extension_group": "transcriber",
+            "name": "message_collector",
             "addon": "message_collector",
-            "name": "message_collector"
+            "extension_group": "transcriber",
+            "property": {}
           },
           {
             "type": "extension",
-            "extension_group": "tools",
-            "addon": "weatherapi_tool_python",
             "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
+            "extension_group": "tools",
             "property": {
               "api_key": "${env:WEATHERAPI_API_KEY}"
             }
           },
           {
             "type": "extension",
-            "extension_group": "tools",
-            "addon": "bingsearch_tool_python",
             "name": "bingsearch_tool_python",
+            "addon": "bingsearch_tool_python",
+            "extension_group": "tools",
             "property": {
               "api_key": "${env:BING_API_KEY}"
             }
@@ -613,17 +612,6 @@
           {
             "extension_group": "rtc",
             "extension": "agora_rtc",
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "llm",
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ],
             "data": [
               {
                 "name": "text_data",
@@ -631,6 +619,17 @@
                   {
                     "extension_group": "transcriber",
                     "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "llm",
+                    "extension": "v2v"
                   }
                 ]
               }
@@ -669,21 +668,6 @@
           {
             "extension_group": "llm",
             "extension": "v2v",
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  },
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
-                  }
-                ]
-              }
-            ],
             "cmd": [
               {
                 "name": "flush",
@@ -725,14 +709,29 @@
                   }
                 ]
               }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "tts",
+                    "extension": "tts"
+                  }
+                ]
+              }
             ]
           },
           {
             "extension_group": "tts",
             "extension": "tts",
-            "audio_frame": [
+            "cmd": [
               {
-                "name": "pcm_frame",
+                "name": "flush",
                 "dest": [
                   {
                     "extension_group": "rtc",
@@ -741,9 +740,9 @@
                 ]
               }
             ],
-            "cmd": [
+            "audio_frame": [
               {
-                "name": "flush",
+                "name": "pcm_frame",
                 "dest": [
                   {
                     "extension_group": "rtc",
@@ -776,9 +775,9 @@
         "nodes": [
           {
             "type": "extension",
-            "extension_group": "default",
-            "addon": "agora_rtc",
             "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
               "token": "<agora_token>",
@@ -798,15 +797,15 @@
           },
           {
             "type": "extension",
-            "extension_group": "default",
+            "name": "interrupt_detector",
             "addon": "interrupt_detector",
-            "name": "interrupt_detector"
+            "extension_group": "default"
           },
           {
             "type": "extension",
-            "extension_group": "glue",
-            "addon": "coze_python_async",
             "name": "coze_python_async",
+            "addon": "coze_python_async",
+            "extension_group": "glue",
             "property": {
               "token": "<coze_token>",
               "bot_id": "<coze_bot_id>",
@@ -817,9 +816,9 @@
           },
           {
             "type": "extension",
-            "extension_group": "tts",
-            "addon": "azure_tts",
             "name": "tts",
+            "addon": "azure_tts",
+            "extension_group": "tts",
             "property": {
               "azure_subscription_key": "${env:AZURE_TTS_KEY}",
               "azure_subscription_region": "${env:AZURE_TTS_REGION}",
@@ -828,34 +827,15 @@
           },
           {
             "type": "extension",
-            "extension_group": "transcriber",
+            "name": "message_collector",
             "addon": "message_collector",
-            "name": "message_collector"
+            "extension_group": "transcriber"
           }
         ],
         "connections": [
           {
             "extension_group": "default",
             "extension": "agora_rtc",
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "interrupt_detector"
-                  },
-                  {
-                    "extension_group": "glue",
-                    "extension": "coze_python_async"
-                  },
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  }
-                ]
-              }
-            ],
             "cmd": [
               {
                 "name": "on_user_joined",
@@ -875,11 +855,41 @@
                   }
                 ]
               }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "glue",
+                    "extension": "coze_python_async"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
             ]
           },
           {
             "extension_group": "glue",
             "extension": "coze_python_async",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "tts"
+                  }
+                ]
+              }
+            ],
             "data": [
               {
                 "name": "text_data",
@@ -894,25 +904,14 @@
                   }
                 ]
               }
-            ],
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
-                  }
-                ]
-              }
             ]
           },
           {
             "extension_group": "tts",
             "extension": "tts",
-            "audio_frame": [
+            "cmd": [
               {
-                "name": "pcm_frame",
+                "name": "flush",
                 "dest": [
                   {
                     "extension_group": "default",
@@ -921,9 +920,9 @@
                 ]
               }
             ],
-            "cmd": [
+            "audio_frame": [
               {
-                "name": "flush",
+                "name": "pcm_frame",
                 "dest": [
                   {
                     "extension_group": "default",
@@ -1369,6 +1368,7 @@
           }
         ]
       }
-    ]
+    ],
+    "log_level": 3
   }
 }
