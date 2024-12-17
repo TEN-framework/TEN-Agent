@@ -61,15 +61,9 @@ Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtim
 
 ### Prerequisites
 
-<!-- | Category | Requirements |
-|----------|-------------|
-| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
-| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB | -->
-
 | Category | Requirements |
 |----------|-------------|
-| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key or [Gemini](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/multimodal-live) API key(free)<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
+| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
 | **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
@@ -120,12 +114,19 @@ task run
 
 #### 7. Edit playground settings
 Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
-Here we use Gemini as an example, you can choose other models or extensions.
+ 1. Select a graph type (e.g. Voice Agent, Realtime Agent)
+ 2. Choose a corresponding module
+ 3. Select an extension and configure its API key settings
+
+![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
+
+#### Running Gemini Realtime Extension
+Open the playground at [localhost:3000](http://localhost:3000).
+
  1. Select voice_assistant_realtime graph
  2. Choose Gemini Realtime module
  3. Select v2v extension and enter Gemini API key
 
-![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
 <br>
 <h2>TEN Agent Components</h2>
