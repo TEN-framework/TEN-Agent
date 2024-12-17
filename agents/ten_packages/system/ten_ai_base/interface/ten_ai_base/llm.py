@@ -51,6 +51,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
+        await self.queue.put(None)
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
