@@ -35,8 +35,8 @@
 
 <br>
 <h2>🌟 Gemini Multimodal Live API Extension with RTC</h2>
-
-![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true)
+<!-- 
+![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true) -->
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
 
@@ -119,6 +119,15 @@ Open the playground at [localhost:3000](http://localhost:3000) to configure your
  3. Select an extension and configure its API key settings
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
+
+#### Running Gemini Realtime Extension
+Open the playground at [localhost:3000](http://localhost:3000).
+
+ 1. Select voice_assistant_realtime graph
+ 2. Choose Gemini Realtime module
+ 3. Select v2v extension and enter Gemini API key
+
+![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
 
 <br>
 <h2>TEN Agent Components</h2>
