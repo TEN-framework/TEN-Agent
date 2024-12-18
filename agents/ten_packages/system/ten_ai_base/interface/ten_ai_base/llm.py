@@ -47,7 +47,8 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
 
         if self.loop_task is None:
             self.loop = asyncio.get_event_loop()
-            self.loop_task = self.loop.create_task(self._process_queue(ten_env))
+            self.loop_task = self.loop.create_task(
+                self._process_queue(ten_env))
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
@@ -73,11 +74,11 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 async with self.available_tools_lock:
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
-                async_ten_env.return_result(
+                await async_ten_env.return_result(
                     CmdResult.create(StatusCode.OK), cmd)
             except Exception as err:
                 async_ten_env.log_warn(f"on_cmd failed: {err}")
-                async_ten_env.return_result(
+                await async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd)
         elif cmd_name == CMD_CHAT_COMPLETION_CALL:
             try:
@@ -91,7 +92,6 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 async_ten_env.log_warn(f"on_cmd failed: {err}")
                 async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd)
-
 
     async def queue_input_item(self, prepend: bool = False, **kargs: LLMDataCompletionArgs):
         """Queues an input item for processing."""
