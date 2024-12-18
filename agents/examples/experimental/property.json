@@ -2417,7 +2417,7 @@
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
               "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview",
+              "model": "gpt-4o-realtime-preview-2024-12-17",
               "max_tokens": 2048,
               "voice": "alloy",
               "language": "en-US",
@@ -2538,7 +2538,7 @@
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
               "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview",
+              "model": "gpt-4o-realtime-preview-2024-12-17",
               "max_tokens": 2048,
               "audio_out": false,
               "input_transcript": false,
@@ -2697,7 +2697,7 @@
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
               "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview",
+              "model": "gpt-4o-realtime-preview-2024-12-17",
               "max_tokens": 2048,
               "voice": "alloy",
               "language": "en-US",
