@@ -35,8 +35,43 @@
     },
     {
       "type": "extension",
-      "name": "agora_rtm",
-      "version": "=0.3.0"
+      "name": "openai_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "bingsearch_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_chatgpt_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "fish_audio_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "interrupt_detector_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "weatherapi_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "deepgram_asr_python",
+      "version": "=0.1.0"
     }
   ]
 }
