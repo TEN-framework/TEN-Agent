@@ -1,12 +1,12 @@
 {
     "type": "extension",
     "name": "aliyun_text_embedding",
-    "version": "0.4.0",
+    "version": "0.1.0",
     "dependencies": [
         {
             "type": "system",
             "name": "ten_runtime_python",
-            "version": "0.4"
+            "version": "0.5"
         }
     ],
     "api": {
