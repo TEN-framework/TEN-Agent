@@ -120,7 +120,7 @@
             "type": "string"
           },
           "parameters": {
-            "type": "string"
+            "type": "array"
           }
         },
         "required": [
