@@ -93,7 +93,7 @@ func (p *pcm) send(tenEnv ten.TenEnv, buf []byte) (err error) {
 	}
 
 	// send pcm
-	if err = tenEnv.SendAudioFrame(pcmFrame); err != nil {
+	if err = tenEnv.SendAudioFrame(pcmFrame, nil); err != nil {
 		slog.Error(fmt.Sprintf("SendPcmFrame failed, err: %v", err), logTag)
 		return
 	}

@@ -29,21 +29,30 @@
       {
         "name": "tool_register",
         "property": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "parameters": {
-            "type": "array"
+          "tool": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "parameters"
+            ]
           }
         },
-        "required": [
-          "name",
-          "description",
-          "parameters"
-        ],
         "result": {
           "property": {
             "response": {

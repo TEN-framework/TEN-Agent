@@ -14,7 +14,6 @@ ten_package("openai_v2v_python") {
     "__init__.py",
     "addon.py",
     "extension.py",
-    "log.py",
     "manifest.json",
     "property.json",
   ]

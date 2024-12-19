@@ -17,6 +17,5 @@ ten_package("message_collector") {
     "src/__init__.py",
     "src/addon.py",
     "src/extension.py",
-    "src/log.py",
   ]
 }

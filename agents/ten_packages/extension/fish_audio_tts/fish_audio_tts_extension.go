@@ -237,7 +237,7 @@ func (e *fishAudioTTSExtension) OnCmd(
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 		return
 	}
 
@@ -252,14 +252,14 @@ func (e *fishAudioTTSExtension) OnCmd(
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		}
 
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
@@ -267,7 +267,7 @@ func (e *fishAudioTTSExtension) OnCmd(
 	}
 
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd)
+	tenEnv.ReturnResult(cmdResult, cmd, nil)
 }
 
 // OnData receives data from ten graph.
