@@ -28,31 +28,7 @@
     "cmd_out": [
       {
         "name": "tool_register",
-        "property": {
-          "tool": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "parameters": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {}
-                }
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "parameters"
-            ]
-          }
-        },
+        "property": {},
         "result": {
           "property": {
             "response": {
