@@ -339,7 +339,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -479,51 +479,6 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         buff[:] = audio_data
         f.unlock_buf(buff)
         self.ten_env.send_audio_frame(f)
-
-    def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
-        def is_punctuation(char):
-            if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
-                return True
-            return False
-
-        def parse_sentences(sentence_fragment, content):
-            sentences = []
-            current_sentence = sentence_fragment
-            for char in content:
-                current_sentence += char
-                if is_punctuation(char):
-                    # Check if the current sentence contains non-punctuation characters
-                    stripped_sentence = current_sentence
-                    if any(c.isalnum() for c in stripped_sentence):
-                        sentences.append(stripped_sentence)
-                    current_sentence = ""  # Reset for the next sentence
-
-            remain = current_sentence  # Any remaining characters form the incomplete sentence
-            return sentences, remain
-
-        def send_data(ten_env: AsyncTenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
-            try:
-                d = Data.create("text_data")
-                d.set_property_string("text", sentence)
-                d.set_property_bool("end_of_segment", is_final)
-                d.set_property_string("role", role)
-                d.set_property_int("stream_id", stream_id)
-                ten_env.log_info(
-                    f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
-                ten_env.send_data(d)
-            except Exception as e:
-                ten_env.log_error(f"Error send text data {role}: {sentence} {is_final} {e}")
-
-        stream_id = self.remote_stream_id if role == Role.User else 0
-        try:
-            if role == Role.Assistant and not is_final:
-                sentences, self.transcript = parse_sentences(self.transcript, content)
-                for s in sentences:
-                    send_data(self.ten_env, s, stream_id, role, is_final)
-            else:
-                send_data(self.ten_env, content, stream_id, role, is_final)
-        except Exception as e:
-            self.ten_env.log_error(f"Error send text data {role}: {content} {is_final} {e}")
 
     def _dump_audio_if_need(self, buf: bytearray, role: Role) -> None:
         if not self.config.dump:

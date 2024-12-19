@@ -187,7 +187,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     async def on_call_chat_completion(self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs) -> any:
         raise Exception("Not implemented")
@@ -382,7 +382,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         data = Data.create("text_data")
         data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
         data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, True)
-        self.ten_env.send_data(data)
+        await self.ten_env.send_data(data)
 
     async def _stream_chat(self, messages: List[Any], tools: List[Any]) -> AsyncGenerator[dict, None]:
         async with aiohttp.ClientSession() as session:
@@ -469,7 +469,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                 "completion_latency_99": np.percentile(self.completion_times, 99),
                 "first_token_latency_99": np.percentile(self.first_token_times, 99)
             }))
-        self.ten_env.send_data(data)
+        await self.ten_env.send_data(data)
 
     async def _on_memory_appended(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory appended: {message}")
@@ -483,6 +483,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             d.set_property_string("text", message.get("content"))
             d.set_property_string("role", role)
             d.set_property_int("stream_id", stream_id)
-            self.ten_env.send_data(d)
+            await self.ten_env.send_data(d)
         except Exception as e:
             self.ten_env.log_error(f"Error send append_context data {message} {e}")

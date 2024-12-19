@@ -129,7 +129,7 @@ class DifyExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
@@ -276,4 +276,4 @@ class DifyExtension(AsyncLLMBaseExtension):
         data = Data.create("text_data")
         data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
         data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, end_of_segment)
-        self.ten_env.send_data(data)
+        await self.ten_env.return_result(data)

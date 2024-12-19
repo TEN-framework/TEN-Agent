@@ -193,7 +193,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -239,7 +239,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 await self._greeting()
                         case ItemInputAudioTranscriptionCompleted():
                             self.ten_env.log_info(f"On request transcript {message.transcript}")
-                            self._send_transcript(message.transcript, Role.User, True)
+                            await self._send_transcript(message.transcript, Role.User, True)
                             self.memory.put({"role": "user", "content": message.transcript, "id": message.item_id})
                         case ItemInputAudioTranscriptionFailed():
                             self.ten_env.log_warn(f"On request transcript failed {message.item_id} {message.error}")
@@ -265,7 +265,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 self.ten_env.log_warn(
                                     f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
                                 continue
-                            self._send_transcript(message.delta, Role.Assistant, False)
+                            await self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseTextDelta():
                             self.ten_env.log_info(
                                 f"On response text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}")
@@ -276,7 +276,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             if item_id != message.item_id:
                                 item_id = message.item_id
                                 self.first_token_times.append(time.time() - self.input_end)
-                            self._send_transcript(message.delta, Role.Assistant, False)
+                            await self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
                             self.ten_env.log_info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}")
@@ -286,7 +286,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 continue
                             self.memory.put({"role": "assistant", "content": message.transcript, "id": message.item_id})
                             self.transcript = ""
-                            self._send_transcript("", Role.Assistant, True)
+                            await self._send_transcript("", Role.Assistant, True)
                         case ResponseTextDone():
                             self.ten_env.log_info(
                                 f"On response text done {message.output_index} {message.content_index} {message.text}")
@@ -296,7 +296,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 continue
                             self.completion_times.append(time.time() - self.input_end)
                             self.transcript = ""
-                            self._send_transcript("", Role.Assistant, True)
+                            await self._send_transcript("", Role.Assistant, True)
                         case ResponseOutputItemDone():
                             self.ten_env.log_info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
@@ -327,7 +327,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 await self._flush()
                             if response_id and self.transcript:
                                 transcript = self.transcript + "[interrupted]"
-                                self._send_transcript(transcript, Role.Assistant, True)
+                                await self._send_transcript(transcript, Role.Assistant, True)
                                 self.transcript = ""
                                 # memory leak, change to lru later
                                 flushed.add(response_id)
@@ -392,7 +392,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             d.set_property_string("text", message.get("content"))
             d.set_property_string("role", role)
             d.set_property_int("stream_id", stream_id)
-            self.ten_env.send_data(d)
+            await self.ten_env.send_data(d)
         except Exception as e:
             self.ten_env.log_error(f"Error send append_context data {message} {e}")
 
@@ -484,7 +484,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         f.unlock_buf(buff)
         self.ten_env.send_audio_frame(f)
 
-    def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
+    async def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
                 return True
@@ -505,7 +505,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             remain = current_sentence  # Any remaining characters form the incomplete sentence
             return sentences, remain
 
-        def send_data(ten_env: AsyncTenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
+        async def send_data(ten_env: AsyncTenEnv, sentence: str, stream_id: int, role: str, is_final: bool):
             try:
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
@@ -514,7 +514,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 d.set_property_int("stream_id", stream_id)
                 ten_env.log_info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}")
-                ten_env.send_data(d)
+                await ten_env.send_data(d)
             except Exception as e:
                 ten_env.log_error(f"Error send text data {role}: {sentence} {is_final} {e}")
 
@@ -523,9 +523,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             if role == Role.Assistant and not is_final:
                 sentences, self.transcript = parse_sentences(self.transcript, content)
                 for s in sentences:
-                    send_data(self.ten_env, s, stream_id, role, is_final)
+                    await send_data(self.ten_env, s, stream_id, role, is_final)
             else:
-                send_data(self.ten_env, content, stream_id, role, is_final)
+                await send_data(self.ten_env, content, stream_id, role, is_final)
         except Exception as e:
             self.ten_env.log_error(f"Error send text data {role}: {content} {is_final} {e}")
 
@@ -655,4 +655,4 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 "completion_latency_99": np.percentile(self.completion_times, 99),
                 "first_token_latency_99": np.percentile(self.first_token_times, 99)
             }))
-        self.ten_env.send_data(data)
+        await self.ten_env.send_data(data)

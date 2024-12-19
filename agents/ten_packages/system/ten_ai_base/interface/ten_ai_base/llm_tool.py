@@ -47,17 +47,17 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
                 result = await asyncio.create_task(self.run_tool(ten_env, tool_name, tool_args))
 
                 if result is None:
-                    ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+                    await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
                     return
 
                 cmd_result: CmdResult = CmdResult.create(StatusCode.OK)
                 cmd_result.set_property_from_json(
                     CMD_PROPERTY_RESULT, json.dumps(result))
-                ten_env.return_result(cmd_result, cmd)
+                await ten_env.return_result(cmd_result, cmd)
                 ten_env.log_info(f"tool result done, {result}")
             except Exception as err:
                 ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
-                ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()

@@ -90,7 +90,7 @@ class DeepgramASRExtension(AsyncExtension):
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
     
     async def _start_listen(self) -> None:
         self.ten_env.log_info(f"start and listen deepgram")
@@ -153,4 +153,4 @@ class DeepgramASRExtension(AsyncExtension):
         stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
         stable_data.set_property_int(DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id)
         stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final)
-        self.ten_env.send_data(stable_data)
+        await self.ten_env.send_data(stable_data)

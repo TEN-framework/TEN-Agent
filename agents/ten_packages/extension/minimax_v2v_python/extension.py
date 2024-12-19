@@ -132,10 +132,10 @@ class MinimaxV2VExtension(AsyncExtension):
                     ten_env.log_debug("flush done")
                 case _:
                     pass
-            ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
         except asyncio.CancelledError:
             ten_env.log_warn(f"cmd {cmd_name} cancelled")
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
             raise
         except Exception as e:
             ten_env.log_warn(f"cmd {cmd_name} failed, err {e}")
@@ -284,7 +284,7 @@ class MinimaxV2VExtension(AsyncExtension):
                                     )
 
                                 # send out for transcript display
-                                self._send_transcript(
+                                await self._send_transcript(
                                     ten_env=ten_env,
                                     content=content,
                                     role=Role.Assistant,
@@ -336,7 +336,7 @@ class MinimaxV2VExtension(AsyncExtension):
                                     )
 
                                 # send out for transcript display
-                                self._send_transcript(
+                                await self._send_transcript(
                                     ten_env=ten_env,
                                     content=content,
                                     role=Role.User,
@@ -359,7 +359,7 @@ class MinimaxV2VExtension(AsyncExtension):
                 self.memory.put(
                     {"role": Role.Assistant, "content": assistant_transcript}
                 )
-                self._send_transcript(
+                await self._send_transcript(
                     ten_env=ten_env,
                     content="",
                     role=Role.Assistant,
@@ -436,7 +436,7 @@ class MinimaxV2VExtension(AsyncExtension):
         except Exception as e:
             ten_env.log_error(f"send audio frame failed, err {e}")
 
-    def _send_transcript(
+    async def _send_transcript(
         self,
         ten_env: AsyncTenEnv,
         content: str,
@@ -455,7 +455,7 @@ class MinimaxV2VExtension(AsyncExtension):
             ten_env.log_info(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role}"
             )
-            self.ten_env.send_data(d)
+            await self.ten_env.send_data(d)
         except Exception as e:
             ten_env.log_warn(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role} failed, err {e}"
