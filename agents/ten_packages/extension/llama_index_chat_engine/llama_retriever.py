@@ -1,4 +1,4 @@
-import time, json, threading
+import json, threading
 from typing import Any, List
 from llama_index.core.schema import QueryBundle, TextNode
 from llama_index.core.schema import NodeWithScore
@@ -15,7 +15,7 @@ from ten import (
 
 
 def format_node_result(cmd_result: CmdResult) -> List[NodeWithScore]:
-    logger.info("LlamaRetriever retrieve response {}".format(cmd_result.to_json()))
+    logger.info(f"LlamaRetriever retrieve response {cmd_result.to_json()}")
     status = cmd_result.get_status_code()
     try:
         contents_json = cmd_result.get_property_to_json("response")
@@ -59,7 +59,7 @@ class LlamaRetriever(BaseRetriever):
             logger.error(f"Failed to initialize LlamaRetriever: {e}")
 
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
-        logger.info("LlamaRetriever retrieve: {}".format(query_bundle.to_json))
+        logger.info(f"LlamaRetriever retrieve: {query_bundle.to_json}")
 
         wait_event = threading.Event()
         resp: List[NodeWithScore] = []
@@ -75,12 +75,10 @@ class LlamaRetriever(BaseRetriever):
 
         query_cmd = Cmd.create("query_vector")
         query_cmd.set_property_string("collection_name", self.collection_name)
-        query_cmd.set_property_int("top_k", 3)  # TODO: configable
+        query_cmd.set_property_int("top_k", 3)
         query_cmd.set_property_from_json("embedding", json.dumps(embedding))
         logger.info(
-            "LlamaRetriever send_cmd, collection_name: {}, embedding len: {}".format(
-                self.collection_name, len(embedding)
-            )
+            f"LlamaRetriever send_cmd, collection_name: {self.collection_name}, embedding len: {len(embedding)}"
         )
         self.ten.send_cmd(query_cmd, cmd_callback)
 

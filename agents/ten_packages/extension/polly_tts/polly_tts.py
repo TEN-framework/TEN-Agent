@@ -8,19 +8,23 @@ import boto3
 from botocore.exceptions import ClientError
 from contextlib import closing
 
+
 @dataclass
 class PollyTTSConfig(BaseConfig):
     region: str = "us-east-1"
     access_key: str = ""
     secret_key: str = ""
     engine: str = "generative"
-    voice: str = "Matthew" # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
+    voice: str = (
+        "Matthew"  # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
+    )
     sample_rate: int = 16000
-    lang_code: str = 'en-US'
+    lang_code: str = "en-US"
     bytes_per_sample: int = 2
     include_visemes: bool = False
     number_of_channels: int = 1
-    audio_format: str = 'pcm'
+    audio_format: str = "pcm"
+
 
 class PollyTTS:
     def __init__(self, config: PollyTTSConfig, ten_env: AsyncTenEnv) -> None:
@@ -30,12 +34,14 @@ class PollyTTS:
         ten_env.log_info("startinit polly tts")
         self.config = config
         if config.access_key and config.secret_key:
-            self.client = boto3.client(service_name='polly', 
-                                    region_name=config.region,
-                                    aws_access_key_id=config.access_key,
-                                    aws_secret_access_key=config.secret_key)
+            self.client = boto3.client(
+                service_name="polly",
+                region_name=config.region,
+                aws_access_key_id=config.access_key,
+                aws_secret_access_key=config.secret_key,
+            )
         else:
-            self.client = boto3.client(service_name='polly', region_name=config.region)
+            self.client = boto3.client(service_name="polly", region_name=config.region)
 
         self.voice_metadata = None
         self.frame_size = int(
@@ -81,14 +87,16 @@ class PollyTTS:
         else:
             return audio_stream, visemes
 
-    async def text_to_speech_stream(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
+    async def text_to_speech_stream(
+        self, ten_env: AsyncTenEnv, text: str
+    ) -> AsyncIterator[bytes]:
         inputText = text
         if len(inputText) == 0:
-             ten_env.log_warning("async_polly_handler: empty input detected.")
+            ten_env.log_warning("async_polly_handler: empty input detected.")
         try:
-            audio_stream, visemes = self._synthesize(inputText, ten_env)
+            audio_stream, _ = self._synthesize(inputText, ten_env)
             with closing(audio_stream) as stream:
-                 for chunk in stream.iter_chunks(chunk_size=self.frame_size):
-                     yield chunk
-        except Exception as e:
+                for chunk in stream.iter_chunks(chunk_size=self.frame_size):
+                    yield chunk
+        except Exception:
             ten_env.log_error(traceback.format_exc())

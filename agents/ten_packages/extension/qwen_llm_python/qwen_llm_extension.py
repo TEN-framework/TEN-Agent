@@ -26,6 +26,7 @@ from .log import logger
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
 
+
 class QWenLLMExtension(Extension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -105,9 +106,7 @@ class QWenLLMExtension(Extension):
             if curr_ttfs is None:
                 curr_ttfs = datetime.now() - start_time
                 logger.info(
-                    "TTFS {}ms, sentence {} end_of_segment {}".format(
-                        int(curr_ttfs.total_seconds() * 1000), text, end_of_segment
-                    )
+                    f"TTFS {int(curr_ttfs.total_seconds() * 1000)}ms, sentence {text} end_of_segment {end_of_segment}"
                 )
 
             cmd_result = CmdResult.create(StatusCode.OK)
@@ -116,7 +115,7 @@ class QWenLLMExtension(Extension):
                 cmd_result.set_is_final(True)  # end of streaming return
             else:
                 cmd_result.set_is_final(False)  # keep streaming return
-            logger.info("call_chat cmd return_result {}".format(cmd_result.to_json()))
+            logger.info(f"call_chat cmd return_result {cmd_result.to_json()}")
             ten.return_result(cmd_result, cmd)
 
         messages_str = cmd.get_property_string("messages")
@@ -124,7 +123,7 @@ class QWenLLMExtension(Extension):
         stream = False
         try:
             stream = cmd.get_property_bool("stream")
-        except Exception as e:
+        except Exception:
             logger.warning("stream property not found, default to False")
 
         if stream:
@@ -134,7 +133,7 @@ class QWenLLMExtension(Extension):
             callback(total, True)  # callback once until full answer returned
 
     def stream_chat(self, ts: datetime.time, messages: List[Any], callback):
-        logger.info("before stream_chat call {} {}".format(messages, ts))
+        logger.info(f"before stream_chat call {messages} {ts}")
 
         if self.need_interrupt(ts):
             logger.warning("out of date, %s, %s", self.get_outdate_ts(), ts)
@@ -171,19 +170,14 @@ class QWenLLMExtension(Extension):
 
             else:
                 logger.warning(
-                    "request_id: {}, status_code: {}, error code: {}, error message: {}".format(
-                        response.request_id,
-                        response.status_code,
-                        response.code,
-                        response.message,
-                    )
+                    f"request_id: {response.request_id}, status_code: {response.status_code}, error code: {response.code}, error message: {response.message}"
                 )
                 break
 
         # always send end_of_segment
         if callback is not None:
             callback(partial, True)
-        logger.info("stream_chat full_answer {}".format(total))
+        logger.info(f"stream_chat full_answer {total}")
         return total
 
     def on_start(self, ten: TenEnv) -> None:
@@ -197,13 +191,16 @@ class QWenLLMExtension(Extension):
         if greeting:
             try:
                 output_data = Data.create("text_data")
-                output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting)
-                output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True)
+                output_data.set_property_string(
+                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting
+                )
+                output_data.set_property_bool(
+                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
+                )
                 ten.send_data(output_data)
                 logger.info(f"greeting [{greeting}] sent")
             except Exception as e:
                 logger.error(f"greeting [{greeting}] send failed, err: {e}")
-
 
         dashscope.api_key = self.api_key
         self.thread = threading.Thread(target=self.async_handle, args=[ten])
@@ -227,7 +224,7 @@ class QWenLLMExtension(Extension):
         while not self.queue.empty():
             self.queue.get()
 
-    def on_data(self, ten: TenEnv, data: Data) -> None:
+    def on_data(self, _: TenEnv, data: Data) -> None:
         logger.info("on_data")
         is_final = data.get_property_bool("is_final")
         if not is_final:
@@ -249,23 +246,23 @@ class QWenLLMExtension(Extension):
                 value = self.queue.get()
                 if value is None:
                     break
-                input, ts = value
+                chat_input, ts = value
                 if self.need_interrupt(ts):
                     continue
 
-                if isinstance(input, str):
-                    logger.info("fetched from queue {}".format(input))
-                    self.complete_with_history(ten, ts, input)
+                if isinstance(chat_input, str):
+                    logger.info(f"fetched from queue {chat_input}")
+                    self.complete_with_history(ten, ts, chat_input)
                 else:
-                    logger.info("fetched from queue {}".format(input.get_name()))
-                    self.call_chat(ten, ts, input)
+                    logger.info(f"fetched from queue {chat_input.get_name()}")
+                    self.call_chat(ten, ts, chat_input)
             except Exception as e:
                 logger.exception(e)
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         ts = datetime.now()
         cmd_name = cmd.get_name()
-        logger.info("on_cmd {}, {}".format(cmd_name, ts))
+        logger.info(f"on_cmd {cmd_name}, {ts}")
 
         if cmd_name == "flush":
             self.flush()
@@ -278,7 +275,7 @@ class QWenLLMExtension(Extension):
             self.queue.put((cmd, ts))
             return  # cmd_result will be returned once it's processed
         else:
-            logger.info("unknown cmd {}".format(cmd_name))
+            logger.info(f"unknown cmd {cmd_name}")
 
         cmd_result = CmdResult.create(StatusCode.OK)
         ten.return_result(cmd_result, cmd)

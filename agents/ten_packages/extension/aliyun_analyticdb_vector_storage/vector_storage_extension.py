@@ -13,7 +13,6 @@ from ten import (
     CmdResult,
 )
 
-from typing import List
 from .log import logger
 import threading
 from datetime import datetime
@@ -28,7 +27,7 @@ class AliPGDBExtension(Extension):
         self.access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
         self.region_id = os.environ.get("ADBPG_INSTANCE_REGION")
         self.dbinstance_id = os.environ.get("ADBPG_INSTANCE_ID")
-        self.endpoint = f"gpdb.aliyuncs.com"
+        self.endpoint = "gpdb.aliyuncs.com"
         self.model = None
         self.account = os.environ.get("ADBPG_ACCOUNT")
         self.account_password = os.environ.get("ADBPG_ACCOUNT_PASSWORD")
@@ -45,7 +44,7 @@ class AliPGDBExtension(Extension):
         self.stopEvent.set()
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info(f"on_start")
+        logger.info("on_start")
         self.access_key_id = self.get_property_string(
             ten, "ALIBABA_CLOUD_ACCESS_KEY_ID", self.access_key_id
         )
@@ -135,7 +134,7 @@ class AliPGDBExtension(Extension):
                 )
             else:
                 ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
-        except Exception as e:
+        except Exception:
             ten.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     async def async_create_collection(self, ten: TenEnv, cmd: Cmd):
@@ -173,13 +172,7 @@ class AliPGDBExtension(Extension):
             collection, self.namespace, self.namespace_password, rows
         )
         logger.info(
-            "upsert_vector finished for file {}, collection {}, rows len {}, err {}, cost {}ms".format(
-                file,
-                collection,
-                len(rows),
-                err,
-                int((datetime.now() - start_time).total_seconds() * 1000),
-            )
+            f"upsert_vector finished for file {file}, collection {collection}, rows len {len(rows)}, err {err}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
         if err is None:
             ten.return_result(CmdResult.create(StatusCode.OK), cmd)
@@ -196,12 +189,7 @@ class AliPGDBExtension(Extension):
             collection, self.namespace, self.namespace_password, vector, top_k=top_k
         )
         logger.info(
-            "query_vector finished for collection {}, embedding len {}, err {}, cost {}ms".format(
-                collection,
-                len(embedding),
-                error,
-                int((datetime.now() - start_time).total_seconds() * 1000),
-            )
+            f"query_vector finished for collection {collection}, embedding len {len(embedding)}, err {error}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
 
         if error:
@@ -214,6 +202,7 @@ class AliPGDBExtension(Extension):
 
     async def async_delete_collection(self, ten: TenEnv, cmd: Cmd):
         collection = cmd.get_property_string("collection_name")
+        # pylint: disable=too-many-function-args
         err = await self.model.delete_collection_async(
             self.account, self.account_password, self.namespace, collection
         )

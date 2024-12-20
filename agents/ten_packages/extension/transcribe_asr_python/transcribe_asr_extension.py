@@ -73,7 +73,7 @@ class TranscribeAsrExtension(Extension):
         except Exception as e:
             logger.exception(f"Error putting frame in queue: {e}")
 
-    def on_audio_frame(self, ten: TenEnv, frame: AudioFrame) -> None:
+    def on_audio_frame(self, _: TenEnv, frame: AudioFrame) -> None:
         self.put_pcm_frame(pcm_frame=frame)
 
     def on_stop(self, ten: TenEnv) -> None:
@@ -91,10 +91,10 @@ class TranscribeAsrExtension(Extension):
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         logger.info("TranscribeAsrExtension on_cmd")
         cmd_json = cmd.to_json()
-        logger.info("TranscribeAsrExtension on_cmd json: " + cmd_json)
+        logger.info(f"TranscribeAsrExtension on_cmd json: {cmd_json}")
 
         cmdName = cmd.get_name()
-        logger.info("got cmd %s" % cmdName)
+        logger.info(f"got cmd {cmdName}")
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")

@@ -16,9 +16,12 @@ class FashionAIClient:
         self.cancelled = False
 
     async def connect(self):
+        # pylint: disable=protected-access
         ssl_context = ssl._create_unverified_context()
         self.websocket = await websockets.connect(self.uri, ssl=ssl_context)
-        asyncio.create_task(self.listen())  # Start listening immediately after connection
+        asyncio.create_task(
+            self.listen()
+        )  # Start listening immediately after connection
 
     async def listen(self):
         """Continuously listen for incoming messages."""
@@ -33,24 +36,24 @@ class FashionAIClient:
 
     async def stream_start(self, app_id, channel, stream_id):
         await self.send_message(
-                {
-                    "request_id": str(uuid.uuid4()),
-                    "service_id": self.service_id,
-                    "token": app_id,
-                    "channel_id": channel,
-                    "user_id": stream_id,
-                    "signal": "STREAM_START",
-                }
-            )
-        
+            {
+                "request_id": str(uuid.uuid4()),
+                "service_id": self.service_id,
+                "token": app_id,
+                "channel_id": channel,
+                "user_id": stream_id,
+                "signal": "STREAM_START",
+            }
+        )
+
     async def stream_stop(self):
         await self.send_message(
-                {
-                    "request_id": str(uuid.uuid4()),
-                    "service_id": self.service_id,
-                    "signal": "STREAM_STOP",
-                }
-            )
+            {
+                "request_id": str(uuid.uuid4()),
+                "service_id": self.service_id,
+                "signal": "STREAM_STOP",
+            }
+        )
 
     async def render_start(self):
         await self.send_message(
@@ -66,7 +69,7 @@ class FashionAIClient:
         if self.cancelled:
             await self.render_start()
         await self.send_message(
-           {
+            {
                 "request_id": str(uuid.uuid4()),
                 "service_id": self.service_id,
                 "signal": "RENDER_CONTENT",
@@ -76,13 +79,12 @@ class FashionAIClient:
 
     async def send_interrupt(self):
         await self.send_message(
-           {
+            {
                 "service_id": self.service_id,
                 "signal": "RENDER_CANCEL",
             }
         )
         self.cancelled = True
-
 
     async def send_message(self, message):
         if self.websocket is not None:

@@ -7,10 +7,8 @@ import json
 from ten import (
     AudioFrame,
     VideoFrame,
-    AsyncExtension,
     AsyncTenEnv,
     Cmd,
-    StatusCode,
     CmdResult,
     Data,
 )
@@ -20,7 +18,13 @@ from base64 import b64encode
 
 from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
+from ten_ai_base.types import (
+    LLMChatCompletionUserMessageParam,
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResult,
+)
+
 
 def rgb2base64jpeg(rgb_data, width, height):
     # Convert the RGB image to a PIL Image
@@ -79,6 +83,7 @@ def resize_image_keep_aspect(image, max_size=512):
 
     return resized_image
 
+
 class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
     image_data = None
     image_width = 0
@@ -95,6 +100,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_stop")
 
         # TODO: clean up resources
+
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
 
@@ -108,17 +114,15 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
         data_name = data.get_name()
         ten_env.log_debug("on_data name {}".format(data_name))
 
-        # TODO: process data
-        pass
-
-    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         audio_frame_name = audio_frame.get_name()
         ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
 
-        # TODO: process audio frame
-        pass
-
-    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(
+        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
+    ) -> None:
         video_frame_name = video_frame.get_name()
         ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
 
@@ -142,41 +146,34 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
             ),
         ]
 
-    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(
+        self, ten_env: AsyncTenEnv, name: str, args: dict
+    ) -> LLMToolResult:
         if name == "get_vision_chat_completion":
             if self.image_data is None:
-                raise Exception("No image data available")
+                raise ValueError("No image data available")
 
             if "query" not in args:
-                raise Exception("Failed to get property")
+                raise ValueError("Failed to get property")
 
             query = args["query"]
 
-            base64_image = rgb2base64jpeg(self.image_data, self.image_width, self.image_height)
+            base64_image = rgb2base64jpeg(
+                self.image_data, self.image_width, self.image_height
+            )
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
-            message: LLMChatCompletionUserMessageParam = LLMChatCompletionUserMessageParam(
-                role="user",
-                content=[
-                {
-                    "type": "text",
-                    "text": query
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": base64_image
-                    }
-                }
-            ]
+            message: LLMChatCompletionUserMessageParam = (
+                LLMChatCompletionUserMessageParam(
+                    role="user",
+                    content=[
+                        {"type": "text", "text": query},
+                        {"type": "image_url", "image_url": {"url": base64_image}},
+                    ],
+                )
             )
-            cmd.set_property_from_json("arguments", json.dumps({"messages":[message]}))
+            cmd.set_property_from_json("arguments", json.dumps({"messages": [message]}))
             ten_env.log_info("send_cmd {}".format(message))
             cmd_result: CmdResult = await ten_env.send_cmd(cmd)
             result = cmd_result.get_property_to_json("response")
-            return {
-                "content": [{
-                    "type": "text",
-                    "text": result
-                }]
-            }
+            return {"content": [{"type": "text", "text": result}]}

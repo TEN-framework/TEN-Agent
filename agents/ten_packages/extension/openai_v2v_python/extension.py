@@ -823,3 +823,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 ),
             )
         self.ten_env.send_data(data)
+
+    async def on_call_chat_completion(self, async_ten_env, **kargs):
+        raise NotImplementedError
+
+    async def on_data_chat_completion(self, async_ten_env, **kargs):
+        raise NotImplementedError

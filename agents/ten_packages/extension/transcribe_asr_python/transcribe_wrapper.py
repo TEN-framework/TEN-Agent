@@ -1,21 +1,22 @@
-from typing import Union
 import asyncio
 
-from ten import (
-    TenEnv,
-    Data
-)
+from ten import TenEnv, Data
 
 from amazon_transcribe.auth import StaticCredentialResolver
 from amazon_transcribe.client import TranscribeStreamingClient
 from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.model import TranscriptEvent, TranscriptResultStream, StartStreamTranscriptionEventStream
+from amazon_transcribe.model import (
+    TranscriptEvent,
+    TranscriptResultStream,
+    StartStreamTranscriptionEventStream,
+)
 
 from .log import logger
 from .transcribe_config import TranscribeConfig
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
+
 
 def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool):
     stable_data = Data.create("text_data")
@@ -24,29 +25,37 @@ def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool):
     ten.send_data(stable_data)
 
 
-class AsyncTranscribeWrapper():
-    def __init__(self, config: TranscribeConfig, queue: asyncio.Queue, ten:TenEnv, loop: asyncio.BaseEventLoop):
+class AsyncTranscribeWrapper:
+    def __init__(
+        self,
+        config: TranscribeConfig,
+        queue: asyncio.Queue,
+        ten: TenEnv,
+        loop: asyncio.BaseEventLoop,
+    ):
         self.queue = queue
         self.ten = ten
         self.stopped = False
         self.config = config
         self.loop = loop
+        self.stream = None
+        self.handler = None
+        self.event_handler_task = None
 
         if config.access_key and config.secret_key:
             logger.info(f"init trascribe client with access key: {config.access_key}")
             self.transcribe_client = TranscribeStreamingClient(
                 region=config.region,
                 credential_resolver=StaticCredentialResolver(
-                    access_key_id=config.access_key,
-                    secret_access_key=config.secret_key
-                )
+                    access_key_id=config.access_key, secret_access_key=config.secret_key
+                ),
             )
         else:
-            logger.info(f"init trascribe client without access key, using default credentials provider chain.")
-
-            self.transcribe_client = TranscribeStreamingClient(
-                region=config.region
+            logger.info(
+                "init trascribe client without access key, using default credentials provider chain."
             )
+
+            self.transcribe_client = TranscribeStreamingClient(region=config.region)
 
         asyncio.set_event_loop(self.loop)
         self.reset_stream()
@@ -102,7 +111,9 @@ class AsyncTranscribeWrapper():
             except asyncio.TimeoutError:
                 if self.stream:
                     await self.cleanup()
-                    logger.debug("send_frame: no data for 10s, will close current stream and create a new one when receving new frame.")
+                    logger.debug(
+                        "send_frame: no data for 10s, will close current stream and create a new one when receving new frame."
+                    )
                 else:
                     logger.debug("send_frame: waiting for pcm frame.")
             except IOError as e:

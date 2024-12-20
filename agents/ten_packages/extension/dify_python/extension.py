@@ -170,6 +170,12 @@ class DifyExtension(AsyncLLMBaseExtension):
     ) -> None:
         pass
 
+    async def on_call_chat_completion(self, async_ten_env, **kargs):
+        raise NotImplementedError
+
+    async def on_tools_update(self, async_ten_env, tool):
+        raise NotImplementedError
+
     async def on_data_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
     ) -> None:

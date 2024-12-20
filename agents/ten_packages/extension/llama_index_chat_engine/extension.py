@@ -44,12 +44,10 @@ class LlamaIndexExtension(Extension):
             output_data.set_property_string("text", text)
             output_data.set_property_bool("end_of_segment", end_of_segment)
             ten.send_data(output_data)
-            logger.info("text [{}] end_of_segment {} sent".format(text, end_of_segment))
+            logger.info(f"text [{text}] end_of_segment {end_of_segment} sent")
         except Exception as err:
             logger.info(
-                "text [{}] end_of_segment {} send failed, err {}".format(
-                    text, end_of_segment, err
-                )
+                f"text [{text}] end_of_segment {end_of_segment} send failed, err {err}"
             )
 
     def on_start(self, ten: TenEnv) -> None:
@@ -76,6 +74,7 @@ class LlamaIndexExtension(Extension):
         # enable chat memory
         from llama_index.core.storage.chat_store import SimpleChatStore
         from llama_index.core.memory import ChatMemoryBuffer
+
         self.chat_memory = ChatMemoryBuffer.from_defaults(
             token_limit=self.chat_memory_token_limit,
             chat_store=SimpleChatStore(),
@@ -103,23 +102,19 @@ class LlamaIndexExtension(Extension):
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
 
         cmd_name = cmd.get_name()
-        logger.info("on_cmd {}".format(cmd_name))
+        logger.info("on_cmd {cmd_name}")
         if cmd_name == "file_chunked":
             coll = cmd.get_property_string("collection")
 
             # only update selected collection if empty
             if len(self.collection_name) == 0:
                 logger.info(
-                    "collection for querying has been updated from {} to {}".format(
-                        self.collection_name, coll
-                    )
+                    f"collection for querying has been updated from {self.collection_name} to {coll}"
                 )
                 self.collection_name = coll
             else:
                 logger.info(
-                    "new collection {} incoming but won't change current collection_name {}".format(
-                        coll, self.collection_name
-                    )
+                    f"new collection {coll} incoming but won't change current collection_name {self.collection_name}"
                 )
 
             # notify user
@@ -136,9 +131,7 @@ class LlamaIndexExtension(Extension):
         elif cmd_name == "update_querying_collection":
             coll = cmd.get_property_string("collection")
             logger.info(
-                "collection for querying has been updated from {} to {}".format(
-                    self.collection_name, coll
-                )
+                f"collection for querying has been updated from {self.collection_name} to {coll}"
             )
             self.collection_name = coll
 
@@ -161,7 +154,7 @@ class LlamaIndexExtension(Extension):
         cmd_result.set_property_string("detail", "ok")
         ten.return_result(cmd_result, cmd)
 
-    def on_data(self, ten: TenEnv, data: Data) -> None:
+    def on_data(self, _: TenEnv, data: Data) -> None:
         is_final = data.get_property_bool("is_final")
         if not is_final:
             logger.info("on_data ignore non final")
@@ -188,9 +181,7 @@ class LlamaIndexExtension(Extension):
 
                 if ts < self.get_outdated_ts():
                     logger.info(
-                        "text [{}] ts [{}] task_type [{}] dropped due to outdated".format(
-                            input_text, ts, task_type
-                        )
+                        f"text [{input_text}] ts [{ts}] task_type [{task_type}] dropped due to outdated"
                     )
                     continue
 
@@ -209,6 +200,7 @@ class LlamaIndexExtension(Extension):
                 chat_engine = None
                 if len(self.collection_name) > 0:
                     from llama_index.core.chat_engine import ContextChatEngine
+
                     chat_engine = ContextChatEngine.from_defaults(
                         llm=LlamaLLM(ten=ten),
                         retriever=LlamaRetriever(ten=ten, coll=self.collection_name),
@@ -232,6 +224,7 @@ class LlamaIndexExtension(Extension):
                     )
                 else:
                     from llama_index.core.chat_engine import SimpleChatEngine
+
                     chat_engine = SimpleChatEngine.from_defaults(
                         llm=LlamaLLM(ten=ten),
                         system_prompt=(

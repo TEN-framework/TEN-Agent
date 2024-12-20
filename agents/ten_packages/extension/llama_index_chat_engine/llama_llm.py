@@ -47,7 +47,6 @@ class LlamaLLM(CustomLLM):
     @property
     def metadata(self) -> LLMMetadata:
         return LLMMetadata(
-            # TODO: fix metadata
             context_window=1024,
             num_output=512,
             model_name="llama_llm",
@@ -73,11 +72,7 @@ class LlamaLLM(CustomLLM):
         cmd = Cmd.create("call_chat")
         cmd.set_property_string("messages", messages_str)
         cmd.set_property_bool("stream", False)
-        logger.info(
-            "LlamaLLM chat send_cmd {}, messages {}".format(
-                cmd.get_name(), messages_str
-            )
-        )
+        logger.info(f"LlamaLLM chat send_cmd {cmd.get_name()}, messages {messages_str}")
 
         self.ten.send_cmd(cmd, callback)
         wait_event.wait()
@@ -115,12 +110,12 @@ class LlamaLLM(CustomLLM):
 
             status = result.get_status_code()
             if status != StatusCode.OK:
-                logger.warn("LlamaLLM stream_chat callback status {}".format(status))
+                logger.warning(f"LlamaLLM stream_chat callback status {status}")
                 resp_queue.put(None)
                 return
 
             cur_tokens = result.get_property_string("text")
-            logger.debug("LlamaLLM stream_chat callback text [{}]".format(cur_tokens))
+            logger.debug(f"LlamaLLM stream_chat callback text [{cur_tokens}]")
             resp_queue.put(cur_tokens)
             if result.get_is_final():
                 resp_queue.put(None)
@@ -131,9 +126,7 @@ class LlamaLLM(CustomLLM):
         cmd.set_property_string("messages", messages_str)
         cmd.set_property_bool("stream", True)
         logger.info(
-            "LlamaLLM stream_chat send_cmd {}, messages {}".format(
-                cmd.get_name(), messages_str
-            )
+            f"LlamaLLM stream_chat send_cmd {cmd.get_name()}, messages {messages_str}"
         )
         self.ten.send_cmd(cmd, callback)
         return gen()

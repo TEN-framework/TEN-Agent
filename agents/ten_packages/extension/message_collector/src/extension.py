@@ -43,17 +43,19 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
         raise ValueError("msg_id cannot exceed 36 characters.")
 
     # Convert text to bytearray
-    byte_array = bytearray(text, 'utf-8')
+    byte_array = bytearray(text, "utf-8")
 
     # Encode the bytearray into base64
-    base64_encoded = base64.b64encode(byte_array).decode('utf-8')
+    base64_encoded = base64.b64encode(byte_array).decode("utf-8")
 
     # Initialize list to hold the final chunks
     chunks = []
 
     # We'll split the base64 string dynamically based on the final byte size
     part_index = 0
-    total_parts = None  # We'll calculate total parts once we know how many chunks we create
+    total_parts = (
+        None  # We'll calculate total parts once we know how many chunks we create
+    )
 
     # Process the base64-encoded content in chunks
     current_position = 0
@@ -68,14 +70,15 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
         count = 0
         while True:
             # Create the content part of the chunk
-            content_chunk = base64_encoded[current_position:
-                                           current_position + estimated_chunk_size]
+            content_chunk = base64_encoded[
+                current_position : current_position + estimated_chunk_size
+            ]
 
             # Format the chunk
             formatted_chunk = f"{msg_id}|{part_index}|{total_parts if total_parts else '???'}|{content_chunk}"
 
             # Check if the byte length of the formatted chunk exceeds the max allowed size
-            if len(bytearray(formatted_chunk, 'utf-8')) <= MAX_CHUNK_SIZE_BYTES:
+            if len(bytearray(formatted_chunk, "utf-8")) <= MAX_CHUNK_SIZE_BYTES:
                 break
             else:
                 # Reduce the estimated chunk size if the formatted chunk is too large
@@ -91,16 +94,16 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
 
     # Now that we know the total number of parts, update the chunks with correct total_parts
     total_parts = len(chunks)
-    updated_chunks = [
-        chunk.replace("???", str(total_parts)) for chunk in chunks
-    ]
+    updated_chunks = [chunk.replace("???", str(total_parts)) for chunk in chunks]
 
     return updated_chunks
 
 
 class MessageCollectorExtension(Extension):
-    # Create the queue for message processing
-    queue = asyncio.Queue()
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.queue = asyncio.Queue()
+        self.loop = None
 
     def on_init(self, ten_env: TenEnv) -> None:
         ten_env.log_info("on_init")
@@ -115,6 +118,7 @@ class MessageCollectorExtension(Extension):
         def start_loop():
             asyncio.set_event_loop(self.loop)
             self.loop.run_forever()
+
         threading.Thread(target=start_loop, args=[]).start()
 
         self.loop.create_task(self._process_queue(ten_env))
@@ -165,17 +169,16 @@ class MessageCollectorExtension(Extension):
 
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
-        except Exception as e:
+        except Exception:
             pass
 
         try:
             stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
-        except Exception as e:
+        except Exception:
             pass
 
         try:
-            end_of_segment = data.get_property_bool(
-                TEXT_DATA_END_OF_SEGMENT_FIELD)
+            end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
         except Exception as e:
             ten_env.log_warn(
                 f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
@@ -212,11 +215,9 @@ class MessageCollectorExtension(Extension):
         }
 
         try:
-            chunks = _text_to_base64_chunks(
-                json.dumps(base_msg_data), message_id)
+            chunks = _text_to_base64_chunks(json.dumps(base_msg_data), message_id)
             for chunk in chunks:
-                asyncio.run_coroutine_threadsafe(
-                    self._queue_message(chunk), self.loop)
+                asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
 
         except Exception as e:
             ten_env.log_warn(f"on_data new_data error: {e}")

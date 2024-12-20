@@ -337,6 +337,7 @@ class Model:
             logger.error(f"Error: {e}")
             return e
 
+    # pylint: disable=redefined-builtin
     def query_collection_data(
         self,
         collection,
@@ -384,6 +385,7 @@ class Model:
             logger.error(f"Error: {e}")
             return None, e
 
+    # pylint: disable=redefined-builtin
     async def query_collection_data_async(
         self,
         collection,
@@ -443,7 +445,9 @@ class Model:
             json_str = json.dumps(results)
             return json_str
         except Exception as e:
-            logger.error(f"parse collection data failed, error: {e}, data: {body.to_map()}")
+            logger.error(
+                f"parse collection data failed, error: {e}, data: {body.to_map()}"
+            )
             return "[]"
 
     def list_collections(self, namespace, namespace_password) -> Tuple[List[str], Any]:

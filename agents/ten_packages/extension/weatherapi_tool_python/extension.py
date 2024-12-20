@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from ten import Cmd
 
 from ten.async_ten_env import AsyncTenEnv
-from ten_ai_base.helper import get_properties_string
 from ten_ai_base import BaseConfig
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
@@ -35,10 +34,10 @@ CURRENT_TOOL_DESCRIPTION = "Determine current weather in user's location."
 CURRENT_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-            "location": {
-                "type": "string",
-                "description": "The city and state (use only English) e.g. San Francisco, CA"
-            }
+        "location": {
+            "type": "string",
+            "description": "The city and state (use only English) e.g. San Francisco, CA",
+        }
     },
     "required": ["location"],
 }
@@ -49,14 +48,14 @@ HISTORY_TOOL_DESCRIPTION = "Determine weather within past 7 days in user's locat
 HISTORY_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-            "location": {
-                "type": "string",
-                "description": "The city and state (use only English) e.g. San Francisco, CA"
-            },
+        "location": {
+            "type": "string",
+            "description": "The city and state (use only English) e.g. San Francisco, CA",
+        },
         "datetime": {
-                "type": "string",
-                "description": "The datetime user is referring in date format e.g. 2024-10-09"
-        }
+            "type": "string",
+            "description": "The datetime user is referring in date format e.g. 2024-10-09",
+        },
     },
     "required": ["location", "datetime"],
 }
@@ -67,26 +66,28 @@ FORECAST_TOOL_DESCRIPTION = "Determine weather in next 3 days in user's location
 FORECAST_TOOL_PARAMETERS = {
     "type": "object",
     "properties": {
-            "location": {
-                "type": "string",
-                "description": "The city and state (use only English) e.g. San Francisco, CA"
-            }
+        "location": {
+            "type": "string",
+            "description": "The city and state (use only English) e.g. San Francisco, CA",
+        }
     },
     "required": ["location"],
 }
 
 PROPERTY_API_KEY = "api_key"  # Required
 
+
 @dataclass
 class WeatherToolConfig(BaseConfig):
     api_key: str = ""
+
 
 class WeatherToolExtension(AsyncLLMToolBaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.session = None
         self.ten_env = None
-        self.config : WeatherToolConfig = None
+        self.config: WeatherToolConfig = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -162,10 +163,12 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
                         required=True,
                     ),
                 ],
-            )
+            ),
         ]
 
-    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(
+        self, ten_env: AsyncTenEnv, name: str, args: dict
+    ) -> LLMToolResult:
         ten_env.log_info(f"run_tool name: {name}, args: {args}")
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)
@@ -182,7 +185,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
 
     async def _get_current_weather(self, args: dict) -> Any:
         if "location" not in args:
-            raise Exception("Failed to get property")
+            raise ValueError("Failed to get property")
 
         try:
             location = args["location"]
@@ -202,7 +205,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
 
     async def _get_past_weather(self, args: dict) -> Any:
         if "location" not in args or "datetime" not in args:
-            raise Exception("Failed to get property")
+            raise ValueError("Failed to get property")
 
         location = args["location"]
         datetime = args["datetime"]
@@ -212,14 +215,18 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
             result = await response.json()
 
             # Remove all hourly data
-            if "forecast" in result and "forecastday" in result["forecast"] and result["forecast"]["forecastday"]:
+            if (
+                "forecast" in result
+                and "forecastday" in result["forecast"]
+                and result["forecast"]["forecastday"]
+            ):
                 result["forecast"]["forecastday"][0].pop("hour", None)
 
             return result
 
     async def _get_future_weather(self, args: dict) -> Any:
         if "location" not in args:
-            raise Exception("Failed to get property")
+            raise ValueError("Failed to get property")
 
         location = args["location"]
         url = f"http://api.weatherapi.com/v1/forecast.json?key={self.config.api_key}&q={location}&days=3&aqi=no&alerts=no"
