@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN task clean && pip install pylint && task lint && task use AGENT=agents/examples/demo && \
+RUN task clean && task use AGENT=agents/examples/demo && pip install pylint && task lint && \
     cd agents && ./scripts/package.sh
 
 FROM ubuntu:22.04
