@@ -28,8 +28,29 @@ env:
   DEMO_IMAGE_NAME: ten_agent_demo
 
 jobs:
+  lint:
+    name: Lint Code with Taskflow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh
+          sudo mv ./task /usr/local/bin/
+
+      - name: Run Lint with Taskflow
+        run: task lint
   build:
     runs-on: ubuntu-latest
+    needs: lint  # Runs only if lint succeeds
     steps:
       - name: Checkout
         uses: actions/checkout@v4
