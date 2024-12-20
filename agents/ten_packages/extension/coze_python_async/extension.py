@@ -295,9 +295,7 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
             if event == ChatEventType.DONE:
                 raise StopAsyncIteration
             elif event == ChatEventType.ERROR:
-                raise RuntimeError(
-                    f"error event: {event_data}"
-                )  # TODO: error struct format
+                raise RuntimeError(f"error event: {event_data}")
             elif event in [
                 ChatEventType.CONVERSATION_MESSAGE_DELTA,
                 ChatEventType.CONVERSATION_MESSAGE_COMPLETED,

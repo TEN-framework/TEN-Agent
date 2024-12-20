@@ -4,13 +4,12 @@
 # See the LICENSE file for more information.
 #
 import traceback
-
-from ten_ai_base.helper import PCMWriter
 from .elevenlabs_tts import ElevenLabsTTS, ElevenLabsTTSConfig
 from ten import (
     AsyncTenEnv,
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
+
 
 class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
     def __init__(self, name: str) -> None:
@@ -32,7 +31,7 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
                 raise ValueError("api_key is required")
 
             self.client = ElevenLabsTTS(self.config)
-        except Exception as err:
+        except Exception:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -43,7 +42,9 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+    async def on_request_tts(
+        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+    ) -> None:
         audio_stream = await self.client.text_to_speech_stream(input_text)
         ten_env.log_info(f"on_request_tts: {input_text}")
         async for audio_data in audio_stream:

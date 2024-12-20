@@ -90,7 +90,7 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
 
-        # TODO: clean up resources
+        # clean up resources
         if self.session and not self.session.closed:
             await self.session.close()
             self.session = None  # Ensure it can't be reused accidentally

@@ -7,7 +7,7 @@
 #
 
 from dataclasses import dataclass
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator
 from elevenlabs import Voice, VoiceSettings
 from elevenlabs.client import AsyncElevenLabs
 
@@ -26,10 +26,13 @@ class ElevenLabsTTSConfig(BaseConfig):
     style: float = 0.0
     voice_id: str = "pNInz6obpgDQGcFmaJgB"
 
+
 class ElevenLabsTTS:
     def __init__(self, config: ElevenLabsTTSConfig) -> None:
         self.config = config
-        self.client = AsyncElevenLabs(api_key=config.api_key, timeout=config.request_timeout_seconds)
+        self.client = AsyncElevenLabs(
+            api_key=config.api_key, timeout=config.request_timeout_seconds
+        )
 
     def text_to_speech_stream(self, text: str) -> AsyncIterator[bytes]:
         return self.client.generate(

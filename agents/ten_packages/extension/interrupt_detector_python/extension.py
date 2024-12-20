@@ -20,6 +20,7 @@ CMD_NAME_FLUSH = "flush"
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"
 
+
 class InterruptDetectorExtension(Extension):
     def on_start(self, ten: TenEnv) -> None:
         ten.log_info("on_start")
@@ -64,7 +65,7 @@ class InterruptDetectorExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello", is_final: false}
         """
-        ten.log_info(f"on_data")
+        ten.log_info("on_data")
 
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)

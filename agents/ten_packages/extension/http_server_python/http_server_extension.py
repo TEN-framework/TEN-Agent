@@ -22,18 +22,18 @@ class HTTPHandler(BaseHTTPRequestHandler):
         if self.path == "/cmd":
             try:
                 content_length = int(self.headers["Content-Length"])
-                input = self.rfile.read(content_length).decode("utf-8")
-                logger.info("incoming request %s", input)
+                input_file = self.rfile.read(content_length).decode("utf-8")
+                logger.info("incoming request %s", input_file)
                 self.ten.send_cmd(
-                    Cmd.create_from_json(input),
+                    Cmd.create_from_json(input_file),
                     lambda ten, result: logger.info(
-                        "finish send_cmd from http server %s %s", input, result
+                        "finish send_cmd from http server %s %s", input_file, result
                     ),
                 )
                 self.send_response_only(200)
                 self.end_headers()
             except Exception as e:
-                logger.warning("failed to handle request, err {}".format(e))
+                logger.warning(f"failed to handle request, err {e}")
                 self.send_response_only(500)
                 self.end_headers()
         else:
@@ -54,11 +54,10 @@ class HTTPServerExtension(Extension):
     def on_start(self, ten: TenEnv):
         self.listen_addr = ten.get_property_string("listen_addr")
         self.listen_port = ten.get_property_int("listen_port")
-        """
-            white_list = ten.get_property_string("cmd_white_list")
-            if len(white_list) > 0:
-                self.cmd_white_list = white_list.split(",")
-        """
+
+        # white_list = ten.get_property_string("cmd_white_list")
+        # if len(white_list) > 0:
+        #     self.cmd_white_list = white_list.split(",")
 
         logger.info(
             "HTTPServerExtension on_start %s:%d, %s",
@@ -83,7 +82,7 @@ class HTTPServerExtension(Extension):
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd):
         cmd_json = cmd.to_json()
-        logger.info("on_cmd json: " + cmd_json)
+        logger.info(f"on_cmd json: {cmd_json}")
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "ok")
         ten.return_result(cmd_result, cmd)

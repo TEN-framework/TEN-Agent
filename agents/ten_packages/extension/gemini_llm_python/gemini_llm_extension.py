@@ -126,7 +126,7 @@ class GeminiLLMExtension(Extension):
             self.outdate_ts = get_micro_ts()
             cmd_out = Cmd.create(CMD_OUT_FLUSH)
             ten.send_cmd(cmd_out, None)
-            logger.info(f"GeminiLLMExtension on_cmd sent flush")
+            logger.info("GeminiLLMExtension on_cmd sent flush")
         else:
             logger.info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
@@ -146,7 +146,7 @@ class GeminiLLMExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello"}
         """
-        logger.info(f"GeminiLLMExtension on_data")
+        logger.info("GeminiLLMExtension on_data")
 
         # Assume 'data' is an object from which we can get properties
         try:
@@ -282,4 +282,4 @@ class GeminiLLMExtension(Extension):
             args=(start_time, input_text, self.memory),
         )
         thread.start()
-        logger.info(f"GeminiLLMExtension on_data end")
+        logger.info("GeminiLLMExtension on_data end")

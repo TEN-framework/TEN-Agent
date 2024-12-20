@@ -23,7 +23,6 @@ CMD_FILE_CHUNK = "file_chunk"
 UPSERT_VECTOR_CMD = "upsert_vector"
 FILE_CHUNKED_CMD = "file_chunked"
 
-# TODO: configable
 CHUNK_SIZE = 200
 CHUNK_OVERLAP = 20
 BATCH_SIZE = 5
@@ -76,11 +75,7 @@ class FileChunkerExtension(Extension):
             chunk_overlap=CHUNK_OVERLAP,
         )
         nodes = splitter.get_nodes_from_documents(documents)
-        logger.info(
-            "file {} pages count {}, chunking count {}".format(
-                path, len(documents), len(nodes)
-            )
-        )
+        logger.info(f"file {path} pages count {documents}, chunking count {nodes}")
         return nodes
 
     def create_collection(self, ten: TenEnv, collection_name: str, wait: bool):
@@ -97,22 +92,17 @@ class FileChunkerExtension(Extension):
 
     def embedding(self, ten: TenEnv, path: str, texts: List[str]):
         logger.info(
-            "generate embeddings for the file: {}, with batch size: {}".format(
-                path, len(texts)
-            )
+            f"generate embeddings for the file: {path}, with batch size: {len(texts)}"
         )
 
         cmd_out = Cmd.create("embed_batch")
         cmd_out.set_property_from_json("inputs", json.dumps(texts))
         ten.send_cmd(
-            cmd_out,
-            lambda ten, result: self.vector_store(
-                ten, path, texts, result
-            ),  # TODO: deal with error
+            cmd_out, lambda ten, result: self.vector_store(ten, path, texts, result)
         )
 
     def vector_store(self, ten: TenEnv, path: str, texts: List[str], result: CmdResult):
-        logger.info("vector store start for one splitting of the file {}".format(path))
+        logger.info(f"vector store start for one splitting of the file {path}")
         file_name = path.split("/")[-1]
         embed_output_json = result.get_property_string("embeddings")
         embed_output = json.loads(embed_output_json)
@@ -141,10 +131,7 @@ class FileChunkerExtension(Extension):
                 del self.counters[path]
                 del self.expected[path]
                 logger.info(
-                    "complete chunk for the file: {}, chunks_count {}".format(
-                        path,
-                        chunks_count,
-                    )
+                    f"complete chunk for the file: {path}, chunks_count {chunks_count}"
                 )
                 cmd_out = Cmd.create(FILE_CHUNKED_CMD)
                 cmd_out.set_property_string("path", path)
@@ -165,12 +152,12 @@ class FileChunkerExtension(Extension):
             collection = None
             try:
                 collection = cmd.get_property_string("collection")
-            except Exception as e:
-                logger.warning("missing collection property in cmd {}".format(cmd_name))
+            except Exception:
+                logger.warning(f"missing collection property in cmd {cmd_name}")
 
             self.queue.put((path, collection))  # make sure files are processed in order
         else:
-            logger.info("unknown cmd {}".format(cmd_name))
+            logger.info(f"unknown cmd {cmd_name}")
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "ok")
@@ -187,12 +174,12 @@ class FileChunkerExtension(Extension):
             start_time = datetime.now()
             if collection is None:
                 collection = self.generate_collection_name()
-                logger.info("collection {} generated".format(collection))
-            logger.info("start processing {}, collection {}".format(path, collection))
+                logger.info(f"collection {collection} generated")
+            logger.info(f"start processing {path}, collection {collection}")
 
             # create collection
             self.create_collection(ten, collection, True)
-            logger.info("collection {} created".format(collection))
+            logger.info(f"collection {collection} created")
 
             # split
             nodes = self.split(path)
@@ -211,11 +198,7 @@ class FileChunkerExtension(Extension):
             self.file_chunked_event.wait()
 
             logger.info(
-                "finished processing {}, collection {}, cost {}ms".format(
-                    path,
-                    collection,
-                    int((datetime.now() - start_time).total_seconds() * 1000),
-                )
+                f"finished processing {path}, collection {collection}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
             )
 
     def on_start(self, ten: TenEnv) -> None:
