@@ -1,14 +1,12 @@
 import asyncio
 from dataclasses import dataclass
-from typing import AsyncIterator
 
 from websocket import WebSocketConnectionClosedException
 
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 import dashscope
-from dashscope.api_entities.dashscope_response import SpeechSynthesisResponse
-from dashscope.audio.tts_v2 import *
+from dashscope.audio.tts_v2 import SpeechSynthesizer, AudioFormat, ResultCallback
 
 
 @dataclass
@@ -47,7 +45,9 @@ class AsyncIteratorCallback(ResultCallback):
 
     def on_data(self, data: bytes) -> None:
         if self.closed:
-            self.ten_env.log_warn(f"received data: {len(data)} bytes but connection was closed")
+            self.ten_env.log_warn(
+                f"received data: {len(data)} bytes but connection was closed"
+            )
             return
         self.ten_env.log_debug(f"received data: {len(data)} bytes")
         asyncio.run_coroutine_threadsafe(self.queue.put(data), self.loop)
@@ -60,10 +60,12 @@ class CosyTTS:
         self.queue = asyncio.Queue()
         dashscope.api_key = config.api_key
 
-    def _create_synthesizer(self, ten_env: AsyncTenEnv, callback: AsyncIteratorCallback):
+    def _create_synthesizer(
+        self, ten_env: AsyncTenEnv, callback: AsyncIteratorCallback
+    ):
         if self.synthesizer:
             self.synthesizer = None
-        
+
         ten_env.log_info("Creating new synthesizer")
         self.synthesizer = SpeechSynthesizer(
             model=self.config.model,

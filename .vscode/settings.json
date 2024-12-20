@@ -5,4 +5,8 @@
   ],
   "C_Cpp.intelliSenseEngine": "disabled",
   "editor.formatOnSave": true,
+  "editor.defaultFormatter": null,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
 }

@@ -13,7 +13,6 @@ import traceback
 import time
 from google import genai
 import numpy as np
-from datetime import datetime
 from typing import Iterable, cast
 
 import websockets
@@ -29,10 +28,10 @@ from ten import (
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.llm import AsyncLLMBaseExtension
-from dataclasses import dataclass, field
-from ten_ai_base import BaseConfig, ChatMemory, EVENT_MEMORY_EXPIRED, EVENT_MEMORY_APPENDED, LLMUsage, LLMCompletionTokensDetails, LLMPromptTokensDetails
+from dataclasses import dataclass
+from ten_ai_base import BaseConfig, ChatMemory, LLMUsage, LLMCompletionTokensDetails, LLMPromptTokensDetails
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult, LLMChatCompletionContentPartParam, TTSPcmOptions
-from google.genai.types import LiveServerMessage, LiveClientRealtimeInput, Blob, LiveConnectConfig, LiveConnectConfigDict, GenerationConfig, SpeechConfig, VoiceConfig, PrebuiltVoiceConfig, Content, Part, Tool, FunctionDeclaration, Schema, LiveClientToolResponse, FunctionCall, FunctionResponse
+from google.genai.types import LiveServerMessage, LiveConnectConfig, LiveConnectConfigDict, GenerationConfig, Content, Part, Tool, FunctionDeclaration, Schema, LiveClientToolResponse, FunctionCall, FunctionResponse
 from google.genai.live import AsyncSession
 from PIL import Image
 from io import BytesIO
@@ -163,6 +162,8 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
         self.video_task = None
         self.image_queue = asyncio.Queue()
         self.video_buff: str = ""
+        self.loop = None
+        self.ten_env = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -170,6 +171,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
+        self.ten_env = ten_env
         ten_env.log_debug("on_start")
 
         self.loop = asyncio.get_event_loop()
@@ -202,16 +204,15 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             traceback.print_exc()
             self.ten_env.log_error(f"Failed to init client {e}")
 
-        self.ten_env = ten_env
 
     async def _loop(self, ten_env: AsyncTenEnv) -> None:
         while not self.stopped:
             await asyncio.sleep(1)
             try:
                 config:LiveConnectConfig = self._get_session_config()
-                ten_env.log_info(f"Start listen")
+                ten_env.log_info("Start listen")
                 async with self.client.aio.live.connect(model=self.config.model, config=config) as session:
-                    ten_env.log_info(f"Connected")
+                    ten_env.log_info("Connected")
                     session = cast(AsyncSession, session)
                     self.session = session
                     self.connected = True
@@ -226,25 +227,25 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                 try:
                                     if response.server_content:
                                         if response.server_content.interrupted:
-                                            ten_env.log_info(f"Interrupted")
+                                            ten_env.log_info("Interrupted")
                                             await self._flush()
                                             continue
                                         elif not response.server_content.turn_complete and response.server_content.model_turn:
                                             for part in response.server_content.model_turn.parts:
                                                 self.send_audio_out(ten_env, part.inline_data.data, sample_rate=24000, bytes_per_sample=2, number_of_channels=1)
                                         elif response.server_content.turn_complete:
-                                            ten_env.log_info(f"Turn complete")
+                                            ten_env.log_info("Turn complete")
                                     elif response.setup_complete:
-                                        ten_env.log_info(f"Setup complete")
+                                        ten_env.log_info("Setup complete")
                                     elif response.tool_call:
                                         func_calls = response.tool_call.function_calls
                                         self.loop.create_task(self._handle_tool_call(func_calls))
                                 except Exception as e:
                                     traceback.print_exc()
-                                    ten_env.log_error(f"Failed to handle response")
+                                    ten_env.log_error("Failed to handle response")
                             
                             await self._flush()
-                            ten_env.log_info(f"Finish listen")
+                            ten_env.log_info("Finish listen")
                         except websockets.exceptions.ConnectionClosedOK:
                             ten_env.log_info("Connection closed")
                             break

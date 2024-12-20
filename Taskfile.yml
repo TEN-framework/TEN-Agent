@@ -7,6 +7,11 @@ tasks:
       - task: clean-agents
       - task: clean-server
 
+  lint:
+    desc: lint-agent
+    cmds:
+      - ./agents/scripts/pylint.sh
+
   build:
     desc: build
     cmds:

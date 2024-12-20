@@ -13,9 +13,21 @@ from typing import Iterable
 from ten.async_ten_env import AsyncTenEnv
 from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
-from ten_ai_base.helper import AsyncEventEmitter, get_properties_int, get_properties_string, get_properties_float, get_property_bool, get_property_int, get_property_string
+from ten_ai_base.helper import (
+    AsyncEventEmitter,
+    get_property_bool,
+    get_property_string,
+)
 from ten_ai_base.llm import AsyncLLMBaseExtension
-from ten_ai_base.types import LLMCallCompletionArgs, LLMChatCompletionContentPartParam, LLMChatCompletionUserMessageParam, LLMChatCompletionMessageParam, LLMDataCompletionArgs, LLMToolMetadata, LLMToolResult
+from ten_ai_base.types import (
+    LLMCallCompletionArgs,
+    LLMChatCompletionContentPartParam,
+    LLMChatCompletionUserMessageParam,
+    LLMChatCompletionMessageParam,
+    LLMDataCompletionArgs,
+    LLMToolMetadata,
+    LLMToolResult,
+)
 
 from .helper import parse_sentences
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
@@ -44,113 +56,115 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.config = None
         self.client = None
         self.sentence_fragment = ""
-        self.toolcall_future = None
+        self.tool_task_future = None
         self.users_count = 0
 
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_init")
-        await super().on_init(ten_env)
+    async def on_init(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_init")
+        await super().on_init(async_ten_env)
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_start")
-        await super().on_start(ten_env)
+    async def on_start(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_start")
+        await super().on_start(async_ten_env)
 
-        self.config = OpenAIChatGPTConfig.create(ten_env=ten_env)
-
+        self.config = OpenAIChatGPTConfig.create(ten_env=async_ten_env)
 
         # Mandatory properties
         if not self.config.api_key:
-            ten_env.log_info(f"API key is missing, exiting on_start")
+            async_ten_env.log_info("API key is missing, exiting on_start")
             return
 
         # Create instance
         try:
-            self.client = OpenAIChatGPT(ten_env, self.config)
-            ten_env.log_info(
-                f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}")
+            self.client = OpenAIChatGPT(async_ten_env, self.config)
+            async_ten_env.log_info(
+                f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}"
+            )
         except Exception as err:
-            ten_env.log_info(f"Failed to initialize OpenAIChatGPT: {err}")
+            async_ten_env.log_info(f"Failed to initialize OpenAIChatGPT: {err}")
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_stop")
-        await super().on_stop(ten_env)
+    async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_stop")
+        await super().on_stop(async_ten_env)
 
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("on_deinit")
-        await super().on_deinit(ten_env)
+    async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_deinit")
+        await super().on_deinit(async_ten_env)
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+    async def on_cmd(self, async_ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log_info(f"on_cmd name: {cmd_name}")
+        async_ten_env.log_info(f"on_cmd name: {cmd_name}")
 
         if cmd_name == CMD_IN_FLUSH:
-            await self.flush_input_items(ten_env)
-            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
-            ten_env.log_info("on_cmd sent flush")
+            await self.flush_input_items(async_ten_env)
+            await async_ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
+            async_ten_env.log_info("on_cmd sent flush")
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            ten_env.return_result(cmd_result, cmd)
+            async_ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
             if self.config.greeting and self.users_count == 1:
-                self.send_text_output(ten_env, self.config.greeting, True)
+                self.send_text_output(async_ten_env, self.config.greeting, True)
 
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            ten_env.return_result(cmd_result, cmd)
+            async_ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            ten_env.return_result(cmd_result, cmd)
+            async_ten_env.return_result(cmd_result, cmd)
         else:
-            await super().on_cmd(ten_env, cmd)
+            await super().on_cmd(async_ten_env, cmd)
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+    async def on_data(self, async_ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log_debug("on_data name {}".format(data_name))
+        async_ten_env.log_debug("on_data name {}".format(data_name))
 
         # Get the necessary properties
         is_final = get_property_bool(data, "is_final")
         input_text = get_property_string(data, "text")
 
         if not is_final:
-            ten_env.log_debug("ignore non-final input")
+            async_ten_env.log_debug("ignore non-final input")
             return
         if not input_text:
-            ten_env.log_warn("ignore empty text")
+            async_ten_env.log_warn("ignore empty text")
             return
 
-        ten_env.log_info(f"OnData input text: [{input_text}]")
+        async_ten_env.log_info(f"OnData input text: [{input_text}]")
 
         # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(
-            role="user", content=input_text)
+        message = LLMChatCompletionUserMessageParam(role="user", content=input_text)
         await self.queue_input_item(False, messages=[message])
 
-    async def on_tools_update(self, ten_env: TenEnv, tool: LLMToolMetadata) -> None:
-        return await super().on_tools_update(ten_env, tool)
+    async def on_tools_update(
+        self, async_ten_env: TenEnv, tool: LLMToolMetadata
+    ) -> None:
+        return await super().on_tools_update(async_ten_env, tool)
 
-    async def on_call_chat_completion(self, ten_env: TenEnv, **kargs: LLMCallCompletionArgs) -> any:
-        kmessages: LLMChatCompletionUserMessageParam = kargs.get(
-            "messages", [])
+    async def on_call_chat_completion(
+        self, async_ten_env: TenEnv, **kargs: LLMCallCompletionArgs
+    ) -> any:
+        kmessages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
 
-        ten_env.log_info(f"on_call_chat_completion: {kmessages}")
-        response = await self.client.get_chat_completions(
-            kmessages, None)
+        async_ten_env.log_info(f"on_call_chat_completion: {kmessages}")
+        response = await self.client.get_chat_completions(kmessages, None)
         return response.to_json()
 
-    async def on_data_chat_completion(self, ten_env: TenEnv, **kargs: LLMDataCompletionArgs) -> None:
+    async def on_data_chat_completion(
+        self, async_ten_env: TenEnv, **kargs: LLMDataCompletionArgs
+    ) -> None:
         """Run the chatflow asynchronously."""
-        kmessage: LLMChatCompletionUserMessageParam = kargs.get("messages", [])[
-            0]
+        kmessage: LLMChatCompletionUserMessageParam = kargs.get("messages", [])[0]
 
         if not kmessage:
-            ten_env.log_error("No message in data")
+            async_ten_env.log_error("No message in data")
             return
 
         message = self.message_to_dict(kmessage)
@@ -158,28 +172,39 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.memory_cache = []
         memory = self.memory
         try:
-            ten_env.log_info(f"for input text: [{message}] memory: {memory}")
+            async_ten_env.log_info(f"for input text: [{message}] memory: {memory}")
             tools = None
             no_tool = kargs.get("no_tool", False)
 
-            if not isinstance(message.get("content"), str) and message.get("role") == "user":
-                non_artifact_content = [item for item in message.get(
-                    "content", []) if item.get("type") == "text"]
-                non_artifact_message = {"role": message.get(
-                    "role"), "content": non_artifact_content}
-                self.memory_cache = self.memory_cache + \
-                    [non_artifact_message, {
-                        "role": "assistant", "content": ""}]
+            if (
+                not isinstance(message.get("content"), str)
+                and message.get("role") == "user"
+            ):
+                non_artifact_content = [
+                    item
+                    for item in message.get("content", [])
+                    if item.get("type") == "text"
+                ]
+                non_artifact_message = {
+                    "role": message.get("role"),
+                    "content": non_artifact_content,
+                }
+                self.memory_cache = self.memory_cache + [
+                    non_artifact_message,
+                    {"role": "assistant", "content": ""},
+                ]
             else:
-                self.memory_cache = self.memory_cache + \
-                    [message, {"role": "assistant", "content": ""}]
+                self.memory_cache = self.memory_cache + [
+                    message,
+                    {"role": "assistant", "content": ""},
+                ]
 
             tools = None
             if not no_tool and len(self.available_tools) > 0:
                 tools = []
                 for tool in self.available_tools:
                     tools.append(self._convert_tools_to_dict(tool))
-                    ten_env.log_info(f"tool: {tool}")
+                    async_ten_env.log_info(f"tool: {tool}")
 
             self.sentence_fragment = ""
 
@@ -191,49 +216,57 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
                 self.tool_task_future = asyncio.get_event_loop().create_future()
-                ten_env.log_info(f"tool_call: {tool_call}")
+                async_ten_env.log_info(f"tool_call: {tool_call}")
                 for tool in self.available_tools:
                     if tool_call["function"]["name"] == tool.name:
                         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
                         cmd.set_property_string("name", tool.name)
                         cmd.set_property_from_json(
-                            "arguments", tool_call["function"]["arguments"])
+                            "arguments", tool_call["function"]["arguments"]
+                        )
                         # cmd.set_property_from_json("arguments", json.dumps([]))
 
                         # Send the command and handle the result through the future
-                        result: CmdResult = await ten_env.send_cmd(cmd)
+                        result: CmdResult = await async_ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result: LLMToolResult = json.loads(
-                                result.get_property_to_json(CMD_PROPERTY_RESULT))
+                                result.get_property_to_json(CMD_PROPERTY_RESULT)
+                            )
 
-                            ten_env.log_info(f"tool_result: {tool_result}")
+                            async_ten_env.log_info(f"tool_result: {tool_result}")
                             # self.memory_cache = []
                             self.memory_cache.pop()
                             result_content = tool_result["content"]
                             nonlocal message
                             new_message = {
                                 "role": "user",
-                                "content": self._convert_to_content_parts(message["content"])
+                                "content": self._convert_to_content_parts(
+                                    message["content"]
+                                ),
                             }
-                            new_message["content"] = new_message["content"] + \
-                                self._convert_to_content_parts(result_content)
-                            await self.queue_input_item(True, messages=[new_message], no_tool=True)
+                            new_message["content"] = new_message[
+                                "content"
+                            ] + self._convert_to_content_parts(result_content)
+                            await self.queue_input_item(
+                                True, messages=[new_message], no_tool=True
+                            )
                         else:
-                            ten_env.log_error(f"Tool call failed")
+                            async_ten_env.log_error("Tool call failed")
                 self.tool_task_future.set_result(None)
 
             async def handle_content_update(content: str):
                 # Append the content to the last assistant message
                 for item in reversed(self.memory_cache):
-                    if item.get('role') == 'assistant':
-                        item['content'] = item['content'] + content
+                    if item.get("role") == "assistant":
+                        item["content"] = item["content"] + content
                         break
                 sentences, self.sentence_fragment = parse_sentences(
-                    self.sentence_fragment, content)
+                    self.sentence_fragment, content
+                )
                 for s in sentences:
-                    self.send_text_output(ten_env, s, False)
+                    self.send_text_output(async_ten_env, s, False)
 
-            async def handle_content_finished(full_content: str):
+            async def handle_content_finished():
                 # Wait for the single tool task to complete (if any)
                 if self.tool_task_future:
                     await self.tool_task_future
@@ -245,39 +278,42 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             listener.on("content_finished", handle_content_finished)
 
             # Make an async API call to get chat completions
-            await self.client.get_chat_completions_stream(memory + [message], tools, listener)
+            await self.client.get_chat_completions_stream(
+                memory + [message], tools, listener
+            )
 
             # Wait for the content to be finished
             await content_finished_event.wait()
 
-            ten_env.log_info(
-                f"Chat completion finished for input text: {message}")
+            async_ten_env.log_info(
+                f"Chat completion finished for input text: {message}"
+            )
         except asyncio.CancelledError:
-            ten_env.log_info(f"Task cancelled: {message}")
-        except Exception as e:
-            ten_env.log_error(
-                f"Error in chat_completion: {traceback.format_exc()} for input text: {message}")
+            async_ten_env.log_info(f"Task cancelled: {message}")
+        except Exception:
+            async_ten_env.log_error(
+                f"Error in chat_completion: {traceback.format_exc()} for input text: {message}"
+            )
         finally:
-            self.send_text_output(ten_env, "", True)
+            self.send_text_output(async_ten_env, "", True)
             # always append the memory
             for m in self.memory_cache:
                 self._append_memory(m)
 
-    def _convert_to_content_parts(self, content: Iterable[LLMChatCompletionContentPartParam]):
+    def _convert_to_content_parts(
+        self, content: Iterable[LLMChatCompletionContentPartParam]
+    ):
         content_parts = []
 
         if isinstance(content, str):
-            content_parts.append({
-                "type": "text",
-                "text": content
-            })
+            content_parts.append({"type": "text", "text": content})
         else:
             for part in content:
                 content_parts.append(part)
         return content_parts
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
-        json = {
+        json_dict = {
             "type": "function",
             "function": {
                 "name": tool.name,
@@ -286,21 +322,21 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                     "type": "object",
                     "properties": {},
                     "required": [],
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 },
             },
-            "strict": True
+            "strict": True,
         }
 
         for param in tool.parameters:
-            json["function"]["parameters"]["properties"][param.name] = {
+            json_dict["function"]["parameters"]["properties"][param.name] = {
                 "type": param.type,
-                "description": param.description
+                "description": param.description,
             }
             if param.required:
-                json["function"]["parameters"]["required"].append(param.name)
+                json_dict["function"]["parameters"]["required"].append(param.name)
 
-        return json
+        return json_dict
 
     def message_to_dict(self, message: LLMChatCompletionMessageParam):
         if isinstance(message["content"], str):
