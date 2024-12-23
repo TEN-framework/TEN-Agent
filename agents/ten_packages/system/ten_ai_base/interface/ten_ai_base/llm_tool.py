@@ -29,9 +29,7 @@ class AsyncLLMToolBaseExtension(AsyncExtension, ABC):
         for tool in tools:
             async_ten_env.log_info(f"tool: {tool}")
             c: Cmd = Cmd.create(CMD_TOOL_REGISTER)
-            c.set_property_from_json(
-                CMD_PROPERTY_TOOL, json.dumps(tool.model_dump_json())
-            )
+            c.set_property_from_json(CMD_PROPERTY_TOOL, json.dumps(tool.model_dump()))
             async_ten_env.log_info(f"begin tool register, {tool}")
             await async_ten_env.send_cmd(c)
             async_ten_env.log_info(f"tool registered, {tool}")
