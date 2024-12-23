@@ -132,6 +132,11 @@
       "type": "extension",
       "name": "gemini_v2v_python",
       "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "coze_python_async",
+      "version": "=0.1.0"
     }
   ]
 }
