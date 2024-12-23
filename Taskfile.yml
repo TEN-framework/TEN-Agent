@@ -10,7 +10,7 @@ tasks:
   lint:
     desc: lint-agent
     env:
-      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface/ten_ai_base"
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
     cmds:
       - ./agents/scripts/pylint.sh
 
