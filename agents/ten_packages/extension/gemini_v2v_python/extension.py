@@ -266,7 +266,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                             ) in (
                                                 response.server_content.model_turn.parts
                                             ):
-                                                self.send_audio_out(
+                                                await self.send_audio_out(
                                                     ten_env,
                                                     part.inline_data.data,
                                                     sample_rate=24000,
@@ -294,7 +294,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             except Exception as e:
                 self.ten_env.log_error(f"Failed to handle loop {e}")
 
-    def send_audio_out(
+    async def send_audio_out(
         self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions
     ) -> None:
         """End sending audio out."""
@@ -329,7 +329,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 buff = f.lock_buf()
                 buff[:] = combined_data
                 f.unlock_buf(buff)
-                ten_env.send_audio_frame(f)
+                await ten_env.send_audio_frame(f)
         except Exception:
             pass
             # ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
@@ -390,7 +390,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -517,26 +517,6 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             result = result.replace("{" + token + "}", value)
         return result
 
-    # Direction: OUT
-    def _on_audio_delta(self, delta: bytes) -> None:
-        audio_data = base64.b64decode(delta)
-        self.ten_env.log_debug(
-            f"on_audio_delta audio_data len {len(audio_data)} samples {len(audio_data) // 2}"
-        )
-        self._dump_audio_if_need(audio_data, Role.Assistant)
-
-        f = AudioFrame.create("pcm_frame")
-        f.set_sample_rate(self.config.sample_rate)
-        f.set_bytes_per_sample(2)
-        f.set_number_of_channels(1)
-        f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-        f.set_samples_per_channel(len(audio_data) // 2)
-        f.alloc_buf(len(audio_data))
-        buff = f.lock_buf()
-        buff[:] = audio_data
-        f.unlock_buf(buff)
-        self.ten_env.send_audio_frame(f)
-
     def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
         def is_punctuation(char):
             if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
@@ -574,7 +554,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                 ten_env.log_info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}"
                 )
-                ten_env.send_data(d)
+                asyncio.create_task(ten_env.send_data(d))
             except Exception as e:
                 ten_env.log_error(
                     f"Error send text data {role}: {sentence} {is_final} {e}"
@@ -585,9 +565,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             if role == Role.Assistant and not is_final:
                 sentences, self.transcript = parse_sentences(self.transcript, content)
                 for s in sentences:
-                    send_data(self.ten_env, s, stream_id, role, is_final)
+                    asyncio.create_task(
+                        send_data(self.ten_env, s, stream_id, role, is_final)
+                    )
             else:
-                send_data(self.ten_env, content, stream_id, role, is_final)
+                asyncio.create_task(
+                    send_data(self.ten_env, content, stream_id, role, is_final)
+                )
         except Exception as e:
             self.ten_env.log_error(
                 f"Error send text data {role}: {content} {is_final} {e}"
@@ -747,7 +731,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                     }
                 ),
             )
-        self.ten_env.send_data(data)
+        asyncio.create_task(self.ten_env.send_data(data))
 
     async def on_call_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError

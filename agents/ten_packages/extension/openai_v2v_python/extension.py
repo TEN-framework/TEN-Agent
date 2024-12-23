@@ -119,7 +119,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.ten_env = None
+        self.ten_env: AsyncTenEnv = None
         self.conn = None
         self.session = None
         self.session_id = None
@@ -252,7 +252,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -424,7 +424,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                     time.time() - self.input_end
                                 )
                             content_index = message.content_index
-                            self._on_audio_delta(message.delta)
+                            await self._on_audio_delta(message.delta)
                         case ResponseAudioDone():
                             self.completion_times.append(time.time() - self.input_end)
                         case InputAudioBufferSpeechStarted():
@@ -517,7 +517,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             d.set_property_string("text", message.get("content"))
             d.set_property_string("role", role)
             d.set_property_int("stream_id", stream_id)
-            self.ten_env.send_data(d)
+            asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
             self.ten_env.log_error(f"Error send append_context data {message} {e}")
 
@@ -595,7 +595,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         return result
 
     # Direction: OUT
-    def _on_audio_delta(self, delta: bytes) -> None:
+    async def _on_audio_delta(self, delta: bytes) -> None:
         audio_data = base64.b64decode(delta)
         self.ten_env.log_debug(
             f"on_audio_delta audio_data len {len(audio_data)} samples {len(audio_data) // 2}"
@@ -612,7 +612,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         buff = f.lock_buf()
         buff[:] = audio_data
         f.unlock_buf(buff)
-        self.ten_env.send_audio_frame(f)
+        await self.ten_env.send_audio_frame(f)
 
     def _send_transcript(self, content: str, role: Role, is_final: bool) -> None:
         def is_punctuation(char):
@@ -651,7 +651,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 ten_env.log_info(
                     f"send transcript text [{sentence}] stream_id {stream_id} is_final {is_final} end_of_segment {is_final} role {role}"
                 )
-                ten_env.send_data(d)
+                asyncio.create_task(ten_env.send_data(d))
             except Exception as e:
                 ten_env.log_error(
                     f"Error send text data {role}: {sentence} {is_final} {e}"
@@ -769,9 +769,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.ten_env.log_error("Error flush")
 
     async def _update_usage(self, usage: dict) -> None:
-        self.total_usage.completion_tokens += usage.get("output_tokens")
-        self.total_usage.prompt_tokens += usage.get("input_tokens")
-        self.total_usage.total_tokens += usage.get("total_tokens")
+        self.total_usage.completion_tokens += usage.get("output_tokens") or 0
+        self.total_usage.prompt_tokens += usage.get("input_tokens") or 0
+        self.total_usage.total_tokens += usage.get("total_tokens") or 0
         if not self.total_usage.completion_tokens_details:
             self.total_usage.completion_tokens_details = LLMCompletionTokensDetails()
         if not self.total_usage.prompt_tokens_details:
@@ -822,7 +822,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                     }
                 ),
             )
-        self.ten_env.send_data(data)
+        asyncio.create_task(self.ten_env.send_data(data))
 
     async def on_call_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError

@@ -119,7 +119,7 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict
-    ) -> LLMToolResult:
+    ) -> LLMToolResult | None:
         if name == TOOL_NAME:
             result = await self._do_search(args)
             # result = LLMCompletionContentItemText(text="I see something")

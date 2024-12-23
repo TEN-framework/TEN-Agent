@@ -168,7 +168,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
 
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict
-    ) -> LLMToolResult:
+    ) -> LLMToolResult | None:
         ten_env.log_info(f"run_tool name: {name}, args: {args}")
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)

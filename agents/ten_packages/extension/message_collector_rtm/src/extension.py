@@ -64,11 +64,11 @@ class MessageCollectorRTMExtension(AsyncExtension):
                 ten_env.log_warn(f"unsupported cmd {cmd_name}")
 
             cmd_result = CmdResult.create(StatusCode.OK)
-            ten_env.return_result(cmd_result, cmd)
+            await ten_env.return_result(cmd_result, cmd)
         except Exception as e:
             ten_env.log_error(f"on_cmd error: {e}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
-            ten_env.return_result(cmd_result, cmd)
+            await ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         """
@@ -166,7 +166,7 @@ class MessageCollectorRTMExtension(AsyncExtension):
             data = Data.create("text_data")
             data.set_property_string("text", text)
             data.set_property_bool("is_final", True)
-            self.ten_env.send_data(data)
+            asyncio.create_task(self.ten_env.send_data(data))
         except Exception as e:
             self.ten_env.log_error(f"Failed to handle on_rtm_message_event data: {e}")
 

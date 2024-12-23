@@ -94,10 +94,12 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 response = await self.on_call_chat_completion(async_ten_env, **args)
                 cmd_result = CmdResult.create(StatusCode.OK)
                 cmd_result.set_property_from_json("response", response)
-                async_ten_env.return_result(cmd_result, cmd)
+                await async_ten_env.return_result(cmd_result, cmd)
             except Exception as err:
                 async_ten_env.log_warn(f"on_cmd failed: {err}")
-                async_ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+                await async_ten_env.return_result(
+                    CmdResult.create(StatusCode.ERROR), cmd
+                )
 
     async def queue_input_item(
         self, prepend: bool = False, **kargs: LLMDataCompletionArgs
@@ -124,7 +126,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             output_data.set_property_bool(
                 DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
             )
-            async_ten_env.send_data(output_data)
+            asyncio.create_task(async_ten_env.send_data(output_data))
             async_ten_env.log_info(
                 f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
             )

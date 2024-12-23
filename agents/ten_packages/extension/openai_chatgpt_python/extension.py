@@ -11,7 +11,6 @@ import traceback
 from typing import Iterable
 
 from ten.async_ten_env import AsyncTenEnv
-from ten.ten_env import TenEnv
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.helper import (
     AsyncEventEmitter,
@@ -102,7 +101,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_JOINED:
             self.users_count += 1
             # Send greeting when first user joined
@@ -112,13 +111,13 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result, cmd)
         elif cmd_name == CMD_IN_ON_USER_LEFT:
             self.users_count -= 1
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result, cmd)
         else:
             await super().on_cmd(async_ten_env, cmd)
 
@@ -144,12 +143,12 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         await self.queue_input_item(False, messages=[message])
 
     async def on_tools_update(
-        self, async_ten_env: TenEnv, tool: LLMToolMetadata
+        self, async_ten_env: AsyncTenEnv, tool: LLMToolMetadata
     ) -> None:
         return await super().on_tools_update(async_ten_env, tool)
 
     async def on_call_chat_completion(
-        self, async_ten_env: TenEnv, **kargs: LLMCallCompletionArgs
+        self, async_ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs
     ) -> any:
         kmessages: LLMChatCompletionUserMessageParam = kargs.get("messages", [])
 
@@ -158,10 +157,13 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         return response.to_json()
 
     async def on_data_chat_completion(
-        self, async_ten_env: TenEnv, **kargs: LLMDataCompletionArgs
+        self, async_ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
     ) -> None:
         """Run the chatflow asynchronously."""
-        kmessage: LLMChatCompletionUserMessageParam = kargs.get("messages", [])[0]
+        kmessages: Iterable[LLMChatCompletionUserMessageParam] = kargs.get(
+            "messages", []
+        )
+        kmessage = next(iter(kmessages), None)
 
         if not kmessage:
             async_ten_env.log_error("No message in data")

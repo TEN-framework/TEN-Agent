@@ -19,7 +19,7 @@ from .log import logger
 from ten import Cmd, StatusCode, CmdResult
 
 
-def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse:
+def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse | None:
     status = cmd_result.get_status_code()
     if status != StatusCode.OK:
         return None
@@ -82,7 +82,7 @@ class LlamaLLM(CustomLLM):
     def complete(
         self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponse:
-        logger.warning("LlamaLLM complete hasn't been implemented yet")
+        raise NotImplementedError("LlamaLLM complete hasn't been implemented yet")
 
     @llm_chat_callback()
     def stream_chat(
@@ -134,7 +134,9 @@ class LlamaLLM(CustomLLM):
     def stream_complete(
         self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponseGen:
-        logger.warning("LlamaLLM stream_complete hasn't been implemented yet")
+        raise NotImplementedError(
+            "LlamaLLM stream_complete hasn't been implemented yet"
+        )
 
     @classmethod
     def class_name(cls) -> str:

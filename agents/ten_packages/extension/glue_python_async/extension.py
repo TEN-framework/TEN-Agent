@@ -128,19 +128,22 @@ class GlueConfig(BaseConfig):
 
 
 class AsyncGlueExtension(AsyncLLMBaseExtension):
-    config: GlueConfig = None
-    ten_env: AsyncTenEnv = None
-    loop: asyncio.AbstractEventLoop = None
-    stopped: bool = False
-    memory: ChatMemory = None
-    total_usage: LLMUsage = LLMUsage()
-    users_count = 0
+    def __init__(self, name):
+        super().__init__(name)
 
-    completion_times = []
-    connect_times = []
-    first_token_times = []
+        self.config: GlueConfig = None
+        self.ten_env: AsyncTenEnv = None
+        self.loop: asyncio.AbstractEventLoop = None
+        self.stopped: bool = False
+        self.memory: ChatMemory = None
+        self.total_usage: LLMUsage = LLMUsage()
+        self.users_count = 0
 
-    remote_stream_id: int = 999
+        self.completion_times = []
+        self.connect_times = []
+        self.first_token_times = []
+
+        self.remote_stream_id: int = 999
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -209,7 +212,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
 
         cmd_result = CmdResult.create(status)
         cmd_result.set_property_string("detail", detail)
-        ten_env.return_result(cmd_result, cmd)
+        await ten_env.return_result(cmd_result, cmd)
 
     async def on_call_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs
@@ -436,7 +439,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         data = Data.create("text_data")
         data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
         data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, True)
-        self.ten_env.send_data(data)
+        asyncio.create_task(self.ten_env.send_data(data))
 
     async def _stream_chat(
         self, messages: List[Any], tools: List[Any]
@@ -552,7 +555,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
                     }
                 ),
             )
-        self.ten_env.send_data(data)
+        asyncio.create_task(self.ten_env.send_data(data))
 
     async def _on_memory_appended(self, message: dict) -> None:
         self.ten_env.log_info(f"Memory appended: {message}")
@@ -566,6 +569,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             d.set_property_string("text", message.get("content"))
             d.set_property_string("role", role)
             d.set_property_int("stream_id", stream_id)
-            self.ten_env.send_data(d)
+            asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
             self.ten_env.log_error(f"Error send append_context data {message} {e}")

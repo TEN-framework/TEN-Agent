@@ -92,14 +92,11 @@ class MinimaxV2VExtension(AsyncExtension):
 
         self.memory = ChatMemory(self.config.max_memory_length)
         self.ten_env = ten_env
-        ten_env.on_init_done()
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         self.process_input_task = asyncio.create_task(
             self._process_input(ten_env=ten_env, queue=self.queue), name="process_input"
         )
-
-        ten_env.on_start_done()
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
 
@@ -110,8 +107,6 @@ class MinimaxV2VExtension(AsyncExtension):
             await asyncio.gather(self.process_input_task, return_exceptions=True)
             self.process_input_task = None
 
-        ten_env.on_stop_done()
-
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
 
@@ -119,7 +114,6 @@ class MinimaxV2VExtension(AsyncExtension):
             await self.client.aclose()
             self.client = None
         self.ten_env = None
-        ten_env.on_deinit_done()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         try:
@@ -134,10 +128,10 @@ class MinimaxV2VExtension(AsyncExtension):
                     ten_env.log_debug("flush done")
                 case _:
                     pass
-            ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
         except asyncio.CancelledError:
             ten_env.log_warn(f"cmd {cmd_name} cancelled")
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
             raise
         except Exception as e:
             ten_env.log_warn(f"cmd {cmd_name} failed, err {e}")
@@ -313,7 +307,9 @@ class MinimaxV2VExtension(AsyncExtension):
                                 base64_str = delta["audio_content"]
                                 buff = base64.b64decode(base64_str)
                                 await self._dump_audio_if_need(buff, "out")
-                                self._send_audio_frame(ten_env=ten_env, audio_data=buff)
+                                await self._send_audio_frame(
+                                    ten_env=ten_env, audio_data=buff
+                                )
 
                             # tool calls
                             if delta.get("tool_calls"):
@@ -421,7 +417,9 @@ class MinimaxV2VExtension(AsyncExtension):
 
         return (headers, payload)
 
-    def _send_audio_frame(self, ten_env: AsyncTenEnv, audio_data: bytearray) -> None:
+    async def _send_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_data: bytearray
+    ) -> None:
         try:
             f = AudioFrame.create("pcm_frame")
             f.set_sample_rate(self.config.out_sample_rate)
@@ -433,7 +431,7 @@ class MinimaxV2VExtension(AsyncExtension):
             buff = f.lock_buf()
             buff[:] = audio_data
             f.unlock_buf(buff)
-            ten_env.send_audio_frame(f)
+            await ten_env.send_audio_frame(f)
         except Exception as e:
             ten_env.log_error(f"send audio frame failed, err {e}")
 
@@ -456,7 +454,7 @@ class MinimaxV2VExtension(AsyncExtension):
             ten_env.log_info(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role}"
             )
-            self.ten_env.send_data(d)
+            asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
             ten_env.log_warn(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role} failed, err {e}"

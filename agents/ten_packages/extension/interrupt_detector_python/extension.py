@@ -47,8 +47,9 @@ class InterruptDetectorExtension(Extension):
         self.send_flush_cmd(ten)
 
         # then forward the cmd to downstream
-        cmd_json = cmd.to_json()
-        new_cmd = Cmd.create_from_json(cmd_json)
+        cmd_json = cmd.get_property_to_json()
+        new_cmd = Cmd.create(cmd_name)
+        new_cmd.set_property_from_json(None, cmd_json)
         ten.send_cmd(
             new_cmd,
             lambda ten, result: ten.log_info("send_cmd done"),

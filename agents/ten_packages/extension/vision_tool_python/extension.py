@@ -135,7 +135,7 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
 
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict
-    ) -> LLMToolResult:
+    ) -> LLMToolResult | None:
         if name == "get_vision_tool":
             if self.image_data is None:
                 raise ValueError("No image data available")
