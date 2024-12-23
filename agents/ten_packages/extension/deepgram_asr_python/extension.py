@@ -18,7 +18,7 @@ from deepgram import (
 )
 from dataclasses import dataclass
 
-from ten_ai_base import BaseConfig
+from ten_ai_base.config import BaseConfig
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"

@@ -5,6 +5,7 @@
 #
 from abc import ABC, abstractmethod
 import asyncio
+import traceback
 
 from ten import (
     AsyncExtension,
@@ -74,9 +75,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         async_ten_env.log_debug(f"on_cmd name {cmd_name}")
         if cmd_name == CMD_TOOL_REGISTER:
             try:
-                tool_metadata_json = json.loads(
-                    cmd.get_property_to_json(CMD_PROPERTY_TOOL)
-                )
+                tool_metadata_json = cmd.get_property_to_json(CMD_PROPERTY_TOOL)
                 async_ten_env.log_info(f"register tool: {tool_metadata_json}")
                 tool_metadata = LLMToolMetadata.model_validate_json(tool_metadata_json)
                 async with self.available_tools_lock:
@@ -84,7 +83,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 await self.on_tools_update(async_ten_env, tool_metadata)
                 await async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
             except Exception as err:
-                async_ten_env.log_warn(f"on_cmd failed: {err}")
+                async_ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
                 await async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd
                 )

@@ -34,7 +34,7 @@ class InterruptDetectorExtension(Extension):
         flush_cmd = Cmd.create(CMD_NAME_FLUSH)
         ten.send_cmd(
             flush_cmd,
-            lambda ten, result: ten.log_info("send_cmd done"),
+            lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
         ten.log_info(f"sent cmd: {CMD_NAME_FLUSH}")

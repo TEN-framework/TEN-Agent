@@ -29,9 +29,9 @@ from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from dataclasses import dataclass
-from ten_ai_base import (
-    BaseConfig,
-    ChatMemory,
+from ten_ai_base.config import BaseConfig
+from ten_ai_base.chat_memory import ChatMemory
+from ten_ai_base.usage import (
     LLMUsage,
     LLMCompletionTokensDetails,
     LLMPromptTokensDetails,

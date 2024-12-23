@@ -25,21 +25,26 @@ from ten import (
     Data,
 )
 
-from ten_ai_base import (
-    BaseConfig,
+from ten_ai_base.config import BaseConfig
+from ten_ai_base.chat_memory import (
     ChatMemory,
+    EVENT_MEMORY_APPENDED,
+)
+from ten_ai_base.usage import (
     LLMUsage,
     LLMCompletionTokensDetails,
     LLMPromptTokensDetails,
-    EVENT_MEMORY_APPENDED,
 )
-from ten_ai_base.llm import (
+from ten_ai_base import (
     AsyncLLMBaseExtension,
+)
+from ten_ai_base.types import (
+    LLMChatCompletionUserMessageParam,
+    LLMToolResult,
     LLMCallCompletionArgs,
     LLMDataCompletionArgs,
     LLMToolMetadata,
 )
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMToolResult
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"

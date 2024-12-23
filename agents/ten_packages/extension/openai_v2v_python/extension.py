@@ -25,13 +25,15 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
-from ten_ai_base.llm import AsyncLLMBaseExtension
+from ten_ai_base import AsyncLLMBaseExtension
 from dataclasses import dataclass
-from ten_ai_base import (
-    BaseConfig,
+from ten_ai_base.config import BaseConfig
+from ten_ai_base.chat_memory import (
     ChatMemory,
     EVENT_MEMORY_EXPIRED,
     EVENT_MEMORY_APPENDED,
+)
+from ten_ai_base.usage import (
     LLMUsage,
     LLMCompletionTokensDetails,
     LLMPromptTokensDetails,
@@ -350,7 +352,8 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On response done {msg_resp_id} {status} {message.response.usage}"
                             )
                             if message.response.usage:
-                                await self._update_usage(message.response.usage)
+                                pass
+                                # await self._update_usage(message.response.usage)
                         case ResponseAudioTranscriptDelta():
                             self.ten_env.log_info(
                                 f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
@@ -586,7 +589,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
     async def on_tools_update(self, _: AsyncTenEnv, tool: LLMToolMetadata) -> None:
         """Called when a new tool is registered. Implement this method to process the new tool."""
         self.ten_env.log_info(f"on tools update {tool}")
-        await self._update_session()
+        # await self._update_session()
 
     def _replace(self, prompt: str) -> str:
         result = prompt

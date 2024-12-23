@@ -12,12 +12,11 @@ from typing import AsyncGenerator
 
 import aiohttp
 from ten import AsyncTenEnv, AudioFrame, Cmd, CmdResult, Data, StatusCode, VideoFrame
-from ten_ai_base import BaseConfig
-from ten_ai_base.llm import (
+from ten_ai_base.config import BaseConfig
+from ten_ai_base import (
     AsyncLLMBaseExtension,
-    LLMDataCompletionArgs,
 )
-from ten_ai_base.types import LLMChatCompletionUserMessageParam
+from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMDataCompletionArgs
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
