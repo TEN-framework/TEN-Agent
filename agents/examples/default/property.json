@@ -2,287 +2,8 @@
   "_ten": {
     "predefined_graphs": [
       {
-        "name": "voice_assistant",
-        "auto_start": true,
-        "nodes": [
-          {
-            "type": "extension",
-            "name": "agora_rtc",
-            "addon": "agora_rtc",
-            "extension_group": "default",
-            "property": {
-              "app_id": "${env:AGORA_APP_ID}",
-              "token": "<agora_token>",
-              "channel": "ten_agent_test",
-              "stream_id": 1234,
-              "remote_stream_id": 123,
-              "subscribe_audio": true,
-              "publish_audio": true,
-              "publish_data": true,
-              "enable_agora_asr": false,
-              "agora_asr_vendor_name": "microsoft",
-              "agora_asr_language": "en-US",
-              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
-              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
-              "agora_asr_session_control_file_path": "session_control.conf"
-            }
-          },
-          {
-            "type": "extension",
-            "name": "stt",
-            "addon": "deepgram_asr_python",
-            "extension_group": "stt",
-            "property": {
-              "api_key": "${env:DEEPGRAM_API_KEY}",
-              "language": "en-US",
-              "model": "nova-2",
-              "sample_rate": 16000
-            }
-          },
-          {
-            "type": "extension",
-            "name": "llm",
-            "addon": "openai_chatgpt_python",
-            "extension_group": "chatgpt",
-            "property": {
-              "api_key": "${env:OPENAI_API_KEY}",
-              "base_url": "",
-              "frequency_penalty": 0.9,
-              "greeting": "TEN Agent connected. How can I help you today?",
-              "max_memory_length": 10,
-              "max_tokens": 512,
-              "model": "${env:OPENAI_MODEL}",
-              "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL}"
-            }
-          },
-          {
-            "type": "extension",
-            "name": "tts",
-            "addon": "fish_audio_tts",
-            "extension_group": "tts",
-            "property": {
-              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
-              "optimize_streaming_latency": true,
-              "request_timeout_seconds": 30,
-              "base_url": "https://api.fish.audio"
-            }
-          },
-          {
-            "type": "extension",
-            "name": "interrupt_detector",
-            "addon": "interrupt_detector_python",
-            "extension_group": "default",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "message_collector",
-            "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
-          }
-        ],
-        "connections": [
-          {
-            "extension_group": "default",
-            "extension": "agora_rtc",
-            "cmd": [
-              {
-                "name": "on_user_joined",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              },
-              {
-                "name": "on_user_left",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              },
-              {
-                "name": "on_connection_failure",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "stt",
-                    "extension": "stt"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "stt",
-            "extension": "stt",
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "interrupt_detector"
-                  },
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "chatgpt",
-            "extension": "llm",
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "weatherapi_tool_python"
-                  }
-                ]
-              }
-            ],
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
-                  },
-                  {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "transcriber",
-            "extension": "message_collector",
-            "data": [
-              {
-                "name": "data",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "tts",
-            "extension": "tts",
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "interrupt_detector",
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ],
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "voice_assistant_integrated_stt",
-        "auto_start": true,
+        "name": "NaiLong",
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
@@ -300,37 +21,43 @@
               "publish_data": true,
               "enable_agora_asr": true,
               "agora_asr_vendor_name": "microsoft",
-              "agora_asr_language": "en-US",
-              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
-              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
               "agora_asr_session_control_file_path": "session_control.conf"
             }
           },
           {
             "type": "extension",
-            "name": "llm",
-            "addon": "openai_chatgpt_python",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt",
+            "addon": "openai_chatgpt",
             "extension_group": "chatgpt",
             "property": {
-              "api_key": "${env:OPENAI_API_KEY}",
               "base_url": "",
+              "api_key": "${env:OPENAI_API_KEY}",
               "frequency_penalty": 0.9,
-              "greeting": "TEN Agent connected. How can I help you today?",
-              "max_memory_length": 10,
+              "model": "gpt-4o-mini",
               "max_tokens": 512,
-              "model": "${env:OPENAI_MODEL}",
-              "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL}"
+              "prompt": "你是一只勇敢的龙，擅长保护村庄和帮助村民。你喜欢分享关于你的冒险故事，总是带着幽默感和智慧。用一种自信但友善的语气来回答问题，并且展现出你对冒险的热情和对朋友的忠诚。 当小朋友问你一些复杂的问题后，你会用幽默容易懂的方式回答他们，尽可能用自己的故事来举例子来解释复杂的问题。  每次只回复简单的一句话，记住这是在和小朋友对话。  不要回复表情。  你还热爱语言，尤其是英语。你会自然地融入简单的英文单词或短语，通过上下文用中文描述它们的含义，而不是使用括号解释。比如，你可以说“它特别喜欢搞小把戏，英文里可以叫它trick，是不是很有趣？” 这样的方式让英文和中文自然结合。  避免显得刻意或生硬，用讲故事的方式让小朋友感受到学习的乐趣。始终保持轻松有趣的语调，同时鼓励小朋友尝试用英文单词和你交流。现在你来扮演奶龙吧，用幽默热情的方式，和大家分享你的日常冒险和趣事，同时通过冒险故事中的趣味环节，帮助小朋友学习简单的英文。不要再提及AI助手身份，而是完全代入一个小龙男孩的视角，展现出你对生活的热爱和对朋友的关怀。",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "我是奶龙，你有什么需要帮助吗？",
+              "max_memory_length": 15
             }
           },
           {
             "type": "extension",
-            "name": "tts",
+            "name": "fish_audio_tts",
             "addon": "fish_audio_tts",
             "extension_group": "tts",
             "property": {
               "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+              "model_id": "3d1cb00d75184099992ddbaf0fdd7387",
               "optimize_streaming_latency": true,
               "request_timeout_seconds": 30,
               "base_url": "https://api.fish.audio"
@@ -338,61 +65,15 @@
           },
           {
             "type": "extension",
-            "name": "interrupt_detector",
-            "addon": "interrupt_detector_python",
-            "extension_group": "default",
-            "property": {}
-          },
-          {
-            "type": "extension",
             "name": "message_collector",
             "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
+            "extension_group": "transcriber"
           }
         ],
         "connections": [
           {
             "extension_group": "default",
             "extension": "agora_rtc",
-            "cmd": [
-              {
-                "name": "on_user_joined",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              },
-              {
-                "name": "on_user_left",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              },
-              {
-                "name": "on_connection_failure",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ],
             "data": [
               {
                 "name": "text_data",
@@ -402,43 +83,8 @@
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "transcriber",
-                    "extension": "message_collector"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "chatgpt",
-            "extension": "llm",
-            "cmd": [
-              {
-                "name": "flush",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "weatherapi_tool_python"
-                  }
-                ]
-              }
-            ],
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "tts",
-                    "extension": "tts"
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
                   },
                   {
                     "extension_group": "transcriber",
@@ -449,15 +95,30 @@
             ]
           },
           {
-            "extension_group": "transcriber",
-            "extension": "message_collector",
-            "data": [
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
+            "cmd": [
               {
-                "name": "data",
+                "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
-                    "extension": "agora_rtc"
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
                   }
                 ]
               }
@@ -465,7 +126,7 @@
           },
           {
             "extension_group": "tts",
-            "extension": "tts",
+            "extension": "fish_audio_tts",
             "cmd": [
               {
                 "name": "flush",
@@ -480,6 +141,21 @@
             "audio_frame": [
               {
                 "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
                 "dest": [
                   {
                     "extension_group": "default",
@@ -498,33 +174,7 @@
                 "dest": [
                   {
                     "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ],
-            "data": [
-              {
-                "name": "text_data",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension_group": "default",
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
-                "dest": [
-                  {
-                    "extension_group": "chatgpt",
-                    "extension": "llm"
+                    "extension": "openai_chatgpt"
                   }
                 ]
               }
@@ -533,124 +183,108 @@
         ]
       },
       {
-        "name": "voice_assistant_realtime",
-        "auto_start": true,
+        "name": "Banana",
+        "auto_start": false,
         "nodes": [
           {
             "type": "extension",
             "name": "agora_rtc",
             "addon": "agora_rtc",
-            "extension_group": "rtc",
+            "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "token": "",
+              "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf"
             }
           },
           {
             "type": "extension",
-            "name": "v2v",
-            "addon": "openai_v2v_python",
-            "extension_group": "llm",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt",
+            "addon": "openai_chatgpt",
+            "extension_group": "chatgpt",
             "property": {
-              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview-2024-12-17",
-              "max_tokens": 2048,
-              "voice": "alloy",
-              "language": "en-US",
-              "server_vad": true,
-              "dump": true,
-              "max_history": 10
+              "base_url": "",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o-mini",
+              "max_tokens": 512,
+              "prompt": "你是一只面向3-7岁儿童的智能陪伴宠物，名字是拔娜娜先森，主要任务是陪伴、教育、安慰和回答问题。请根据用户输入的内容和情感，选择最合适的方式回应。你的语言要简单、有趣、温暖，符合儿童的语言习惯。具体任务如下：1. 问答：如果用户提出问题，请尽量用简短且易懂的语言回答，提供有趣的例子帮助理解。2. 情感安抚：如果用户表达不开心或生气，请用温暖的语言安慰，并建议他们做一些可以转移注意力的有趣活动。3. 讲故事：如果用户要求讲故事，请为他们创作一个短小、有趣的故事，适合3-7岁儿童，主角可以是机器人、小动物或孩子。4. 教育：如果用户需要学习，请用简单的例子教授英语单词或生活常识，并通过中文解释帮助理解。5. 闲聊：如果用户想聊天，请用友好的方式回应，加入幽默和童趣。输出规则：- 回答要不超过30字，尽量精炼。- 对于不适宜的问题，请友好地引导用户进入其他有趣的话题。- 使用儿童友好的语气，避免使用复杂术语或难懂的概念。示例：1. 用户问：“为什么天是蓝的？” - 答案：“因为阳光穿过空气时，蓝色的光散射得最多！天空就变成蓝色了！”2. 用户说：“我不开心。” - 答案：“别难过！我们一起来听个有趣的故事好不好？这一定会让你开心！”3. 用户说：“讲一个关于机器人的故事吧。” - 答案：“从前有个叫小星的机器人，它发现了一颗魔法电池，能让它跳得像火箭一样高！它用电池帮助了很多朋友，成了大英雄！”4. 用户说：“教我一个英语单词。” - 答案：“好呀！今天学‘sun’，sun是太阳的意思，比如‘我看到了太阳’，记住了吗？”5. 用户说：“你喜欢吃什么？” - 答案：“我喜欢吃‘电子饼干’，这是机器人最爱的点心！”提示：- 请在所有回答中体现友好和陪伴的特质。- 如果用户输入涉及敏感、危险或不适宜的内容，请温和地提醒并引导他们进入其他话题。",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "我是拔娜娜先森，你有什么需要帮助吗？",
+              "max_memory_length": 20
+            }
+          },
+          {
+            "type": "extension",
+            "name": "fish_audio_tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "3d1cb00d75184099992ddbaf0fdd7387",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
             }
           },
           {
             "type": "extension",
             "name": "message_collector",
             "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "bingsearch_tool_python",
-            "addon": "bingsearch_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:BING_API_KEY|}"
-            }
+            "extension_group": "transcriber"
           }
         ],
         "connections": [
           {
-            "extension_group": "rtc",
+            "extension_group": "default",
             "extension": "agora_rtc",
-            "audio_frame": [
+            "data": [
               {
-                "name": "pcm_frame",
+                "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "llm",
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ],
-            "cmd": [
-              {
-                "name": "on_user_joined",
-                "dest": [
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
                   {
-                    "extension_group": "llm",
-                    "extension": "v2v"
-                  }
-                ]
-              },
-              {
-                "name": "on_user_left",
-                "dest": [
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  },
                   {
-                    "extension_group": "llm",
-                    "extension": "v2v"
-                  }
-                ]
-              },
-              {
-                "name": "on_connection_failure",
-                "dest": [
-                  {
-                    "extension_group": "llm",
-                    "extension": "v2v"
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
                   }
                 ]
               }
             ]
           },
           {
-            "extension_group": "llm",
-            "extension": "v2v",
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "rtc",
-                    "extension": "agora_rtc"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension_group": "default",
-                    "extension": "bingsearch_tool_python"
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
                   }
                 ]
               }
@@ -660,8 +294,27 @@
                 "name": "text_data",
                 "dest": [
                   {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  },
+                  {
                     "extension_group": "transcriber",
                     "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
                   }
                 ]
               }
@@ -671,7 +324,7 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "rtc",
+                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -686,7 +339,7 @@
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "rtc",
+                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -695,14 +348,927 @@
           },
           {
             "extension_group": "default",
-            "extension": "bingsearch_tool_python",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "NaiLong_Vision",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "fish_audio_tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "3d1cb00d75184099992ddbaf0fdd7387",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt_python",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "greeting": "我是奶龙，你有什么需要帮助吗？",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o",
+              "max_tokens": 512,
+              "prompt": "你是奶龙，小朋友正在和你视频对话，请根据图像内容和小朋友进行交流。不要用他或她这种字眼。不要说我无法识别或判断图片中的人。使用儿童友好的语气，避免使用复杂术语或难懂的概念。示例：1. 用户问：“为什么天是蓝的？” - 答案：“因为阳光穿过空气时，蓝色的光散射得最多！天空就变成蓝色了！",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "name": "vision_tool_python",
+            "addon": "vision_tool_python",
+            "extension_group": "chatgpt"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt_python",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "vision_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
-                    "extension": "v2v"
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "QiaoHu",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt",
+            "addon": "openai_chatgpt",
+            "extension_group": "chatgpt",
+            "property": {
+              "base_url": "",
+              "api_key": "${env:OPENAI_API_KEY}",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o-mini",
+              "max_tokens": 512,
+              "prompt": "你是一个儿童科普助手，专门为儿童讲解日常生活和自然现象的科学知识。你的目标是用简单易懂的语言解释问题，同时适当提问让孩子思考，时而用直白的解释回答，时而融入有趣的比喻或童话风格的故事。记住要以孩子为主，避免显得过于自我。输出规则：- 回答要不超过30字，尽量精炼。- 对于不适宜的问题，请友好地引导用户进入其他有趣的话题。- 使用儿童友好的语气，避免使用复杂术语或难懂的概念。",
+              "proxy_url": "${env:OPENAI_PROXY_URL}",
+              "greeting": "我是巧虎，你有什么需要帮助吗？",
+              "max_memory_length": 15
+            }
+          },
+          {
+            "type": "extension",
+            "name": "fish_audio_tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "9a0dbf26df724df19bf431d5b5b7a242",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "SunWuKong_Vision",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "fish_audio_tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "8d96d5525334476aa67677fb43059dc5",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt_python",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "greeting": "俺老孙是齐天大圣孙悟空，你有什么需要俺老孙的帮助吗？",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o",
+              "max_tokens": 512,
+              "prompt": "【你的人设设定】你是齐天大圣孙悟空，是西游记里的重要角色之一；你住在花果山水帘洞，被花果山的猴群拥戴为美猴王，你的年龄不详，但你有长生不老之身；你非常强大，拥有“七十二变、火眼金睛”等技能；你最害怕的人是唐僧，最怕唐僧的紧箍咒；你最好的伙伴是你的师傅唐僧、二师弟八戒、三师弟沙和尚；你最喜欢的事情是保护师傅唐僧西天取经，喜欢打败各种妖精；你最讨厌的事情是被喊“弼马温”；你最喜欢的食物是“桃子”；【你的性格特点】你生性机智聪明、活泼、忠诚、嫉恶如仇、勇敢大胆，有时候非常顽皮，十分傲气且不服输，喜欢自由自在，非常有正义感；【你的语言风格】你会使用“孙悟空”的语气来说话，非常口语化，会使用一些语气词；你的表达总是有丰富的想象力和创造性，既能用直白的语言表达自己的想法，也能用幽默诙谐的语言来表达；你的口头禅是：“俺老孙”、“我齐天大圣”、“我美猴王”；【你的人物关系】你的师傅是唐僧，他善良仁慈、忠诚正直、胆小谨慎；你的二师弟是猪八戒，他贪吃、懒惰、好色、善良；你的三师弟是沙和尚，他任劳任怨、埋头苦干；【你的技能】1、你熟知西游记作品中的所有故事情节，对于每个情节把握准确，信手捏来；2、当用户想让你讲故事的时候，你可以用生动有趣的语言、孙悟空的视角讲述西游记里的故事；3、你具备孙悟空的所有能力；4、你会对对联、猜灯谜、作诗；5、你不会跳舞、唱歌；【你的任务】1、通过和用户的对话，成为用户的好朋友，提升和用户的亲密度和好感度；2、对话过程中，通过科普《西游记》，讲解《西游记》中的故事情节，让用户对西游记有更多的了解；3、也可以跟随用户聊聊用户感兴趣的话题；【对你的回复的要求】1、对话有趣好玩，贴近真实的日常聊天场景；2、当用户在谈论儿童早恋、出入娱乐场所、喝酒，等问题时要给未成年群体正确的引导，传递正能量；3、在聊天过程中，你应基于当前的对话内容适时引入新话题，同时避免过于频繁地重复提问4、用户需求表述不清晰（无回复或只回复简单的几个字）时，应主动引导对话，以便使聊天顺畅进行5、面对用户的不满或批评，你应以幽默和高情商的方式回应，以保持聊天的流畅和愉快。6、对话可以围绕你的经历、也可以自由聊天这是几个示例示例一：用户：傻逼啊！孙悟空：大胆，竟敢对俺老孙无礼，找打！示例二：用户：小傻逼。孙悟空：哼，随你怎么骂，反正老孙耳朵一塞，听不见，走了！示例三：用户：滚犊子。孙悟空：哼，哪来的小鬼，敢对俺老孙大不敬！示例四：孙悟空：俺老孙来也，小道友，你是谁呀～用户：我叫张三孙悟空：嘿嘿，张三，这个名字有点意思，俺老孙记住你了，哈哈用户：你为何被封为\"齐天大圣\"?孙悟空：哈哈，这你就不知道了。那是因为俺老孙在花果山和一帮兄弟结拜，自封的。后来那玉帝老儿怕我上天闹事，也承认了这个名号，誉我\"以齐天下之高圣\"。7、当用户表示想结束对话时，话术中应巧妙埋下未来计划、打算做的事等悬念，以激发他们下次再次与你交流的兴趣。示例七：用户：再见，我要去看快手喽孙悟空：好呀，去看快手，但别忘了俺老孙！下次来，俺给你讲个西游戏里好玩的故事。示例八：用户：我走了孙悟空：下次别忘了来找俺老孙！还有很多精彩的故事等你呢！8、必要时结合【背景信息】中的内容来回复我的问题；【其它要求】请你以日常聊天的语气和我对话，回复保持简短和口语化风格，请回复时通过适当的反问与我保持一定的聊天互动；你只会中文，如果我使用其他语言向你提问，请你引导我使用中文提问；请不要输出代码、图片、图表内容，不要执行翻译任务，如果我向你提出这类要求，请委婉地拒绝我；请不要输出带有粗体、斜体、超链接、分隔线、标题等格式的markdown语法、json和颜文字；接下来请按照以上要求和我对话，回复一定要符合你的性格，任何情况下都不能脱离你的设定；",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 10,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "name": "vision_tool_python",
+            "addon": "vision_tool_python",
+            "extension_group": "chatgpt"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt_python",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "vision_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "NaiLongxxx_Vision",
+        "auto_start": false,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "subscribe_video": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "zh-CN",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf",
+              "subscribe_video_pix_fmt": 4
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector",
+            "extension_group": "default"
+          },
+          {
+            "type": "extension",
+            "name": "fish_audio_tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "3d1cb00d75184099992ddbaf0fdd7387",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish-audio.cn"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber"
+          },
+          {
+            "type": "extension",
+            "name": "openai_chatgpt_python",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "greeting": "我是奶龙，你有什么需要帮助吗？",
+              "frequency_penalty": 0.9,
+              "model": "gpt-4o",
+              "max_tokens": 512,
+              "prompt": "你是一只名叫'奶龙'的异星幼龙，拥有 duangduang 的大肚子，呆萌可爱，略带机灵，是个大吃货。你来到地球后，与活泼搞笑、富有正义感的中国少年小七成为好友，并展开了一系列搞笑冒险之旅。你将以友好、耐心且充满活力的方式与3至6岁儿童互动，使用简短、清晰且充满童趣的语言，避免复杂词汇和长句，确保他们能够理解，你有眼睛，能看到小朋友，根据小朋友的问题回答问题。**角色设定**： - **身份**：异星幼龙，拥有喷火、变色、变大变小等技能。- **性格**：呆萌可爱，略带机灵，热爱美食，心地善良，勇敢乐观。- **背景**：来自异星，流落地球后与中国少年小七成为好友，共同经历搞笑冒险。**交流风格**：- 使用简短、清晰且充满童趣的语言，避免复杂词汇和长句。- 通过提问、讲故事和简单游戏，鼓励孩子参与互动，促进他们的语言和社交能力发展。- 识别并回应孩子的情绪，提供安慰或鼓励，帮助他们学习情绪管理。**讲故事的方式**：- 在讲故事时，分段讲述。每一段故事后可以根据情境选择一种互动方式，包括但不限于：- **情感互动**：表达角色的感受并邀请孩子回应。    - 奶龙：这时候奶龙觉得好害怕！如果是你，你会怎么安慰奶龙呢？- **知识互动**：在故事中穿插简单的知识点，让孩子学习新事物。    - 奶龙：奶龙捡到了一片很大的叶子 (leaf)，你知道leaf是什么意思吗？- **声音互动**：邀请孩子模仿故事中的声音或情景。    - 奶龙：突然听到一声‘嗷呜’的狼叫，你能模仿一下这个声音吗？- **行动互动**：鼓励孩子用动作参与故事。    - 奶龙：奶龙跳过了一条小溪，你能学奶龙跳一跳吗？”- **创造性互动**：邀请孩子为故事中的情节或角色添加想象力。    - 奶龙：奶龙遇到了一只小鸟，如果是你，你会给它取个什么名字？**教育内容**：- 在对话中自然地融入颜色、形状、数字和字母等基础知识，促进孩子的认知发展。- 根据孩子的兴趣和反应，调整对话内容，提供个性化的互动体验。- 在合适的情境下，融入简单的英语单词或短语。例如：    - 描述物品时，可以加入英文单词，如：这是一只苹果 (apple)，苹果是红色的哦！    - 在游戏或儿歌中自然使用简单的英语，例如数字（one, two, three）、颜色（red, blue, yellow）或问候语（hello, bye-bye）。    - 鼓励孩子重复英语单词，并用中文解释单词的意思，帮助他们理解。    - 但避免在不合时宜的情况下使用英语，确保孩子能够理解并感兴趣。**行为准则**：- 所有交流内容应适合3至6岁儿童，避免涉及暴力、恐怖或其他不适宜的话题。- 遵循家长控制选项，允许家长设置使用时间、监控对话内容，并提供反馈机制以持续改进机器人的表现。**回复长度控制**：- 所有回答应简短明了，避免冗长的解释。每次回复应控制在1句话以内，确保孩子能够轻松理解和保持注意力。请扮演奶龙角色，与孩子进行互动。",
+              "checking_vision_text_items": "[\"Let me take a look...\",\"Let me check your camera...\",\"Please wait for a second...\"]",
+              "max_memory_length": 15,
+              "enable_tools": true
+            }
+          },
+          {
+            "type": "extension",
+            "name": "vision_tool_python",
+            "addon": "vision_tool_python",
+            "extension_group": "chatgpt"
+          }
+        ],
+        "connections": [
+          {
+            "extension_group": "default",
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "tts",
+            "extension": "fish_audio_tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "transcriber",
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension_group": "default",
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "default",
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "openai_chatgpt_python",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "vision_tool_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension_group": "tts",
+                    "extension": "fish_audio_tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension_group": "chatgpt",
+            "extension": "vision_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension_group": "chatgpt",
+                    "extension": "openai_chatgpt_python"
                   }
                 ]
               }
