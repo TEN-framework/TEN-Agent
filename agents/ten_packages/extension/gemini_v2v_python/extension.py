@@ -27,7 +27,7 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
-from ten_ai_base.llm import AsyncLLMBaseExtension
+from ten_ai_base import AsyncLLMBaseExtension
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.chat_memory import ChatMemory
@@ -55,6 +55,9 @@ from google.genai.types import (
     LiveClientToolResponse,
     FunctionCall,
     FunctionResponse,
+    SpeechConfig,
+    VoiceConfig,
+    PrebuiltVoiceConfig,
 )
 from google.genai.live import AsyncSession
 from PIL import Image
@@ -489,13 +492,13 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             system_instruction=Content(parts=[Part(text=self.config.prompt)]),
             tools=tools,
             # voice is currently not working
-            # speech_config=SpeechConfig(
-            #     voice_config=VoiceConfig(
-            #         prebuilt_voice_config=PrebuiltVoiceConfig(
-            #             voice_name=self.config.voice
-            #         )
-            #     )
-            # ),
+            speech_config=SpeechConfig(
+                voice_config=VoiceConfig(
+                    prebuilt_voice_config=PrebuiltVoiceConfig(
+                        voice_name=self.config.voice
+                    )
+                )
+            ),
             generation_config=GenerationConfig(
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_tokens,
