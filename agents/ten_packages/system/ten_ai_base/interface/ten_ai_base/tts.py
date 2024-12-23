@@ -15,7 +15,12 @@ from ten.async_ten_env import AsyncTenEnv
 from ten.audio_frame import AudioFrame, AudioFrameDataFmt
 from ten.cmd import Cmd
 from ten.cmd_result import CmdResult, StatusCode
-from ten_ai_base.const import CMD_IN_FLUSH, CMD_OUT_FLUSH, DATA_IN_PROPERTY_END_OF_SEGMENT, DATA_IN_PROPERTY_TEXT
+from ten_ai_base.const import (
+    CMD_IN_FLUSH,
+    CMD_OUT_FLUSH,
+    DATA_IN_PROPERTY_END_OF_SEGMENT,
+    DATA_IN_PROPERTY_TEXT,
+)
 from ten_ai_base.types import TTSPcmOptions
 from .helper import AsyncQueue, PCMWriter, get_property_bool, get_property_string
 
@@ -28,6 +33,7 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
     Use begin_send_audio_out, send_audio_out, end_send_audio_out to send the audio data to the output.
     Override on_request_tts to implement the TTS logic.
     """
+
     # Create the queue for message processing
 
     def __init__(self, name: str):
@@ -35,7 +41,7 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
         self.queue = AsyncQueue()
         self.current_task = None
         self.loop_task = None
-        self.leftover_bytes = b''
+        self.leftover_bytes = b""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -66,7 +72,7 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
             status_code, detail = StatusCode.OK, "success"
             cmd_result = CmdResult.create(status_code)
             cmd_result.set_property_string("detail", detail)
-            async_ten_env.return_result(cmd_result, cmd)
+            await async_ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, async_ten_env: AsyncTenEnv, data: Data) -> None:
         # Get the necessary properties
@@ -91,7 +97,9 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
             ten_env.log_info("Cancelling the current task during flush.")
             self.current_task.cancel()
 
-    def send_audio_out(self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions) -> None:
+    async def send_audio_out(
+        self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions
+    ) -> None:
         """End sending audio out."""
         sample_rate = args.get("sample_rate", 16000)
         bytes_per_sample = args.get("bytes_per_sample", 2)
@@ -103,11 +111,13 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
             # Check if combined_data length is odd
             if len(combined_data) % (bytes_per_sample * number_of_channels) != 0:
                 # Save the last incomplete frame
-                valid_length = len(combined_data) - (len(combined_data) % (bytes_per_sample * number_of_channels))
+                valid_length = len(combined_data) - (
+                    len(combined_data) % (bytes_per_sample * number_of_channels)
+                )
                 self.leftover_bytes = combined_data[valid_length:]
                 combined_data = combined_data[:valid_length]
             else:
-                self.leftover_bytes = b''
+                self.leftover_bytes = b""
 
             if combined_data:
                 f = AudioFrame.create("pcm_frame")
@@ -115,17 +125,21 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
                 f.set_bytes_per_sample(bytes_per_sample)
                 f.set_number_of_channels(number_of_channels)
                 f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-                f.set_samples_per_channel(len(combined_data) // (bytes_per_sample * number_of_channels))
+                f.set_samples_per_channel(
+                    len(combined_data) // (bytes_per_sample * number_of_channels)
+                )
                 f.alloc_buf(len(combined_data))
                 buff = f.lock_buf()
                 buff[:] = combined_data
                 f.unlock_buf(buff)
-                ten_env.send_audio_frame(f)
+                await ten_env.send_audio_frame(f)
         except Exception as e:
             ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
 
     @abstractmethod
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+    async def on_request_tts(
+        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+    ) -> None:
         """
         Called when a new input item is available in the queue. Override this method to implement the TTS request logic.
         Use send_audio_out to send the audio data to the output when the audio data is ready.
@@ -137,7 +151,6 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
         """Called when the TTS request is cancelled."""
         pass
 
-
     async def _process_queue(self, ten_env: AsyncTenEnv):
         """Asynchronously process queue items one by one."""
         while True:
@@ -146,7 +159,8 @@ class AsyncTTSBaseExtension(AsyncExtension, ABC):
 
             try:
                 self.current_task = asyncio.create_task(
-                    self.on_request_tts(ten_env, text, end_of_segment))
+                    self.on_request_tts(ten_env, text, end_of_segment)
+                )
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 ten_env.log_info(f"Task cancelled: {text}")

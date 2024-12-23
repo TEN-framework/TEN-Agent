@@ -117,8 +117,8 @@ class GeminiLLMExtension(Extension):
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         logger.info("GeminiLLMExtension on_cmd")
-        cmd_json = cmd.to_json()
-        logger.info(f"GeminiLLMExtension on_cmd json: {cmd_json}")
+        cmd_name = cmd.get_name()
+        logger.info(f"GeminiLLMExtension on_cmd json: {cmd_name}")
 
         cmd_name = cmd.get_name()
 

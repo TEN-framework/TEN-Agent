@@ -53,7 +53,7 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         try:
             data = self.client.text_to_speech_stream(ten_env, input_text)
             async for frame in data:
-                self.send_audio_out(
+                await self.send_audio_out(
                     ten_env, frame, sample_rate=self.client.config.sample_rate
                 )
         except Exception:

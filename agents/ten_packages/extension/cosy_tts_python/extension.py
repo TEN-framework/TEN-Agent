@@ -47,7 +47,7 @@ class CosyTTSExtension(AsyncTTSBaseExtension):
             if audio_data is None:
                 break
 
-            self.send_audio_out(ten_env, audio_data)
+            await self.send_audio_out(ten_env, audio_data)
 
     async def on_request_tts(
         self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool

@@ -187,7 +187,7 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 		outputData, _ := ten.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, greeting)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := tenEnv.SendData(outputData); err != nil {
+		if err := tenEnv.SendData(outputData, nil); err != nil {
 			slog.Error(fmt.Sprintf("greeting [%s] send failed, err: %v", greeting, err), logTag)
 		} else {
 			slog.Info(fmt.Sprintf("greeting [%s] sent", greeting), logTag)
@@ -210,7 +210,7 @@ func (p *openaiChatGPTExtension) OnCmd(
 	if err != nil {
 		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 		return
 	}
 	slog.Info(fmt.Sprintf("OnCmd %s", cmdInFlush), logTag)
@@ -226,20 +226,20 @@ func (p *openaiChatGPTExtension) OnCmd(
 		if err != nil {
 			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		}
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
 			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		} else {
 			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
 		}
 	}
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd)
+	tenEnv.ReturnResult(cmdResult, cmd, nil)
 }
 
 // OnData receives data from ten graph.
@@ -351,7 +351,7 @@ func (p *openaiChatGPTExtension) OnData(
 				}
 				outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 				outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, false)
-				if err := tenEnv.SendData(outputData); err != nil {
+				if err := tenEnv.SendData(outputData, nil); err != nil {
 					slog.Error(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] send sentence [%s] failed, err: %v", inputText, sentence, err), logTag)
 					break
 				} else {
@@ -377,7 +377,7 @@ func (p *openaiChatGPTExtension) OnData(
 		outputData, _ := ten.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := tenEnv.SendData(outputData); err != nil {
+		if err := tenEnv.SendData(outputData, nil); err != nil {
 			slog.Error(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] send failed, err: %v", inputText, sentence, err), logTag)
 		} else {
 			slog.Info(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] sent", inputText, sentence), logTag)
