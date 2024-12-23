@@ -14,6 +14,11 @@ tasks:
     cmds:
       - ./agents/scripts/pylint.sh
 
+  install-tools:
+    desc: install tools
+    cmds:
+      - pip install pylint
+
   build:
     desc: build
     cmds:
