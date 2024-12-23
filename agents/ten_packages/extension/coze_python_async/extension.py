@@ -30,7 +30,12 @@ from ten_ai_base import (
     AsyncLLMBaseExtension,
 )
 
-from ten_ai_base.types import LLMChatCompletionUserMessageParam, LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata,
+from ten_ai_base.types import (
+    LLMChatCompletionUserMessageParam,
+    LLMCallCompletionArgs,
+    LLMDataCompletionArgs,
+    LLMToolMetadata,
+)
 
 CMD_IN_FLUSH = "flush"
 CMD_IN_ON_USER_JOINED = "on_user_joined"
