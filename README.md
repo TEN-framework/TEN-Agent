@@ -127,7 +127,7 @@ Open the playground at [localhost:3000](http://localhost:3000).
 
 ![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
 
-Now, we've successfully set up the playground. For more information, please refer to the [documentation](https://doc.theten.ai/ten-agent/overview).
+Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [ documentation ](https://doc.theten.ai/ten-agent/overview).
 
 <br>
 <h2>TEN Agent Components</h2>
