@@ -25,9 +25,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
+[Documentation](https://doc.theten.ai/ten-agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Create Extensions](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
+[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
@@ -35,8 +35,6 @@
 
 <br>
 <h2>🌟 Gemini Multimodal Live API Extension with RTC</h2>
-<!-- 
-![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/gemini-with-ten.jpg?raw=true) -->
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
 
@@ -128,6 +126,8 @@ Open the playground at [localhost:3000](http://localhost:3000).
  3. Select v2v extension and enter Gemini API key
 
 ![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
+
+Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [ documentation ](https://doc.theten.ai/ten-agent/overview).
 
 <br>
 <h2>TEN Agent Components</h2>
