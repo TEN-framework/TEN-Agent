@@ -268,7 +268,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 for s in sentences:
                     self.send_text_output(async_ten_env, s, False)
 
-            async def handle_content_finished():
+            async def handle_content_finished(_: str):
                 # Wait for the single tool task to complete (if any)
                 if self.tool_task_future:
                     await self.tool_task_future
