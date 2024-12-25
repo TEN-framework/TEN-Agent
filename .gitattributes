@@ -1,5 +1,2 @@
-# Treat all text files as text and normalize to LF in the repository
-* text=auto
-# Force LF for shell scripts or config files
+# Shell scripts use LF as line separator, even checked out to Windows(NTFS) file-system
 *.sh text eol=lf
-*.config text eol=lf
