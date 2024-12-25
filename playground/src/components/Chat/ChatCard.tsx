@@ -14,7 +14,7 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
-  isProduction,
+  isEditModeOn,
 } from "@/common";
 import {
   setRtmConnected,
@@ -113,7 +113,7 @@ export default function ChatCard(props: { className?: string }) {
           <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
             <RemoteGraphSelect />
             {
-              !isProduction ? (
+              isEditModeOn ? (
                 <>
                   <RemoteModuleCfgSheet />
                   <RemotePropertyCfgSheet />

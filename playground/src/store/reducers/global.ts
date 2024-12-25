@@ -9,7 +9,7 @@ import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
   COLOR_LIST,
-  isProduction
+  isEditModeOn
 } from "@/common/constant";
 import {
   apiReloadPackage,
@@ -177,7 +177,7 @@ let initializeGraphData;
 // Fetch graph details
 let fetchGraphDetails;
 
-if (!isProduction) {
+if (isEditModeOn) {
   // only for development, below requests depend on dev-server
   initializeGraphData = createAsyncThunk(
     "global/initializeGraphData",
