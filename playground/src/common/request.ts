@@ -119,7 +119,7 @@ export const apiCheckCompatibleMessages = async (payload: {
 }
 
 export const apiFetchGraphs = async (): Promise<Graph[]> => {
-  let resp: any = await axios.get(`/api/dev/v1/graphs`)
+  let resp: any = await axios.get(`/api/agents/graphs`)
   return resp.data.data.map((graph: any) => ({
     id: graph.name,
     autoStart: graph.auto_start,

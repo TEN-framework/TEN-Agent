@@ -14,6 +14,7 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
+  isProduction,
 } from "@/common";
 import {
   setRtmConnected,
@@ -111,9 +112,14 @@ export default function ChatCard(props: { className?: string }) {
           {/* Action Bar */}
           <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
             <RemoteGraphSelect />
-            <RemoteModuleCfgSheet />
-            <RemotePropertyCfgSheet />
-            {isRagGraph(graphName) && <PdfSelect />}
+            {
+              !isProduction ? (
+                <>
+                  <RemoteModuleCfgSheet />
+                  <RemotePropertyCfgSheet />
+                </>
+              ) : null
+            }
           </div>
           {/* Chat messages would go here */}
           <MessageList />

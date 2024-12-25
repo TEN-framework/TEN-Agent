@@ -129,3 +129,6 @@ export const MOBILE_ACTIVE_TAB_MAP = {
 export const isLLM = (extensionName: string) => {
   return extensionName === "llm" || extensionName === "v2v";
 }
+
+// export const isProduction = process.env.NODE_ENV === "production";
+export const isProduction = true;
