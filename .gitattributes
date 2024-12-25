@@ -1,5 +1,5 @@
-# Treat all text files as text and normalize to LF in the repository
+# Set the default behavior, in case people don't have core.autocrlf set.
 * text=auto
-# Force LF for shell scripts or config files
-*.sh text eol=lf
+# Declare files that will always have CRLF line endings on checkout.
+*.sln text eol=crlf
 *.config text eol=lf
