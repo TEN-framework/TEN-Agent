@@ -1,5 +1,10 @@
 # Set the default behavior, in case people don't have core.autocrlf set.
 * text=auto
+
+# Shell scripts use LF as line separator, even checked out to Windows(NTFS) file-system
+*.sh text eol=lf
+
 # Declare files that will always have CRLF line endings on checkout.
 *.sln text eol=crlf
+
 *.config text eol=lf
