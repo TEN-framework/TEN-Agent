@@ -245,7 +245,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
                 i = 0
                 async for line in response.aiter_lines():
-                    # logger.info(f"-> line {line}")
+                    # ten_env.log_info(f"-> line {line}")
                     # if self._need_interrupt(ts):
                     #     ten_env.log_warn(f"trace-id: {trace_id}, interrupted")
                     #     if self.transcript:

@@ -37,7 +37,7 @@ cached_text_map = {}
 MAX_CHUNK_SIZE_BYTES = 1024
 
 
-def _text_to_base64_chunks(text: str, msg_id: str) -> list:
+def _text_to_base64_chunks(ten_env: TenEnv, text: str, msg_id: str) -> list:
     # Ensure msg_id does not exceed 50 characters
     if len(msg_id) > 36:
         raise ValueError("msg_id cannot exceed 36 characters.")
@@ -85,7 +85,7 @@ def _text_to_base64_chunks(text: str, msg_id: str) -> list:
                 estimated_chunk_size -= 100  # Reduce content size gradually
                 count += 1
 
-        # logger.debug(f"chunk estimate guess: {count}")
+        # ten_env.log_debug(f"chunk estimate guess: {count}")
 
         # Add the current chunk to the list
         chunks.append(formatted_chunk)
@@ -215,7 +215,7 @@ class MessageCollectorExtension(Extension):
         }
 
         try:
-            chunks = _text_to_base64_chunks(json.dumps(base_msg_data), message_id)
+            chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
             for chunk in chunks:
                 asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
 
