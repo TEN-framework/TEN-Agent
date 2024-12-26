@@ -4,7 +4,7 @@ const nextConfig = {
   // basePath: '/ai-agent',
   // output: 'export',
   output: 'standalone',
-  reactStrictMode: false,
+  reactStrictMode: true,
   webpack(config) {
     // Grab the existing rule that handles SVG imports
     const fileLoaderRule = config.module.rules.find((rule) =>

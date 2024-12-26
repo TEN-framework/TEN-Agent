@@ -44,7 +44,6 @@
 
 Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
-
 <br>
 <h2>TEN Agent Usecases</h2>
 
@@ -55,17 +54,16 @@ Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtim
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
-
 <br>
 <h2>TEN Agent Playground in Local Environment</h2>
 
 ### Prerequisites
 
-| Category | Requirements |
-|----------|-------------|
-| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
-| **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
+| Category                        | Requirements                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keys**                        | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup) |
+| **Installation**                | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 <br>
 
@@ -93,39 +91,46 @@ AGORA_APP_CERTIFICATE=
 ```
 
 #### 3. Start agent development containers
+
 ```bash
 docker compose up -d
 ```
 
 #### 4. Enter container
+
 ```bash
 docker exec -it ten_agent_dev bash
 ```
 
-#### 5. Build agent 
+#### 5. Build agent
+
 ```bash
 task use
 ```
 
 #### 6. Start the web server
+
 ```bash
 task run
 ```
 
 #### 7. Edit playground settings
+
 Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
- 1. Select a graph type (e.g. Voice Agent, Realtime Agent)
- 2. Choose a corresponding module
- 3. Select an extension and configure its API key settings
+
+1.  Select a graph type (e.g. Voice Agent, Realtime Agent)
+2.  Choose a corresponding module
+3.  Select an extension and configure its API key settings
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
 #### Running Gemini Realtime Extension
+
 Open the playground at [localhost:3000](http://localhost:3000).
 
- 1. Select voice_assistant_realtime graph
- 2. Choose Gemini Realtime module
- 3. Select v2v extension and enter Gemini API key
+1.  Select voice_assistant_realtime graph
+2.  Choose Gemini Realtime module
+3.  Select v2v extension and enter Gemini API key
 
 ![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
 
@@ -168,3 +173,56 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 <h2>License</h2>
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+# Playground Project
+
+This project is a web application that includes a static homepage, login page, registration page, and a chatbot interface. The application is built using React and TypeScript, leveraging Next.js for server-side rendering and routing.
+
+## Project Structure
+
+```
+playground
+├── src
+│   ├── components
+│   │   ├── Layout
+│   │   │   ├── Header.tsx       # Header component for the application layout
+│   │   │   └── Action.tsx       # Action component for rendering controls
+│   │   ├── Dynamic
+│   │   │   ├── RTCCard.tsx      # Component for real-time communication features
+│   │   │   └── ChatCard.tsx     # Component for chat functionalities
+│   │   └── authInitializer.tsx   # Component for authentication initialization
+│   ├── pages
+│   │   ├── index.tsx            # Static homepage
+│   │   ├── login.tsx            # Login page for user authentication
+│   │   ├── register.tsx         # Registration page for new users
+│   │   └── chatbot.tsx          # Chatbot interface, modified from previous page.tsx
+│   ├── common
+│   │   └── index.ts              # Common utilities and hooks
+│   ├── lib
+│   │   └── utils.ts              # Utility functions for various tasks
+│   └── types
+│       └── index.ts              # TypeScript types and interfaces
+├── package.json                   # npm configuration file
+├── tsconfig.json                  # TypeScript configuration file
+└── README.md                      # Project documentation
+```
+
+## Features
+
+- **Static Homepage**: A welcoming page for users visiting the application.
+- **Login Page**: Allows users to enter their credentials to access their accounts.
+- **Registration Page**: Enables new users to create an account.
+- **Chatbot Interface**: A dynamic interface for real-time communication and chat functionalities.
+
+## Getting Started
+
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Install dependencies using `npm install`.
+4. Run the application using `npm run dev`.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.

@@ -1,22 +1,22 @@
-export type Language = "en-US" | "zh-CN" | "ja-JP" | "ko-KR";
-export type VoiceType = "male" | "female";
+export type Language = "en-US" | "zh-CN" | "ja-JP" | "ko-KR"
+export type VoiceType = "male" | "female"
 
 export interface ColorItem {
-  active: string;
-  default: string;
+  active: string
+  default: string
 }
 
 export interface IOptions {
-  channel: string;
-  userName: string;
-  userId: number;
-  appId: string;
-  token: string;
+  channel: string
+  userName: string
+  userId: number
+  appId: string
+  token: string
 }
 
 export interface IAgentSettings {
-  prompt: string;
-  greeting: string;
+  prompt: string
+  greeting: string
 }
 
 export enum EMessageType {
@@ -25,21 +25,21 @@ export enum EMessageType {
 }
 
 export interface IChatItem {
-  userId: number | string;
-  userName?: string;
-  text: string;
-  type: EMessageType;
-  isFinal?: boolean;
-  time: number;
+  userId: number | string
+  userName?: string
+  text: string
+  type: EMessageType
+  isFinal?: boolean
+  time: number
 }
 
 /** @deprecated */
 export interface ITextItem {
-  dataType: "transcribe" | "translate";
-  uid: string;
-  time: number;
-  text: string;
-  isFinal: boolean;
+  dataType: "transcribe" | "translate"
+  uid: string
+  time: number
+  text: string
+  isFinal: boolean
 }
 
 export enum ERTMTextType {
@@ -52,34 +52,57 @@ export enum ERTMTextType {
 }
 
 export interface IRTMTextItem {
-  is_final: boolean;
-  type: ERTMTextType;
-  ts: number;
-  text: string;
-  stream_id: string;
+  is_final: boolean
+  type: ERTMTextType
+  ts: number
+  text: string
+  stream_id: string
 }
 
 export interface GraphOptionItem {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 export interface LanguageOptionItem {
-  label: string;
-  value: Language;
+  label: string
+  value: Language
 }
 
 export interface VoiceOptionItem {
-  label: string;
-  value: VoiceType;
+  label: string
+  value: VoiceType
 }
 
 export interface OptionType {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 export interface IPdfData {
-  fileName: string;
-  collection: string;
+  fileName: string
+  collection: string
+}
+
+export type User = {
+  id: string
+  username: string
+  email: string
+  createdAt: Date
+}
+
+export type AuthResponse = {
+  token: string
+  user: User
+}
+
+export type LoginCredentials = {
+  email: string
+  password: string
+}
+
+export type RegistrationData = {
+  username: string
+  email: string
+  password: string
 }
