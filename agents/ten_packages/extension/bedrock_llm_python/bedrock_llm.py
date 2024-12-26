@@ -1,5 +1,5 @@
 import boto3
-from .log import logger
+from ten import TenEnv
 
 
 class BedrockLLMConfig:
@@ -41,11 +41,12 @@ class BedrockLLMConfig:
 class BedrockLLM:
     client = None
 
-    def __init__(self, config: BedrockLLMConfig):
+    def __init__(self, config: BedrockLLMConfig, ten_env: TenEnv):
         self.config = config
+        self.ten_env = ten_env
 
         if config.access_key and config.secret_key:
-            logger.info(f"BedrockLLM initialized with access key: {config.access_key}")
+            self.ten_env.log_info(f"BedrockLLM initialized with access key: {config.access_key}")
 
             self.client = boto3.client(
                 service_name="bedrock-runtime",
@@ -54,9 +55,8 @@ class BedrockLLM:
                 aws_secret_access_key=config.secret_key,
             )
         else:
-            logger.info(
-                "BedrockLLM initialized without access key, using default credentials provider chain."
-            )
+            self.ten_env.log_info(
+                "BedrockLLM initialized without access key, using default credentials provider chain.")
             self.client = boto3.client(
                 service_name="bedrock-runtime", region_name=config.region
             )

@@ -14,7 +14,6 @@ from ten import (
     StatusCode,
     CmdResult,
 )
-from .log import logger
 from .utils import get_micro_ts, parse_sentence
 
 
@@ -43,7 +42,7 @@ class GeminiLLMExtension(Extension):
     gemini_llm = None
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("GeminiLLMExtension on_start")
+        ten.log_info("GeminiLLMExtension on_start")
 
         # lazy import packages which requires long time to load
         from .gemini_llm import GeminiLLM, GeminiLLMConfig
@@ -55,7 +54,7 @@ class GeminiLLMExtension(Extension):
             api_key = ten.get_property_string(PROPERTY_API_KEY)
             gemini_llm_config.api_key = api_key
         except Exception as err:
-            logger.info(f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
+            ten.log_info(f"GetProperty required {PROPERTY_API_KEY} failed, err: {err}")
             return
 
         for key in [PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
@@ -64,32 +63,32 @@ class GeminiLLMExtension(Extension):
                 if val:
                     setattr(gemini_llm_config, key, val)
             except Exception as e:
-                logger.warning(f"get_property_string optional {key} failed, err: {e}")
+                ten.log_warn(f"get_property_string optional {key} failed, err: {e}")
 
         for key in [PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
             try:
                 setattr(gemini_llm_config, key, float(ten.get_property_float(key)))
             except Exception as e:
-                logger.warning(f"get_property_float optional {key} failed, err: {e}")
+                ten.log_warn(f"get_property_float optional {key} failed, err: {e}")
 
         for key in [PROPERTY_MAX_OUTPUT_TOKENS, PROPERTY_TOP_K]:
             try:
                 setattr(gemini_llm_config, key, int(ten.get_property_int(key)))
             except Exception as e:
-                logger.warning(f"get_property_int optional {key} failed, err: {e}")
+                ten.log_warn(f"get_property_int optional {key} failed, err: {e}")
 
         try:
             prop_max_memory_length = ten.get_property_int(PROPERTY_MAX_MEMORY_LENGTH)
             if prop_max_memory_length > 0:
                 self.max_memory_length = int(prop_max_memory_length)
         except Exception as err:
-            logger.warning(
+            ten.log_warn(
                 f"GetProperty optional {PROPERTY_MAX_MEMORY_LENGTH} failed, err: {err}"
             )
 
         # Create GeminiLLM instance
         self.gemini_llm = GeminiLLM(gemini_llm_config)
-        logger.info(
+        ten.log_info(
             f"newGeminiLLM succeed with max_output_tokens: {gemini_llm_config.max_output_tokens}, model: {gemini_llm_config.model}"
         )
 
@@ -105,20 +104,20 @@ class GeminiLLMExtension(Extension):
                     DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
                 )
                 ten.send_data(output_data)
-                logger.info(f"greeting [{greeting}] sent")
+                ten.log_info(f"greeting [{greeting}] sent")
             except Exception as e:
-                logger.error(f"greeting [{greeting}] send failed, err: {e}")
+                ten.log_error(f"greeting [{greeting}] send failed, err: {e}")
 
         ten.on_start_done()
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("GeminiLLMExtension on_stop")
+        ten.log_info("GeminiLLMExtension on_stop")
         ten.on_stop_done()
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
-        logger.info("GeminiLLMExtension on_cmd")
+        ten.log_info("GeminiLLMExtension on_cmd")
         cmd_name = cmd.get_name()
-        logger.info(f"GeminiLLMExtension on_cmd json: {cmd_name}")
+        ten.log_info(f"GeminiLLMExtension on_cmd json: {cmd_name}")
 
         cmd_name = cmd.get_name()
 
@@ -126,9 +125,9 @@ class GeminiLLMExtension(Extension):
             self.outdate_ts = get_micro_ts()
             cmd_out = Cmd.create(CMD_OUT_FLUSH)
             ten.send_cmd(cmd_out, None)
-            logger.info("GeminiLLMExtension on_cmd sent flush")
+            ten.log_info("GeminiLLMExtension on_cmd sent flush")
         else:
-            logger.info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
+            ten.log_info(f"GeminiLLMExtension on_cmd unknown cmd: {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
             cmd_result.set_property_string("detail", "unknown cmd")
             ten.return_result(cmd_result, cmd)
@@ -146,16 +145,16 @@ class GeminiLLMExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello"}
         """
-        logger.info("GeminiLLMExtension on_data")
+        ten.log_info("GeminiLLMExtension on_data")
 
         # Assume 'data' is an object from which we can get properties
         try:
             is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
             if not is_final:
-                logger.info("ignore non-final input")
+                ten.log_info("ignore non-final input")
                 return
         except Exception as e:
-            logger.error(
+            ten.log_error(
                 f"on_data get_property_bool {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {e}"
             )
             return
@@ -164,11 +163,11 @@ class GeminiLLMExtension(Extension):
         try:
             input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
             if not input_text:
-                logger.info("ignore empty text")
+                ten.log_info("ignore empty text")
                 return
-            logger.info(f"on_data input text: [{input_text}]")
+            ten.log_info(f"on_data input text: [{input_text}]")
         except Exception as e:
-            logger.error(
+            ten.log_error(
                 f"on_data get_property_string {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {e}"
             )
             return
@@ -180,14 +179,14 @@ class GeminiLLMExtension(Extension):
 
         def chat_completions_stream_worker(start_time, input_text, memory):
             try:
-                logger.info(
+                ten.log_info(
                     f"chat_completions_stream_worker for input text: [{input_text}] memory: {memory}"
                 )
 
                 # Get result from AI
                 resp = self.gemini_llm.get_chat_completions_stream(memory)
                 if resp is None:
-                    logger.info(
+                    ten.log_info(
                         f"chat_completions_stream_worker for input text: [{input_text}] failed"
                     )
                     return
@@ -198,7 +197,7 @@ class GeminiLLMExtension(Extension):
 
                 for chat_completions in resp:
                     if start_time < self.outdate_ts:
-                        logger.info(
+                        ten.log_info(
                             f"chat_completions_stream_worker recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
                         )
                         break
@@ -216,10 +215,10 @@ class GeminiLLMExtension(Extension):
                         )
 
                         if len(sentence) == 0 or not sentence_is_final:
-                            logger.info(f"sentence {sentence} is empty or not final")
+                            ten.log_info(f"sentence {sentence} is empty or not final")
                             break
 
-                        logger.info(
+                        ten.log_info(
                             f"chat_completions_stream_worker recv for input text: [{input_text}] got sentence: [{sentence}]"
                         )
 
@@ -233,11 +232,11 @@ class GeminiLLMExtension(Extension):
                                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
                             )
                             ten.send_data(output_data)
-                            logger.info(
+                            ten.log_info(
                                 f"chat_completions_stream_worker recv for input text: [{input_text}] sent sentence [{sentence}]"
                             )
                         except Exception as e:
-                            logger.error(
+                            ten.log_error(
                                 f"chat_completions_stream_worker recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {e}"
                             )
                             break
@@ -245,7 +244,7 @@ class GeminiLLMExtension(Extension):
                         sentence = ""
                         if not first_sentence_sent:
                             first_sentence_sent = True
-                            logger.info(
+                            ten.log_info(
                                 f"chat_completions_stream_worker recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_micro_ts() - start_time}ms"
                             )
 
@@ -262,16 +261,16 @@ class GeminiLLMExtension(Extension):
                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
                     )
                     ten.send_data(output_data)
-                    logger.info(
+                    ten.log_info(
                         f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
                     )
                 except Exception as e:
-                    logger.error(
+                    ten.log_error(
                         f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {e}"
                     )
 
             except Exception as e:
-                logger.error(
+                ten.log_error(
                     f"chat_completions_stream_worker for input text: [{input_text}] failed, err: {e}"
                 )
 
@@ -282,4 +281,4 @@ class GeminiLLMExtension(Extension):
             args=(start_time, input_text, self.memory),
         )
         thread.start()
-        logger.info("GeminiLLMExtension on_data end")
+        ten.log_info("GeminiLLMExtension on_data end")

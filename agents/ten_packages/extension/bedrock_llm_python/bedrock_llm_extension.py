@@ -11,7 +11,6 @@ from ten import (
     StatusCode,
     CmdResult,
 )
-from .log import logger
 
 
 CMD_IN_FLUSH = "flush"
@@ -70,7 +69,7 @@ class BedrockLLMExtension(Extension):
     bedrock_llm = None
 
     def on_start(self, ten_env: TenEnv) -> None:
-        logger.info("BedrockLLMExtension on_start")
+        ten_env.log_info("BedrockLLMExtension on_start")
         # Prepare configuration
         bedrock_llm_config = BedrockLLMConfig.default_config()
 
@@ -86,7 +85,7 @@ class BedrockLLMExtension(Extension):
                 if value:
                     bedrock_llm_config.__setattr__(optional_str_param, value)
             except Exception as err:
-                logger.debug(
+                ten_env.log_debug(
                     f"GetProperty optional {optional_str_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_str_param)}"
                 )
 
@@ -96,7 +95,7 @@ class BedrockLLMExtension(Extension):
                 if value:
                     bedrock_llm_config.__setattr__(optional_float_param, value)
             except Exception as err:
-                logger.debug(
+                ten_env.log_debug(
                     f"GetProperty optional {optional_float_param} failed, err: {err}. Using default value: {bedrock_llm_config.__getattribute__(optional_float_param)}"
                 )
 
@@ -105,14 +104,14 @@ class BedrockLLMExtension(Extension):
             if max_tokens > 0:
                 bedrock_llm_config.max_tokens = int(max_tokens)
         except Exception as err:
-            logger.debug(
+            ten_env.log_debug(
                 f"GetProperty optional {PROPERTY_MAX_TOKENS} failed, err: {err}. Using default value: {bedrock_llm_config.max_tokens}"
             )
 
         try:
             greeting = ten_env.get_property_string(PROPERTY_GREETING)
         except Exception as err:
-            logger.debug(
+            ten_env.log_debug(
                 f"GetProperty optional {PROPERTY_GREETING} failed, err: {err}."
             )
 
@@ -123,18 +122,18 @@ class BedrockLLMExtension(Extension):
             if prop_max_memory_length > 0:
                 self.max_memory_length = int(prop_max_memory_length)
         except Exception as err:
-            logger.debug(
+            ten_env.log_debug(
                 f"GetProperty optional {PROPERTY_MAX_MEMORY_LENGTH} failed, err: {err}."
             )
 
         # Create bedrockLLM instance
         try:
-            self.bedrock_llm = BedrockLLM(bedrock_llm_config)
-            logger.info(
+            self.bedrock_llm = BedrockLLM(bedrock_llm_config, ten_env)
+            ten_env.log_info(
                 f"newBedrockLLM succeed with max_tokens: {bedrock_llm_config.max_tokens}, model: {bedrock_llm_config.model}"
             )
         except Exception as err:
-            logger.exception(f"newBedrockLLM failed, err: {err}")
+            ten_env.log_error(f"newBedrockLLM failed, err: {err}")
 
         # Send greeting if available
         if greeting:
@@ -147,19 +146,19 @@ class BedrockLLMExtension(Extension):
                     DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
                 )
                 ten_env.send_data(output_data)
-                logger.info(f"greeting [{greeting}] sent")
+                ten_env.log_info(f"greeting [{greeting}] sent")
             except Exception as err:
-                logger.info(f"greeting [{greeting}] send failed, err: {err}")
+                ten_env.log_info(f"greeting [{greeting}] send failed, err: {err}")
         ten_env.on_start_done()
 
     def on_stop(self, ten_env: TenEnv) -> None:
-        logger.info("BedrockLLMExtension on_stop")
+        ten_env.log_info("BedrockLLMExtension on_stop")
         ten_env.on_stop_done()
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
-        logger.info("BedrockLLMExtension on_cmd")
+        ten_env.log_info("BedrockLLMExtension on_cmd")
         cmd_json = cmd.to_json()
-        logger.info(f"BedrockLLMExtension on_cmd json: {cmd_json}")
+        ten_env.log_info(f"BedrockLLMExtension on_cmd json: {cmd_json}")
 
         cmd_name = cmd.get_name()
 
@@ -167,9 +166,9 @@ class BedrockLLMExtension(Extension):
             self.outdate_ts = get_current_time()
             cmd_out = Cmd.create(CMD_OUT_FLUSH)
             ten_env.send_cmd(cmd_out, None)
-            logger.info("BedrockLLMExtension on_cmd sent flush")
+            ten_env.log_info("BedrockLLMExtension on_cmd sent flush")
         else:
-            logger.info(f"BedrockLLMExtension on_cmd unknown cmd: {cmd_name}")
+            ten_env.log_info(f"BedrockLLMExtension on_cmd unknown cmd: {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
             cmd_result.set_property_string("detail", "unknown cmd")
             ten_env.return_result(cmd_result, cmd)
@@ -187,16 +186,16 @@ class BedrockLLMExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello"}
         """
-        logger.info("BedrockLLMExtension on_data")
+        ten_env.log_info("BedrockLLMExtension on_data")
 
         # Assume 'data' is an object from which we can get properties
         try:
             is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
             if not is_final:
-                logger.info("ignore non-final input")
+                ten_env.log_info("ignore non-final input")
                 return
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
             return
@@ -205,11 +204,11 @@ class BedrockLLMExtension(Extension):
         try:
             input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
             if not input_text:
-                logger.info("ignore empty text")
+                ten_env.log_info("ignore empty text")
                 return
-            logger.info(f"OnData input text: [{input_text}]")
+            ten_env.log_info(f"OnData input text: [{input_text}]")
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
             )
             return
@@ -217,12 +216,12 @@ class BedrockLLMExtension(Extension):
         # Prepare memory. A conversation must alternate between user and assistant roles
         while len(self.memory):
             if len(self.memory) > self.max_memory_length:
-                logger.debug(
+                ten_env.log_debug(
                     f"pop out first message, reason: memory length limit: `{self.memory[0]}`"
                 )
                 self.memory.pop(0)
             elif self.memory[0]["role"] == "assistant":
-                logger.debug(
+                ten_env.log_debug(
                     f"pop out first message, reason: messages can not start with assistant: `{self.memory[0]}`"
                 )
                 self.memory.pop(0)
@@ -231,7 +230,7 @@ class BedrockLLMExtension(Extension):
 
         if len(self.memory) and self.memory[-1]["role"] == "user":
             # if last user input got empty response, append current user input.
-            logger.debug(
+            ten_env.log_debug(
                 "found last message with role `user`, will append this input into last user input"
             )
             self.memory[-1]["content"].append({"text": input_text})
@@ -240,14 +239,14 @@ class BedrockLLMExtension(Extension):
 
         def converse_stream_worker(start_time, input_text, memory):
             try:
-                logger.info(
+                ten_env.log_info(
                     f"GetConverseStream for input text: [{input_text}] memory: {memory}"
                 )
 
                 # Get result from Bedrock
                 resp = self.bedrock_llm.get_converse_stream(memory)
                 if resp is None or resp.get("stream") is None:
-                    logger.info(
+                    ten_env.log_info(
                         f"GetConverseStream for input text: [{input_text}] failed"
                     )
                     return
@@ -260,7 +259,7 @@ class BedrockLLMExtension(Extension):
                 for event in stream:
                     # allow 100ms buffer time, in case interruptor's flush cmd comes just after on_data event
                     if (start_time + 100_000) < self.outdate_ts:
-                        logger.info(
+                        ten_env.log_info(
                             f"GetConverseStream recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}, delta > 100ms"
                         )
                         break
@@ -276,7 +275,7 @@ class BedrockLLMExtension(Extension):
                         or "throttlingException" in event
                         or "validationException" in event
                     ):
-                        logger.error(f"GetConverseStream Error occured: {event}")
+                        ten_env.log_error(f"GetConverseStream Error occured: {event}")
                         break
                     else:
                         # ingore other events
@@ -289,9 +288,9 @@ class BedrockLLMExtension(Extension):
                             sentence, content
                         )
                         if not sentence or not sentence_is_final:
-                            logger.info(f"sentence [{sentence}] is empty or not final")
+                            ten_env.log_info(f"sentence [{sentence}] is empty or not final")
                             break
-                        logger.info(
+                        ten_env.log_info(
                             f"GetConverseStream recv for input text: [{input_text}] got sentence: [{sentence}]"
                         )
 
@@ -305,11 +304,11 @@ class BedrockLLMExtension(Extension):
                                 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
                             )
                             ten_env.send_data(output_data)
-                            logger.info(
+                            ten_env.log_info(
                                 f"GetConverseStream recv for input text: [{input_text}] sent sentence [{sentence}]"
                             )
                         except Exception as err:
-                            logger.info(
+                            ten_env.log_info(
                                 f"GetConverseStream recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {err}"
                             )
                             break
@@ -317,7 +316,7 @@ class BedrockLLMExtension(Extension):
                         sentence = ""
                         if not first_sentence_sent:
                             first_sentence_sent = True
-                            logger.info(
+                            ten_env.log_info(
                                 f"GetConverseStream recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_current_time() - start_time}ms"
                             )
 
@@ -331,7 +330,7 @@ class BedrockLLMExtension(Extension):
                         )
                 else:
                     # can not put empty model response into memory
-                    logger.error(
+                    ten_env.log_error(
                         f"GetConverseStream recv for input text: [{input_text}] failed: empty response [{full_content}]"
                     )
                     return
@@ -346,16 +345,16 @@ class BedrockLLMExtension(Extension):
                         DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
                     )
                     ten_env.send_data(output_data)
-                    logger.info(
+                    ten_env.log_info(
                         f"GetConverseStream for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
                     )
                 except Exception as err:
-                    logger.info(
+                    ten_env.log_info(
                         f"GetConverseStream for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {err}"
                     )
 
             except Exception as e:
-                logger.info(
+                ten_env.log_info(
                     f"GetConverseStream for input text: [{input_text}] failed, err: {e}"
                 )
 
@@ -365,11 +364,11 @@ class BedrockLLMExtension(Extension):
             target=converse_stream_worker, args=(start_time, input_text, self.memory)
         )
         thread.start()
-        logger.info("BedrockLLMExtension on_data end")
+        ten_env.log_info("BedrockLLMExtension on_data end")
 
 
 @register_addon_as_extension("bedrock_llm_python")
 class BedrockLLMExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:
-        logger.info("on_create_instance")
+        ten.log_info("on_create_instance")
         ten.on_create_instance_done(BedrockLLMExtension(addon_name), context)

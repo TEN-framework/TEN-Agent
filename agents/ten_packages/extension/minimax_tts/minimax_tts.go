@@ -15,9 +15,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"time"
+
+	"ten_framework/ten"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -58,8 +59,8 @@ func newMinimaxTTS(config minimaxTTSConfig) (*minimaxTTS, error) {
 	}, nil
 }
 
-func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
-	slog.Debug("textToSpeechStream start tts", "text", text)
+func (e *minimaxTTS) textToSpeechStream(tenEnv ten.TenEnv, streamWriter io.Writer, text string) (err error) {
+	tenEnv.LogDebug("textToSpeechStream start tts")
 
 	payload := map[string]any{
 		"audio_setting": map[string]any{
@@ -89,19 +90,19 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 		Post(fmt.Sprintf("%s?GroupId=%s", e.config.Url, e.config.GroupId))
 
 	if err != nil {
-		slog.Error("request failed", "err", err, "text", text)
+		tenEnv.LogError(fmt.Sprintf("request failed, err: %v, text: %s", err, text))
 		return fmt.Errorf("textToSpeechStream failed, err: %v", err)
 	}
 
 	defer func() {
 		resp.RawBody().Close()
 
-		slog.Debug("textToSpeechStream close response", "err", err, "text", text)
+		tenEnv.LogDebug(fmt.Sprintf("textToSpeechStream close response, err: %v, text: %s", err, text))
 	}()
 
 	// Check the response status code
 	if resp.StatusCode() != http.StatusOK {
-		slog.Error("unexpected response status", "status", resp.StatusCode())
+		tenEnv.LogError(fmt.Sprintf("unexpected response status: %d", resp.StatusCode()))
 		return fmt.Errorf("unexpected response status: %d", resp.StatusCode())
 	}
 
@@ -113,12 +114,12 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 				break
 			}
 
-			slog.Error("failed to read line", "error", err)
+			tenEnv.LogError(fmt.Sprintf("failed to read line: %v", err))
 			return err
 		}
 
 		if !bytes.HasPrefix(line, []byte("data:")) {
-			slog.Debug("drop chunk", "text", text, "line", line)
+			tenEnv.LogDebug(fmt.Sprintf("drop chunk, text: %s, line: %s", text, line))
 			continue
 		}
 
@@ -135,7 +136,7 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 		}
 
 		if err = json.Unmarshal(line[5:], &chunk); err != nil {
-			slog.Error("failed to decode JSON chunk", "err", err)
+			tenEnv.LogError(fmt.Sprintf("failed to decode JSON chunk: %v", err))
 			break
 		}
 
@@ -145,13 +146,13 @@ func (e *minimaxTTS) textToSpeechStream(streamWriter io.Writer, text string) (er
 
 		audioData, err := hex.DecodeString(chunk.Data.Audio)
 		if err != nil {
-			slog.Error("failed to decode audio data", "err", err, "traceId", chunk.TraceId, "BaseResp", chunk.BaseResp)
+			tenEnv.LogError(fmt.Sprintf("failed to decode audio data: %v, traceId: %s, BaseResp: %v", err, chunk.TraceId, chunk.BaseResp))
 			break
 		}
 
 		_, err = streamWriter.Write(audioData)
 		if err != nil {
-			slog.Error("failed to write to streamWriter", "err", err, "traceId", chunk.TraceId, "BaseResp", chunk.BaseResp)
+			tenEnv.LogError(fmt.Sprintf("failed to write to streamWriter: %v, traceId: %s, BaseResp: %v", err, chunk.TraceId, chunk.BaseResp))
 			break
 		}
 	}

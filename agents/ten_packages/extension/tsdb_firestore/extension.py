@@ -24,7 +24,6 @@ import asyncio
 import queue
 import threading
 import json
-from .log import logger
 from typing import List, Any
 
 DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
@@ -104,7 +103,7 @@ class TSDBFirestoreExtension(Extension):
         self.cache = ""
 
     async def __thread_routine(self, ten_env: TenEnv):
-        logger.info("__thread_routine start")
+        ten_env.log_info("__thread_routine start")
         self.loop = asyncio.get_running_loop()
         ten_env.on_start_done()
         await self.stopEvent.wait()
@@ -113,16 +112,16 @@ class TSDBFirestoreExtension(Extension):
         self.stopEvent.set()
 
     def on_init(self, ten_env: TenEnv) -> None:
-        logger.info("TSDBFirestoreExtension on_init")
+        ten_env.log_info("TSDBFirestoreExtension on_init")
         ten_env.on_init_done()
 
     def on_start(self, ten_env: TenEnv) -> None:
-        logger.info("TSDBFirestoreExtension on_start")
+        ten_env.log_info("TSDBFirestoreExtension on_start")
 
         try:
             self.credentials = ten_env.get_property_to_json(PROPERTY_CREDENTIALS)
         except Exception as err:
-            logger.error(
+            ten_env.log_error(
                 f"GetProperty required {PROPERTY_CREDENTIALS} failed, err: {err}"
             )
             return
@@ -130,7 +129,7 @@ class TSDBFirestoreExtension(Extension):
         try:
             self.channel_name = ten_env.get_property_string(PROPERTY_CHANNEL_NAME)
         except Exception as err:
-            logger.error(
+            ten_env.log_error(
                 f"GetProperty required {PROPERTY_CHANNEL_NAME} failed, err: {err}"
             )
             return
@@ -138,7 +137,7 @@ class TSDBFirestoreExtension(Extension):
         try:
             self.collection_name = ten_env.get_property_string(PROPERTY_COLLECTION_NAME)
         except Exception as err:
-            logger.error(
+            ten_env.log_error(
                 f"GetProperty required {PROPERTY_COLLECTION_NAME} failed, err: {err}"
             )
             return
@@ -156,13 +155,13 @@ class TSDBFirestoreExtension(Extension):
         exists = self.document_ref.get().exists
         if exists:
             self.document_ref.update({DOC_EXPIRE_PATH: expiration_time})
-            logger.info(
+            ten_env.log_info(
                 f"reset document ttl, {self.ttl} day(s), for the channel {self.channel_name}"
             )
         else:
             # not exists yet, set to create one
             self.document_ref.set({DOC_EXPIRE_PATH: expiration_time})
-            logger.info(
+            ten_env.log_info(
                 f"create new document and set ttl, {self.ttl} day(s), for the channel {self.channel_name}"
             )
 
@@ -176,12 +175,12 @@ class TSDBFirestoreExtension(Extension):
         )
         self.cmd_thread.start()
 
-    def async_handle(self, _: TenEnv) -> None:
+    def async_handle(self, ten_env: TenEnv) -> None:
         while not self.stopped:
             try:
                 value = self.queue.get()
                 if value is None:
-                    logger.info("exit handle loop")
+                    ten_env.log_info("exit handle loop")
                     break
                 ts, input_path, role, stream_id = value
                 content_str = json.dumps(
@@ -197,14 +196,14 @@ class TSDBFirestoreExtension(Extension):
                     self.document_ref,
                     {DOC_CONTENTS_PATH: firestore.ArrayUnion([content_str])},
                 )
-                logger.info(
+                ten_env.log_info(
                     f"append {content_str} to firestore document {self.channel_name}"
                 )
             except Exception:
-                logger.exception("Failed to store chat contents")
+                ten_env.log_error("Failed to store chat contents")
 
     def on_stop(self, ten_env: TenEnv) -> None:
-        logger.info("TSDBFirestoreExtension on_stop")
+        ten_env.log_info("TSDBFirestoreExtension on_stop")
 
         # clear the queue and stop the thread to process data in
         self.stopped = True
@@ -224,17 +223,17 @@ class TSDBFirestoreExtension(Extension):
         ten_env.on_stop_done()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
-        logger.info("TSDBFirestoreExtension on_deinit")
+        ten_env.log_info("TSDBFirestoreExtension on_deinit")
         ten_env.on_deinit_done()
 
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         try:
             cmd_name = cmd.get_name()
-            logger.info(f"on_cmd name {cmd_name}")
+            ten_env.log_info(f"on_cmd name {cmd_name}")
             if cmd_name == RETRIEVE_CMD:
                 asyncio.run_coroutine_threadsafe(self.retrieve(ten_env, cmd), self.loop)
             else:
-                logger.info(f"unknown cmd name {cmd_name}")
+                ten_env.log_info(f"unknown cmd name {cmd_name}")
                 cmd_result = CmdResult.create(StatusCode.ERROR)
                 ten_env.return_result(cmd_result, cmd)
         except Exception:
@@ -245,33 +244,33 @@ class TSDBFirestoreExtension(Extension):
             doc_dict = read_in_transaction(self.client.transaction(), self.document_ref)
             if DOC_CONTENTS_PATH in doc_dict:
                 contents = doc_dict[DOC_CONTENTS_PATH]
-                logger.info(f"after retrieve {contents}")
+                ten_env.log_info(f"after retrieve {contents}")
                 ret = CmdResult.create(StatusCode.OK)
                 ret.set_property_string(
                     CMD_OUT_PROPERTY_RESPONSE, json.dumps(order_by_ts(contents))
                 )
                 ten_env.return_result(ret, cmd)
             else:
-                logger.info(f"no contents for the channel {self.channel_name} yet")
+                ten_env.log_info(f"no contents for the channel {self.channel_name} yet")
                 ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
         except Exception:
-            logger.exception(
+            ten_env.log_error(
                 f"Failed to read the document for the channel {self.channel_name}"
             )
             ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
 
     def on_data(self, ten_env: TenEnv, data: Data) -> None:
-        logger.info("TSDBFirestoreExtension on_data")
+        ten_env.log_info("TSDBFirestoreExtension on_data")
 
         # assume 'data' is an object from which we can get properties
         is_final = False
         try:
             is_final = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL)
             if not is_final:
-                logger.info("ignore non-final input")
+                ten_env.log_info("ignore non-final input")
                 return
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
 
@@ -279,7 +278,7 @@ class TSDBFirestoreExtension(Extension):
         try:
             stream_id = data.get_property_bool(DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID)
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_STREAM_ID} failed, err: {err}"
             )
 
@@ -287,11 +286,11 @@ class TSDBFirestoreExtension(Extension):
         try:
             input_text = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_TEXT)
             if not input_text:
-                logger.info("ignore empty text")
+                ten_env.log_info("ignore empty text")
                 return
-            logger.info(f"OnData input text: [{input_text}]")
+            ten_env.log_info(f"OnData input text: [{input_text}]")
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
             )
             return
@@ -299,10 +298,10 @@ class TSDBFirestoreExtension(Extension):
         try:
             role = data.get_property_string(DATA_IN_TEXT_DATA_PROPERTY_ROLE)
             if not role:
-                logger.warning("ignore empty role")
+                ten_env.log_warn("ignore empty role")
                 return
         except Exception as err:
-            logger.info(
+            ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_ROLE} failed, err: {err}"
             )
             return

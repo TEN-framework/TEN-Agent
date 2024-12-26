@@ -10,7 +10,6 @@ package extension
 
 import (
 	"fmt"
-	"log/slog"
 
 	"ten_framework/ten"
 )
@@ -47,10 +46,10 @@ func newPcm(config *pcmConfig) *pcm {
 	}
 }
 
-func (p *pcm) getPcmFrame(buf []byte) (pcmFrame ten.AudioFrame, err error) {
+func (p *pcm) getPcmFrame(tenEnv ten.TenEnv, buf []byte) (pcmFrame ten.AudioFrame, err error) {
 	pcmFrame, err = ten.NewAudioFrame(p.config.Name)
 	if err != nil {
-		slog.Error(fmt.Sprintf("NewPcmFrame failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("NewPcmFrame failed, err: %v", err))
 		return
 	}
 
@@ -66,7 +65,7 @@ func (p *pcm) getPcmFrame(buf []byte) (pcmFrame ten.AudioFrame, err error) {
 
 	borrowedBuf, err := pcmFrame.LockBuf()
 	if err != nil {
-		slog.Error(fmt.Sprintf("LockBuf failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("LockBuf failed, err: %v", err))
 		return
 	}
 
@@ -86,15 +85,15 @@ func (p *pcm) newBuf() []byte {
 }
 
 func (p *pcm) send(tenEnv ten.TenEnv, buf []byte) (err error) {
-	pcmFrame, err := p.getPcmFrame(buf)
+	pcmFrame, err := p.getPcmFrame(tenEnv, buf)
 	if err != nil {
-		slog.Error(fmt.Sprintf("getPcmFrame failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("getPcmFrame failed, err: %v", err))
 		return
 	}
 
 	// send pcm
 	if err = tenEnv.SendAudioFrame(pcmFrame, nil); err != nil {
-		slog.Error(fmt.Sprintf("SendPcmFrame failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("SendPcmFrame failed, err: %v", err))
 		return
 	}
 

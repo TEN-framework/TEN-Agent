@@ -9,7 +9,6 @@ from ten import (
 import json
 from typing import Generator, List
 from http import HTTPStatus
-from .log import logger
 import threading, queue
 from datetime import datetime
 
@@ -40,7 +39,7 @@ class EmbeddingExtension(Extension):
         self.parallel = 10
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("on_start")
+        ten.log_info("on_start")
         self.api_key = self.get_property_string(ten, "api_key", self.api_key)
         self.model = self.get_property_string(ten, "model", self.api_key)
 
@@ -58,7 +57,7 @@ class EmbeddingExtension(Extension):
         ten.on_start_done()
 
     def async_handler(self, index: int, ten: TenEnv):
-        logger.info(f"async_handler {index} statend")
+        ten.log_info(f"async_handler {index} statend")
 
         while not self.stop:
             cmd = self.queue.get()
@@ -67,29 +66,29 @@ class EmbeddingExtension(Extension):
 
             cmd_name = cmd.get_name()
             start_time = datetime.now()
-            logger.info(f"async_handler {index} processing cmd {cmd_name}")
+            ten.log_info(f"async_handler {index} processing cmd {cmd_name}")
 
             if cmd_name == CMD_EMBED:
-                cmd_result = self.call_with_str(cmd.get_property_string("input"))
+                cmd_result = self.call_with_str(cmd.get_property_string("input"), ten)
                 ten.return_result(cmd_result, cmd)
             elif cmd_name == CMD_EMBED_BATCH:
                 inputs_list = json.loads(cmd.get_property_to_json("inputs"))
-                cmd_result = self.call_with_strs(inputs_list)
+                cmd_result = self.call_with_strs(inputs_list, ten)
                 ten.return_result(cmd_result, cmd)
             else:
-                logger.warning("unknown cmd {cmd_name}")
+                ten.log_warn("unknown cmd {cmd_name}")
 
-            logger.info(
+            ten.log_info(
                 f"async_handler {index} finished processing cmd {cmd_name}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
             )
 
-        logger.info(f"async_handler {index} stopped")
+        ten.log_info(f"async_handler {index} stopped")
 
-    def call_with_str(self, message: str) -> CmdResult:
+    def call_with_str(self, message: str, ten: TenEnv) -> CmdResult:
         start_time = datetime.now()
         # pylint: disable=undefined-variable
         response = dashscope.TextEmbedding.call(model=self.model, input=message)
-        logger.info(
+        ten.log_info(
             f"embedding call finished for input [{message}], status_code {response.status_code}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
 
@@ -112,14 +111,14 @@ class EmbeddingExtension(Extension):
         for i in range(0, len(inputs), batch_size):
             yield inputs[i : i + batch_size]
 
-    def call_with_strs(self, messages: List[str]) -> CmdResult:
+    def call_with_strs(self, messages: List[str], ten: TenEnv) -> CmdResult:
         start_time = datetime.now()
         result = None  # merge the results.
         batch_counter = 0
         for batch in self.batched(messages):
             # pylint: disable=undefined-variable
             response = dashscope.TextEmbedding.call(model=self.model, input=batch)
-            # logger.info("%s Received %s", batch, response)
+            # ten.log_info("%s Received %s", batch, response)
             if response.status_code == HTTPStatus.OK:
                 if result is None:
                     result = response.output
@@ -128,10 +127,10 @@ class EmbeddingExtension(Extension):
                         emb["text_index"] += batch_counter
                         result["embeddings"].append(emb)
             else:
-                logger.error("call %s failed, errmsg: %s", batch, response)
+                ten.log_error("call %s failed, errmsg: %s", batch, response)
             batch_counter += len(batch)
 
-        logger.info(
+        ten.log_info(
             f"embedding call finished for inputs len {len(messages)}, batch_counter {batch_counter}, results len {len(result['embeddings'])}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms "
         )
         if result is not None:
@@ -146,11 +145,11 @@ class EmbeddingExtension(Extension):
         else:
             cmd_result = CmdResult.create(StatusCode.ERROR)
             cmd_result.set_property_string(FIELD_KEY_MESSAGE, "All batch failed")
-            logger.error("All batch failed")
+            ten.log_error("All batch failed")
             return cmd_result
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("on_stop")
+        ten.log_info("on_stop")
         self.stop = True
         # clear queue
         while not self.queue.empty():
@@ -182,7 +181,7 @@ class EmbeddingExtension(Extension):
 
             self.queue.put(cmd)
         else:
-            logger.warning(f"unknown cmd {cmd_name}")
+            ten.log_warn(f"unknown cmd {cmd_name}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
             ten.return_result(cmd_result, cmd)
 
@@ -190,5 +189,5 @@ class EmbeddingExtension(Extension):
         try:
             return ten.get_property_string(key)
         except Exception as e:
-            logger.warning(f"err: {e}")
+            ten.log_warn(f"err: {e}")
             return default
