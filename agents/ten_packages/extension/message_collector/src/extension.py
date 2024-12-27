@@ -37,7 +37,7 @@ cached_text_map = {}
 MAX_CHUNK_SIZE_BYTES = 1024
 
 
-def _text_to_base64_chunks(ten_env: TenEnv, text: str, msg_id: str) -> list:
+def _text_to_base64_chunks(_: TenEnv, text: str, msg_id: str) -> list:
     # Ensure msg_id does not exceed 50 characters
     if len(msg_id) > 36:
         raise ValueError("msg_id cannot exceed 36 characters.")

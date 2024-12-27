@@ -99,14 +99,12 @@
         ],
         "connections": [
           {
-            "extension_group": "default",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -115,7 +113,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -124,7 +121,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -135,11 +131,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -150,7 +144,6 @@
                 "name": "video_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "vision_tool_python"
                   }
                 ]
@@ -158,14 +151,12 @@
             ]
           },
           {
-            "extension_group": "chatgpt",
             "extension": "llm",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -174,15 +165,12 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   },
                   {
-                    "extension_group": "default",
                     "extension": "vision_tool_python"
                   },
                   {
-                    "extension_group": "default",
                     "extension": "bingsearch_tool_python"
                   }
                 ]
@@ -193,11 +181,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -205,14 +191,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -220,14 +204,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -238,7 +220,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -246,14 +227,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "interrupt_detector",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -264,7 +243,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -272,14 +250,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -287,14 +263,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "vision_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -302,14 +276,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "bingsearch_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -384,14 +356,12 @@
         ],
         "connections": [
           {
-            "extension_group": "rtc",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -400,7 +370,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -409,7 +378,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -420,7 +388,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -428,14 +395,12 @@
             ]
           },
           {
-            "extension_group": "llm",
             "extension": "v2v",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -444,11 +409,9 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "bingsearch_tool_python"
                   },
                   {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   }
                 ]
@@ -459,7 +422,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -470,7 +432,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -478,14 +439,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -493,14 +452,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "bingsearch_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -508,14 +465,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -610,14 +565,12 @@
         ],
         "connections": [
           {
-            "extension_group": "rtc",
             "extension": "agora_rtc",
             "data": [
               {
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -628,7 +581,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -636,14 +588,12 @@
             ]
           },
           {
-            "extension_group": "tools",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -651,14 +601,12 @@
             ]
           },
           {
-            "extension_group": "tools",
             "extension": "bingsearch_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -666,14 +614,12 @@
             ]
           },
           {
-            "extension_group": "llm",
             "extension": "v2v",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -682,11 +628,9 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "tools",
                     "extension": "weatherapi_tool_python"
                   },
                   {
-                    "extension_group": "tools",
                     "extension": "bingsearch_tool_python"
                   }
                 ]
@@ -695,7 +639,6 @@
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -704,7 +647,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -715,11 +657,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   },
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -727,14 +667,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -745,7 +683,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -753,14 +690,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -834,14 +769,12 @@
         ],
         "connections": [
           {
-            "extension_group": "default",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "glue",
                     "extension": "coze_python_async"
                   }
                 ]
@@ -850,7 +783,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "glue",
                     "extension": "coze_python_async"
                   }
                 ]
@@ -861,15 +793,12 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "glue",
                     "extension": "coze_python_async"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -877,14 +806,12 @@
             ]
           },
           {
-            "extension_group": "glue",
             "extension": "coze_python_async",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -895,11 +822,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -907,14 +832,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -925,7 +848,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -933,14 +855,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -948,14 +868,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "interrupt_detector",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "glue",
                     "extension": "coze_python_async"
                   }
                 ]
@@ -1024,14 +942,12 @@
         ],
         "connections": [
           {
-            "extension_group": "rtc",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1040,7 +956,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1049,7 +964,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1060,7 +974,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1071,7 +984,6 @@
                 "name": "video_frame",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1079,14 +991,12 @@
             ]
           },
           {
-            "extension_group": "llm",
             "extension": "v2v",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1095,7 +1005,6 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   }
                 ]
@@ -1106,7 +1015,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -1117,7 +1025,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1125,14 +1032,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1140,14 +1045,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -1222,14 +1125,12 @@
         ],
         "connections": [
           {
-            "extension_group": "default",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -1238,7 +1139,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -1247,7 +1147,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -1258,11 +1157,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -1270,14 +1167,12 @@
             ]
           },
           {
-            "extension_group": "chatgpt",
             "extension": "llm",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -1288,11 +1183,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -1300,14 +1193,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1315,14 +1206,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1333,7 +1222,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -1341,14 +1229,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "interrupt_detector",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -1359,7 +1245,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
