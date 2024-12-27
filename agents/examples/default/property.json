@@ -506,27 +506,24 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000,
-              "subscribe_video_pix_fmt": 4,
-              "subscribe_video": true
+              "subscribe_audio_sample_rate": 24000
             }
           },
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "gemini_v2v_python",
+            "addon": "openai_v2v_python",
             "extension_group": "llm",
             "property": {
-              "api_key": "${env:GEMINI_API_KEY}",
-              "api_version": "v1alpha",
-              "base_uri": "generativelanguage.googleapis.com",
-              "dump": true,
-              "language": "en-US",
-              "max_tokens": 2048,
-              "model": "gemini-2.0-flash-exp",
-              "server_vad": true,
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
               "temperature": 0.9,
-              "voice": "Puck"
+              "model": "gpt-4o-realtime-preview",
+              "max_tokens": 2048,
+              "voice": "alloy",
+              "language": "en-US",
+              "server_vad": true,
+              "dump": true,
+              "max_history": 10
             }
           },
           {
@@ -549,6 +546,16 @@
         "connections": [
           {
             "extension": "agora_rtc",
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
             "cmd": [
               {
                 "name": "on_user_joined",
@@ -568,16 +575,6 @@
               },
               {
                 "name": "on_connection_failure",
-                "dest": [
-                  {
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ],
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
                 "dest": [
                   {
                     "extension": "v2v"
@@ -645,19 +642,6 @@
             "cmd": [
               {
                 "name": "tool_register",
-                "dest": [
-                  {
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "agora_rtc",
-            "video_frame": [
-              {
-                "name": "video_frame",
                 "dest": [
                   {
                     "extension": "v2v"
