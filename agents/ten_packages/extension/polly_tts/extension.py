@@ -28,7 +28,7 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         try:
             await super().on_start(ten_env)
             ten_env.log_debug("on_start")
-            self.config = PollyTTSConfig.create(ten_env=ten_env)
+            self.config = await PollyTTSConfig.create_async(ten_env=ten_env)
 
             if not self.config.access_key or not self.config.secret_key:
                 raise ValueError("access_key and secret_key are required")

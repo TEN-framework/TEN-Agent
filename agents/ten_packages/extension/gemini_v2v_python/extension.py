@@ -207,7 +207,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
         self.loop = asyncio.get_event_loop()
 
-        self.config = GeminiRealtimeConfig.create(ten_env=ten_env)
+        self.config = await GeminiRealtimeConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:

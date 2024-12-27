@@ -1,17 +1,17 @@
 {
   "type": "app",
   "name": "agent_experimental",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.5"
+      "version": "0.6"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.5"
+      "version": "0.6"
     },
     {
       "type": "extension",

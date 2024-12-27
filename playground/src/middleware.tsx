@@ -55,7 +55,7 @@ export async function middleware(req: NextRequest) {
             return NextResponse.rewrite(url);
         }
 
-        url.href = `${TEN_DEV_SERVER_URL}${pathname.replace('/api/dev/', '/api/dev-server/')}`;
+        url.href = `${TEN_DEV_SERVER_URL}${pathname.replace('/api/dev/', '/api/designer/')}`;
 
         // console.log(`Rewriting request to ${url.href}`);
         return NextResponse.rewrite(url);

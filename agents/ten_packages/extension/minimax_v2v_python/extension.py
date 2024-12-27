@@ -43,7 +43,7 @@ class MinimaxV2VConfig:
     max_memory_length: int = 10
     dump: bool = False
 
-    def read_from_property(self, ten_env: AsyncTenEnv):
+    async def read_from_property(self, ten_env: AsyncTenEnv):
         for field in fields(self):
             # 'is_property_exist' has a bug that can not be used in async extension currently, use it instead of try .. except once fixed
             # if not ten_env.is_property_exist(field.name):
@@ -51,16 +51,16 @@ class MinimaxV2VConfig:
             try:
                 match field.type:
                     case builtins.str:
-                        val = ten_env.get_property_string(field.name)
+                        val = await ten_env.get_property_string(field.name)
                         if val:
                             setattr(self, field.name, val)
                             ten_env.log_info(f"{field.name}={val}")
                     case builtins.int:
-                        val = ten_env.get_property_int(field.name)
+                        val = await ten_env.get_property_int(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case builtins.bool:
-                        val = ten_env.get_property_bool(field.name)
+                        val = await ten_env.get_property_bool(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case _:
@@ -87,7 +87,7 @@ class MinimaxV2VExtension(AsyncExtension):
         self.queue = asyncio.Queue()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        self.config.read_from_property(ten_env=ten_env)
+        await self.config.read_from_property(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         self.memory = ChatMemory(self.config.max_memory_length)

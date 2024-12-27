@@ -160,7 +160,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
 
         self.loop = asyncio.get_event_loop()
 
-        self.config = GlueConfig.create(ten_env=ten_env)
+        self.config = await GlueConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         self.memory = ChatMemory(self.config.max_history)

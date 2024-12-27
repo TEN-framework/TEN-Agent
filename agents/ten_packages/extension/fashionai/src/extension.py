@@ -50,11 +50,11 @@ class FashionAIExtension(AsyncExtension):
         )
 
         try:
-            self.app_id = ten_env.get_property_string("app_id")
-            self.token = ten_env.get_property_string("token")
-            self.channel = ten_env.get_property_string("channel")
-            self.stream_id = str(ten_env.get_property_int("stream_id"))
-            self.service_id = ten_env.get_property_string("service_id")
+            self.app_id = await ten_env.get_property_string("app_id")
+            self.token = await ten_env.get_property_string("token")
+            self.channel = await ten_env.get_property_string("channel")
+            self.stream_id = str(await ten_env.get_property_int("stream_id"))
+            self.service_id = await ten_env.get_property_string("service_id")
 
             ten_env.log_info(
                 f"FASHION_AI on_start: app_id = {self.app_id}, token = {self.token}, channel = {self.channel}, stream_id = {self.stream_id}, service_id = {self.service_id}"

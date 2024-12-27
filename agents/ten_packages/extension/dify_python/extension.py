@@ -81,7 +81,7 @@ class DifyExtension(AsyncLLMBaseExtension):
         ten_env.log_debug("on_start")
         self.loop = asyncio.get_event_loop()
 
-        self.config = DifyConfig.create(ten_env=ten_env)
+        self.config = await DifyConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:

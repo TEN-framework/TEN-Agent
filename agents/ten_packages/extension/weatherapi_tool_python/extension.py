@@ -96,7 +96,7 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
 
-        self.config = WeatherToolConfig.create(ten_env=ten_env)
+        self.config = await WeatherToolConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
         if self.config.api_key:
             await super().on_start(ten_env)

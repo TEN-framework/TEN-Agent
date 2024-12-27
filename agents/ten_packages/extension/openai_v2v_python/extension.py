@@ -159,7 +159,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
         self.loop = asyncio.get_event_loop()
 
-        self.config = OpenAIRealtimeConfig.create(ten_env=ten_env)
+        self.config = await OpenAIRealtimeConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:
