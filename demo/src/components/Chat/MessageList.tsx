@@ -42,11 +42,12 @@ export function MessageItem(props: { data: IChatItem }) {
           "flex-row-reverse": data.type === EMessageType.USER,
         })}
       >
-        <Avatar>
+        {data.type === EMessageType.AGENT && <Avatar>
           <AvatarFallback>
-            {data.type === EMessageType.AGENT ? "AG" : "U"}
+            AG
           </AvatarFallback>
         </Avatar>
+        }
         <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
           <p>{data.text}</p>
         </div>
