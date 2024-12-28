@@ -9,4 +9,5 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
+  "git.ignoreLimitWarning": true,
 }
