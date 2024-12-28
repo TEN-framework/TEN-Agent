@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
     "name": "ten_agent_dev",
-    "image": "ghcr.io/ten-framework/ten_agent_build:0.2.4",
+    "image": "ghcr.io/ten-framework/ten_agent_build:0.3.3",
     "customizations": {
         "vscode": {
             "extensions": [
