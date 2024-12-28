@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,10 +21,6 @@ import (
 	"ten_framework/ten"
 
 	openai "github.com/sashabaranov/go-openai"
-)
-
-var (
-	logTag = slog.String("extension", "OPENAI_CHATGPT_EXTENSION")
 )
 
 type openaiChatGPTExtension struct {
@@ -82,13 +77,13 @@ func newChatGPTExtension(name string) ten.Extension {
 //   - greeting
 //   - proxy_url
 func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
-	slog.Info("OnStart", logTag)
+	tenEnv.LogInfo("OnStart")
 
 	// prepare configuration
 	openaiChatGPTConfig := defaultOpenaiChatGPTConfig()
 
 	if baseUrl, err := tenEnv.GetPropertyString(propertyBaseUrl); err != nil {
-		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyBaseUrl, err), logTag)
+		tenEnv.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyBaseUrl, err))
 	} else {
 		if len(baseUrl) > 0 {
 			openaiChatGPTConfig.BaseUrl = baseUrl
@@ -96,14 +91,14 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 	}
 
 	if apiKey, err := tenEnv.GetPropertyString(propertyApiKey); err != nil {
-		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
+		tenEnv.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err))
 		return
 	} else {
 		openaiChatGPTConfig.ApiKey = apiKey
 	}
 
 	if model, err := tenEnv.GetPropertyString(propertyModel); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s error:%v", propertyModel, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s error:%v", propertyModel, err))
 	} else {
 		if len(model) > 0 {
 			openaiChatGPTConfig.Model = model
@@ -111,7 +106,7 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 	}
 
 	if prompt, err := tenEnv.GetPropertyString(propertyPrompt); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s error:%v", propertyPrompt, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s error:%v", propertyPrompt, err))
 	} else {
 		if len(prompt) > 0 {
 			openaiChatGPTConfig.Prompt = prompt
@@ -119,31 +114,31 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 	}
 
 	if frequencyPenalty, err := tenEnv.GetPropertyFloat64(propertyFrequencyPenalty); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyFrequencyPenalty, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyFrequencyPenalty, err))
 	} else {
 		openaiChatGPTConfig.FrequencyPenalty = float32(frequencyPenalty)
 	}
 
 	if presencePenalty, err := tenEnv.GetPropertyFloat64(propertyPresencePenalty); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyPresencePenalty, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyPresencePenalty, err))
 	} else {
 		openaiChatGPTConfig.PresencePenalty = float32(presencePenalty)
 	}
 
 	if temperature, err := tenEnv.GetPropertyFloat64(propertyTemperature); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTemperature, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTemperature, err))
 	} else {
 		openaiChatGPTConfig.Temperature = float32(temperature)
 	}
 
 	if topP, err := tenEnv.GetPropertyFloat64(propertyTopP); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTopP, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyTopP, err))
 	} else {
 		openaiChatGPTConfig.TopP = float32(topP)
 	}
 
 	if maxTokens, err := tenEnv.GetPropertyInt64(propertyMaxTokens); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxTokens, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxTokens, err))
 	} else {
 		if maxTokens > 0 {
 			openaiChatGPTConfig.MaxTokens = int(maxTokens)
@@ -151,18 +146,18 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 	}
 
 	if proxyUrl, err := tenEnv.GetPropertyString(propertyProxyUrl); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyProxyUrl, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyProxyUrl, err))
 	} else {
 		openaiChatGPTConfig.ProxyUrl = proxyUrl
 	}
 
 	greeting, err := tenEnv.GetPropertyString(propertyGreeting)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyGreeting, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyGreeting, err))
 	}
 
 	if propMaxMemoryLength, err := tenEnv.GetPropertyInt64(propertyMaxMemoryLength); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxMemoryLength, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyMaxMemoryLength, err))
 	} else {
 		if propMaxMemoryLength > 0 {
 			maxMemoryLength = int(propMaxMemoryLength)
@@ -172,11 +167,11 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 	// create openaiChatGPT instance
 	openaiChatgpt, err := newOpenaiChatGPT(openaiChatGPTConfig)
 	if err != nil {
-		slog.Error(fmt.Sprintf("newOpenaiChatGPT failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("newOpenaiChatGPT failed, err: %v", err))
 		return
 	}
-	slog.Info(fmt.Sprintf("newOpenaiChatGPT succeed with max_tokens: %d, model: %s",
-		openaiChatGPTConfig.MaxTokens, openaiChatGPTConfig.Model), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("newOpenaiChatGPT succeed with max_tokens: %d, model: %s",
+		openaiChatGPTConfig.MaxTokens, openaiChatGPTConfig.Model))
 
 	p.openaiChatGPT = openaiChatgpt
 
@@ -187,10 +182,10 @@ func (p *openaiChatGPTExtension) OnStart(tenEnv ten.TenEnv) {
 		outputData, _ := ten.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, greeting)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := tenEnv.SendData(outputData); err != nil {
-			slog.Error(fmt.Sprintf("greeting [%s] send failed, err: %v", greeting, err), logTag)
+		if err := tenEnv.SendData(outputData, nil); err != nil {
+			tenEnv.LogError(fmt.Sprintf("greeting [%s] send failed, err: %v", greeting, err))
 		} else {
-			slog.Info(fmt.Sprintf("greeting [%s] sent", greeting), logTag)
+			tenEnv.LogInfo(fmt.Sprintf("greeting [%s] sent", greeting))
 		}
 	}
 
@@ -208,12 +203,12 @@ func (p *openaiChatGPTExtension) OnCmd(
 ) {
 	cmdName, err := cmd.GetName()
 	if err != nil {
-		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("OnCmd get name failed, err: %v", err))
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 		return
 	}
-	slog.Info(fmt.Sprintf("OnCmd %s", cmdInFlush), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnCmd %s", cmdInFlush))
 
 	switch cmdName {
 	case cmdInFlush:
@@ -224,22 +219,22 @@ func (p *openaiChatGPTExtension) OnCmd(
 		// send out
 		outCmd, err := ten.NewCmd(cmdOutFlush)
 		if err != nil {
-			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		}
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
-			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		} else {
-			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
+			tenEnv.LogInfo(fmt.Sprintf("cmd %s sent", cmdOutFlush))
 		}
 	}
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd)
+	tenEnv.ReturnResult(cmdResult, cmd, nil)
 }
 
 // OnData receives data from ten graph.
@@ -254,25 +249,25 @@ func (p *openaiChatGPTExtension) OnData(
 	// Get isFinal
 	isFinal, err := data.GetPropertyBool(dataInTextDataPropertyIsFinal)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyIsFinal, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyIsFinal, err))
 		return
 	}
 	if !isFinal { // ignore non-final
-		slog.Debug("ignore non-final input", logTag)
+		tenEnv.LogDebug("ignore non-final input")
 		return
 	}
 
 	// Get input text
 	inputText, err := data.GetPropertyString(dataInTextDataPropertyText)
 	if err != nil {
-		slog.Error(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err), logTag)
+		tenEnv.LogError(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err))
 		return
 	}
 	if len(inputText) == 0 {
-		slog.Debug("ignore empty text", logTag)
+		tenEnv.LogDebug("ignore empty text")
 		return
 	}
-	slog.Info(fmt.Sprintf("OnData input text: [%s]", inputText), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnData input text: [%s]", inputText))
 
 	// prepare memory
 	for len(memoryChan) > 0 {
@@ -297,12 +292,12 @@ func (p *openaiChatGPTExtension) OnData(
 	wg.Add(1)
 	go func(startTime time.Time, inputText string, memory []openai.ChatCompletionMessage) {
 		defer wg.Done()
-		slog.Info(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] memory: %v", inputText, memory), logTag)
+		tenEnv.LogInfo(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] memory: %v", inputText, memory))
 
 		// Get result from ai
 		resp, err := p.openaiChatGPT.getChatCompletionsStream(memory)
 		if err != nil {
-			slog.Error(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] failed, err: %v", inputText, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] failed, err: %v", inputText, err))
 			return
 		}
 		defer func() {
@@ -310,20 +305,20 @@ func (p *openaiChatGPTExtension) OnData(
 				resp.Close()
 			}
 		}()
-		slog.Debug(fmt.Sprintf("GetChatCompletionsStream start to recv for input text: [%s]", inputText), logTag)
+		tenEnv.LogDebug(fmt.Sprintf("GetChatCompletionsStream start to recv for input text: [%s]", inputText))
 
 		var sentence, fullContent string
 		var firstSentenceSent bool
 		for {
 			if startTime.UnixMicro() < outdateTs.Load() { // Check whether to interrupt
-				slog.Info(fmt.Sprintf("GetChatCompletionsStream recv interrupt and flushing for input text: [%s], startTs: %d, outdateTs: %d",
-					inputText, startTime.UnixMicro(), outdateTs.Load()), logTag)
+				tenEnv.LogInfo(fmt.Sprintf("GetChatCompletionsStream recv interrupt and flushing for input text: [%s], startTs: %d, outdateTs: %d",
+					inputText, startTime.UnixMicro(), outdateTs.Load()))
 				break
 			}
 
 			chatCompletions, err := resp.Recv()
 			if errors.Is(err, io.EOF) {
-				slog.Debug(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s], io.EOF break", inputText), logTag)
+				tenEnv.LogDebug(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s], io.EOF break", inputText))
 				break
 			}
 
@@ -338,31 +333,31 @@ func (p *openaiChatGPTExtension) OnData(
 				var sentenceIsFinal bool
 				sentence, content, sentenceIsFinal = parseSentence(sentence, content)
 				if len(sentence) == 0 || !sentenceIsFinal {
-					slog.Debug(fmt.Sprintf("sentence %s is empty or not final", sentence), logTag)
+					tenEnv.LogDebug(fmt.Sprintf("sentence %s is empty or not final", sentence))
 					break
 				}
-				slog.Debug(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] got sentence: [%s]", inputText, sentence), logTag)
+				tenEnv.LogDebug(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] got sentence: [%s]", inputText, sentence))
 
 				// send sentence
 				outputData, err := ten.NewData("text_data")
 				if err != nil {
-					slog.Error(fmt.Sprintf("NewData failed, err: %v", err), logTag)
+					tenEnv.LogError(fmt.Sprintf("NewData failed, err: %v", err))
 					break
 				}
 				outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 				outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, false)
-				if err := tenEnv.SendData(outputData); err != nil {
-					slog.Error(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] send sentence [%s] failed, err: %v", inputText, sentence, err), logTag)
+				if err := tenEnv.SendData(outputData, nil); err != nil {
+					tenEnv.LogError(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] send sentence [%s] failed, err: %v", inputText, sentence, err))
 					break
 				} else {
-					slog.Info(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] sent sentence [%s]", inputText, sentence), logTag)
+					tenEnv.LogInfo(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] sent sentence [%s]", inputText, sentence))
 				}
 				sentence = ""
 
 				if !firstSentenceSent {
 					firstSentenceSent = true
-					slog.Info(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] first sentence sent, first_sentency_latency %dms",
-						inputText, time.Since(startTime).Milliseconds()), logTag)
+					tenEnv.LogInfo(fmt.Sprintf("GetChatCompletionsStream recv for input text: [%s] first sentence sent, first_sentency_latency %dms",
+						inputText, time.Since(startTime).Milliseconds()))
 				}
 			}
 		}
@@ -377,17 +372,15 @@ func (p *openaiChatGPTExtension) OnData(
 		outputData, _ := ten.NewData("text_data")
 		outputData.SetProperty(dataOutTextDataPropertyText, sentence)
 		outputData.SetProperty(dataOutTextDataPropertyTextEndOfSegment, true)
-		if err := tenEnv.SendData(outputData); err != nil {
-			slog.Error(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] send failed, err: %v", inputText, sentence, err), logTag)
+		if err := tenEnv.SendData(outputData, nil); err != nil {
+			tenEnv.LogError(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] send failed, err: %v", inputText, sentence, err))
 		} else {
-			slog.Info(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] sent", inputText, sentence), logTag)
+			tenEnv.LogInfo(fmt.Sprintf("GetChatCompletionsStream for input text: [%s] end of segment with sentence [%s] sent", inputText, sentence))
 		}
 	}(time.Now(), inputText, append([]openai.ChatCompletionMessage{}, memory...))
 }
 
 func init() {
-	slog.Info("init")
-
 	// Register addon
 	ten.RegisterAddonAsExtension(
 		"openai_chatgpt",

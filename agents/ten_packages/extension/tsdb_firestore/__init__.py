@@ -6,6 +6,3 @@
 #
 #
 from . import addon
-from .log import logger
-
-logger.info("tsdb_firestore extension loaded")

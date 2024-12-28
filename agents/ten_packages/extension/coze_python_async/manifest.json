@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "coze_python_async",
-  "version": "0.3.1",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4"
+      "version": "0.6"
     }
   ],
   "package": {

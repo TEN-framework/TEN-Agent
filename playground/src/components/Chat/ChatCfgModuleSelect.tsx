@@ -148,8 +148,8 @@ export function RemoteModuleCfgSheet() {
                                 if (geminiV2VNode) {
                                     GraphEditor.addOrUpdateConnection(
                                         selectedGraphCopy,
-                                        `${agoraRtcNode.extensionGroup}.${agoraRtcNode.name}`,
-                                        `${geminiV2VNode.extensionGroup}.${geminiV2VNode.name}`,
+                                        `${agoraRtcNode.name}`,
+                                        `${geminiV2VNode.name}`,
                                         ProtocolLabel.VIDEO_FRAME,
                                         "video_frame"
                                     );

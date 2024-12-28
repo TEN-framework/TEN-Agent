@@ -7,10 +7,7 @@
 #
 
 from dataclasses import dataclass
-from typing import AsyncIterator, Iterator
-from elevenlabs import Voice, VoiceSettings
-from elevenlabs.client import AsyncElevenLabs
-
+from typing import AsyncIterator
 from ten_ai_base.config import BaseConfig
 
 
@@ -26,12 +23,22 @@ class ElevenLabsTTSConfig(BaseConfig):
     style: float = 0.0
     voice_id: str = "pNInz6obpgDQGcFmaJgB"
 
+
 class ElevenLabsTTS:
     def __init__(self, config: ElevenLabsTTSConfig) -> None:
         self.config = config
-        self.client = AsyncElevenLabs(api_key=config.api_key, timeout=config.request_timeout_seconds)
+        self.client = None
 
     def text_to_speech_stream(self, text: str) -> AsyncIterator[bytes]:
+        # to avoid circular import issue when using openai with 11labs
+        from elevenlabs.client import AsyncElevenLabs
+        from elevenlabs import Voice, VoiceSettings
+
+        if not self.client:
+            self.client = AsyncElevenLabs(
+                api_key=self.config.api_key, timeout=self.config.request_timeout_seconds
+            )
+
         return self.client.generate(
             text=text,
             model=self.config.model_id,

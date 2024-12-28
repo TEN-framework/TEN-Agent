@@ -1,2 +1,2 @@
 asyncio
-google-genai==0.2.2
+google-genai==0.3.0

@@ -11,7 +11,6 @@ import random
 import requests
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 from openai.types.chat.chat_completion import ChatCompletion
-from typing import List, Dict, Any, Literal, Optional, Union
 
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
@@ -21,8 +20,12 @@ from ten_ai_base.config import BaseConfig
 class OpenAIChatGPTConfig(BaseConfig):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
-    model: str = "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
-    prompt: str = "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
+    model: str = (
+        "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
+    )
+    prompt: str = (
+        "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
+    )
     frequency_penalty: float = 0.9
     presence_penalty: float = 0.9
     top_p: float = 1.0
@@ -39,21 +42,21 @@ class OpenAIChatGPTConfig(BaseConfig):
 
 class OpenAIChatGPT:
     client = None
-    def __init__(self, ten_env:AsyncTenEnv, config: OpenAIChatGPTConfig):
+
+    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
         ten_env.log_info(f"OpenAIChatGPT initialized with config: {config.api_key}")
         if self.config.vendor == "azure":
             self.client = AsyncAzureOpenAI(
                 api_key=config.api_key,
                 api_version=self.config.azure_api_version,
-                azure_endpoint=config.azure_endpoint
+                azure_endpoint=config.azure_endpoint,
             )
-            ten_env.log_info(f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}")
+            ten_env.log_info(
+                f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}"
+            )
         else:
-            self.client = AsyncOpenAI(
-                api_key=config.api_key,
-                base_url=config.base_url
-            )
+            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {
@@ -64,7 +67,7 @@ class OpenAIChatGPT:
             self.session.proxies.update(proxies)
         self.client.session = self.session
 
-    async def get_chat_completions(self, messages, tools = None) -> ChatCompletion:
+    async def get_chat_completions(self, messages, tools=None) -> ChatCompletion:
         req = {
             "model": self.config.model,
             "messages": [
@@ -86,11 +89,11 @@ class OpenAIChatGPT:
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
-            raise Exception(f"CreateChatCompletion failed, err: {e}")
+            raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
 
         return response
 
-    async def get_chat_completions_stream(self, messages, tools = None, listener = None):
+    async def get_chat_completions_stream(self, messages, tools=None, listener=None):
         req = {
             "model": self.config.model,
             "messages": [
@@ -113,11 +116,17 @@ class OpenAIChatGPT:
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
-            raise Exception(f"CreateChatCompletionStream failed, err: {e}")
-        
+            raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
+
         full_content = ""
         # Check for tool calls
-        tool_calls_dict = defaultdict(lambda: {"id": None, "function": {"arguments": "", "name": None}, "type": None})
+        tool_calls_dict = defaultdict(
+            lambda: {
+                "id": None,
+                "function": {"arguments": "", "name": None},
+                "type": None,
+            }
+        )
 
         async for chat_completion in response:
             if len(chat_completion.choices) == 0:
@@ -129,7 +138,7 @@ class OpenAIChatGPT:
 
             # Emit content update event (fire-and-forget)
             if listener and content:
-                listener.emit('content_update', content)
+                listener.emit("content_update", content)
 
             full_content += content
 
@@ -140,15 +149,18 @@ class OpenAIChatGPT:
 
                     # If the function name is not None, set it
                     if tool_call.function.name is not None:
-                        tool_calls_dict[tool_call.index]["function"]["name"] = tool_call.function.name
+                        tool_calls_dict[tool_call.index]["function"][
+                            "name"
+                        ] = tool_call.function.name
 
                     # Append the arguments
-                    tool_calls_dict[tool_call.index]["function"]["arguments"] += tool_call.function.arguments
+                    tool_calls_dict[tool_call.index]["function"][
+                        "arguments"
+                    ] += tool_call.function.arguments
 
                     # If the type is not None, set it
                     if tool_call.type is not None:
                         tool_calls_dict[tool_call.index]["type"] = tool_call.type
-
 
         # Convert the dictionary to a list
         tool_calls_list = list(tool_calls_dict.values())
@@ -156,8 +168,8 @@ class OpenAIChatGPT:
         # Emit tool calls event (fire-and-forget)
         if listener and tool_calls_list:
             for tool_call in tool_calls_list:
-                listener.emit('tool_call', tool_call)
+                listener.emit("tool_call", tool_call)
 
         # Emit content finished event after the loop completes
         if listener:
-            listener.emit('content_finished', full_content)
+            listener.emit("content_finished", full_content)

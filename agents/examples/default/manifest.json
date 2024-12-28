@@ -1,27 +1,27 @@
 {
   "type": "app",
   "name": "agent_demo",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.4"
+      "version": "0.6"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.4"
+      "version": "0.6"
     },
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.9.0-rc1"
+      "version": "=0.10.1"
     },
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "0.3.0-rc1"
+      "version": "=0.4.1"
     },
     {
       "type": "system",
@@ -31,12 +31,112 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.6.2"
+      "version": "=0.7.1"
     },
     {
       "type": "extension",
-      "name": "agora_rtm",
-      "version": "=0.3.0"
+      "name": "openai_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "bingsearch_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_chatgpt_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "fish_audio_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "interrupt_detector_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "weatherapi_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "deepgram_asr_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "vision_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "vision_analyze_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "transcribe_asr_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "gemini_llm_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "bedrock_llm_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "polly_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "minimax_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "minimax_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "cosy_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "elevenlabs_tts_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "dify_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "gemini_v2v_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "coze_python_async",
+      "version": "=0.1.0"
     }
   ]
 }

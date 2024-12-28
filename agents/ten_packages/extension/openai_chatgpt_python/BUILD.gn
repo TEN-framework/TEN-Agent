@@ -14,7 +14,6 @@ ten_package("openai_chatgpt_python") {
     "__init__.py",
     "addon.py",
     "extension.py",
-    "log.py",
     "manifest.json",
     "property.json",
   ]

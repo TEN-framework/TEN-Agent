@@ -4,7 +4,6 @@
 # See the LICENSE file for more information.
 #
 import traceback
-from ten.data import Data
 from ten_ai_base.tts import AsyncTTSBaseExtension
 from .minimax_tts import MinimaxTTS, MinimaxTTSConfig
 from ten import (
@@ -25,7 +24,7 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
         await super().on_start(ten_env)
         ten_env.log_debug("on_start")
 
-        config = MinimaxTTSConfig.create(ten_env=ten_env)
+        config = await MinimaxTTSConfig.create_async(ten_env=ten_env)
 
         ten_env.log_info(f"config: {config.api_key}, {config.group_id}")
 
@@ -38,18 +37,20 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
-        # TODO: clean up resources
-
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+    async def on_request_tts(
+        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+    ) -> None:
         try:
             data = self.client.get(ten_env, input_text)
             async for frame in data:
-                self.send_audio_out(ten_env, frame, sample_rate=self.client.config.sample_rate)
-        except Exception as err:
+                await self.send_audio_out(
+                    ten_env, frame, sample_rate=self.client.config.sample_rate
+                )
+        except Exception:
             ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:

@@ -26,6 +26,7 @@ TEXT_DATA_FINAL_FIELD = "is_final"
 TEXT_DATA_STREAM_ID_FIELD = "stream_id"
 TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 
+
 class MessageCollectorRTMExtension(AsyncExtension):
     # Create the queue for message processing
     def __init__(self, name: str):
@@ -35,7 +36,6 @@ class MessageCollectorRTMExtension(AsyncExtension):
         self.loop = None
         self.ten_env = None
         self.stopped = False
-        
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("MessageCollectorRTMExtension on_init")
@@ -61,14 +61,14 @@ class MessageCollectorRTMExtension(AsyncExtension):
             if cmd_name == "on_user_audio_track_state_changed":
                 await self.handle_user_state_changed(cmd)
             else:
-                 ten_env.log_warn(f"unsupported cmd {cmd_name}")
+                ten_env.log_warn(f"unsupported cmd {cmd_name}")
 
             cmd_result = CmdResult.create(StatusCode.OK)
-            ten_env.return_result(cmd_result, cmd)
+            await ten_env.return_result(cmd_result, cmd)
         except Exception as e:
             ten_env.log_error(f"on_cmd error: {e}")
             cmd_result = CmdResult.create(StatusCode.ERROR)
-            ten_env.return_result(cmd_result, cmd)
+            await ten_env.return_result(cmd_result, cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         """
@@ -89,10 +89,14 @@ class MessageCollectorRTMExtension(AsyncExtension):
         else:
             ten_env.log_warn(f"unsupported data {data_name}")
 
-    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         pass
 
-    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(
+        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
+    ) -> None:
         pass
 
     async def on_text_data(self, data: Data) -> None:
@@ -110,12 +114,12 @@ class MessageCollectorRTMExtension(AsyncExtension):
 
         try:
             final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
-        except Exception as e:
+        except Exception:
             pass
 
         try:
             stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
-        except Exception as e:
+        except Exception:
             pass
 
         try:
@@ -156,13 +160,13 @@ class MessageCollectorRTMExtension(AsyncExtension):
         await self._queue_message("text_data", text_data)
 
     async def on_rtm_message_event(self, data: Data) -> None:
-        self.ten_env.log_debug(f"on_data rtm_message_event")
+        self.ten_env.log_debug("on_data rtm_message_event")
         try:
             text = data.get_property_string("message")
             data = Data.create("text_data")
             data.set_property_string("text", text)
             data.set_property_bool("is_final", True)
-            self.ten_env.send_data(data)
+            asyncio.create_task(self.ten_env.send_data(data))
         except Exception as e:
             self.ten_env.log_error(f"Failed to handle on_rtm_message_event data: {e}")
 
@@ -208,7 +212,7 @@ class MessageCollectorRTMExtension(AsyncExtension):
     async def _handle_text_data(self, data: dict):
         try:
             self.ten_env.log_debug(f"Handling text data: {data}")
-            json_bytes = json.dumps(data).encode('utf-8') 
+            json_bytes = json.dumps(data).encode("utf-8")
             cmd = Cmd.create("publish")
             cmd.set_property_buf("message", json_bytes)
             cmd_result: CmdResult = await self.ten_env.send_cmd(cmd)

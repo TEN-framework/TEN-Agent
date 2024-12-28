@@ -4,6 +4,7 @@ import traceback
 from ten import (
     AsyncTenEnv,
 )
+
 PROPERTY_REGION = "region"  # Optional
 PROPERTY_ACCESS_KEY = "access_key"  # Optional
 PROPERTY_SECRET_KEY = "secret_key"  # Optional
@@ -11,6 +12,7 @@ PROPERTY_ENGINE = "engine"  # Optional
 PROPERTY_VOICE = "voice"  # Optional
 PROPERTY_SAMPLE_RATE = "sample_rate"  # Optional
 PROPERTY_LANG_CODE = "lang_code"  # Optional
+
 
 class PollyTTSExtension(AsyncTTSBaseExtension):
     def __init__(self, name: str):
@@ -26,13 +28,13 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         try:
             await super().on_start(ten_env)
             ten_env.log_debug("on_start")
-            self.config = PollyTTSConfig.create(ten_env=ten_env)
+            self.config = await PollyTTSConfig.create_async(ten_env=ten_env)
 
             if not self.config.access_key or not self.config.secret_key:
                 raise ValueError("access_key and secret_key are required")
-            
+
             self.client = PollyTTS(self.config, ten_env)
-        except Exception as err:
+        except Exception:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -45,12 +47,16 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+    async def on_request_tts(
+        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+    ) -> None:
         try:
             data = self.client.text_to_speech_stream(ten_env, input_text)
             async for frame in data:
-                self.send_audio_out(ten_env, frame, sample_rate=self.client.config.sample_rate)
-        except Exception as err:
+                await self.send_audio_out(
+                    ten_env, frame, sample_rate=self.client.config.sample_rate
+                )
+        except Exception:
             ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:

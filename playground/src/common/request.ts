@@ -252,13 +252,11 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
   if (connections) {
     payload.connections = connections.map((connection) => ({
       app: connection.app,
-      extension_group: connection.extensionGroup,
       extension: connection.extension,
       cmd: connection.cmd?.map((cmd) => ({
         name: cmd.name,
         dest: cmd.dest.map((dest) => ({
           app: dest.app,
-          extension_group: dest.extensionGroup,
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
@@ -278,7 +276,6 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
         name: data.name,
         dest: data.dest.map((dest) => ({
           app: dest.app,
-          extension_group: dest.extensionGroup,
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
@@ -298,7 +295,6 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
         name: audioFrame.name,
         dest: audioFrame.dest.map((dest) => ({
           app: dest.app,
-          extension_group: dest.extensionGroup,
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
@@ -318,7 +314,6 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
         name: videoFrame.name,
         dest: videoFrame.dest.map((dest) => ({
           app: dest.app,
-          extension_group: dest.extensionGroup,
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {

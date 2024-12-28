@@ -9,12 +9,11 @@ from ten import (
     TenEnv,
 )
 from .extension import VisionAnalyzeToolExtension
-from .log import logger
 
 
 @register_addon_as_extension("vision_analyze_tool_python")
 class VisionAnalyzeToolExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        logger.info("VisionAnalyzeToolExtensionAddon on_create_instance")
+        ten_env.log_info("TSDBFirestoreExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(VisionAnalyzeToolExtension(name), context)

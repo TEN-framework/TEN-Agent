@@ -2,11 +2,13 @@ from typing import Iterable, Optional, TypeAlias, Union
 from pydantic import BaseModel
 from typing_extensions import Literal, Required, TypedDict
 
+
 class LLMToolMetadataParameter(BaseModel):
     name: str
     type: str
     description: str
     required: Optional[bool] = False
+
 
 class LLMToolMetadata(BaseModel):
     name: str
@@ -32,6 +34,7 @@ class LLMChatCompletionContentPartImageParam(TypedDict, total=False):
     type: Required[Literal["image_url"]]
     """The type of the content part."""
 
+
 class InputAudio(TypedDict, total=False):
     data: Required[str]
     """Base64 encoded audio data."""
@@ -46,6 +49,7 @@ class LLMChatCompletionContentPartInputAudioParam(TypedDict, total=False):
     type: Required[Literal["input_audio"]]
     """The type of the content part. Always `input_audio`."""
 
+
 class LLMChatCompletionContentPartTextParam(TypedDict, total=False):
     text: Required[str]
     """The text content."""
@@ -53,9 +57,13 @@ class LLMChatCompletionContentPartTextParam(TypedDict, total=False):
     type: Required[Literal["text"]]
     """The type of the content part."""
 
+
 LLMChatCompletionContentPartParam: TypeAlias = Union[
-    LLMChatCompletionContentPartTextParam, LLMChatCompletionContentPartImageParam, LLMChatCompletionContentPartInputAudioParam
+    LLMChatCompletionContentPartTextParam,
+    LLMChatCompletionContentPartImageParam,
+    LLMChatCompletionContentPartInputAudioParam,
 ]
+
 
 class LLMChatCompletionToolMessageParam(TypedDict, total=False):
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartTextParam]]]
@@ -66,6 +74,7 @@ class LLMChatCompletionToolMessageParam(TypedDict, total=False):
 
     tool_call_id: Required[str]
     """Tool call that this message is responding to."""
+
 
 class LLMChatCompletionUserMessageParam(TypedDict, total=False):
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
@@ -81,19 +90,23 @@ class LLMChatCompletionUserMessageParam(TypedDict, total=False):
     role.
     """
 
+
 LLMChatCompletionMessageParam: TypeAlias = Union[
     LLMChatCompletionUserMessageParam, LLMChatCompletionToolMessageParam
 ]
 
+
 class LLMToolResult(TypedDict, total=False):
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
+
 
 class LLMCallCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]
 
+
 class LLMDataCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]
-    no_tool: bool = False
+    no_tool: bool
 
 
 class TTSPcmOptions(TypedDict, total=False):

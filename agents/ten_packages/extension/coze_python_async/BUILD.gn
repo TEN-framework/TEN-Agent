@@ -12,9 +12,7 @@ ten_package("coze_python_async") {
     "__init__.py",
     "addon.py",
     "extension.py",
-    "log.py",
     "manifest.json",
     "property.json",
-    "tests",
   ]
 }

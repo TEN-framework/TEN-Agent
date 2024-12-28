@@ -7,6 +7,18 @@ tasks:
       - task: clean-agents
       - task: clean-server
 
+  lint:
+    desc: lint-agent
+    env:
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - ./agents/scripts/pylint.sh
+
+  install-tools:
+    desc: install tools
+    cmds:
+      - pip install pylint
+
   build:
     desc: build
     cmds:
@@ -31,7 +43,7 @@ tasks:
     desc: run tman dev http server for graph designer
     dir: ./agents
     cmds:
-      - tman dev-server
+      - tman designer
 
   run:
     desc: run servers
