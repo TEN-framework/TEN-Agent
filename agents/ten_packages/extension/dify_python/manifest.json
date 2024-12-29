@@ -33,6 +33,9 @@
       },
       "greeting": {
         "type": "string"
+      },
+      "failure_info": {
+        "type": "string"
       }
     }
   }

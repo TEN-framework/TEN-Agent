@@ -190,9 +190,9 @@ class DifyExtension(AsyncLLMBaseExtension):
         self.ten_env.log_info(f"messages: {input_messages}")
         response = self._stream_chat(query=input_messages[0]["content"])
         async for message in response:
-            self.ten_env.log_info(f"content: {message}")
+            # self.ten_env.log_info(f"content: {message}")
             message_type = message.get("event")
-            if message_type == "message":
+            if message_type == "message" or message_type == "agent_message":
                 if not self.conversational_id and message.get("conversation_id"):
                     self.conversational_id = message["conversation_id"]
                     ten_env.log_info(f"conversation_id: {self.conversational_id}")
@@ -206,6 +206,10 @@ class DifyExtension(AsyncLLMBaseExtension):
             elif message_type == "message_end":
                 metadata = message.get("metadata", {})
                 ten_env.log_info(f"metadata: {metadata}")
+            elif message_type == "error":
+                err_message = message.get("message", {})
+                ten_env.log_error(f"error: {err_message}")
+                await self._send_text(err_message, True)
 
             # data: {"event": "message", "task_id": "900bbd43-dc0b-4383-a372-aa6e6c414227", "id": "663c5084-a254-4040-8ad3-51f2a3c1a77c", "answer": "Hi", "created_at": 1705398420}\n\n
 
