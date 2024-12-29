@@ -7,6 +7,7 @@ import {
   GRAPH_OPTIONS,
   isRagGraph,
 } from "@/common"
+import { Bot } from "lucide-react"
 import { EMessageType, type IChatItem } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
@@ -44,7 +45,7 @@ export function MessageItem(props: { data: IChatItem }) {
       >
         {data.type === EMessageType.AGENT && <Avatar>
           <AvatarFallback>
-            AG
+            <Bot />
           </AvatarFallback>
         </Avatar>
         }
