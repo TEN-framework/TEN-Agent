@@ -29,7 +29,7 @@ from ten_ai_base.types import (
 )
 
 from .helper import parse_sentences
-from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
+from .openai import OpenAIChatGPT, OpenAIChatGPTConfig, OpenAIImageConfig
 from ten import (
     Cmd,
     StatusCode,
@@ -53,6 +53,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.memory = []
         self.memory_cache = []
         self.config = None
+        self.image_config = None
         self.client = None
         self.sentence_fragment = ""
         self.tool_task_future = None
@@ -67,6 +68,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         await super().on_start(async_ten_env)
 
         self.config = await OpenAIChatGPTConfig.create_async(ten_env=async_ten_env)
+        self.image_config = await OpenAIImageConfig.create_async(ten_env=async_ten_env)
 
         # Mandatory properties
         if not self.config.api_key:
@@ -75,7 +77,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
         # Create instance
         try:
-            self.client = OpenAIChatGPT(async_ten_env, self.config)
+            self.client = OpenAIChatGPT(async_ten_env, self.config, self.image_config)
             async_ten_env.log_info(
                 f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}"
             )
@@ -146,6 +148,10 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self, async_ten_env: AsyncTenEnv, tool: LLMToolMetadata
     ) -> None:
         return await super().on_tools_update(async_ten_env, tool)
+
+    async def on_generate_image(self, async_ten_env, prompt)->str:
+        url = await self.client.generate_image(prompt)
+        return url
 
     async def on_call_chat_completion(
         self, async_ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs

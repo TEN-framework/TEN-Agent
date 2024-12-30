@@ -1,0 +1,88 @@
+{
+  "type": "extension",
+  "name": "image_generate_tool",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "requirements.txt",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {},
+    "cmd_in": [
+      {
+        "name": "tool_call",
+        "property": {
+          "name": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "result": {
+          "property": {
+            "tool_result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "tool_result"
+          ]
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "tool_register",
+        "property": {
+          "tool": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "parameters"
+            ]
+          }
+        },
+        "result": {
+          "property": {
+            "response": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

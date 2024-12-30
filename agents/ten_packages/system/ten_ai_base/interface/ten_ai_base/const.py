@@ -3,6 +3,7 @@ CMD_TOOL_CALL = "tool_call"
 CMD_PROPERTY_TOOL = "tool"
 CMD_PROPERTY_RESULT = "tool_result"
 CMD_CHAT_COMPLETION_CALL = "chat_completion_call"
+CMD_GENERATE_IMAGE_CALL = "generate_image_call"
 CMD_IN_FLUSH = "flush"
 CMD_OUT_FLUSH = "flush"
 

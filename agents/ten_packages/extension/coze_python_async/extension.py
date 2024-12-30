@@ -168,6 +168,9 @@ class AsyncCozeExtension(AsyncLLMBaseExtension):
     ) -> any:
         raise RuntimeError("Not implemented")
 
+    async def on_generate_image(self, async_ten_env, prompt)->str:
+        raise RuntimeError("Not implemented")
+
     async def on_data_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
     ) -> None:

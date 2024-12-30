@@ -171,6 +171,9 @@ class DifyExtension(AsyncLLMBaseExtension):
 
     async def on_call_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError
+    
+    async def on_generate_image(self, async_ten_env, prompt)->str:
+        return NotImplementedError
 
     async def on_tools_update(self, async_ten_env, tool):
         raise NotImplementedError

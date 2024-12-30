@@ -82,7 +82,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
                 await async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
-            except Exception as err:
+            except Exception:
                 async_ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
                 await async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd
@@ -146,6 +146,12 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         Called when a chat completion is requested by data input. Implement this method to process the chat completion.
         Note that this method is stream-based, and it should consider supporting local context caching.
         """
+
+    @abstractmethod
+    async def on_generate_image(
+        self, async_ten_env: AsyncTenEnv, prompt: str
+    ) -> str:
+        """Called when an image generation is requested. Implement this method to process the image generation."""
 
     @abstractmethod
     async def on_tools_update(
