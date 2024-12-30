@@ -39,7 +39,7 @@ services:
     environment:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
   # ten_graph_designer:
-  #   image: ghcr.io/ten-framework/ten_graph_designer:dde0ff1
+  #   image: ghcr.io/ten-framework/ten_graph_designer:4cc33b8
   #   container_name: ten_graph_designer
   #   restart: always
   #   ports:
