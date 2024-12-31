@@ -64,6 +64,6 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_info(f"Generated image: {response_url}")
                 result = LLMToolResultDirectRawResponse(
                     type="direct_raw_response",
-                    content=json.dumps({"data":{"image_url": response_url}, "type": "image_url"}),
+                    content={"data":{"image_url": response_url}, "type": "image_url"},
                 )
                 return result

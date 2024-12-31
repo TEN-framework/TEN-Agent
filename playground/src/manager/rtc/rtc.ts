@@ -6,7 +6,7 @@ import AgoraRTC, {
   IRemoteAudioTrack,
   UID,
 } from "agora-rtc-sdk-ng";
-import { ITextItem } from "@/types";
+import { EMessageDataType, EMessageType, IChatItem, ITextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 import { RtcEvents, IUserTracks } from "./types";
 import { apiGenAgoraData, VideoSourceType } from "@/common";
@@ -26,6 +26,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   localTracks: IUserTracks;
   appId: string | null = null;
   token: string | null = null;
+  userId: number | null = null;
 
   constructor() {
     super();
@@ -45,6 +46,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       const { appId, token } = data;
       this.appId = appId;
       this.token = token;
+      this.userId = userId;
       await this.client?.join(appId, channel, token, userId);
       this._joined = true;
     }
@@ -231,27 +233,28 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
           atob(completeMessage)
         );
-        let textItem: ITextItem;
+        const isAgent = Number(stream_id) != Number(this.userId)
+        let textItem: IChatItem = {
+          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
+          time: text_ts,
+          text: text,
+          data_type: EMessageDataType.TEXT,
+          userId: stream_id,
+          isFinal: is_final,
+        };;
 
         if (data_type === "raw") {
-          textItem = {
-            uid: `${stream_id}`,
-            time: text_ts,
-            dataType: "image_url",
-            text: text,
-            isFinal: is_final,
+          let { data, type } = JSON.parse(text);
+          if (type === "image_url") {
+            textItem = {
+              ...textItem,
+              data_type: EMessageDataType.IMAGE,
+              text: data.image_url,
+            };
           }
-        } else {
-          textItem = {
-            uid: `${stream_id}`,
-            time: text_ts,
-            dataType: "transcribe",
-            text: text,
-            isFinal: is_final,
-          };
         }
 
-        if (text.trim().length > 0 && textItem) {
+        if (text.trim().length > 0) {
           this.emit("textChanged", textItem);
         }
 

@@ -731,6 +731,13 @@
           },
           {
             "type": "extension",
+            "name": "message_collector2",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
             "name": "weatherapi_tool_python",
             "addon": "weatherapi_tool_python",
             "extension_group": "default",
@@ -843,7 +850,7 @@
                 "name": "raw_text_data",
                 "dest": [
                   {
-                    "extension": "message_collector"
+                    "extension": "message_collector2"
                   }
                 ]
               }
@@ -851,6 +858,19 @@
           },
           {
             "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector2",
             "data": [
               {
                 "name": "data",

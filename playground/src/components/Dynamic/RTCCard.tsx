@@ -4,7 +4,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType } from "@/common"
-import { ITextItem, EMessageType } from "@/types"
+import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
   setRoomConnected,
@@ -98,20 +98,11 @@ export default function RTCCard(props: { className?: string }) {
     }
   }
 
-  const onTextChanged = (text: ITextItem) => {
+  const onTextChanged = (text: IChatItem) => {
     console.log("[rtc] onTextChanged", text)
-    if (text.dataType == "transcribe") {
-      const isAgent = Number(text.uid) != Number(userId)
-      dispatch(
-        addChatItem({
-          userId: text.uid,
-          text: text.text,
-          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
-          isFinal: text.isFinal,
-          time: text.time,
-        }),
-      )
-    }
+    dispatch(
+      addChatItem(text),
+    )
   }
 
   const onVoiceChange = (value: any) => {
@@ -138,7 +129,7 @@ export default function RTCCard(props: { className?: string }) {
           {/* -- You */}
           <div className="w-full space-y-2 px-2">
             <MicrophoneBlock audioTrack={audioTrack} />
-            <VideoBlock 
+            <VideoBlock
               cameraTrack={videoTrack}
               screenTrack={screenTrack}
               videoSourceType={videoSourceType}

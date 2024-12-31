@@ -24,10 +24,16 @@ export enum EMessageType {
   USER = "user",
 }
 
+export enum EMessageDataType {
+  TEXT = "text",
+  IMAGE = "image",
+}
+
 export interface IChatItem {
   userId: number | string;
   userName?: string;
   text: string;
+  data_type: EMessageDataType;
   type: EMessageType;
   isFinal?: boolean;
   time: number;
