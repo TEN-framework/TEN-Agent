@@ -215,8 +215,8 @@ class MessageCollectorRTMExtension(AsyncExtension):
             json_bytes = json.dumps(data).encode("utf-8")
             cmd = Cmd.create("publish")
             cmd.set_property_buf("message", json_bytes)
-            cmd_result: CmdResult = await self.ten_env.send_cmd(cmd)
-            self.ten_env.log_info(f"send_cmd result {cmd_result.to_json()}")
+            [result, _] = await self.ten_env.send_cmd(cmd)
+            self.ten_env.log_info(f"send_cmd result {result.to_json()}")
         except Exception as e:
             self.ten_env.log_error(f"Failed to handle text data: {e}")
 
@@ -225,7 +225,7 @@ class MessageCollectorRTMExtension(AsyncExtension):
             json_bytes = json.dumps(data)
             cmd = Cmd.create("set_presence_state")
             cmd.set_property_string("states", json_bytes)
-            cmd_result: CmdResult = await self.ten_env.send_cmd(cmd)
-            self.ten_env.log_info(f"send_cmd result {cmd_result.to_json()}")
+            [result, _] = await self.ten_env.send_cmd(cmd)
+            self.ten_env.log_info(f"send_cmd result {result.to_json()}")
         except Exception as e:
             self.ten_env.log_error(f"Failed to handle user state: {e}")

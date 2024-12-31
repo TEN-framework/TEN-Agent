@@ -124,7 +124,7 @@ class MinimaxV2VExtension(AsyncExtension):
             match cmd_name:
                 case "flush":
                     await self._flush(ten_env=ten_env)
-                    _result = await ten_env.send_cmd(Cmd.create("flush"))
+                    await ten_env.send_cmd(Cmd.create("flush"))
                     ten_env.log_debug("flush done")
                 case _:
                     pass

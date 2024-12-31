@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "image_generate_tool",
+  "name": "openai_image_generate_tool",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -20,7 +20,35 @@
     ]
   },
   "api": {
-    "property": {},
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "size": {
+        "type": "string"
+      },
+      "n": {
+        "type": "int64"
+      },
+      "proxy_url": {
+        "type": "string"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "azure_endpoint": {
+        "type": "string"
+      },
+      "azure_api_version": {
+        "type": "string"
+      }
+    },
     "cmd_in": [
       {
         "name": "tool_call",
@@ -29,22 +57,12 @@
             "type": "string"
           },
           "arguments": {
-            "type": "string"
+            "type": "object"
           }
         },
         "required": [
           "name"
-        ],
-        "result": {
-          "property": {
-            "tool_result": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "tool_result"
-          ]
-        }
+        ]
       }
     ],
     "cmd_out": [

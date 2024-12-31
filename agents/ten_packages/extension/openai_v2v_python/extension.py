@@ -170,7 +170,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.memory = ChatMemory(self.config.max_history)
 
             if self.config.enable_storage:
-                result = await ten_env.send_cmd(Cmd.create("retrieve"))
+                [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
                 if result.get_status_code() == StatusCode.OK:
                     try:
                         history = json.loads(result.get_property_string("response"))
@@ -687,7 +687,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
         cmd.set_property_string("name", name)
         cmd.set_property_from_json("arguments", arguments)
-        result: CmdResult = await self.ten_env.send_cmd(cmd)
+        [result, _] = await self.ten_env.send_cmd(cmd)
 
         tool_response = ItemCreate(
             item=FunctionCallOutputItemParam(
@@ -829,9 +829,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
     async def on_call_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError
-
-    async def on_generate_image(self, async_ten_env, prompt)->str:
-        return NotImplementedError
 
     async def on_data_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError

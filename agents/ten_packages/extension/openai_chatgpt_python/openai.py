@@ -39,20 +39,11 @@ class OpenAIChatGPTConfig(BaseConfig):
     azure_endpoint: str = ""
     azure_api_version: str = ""
 
-@dataclass
-class OpenAIImageConfig(BaseConfig):
-    model: str = "dall-e-3"
-    size: str = "512x512"
-    quality: str = "standard"
-    n: int = 1
-
-
 class OpenAIChatGPT:
     client = None
 
-    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig, image_config: OpenAIImageConfig):
+    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
-        self.image_config = image_config
         ten_env.log_info(f"OpenAIChatGPT initialized with config: {config.api_key}")
         if self.config.vendor == "azure":
             self.client = AsyncAzureOpenAI(
@@ -181,17 +172,3 @@ class OpenAIChatGPT:
         # Emit content finished event after the loop completes
         if listener:
             listener.emit("content_finished", full_content)
-
-
-    async def generate_image(self, prompt:str):
-        try:
-            response = await self.client.images.generate(
-                prompt=prompt,
-                model=self.image_config.model,
-                size=self.image_config.size,
-                quality=self.image_config.quality,
-            )
-        except Exception as e:
-            raise RuntimeError(f"GenerateImage failed, err: {e}") from e
-        
-        return response.data[0].url

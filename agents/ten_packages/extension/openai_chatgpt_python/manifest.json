@@ -85,6 +85,14 @@
             "type": "string"
           }
         }
+      },
+      {
+        "name": "raw_text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
       }
     ],
     "cmd_in": [

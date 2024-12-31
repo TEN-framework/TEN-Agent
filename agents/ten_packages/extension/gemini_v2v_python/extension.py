@@ -24,6 +24,7 @@ from ten import (
     StatusCode,
     CmdResult,
     Data,
+    TenError,
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
@@ -599,7 +600,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
             cmd.set_property_string("name", name)
             cmd.set_property_from_json("arguments", json.dumps(arguments))
-            result: CmdResult = await self.ten_env.send_cmd(cmd)
+            [result, _] = await self.ten_env.send_cmd(cmd)
 
             func_response = FunctionResponse(
                 id=tool_call_id, name=name, response={"error": "Failed to call tool"}
@@ -738,9 +739,6 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
 
     async def on_call_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError
-
-    async def on_generate_image(self, async_ten_env, prompt)->str:
-        return NotImplementedError
 
     async def on_data_chat_completion(self, async_ten_env, **kargs):
         raise NotImplementedError

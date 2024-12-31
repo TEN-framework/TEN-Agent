@@ -166,7 +166,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         self.memory = ChatMemory(self.config.max_history)
 
         if self.config.enable_storage:
-            result = await ten_env.send_cmd(Cmd.create("retrieve"))
+            [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
             if result.get_status_code() == StatusCode.OK:
                 try:
                     history = json.loads(result.get_property_string("response"))
@@ -223,9 +223,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs
     ) -> any:
         raise RuntimeError("Not implemented")
-
-    async def on_generate_image(self, async_ten_env, prompt) -> str:
-        return RuntimeError("Not implemented")
 
     async def on_data_chat_completion(
         self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
@@ -385,7 +382,7 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         cmd.set_property_from_json("arguments", call.function.arguments)
 
         # Send the command and handle the result through the future
-        result: CmdResult = await self.ten_env.send_cmd(cmd)
+        [result, _] = await self.ten_env.send_cmd(cmd)
         if result.get_status_code() == StatusCode.OK:
             tool_result: LLMToolResult = json.loads(
                 result.get_property_to_json(CMD_PROPERTY_RESULT)

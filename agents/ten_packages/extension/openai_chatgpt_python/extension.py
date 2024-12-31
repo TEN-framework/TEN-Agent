@@ -26,10 +26,13 @@ from ten_ai_base.types import (
     LLMDataCompletionArgs,
     LLMToolMetadata,
     LLMToolResult,
+    LLMToolResultDirectRawResponse,
+    LLMToolResultDirectSpeechResponse,
+    LLMToolResultRequery,
 )
 
 from .helper import parse_sentences
-from .openai import OpenAIChatGPT, OpenAIChatGPTConfig, OpenAIImageConfig
+from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 from ten import (
     Cmd,
     StatusCode,
@@ -53,7 +56,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.memory = []
         self.memory_cache = []
         self.config = None
-        self.image_config = None
         self.client = None
         self.sentence_fragment = ""
         self.tool_task_future = None
@@ -68,7 +70,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         await super().on_start(async_ten_env)
 
         self.config = await OpenAIChatGPTConfig.create_async(ten_env=async_ten_env)
-        self.image_config = await OpenAIImageConfig.create_async(ten_env=async_ten_env)
 
         # Mandatory properties
         if not self.config.api_key:
@@ -77,7 +78,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
         # Create instance
         try:
-            self.client = OpenAIChatGPT(async_ten_env, self.config, self.image_config)
+            self.client = OpenAIChatGPT(async_ten_env, self.config)
             async_ten_env.log_info(
                 f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}, vendor: {self.config.vendor}"
             )
@@ -148,10 +149,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self, async_ten_env: AsyncTenEnv, tool: LLMToolMetadata
     ) -> None:
         return await super().on_tools_update(async_ten_env, tool)
-
-    async def on_generate_image(self, async_ten_env, prompt)->str:
-        url = await self.client.generate_image(prompt)
-        return url
 
     async def on_call_chat_completion(
         self, async_ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs
@@ -235,29 +232,40 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         # cmd.set_property_from_json("arguments", json.dumps([]))
 
                         # Send the command and handle the result through the future
-                        result: CmdResult = await async_ten_env.send_cmd(cmd)
+                        [result, _] = await async_ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result: LLMToolResult = json.loads(
                                 result.get_property_to_json(CMD_PROPERTY_RESULT)
                             )
 
                             async_ten_env.log_info(f"tool_result: {tool_result}")
-                            # self.memory_cache = []
-                            self.memory_cache.pop()
-                            result_content = tool_result["content"]
-                            nonlocal message
-                            new_message = {
-                                "role": "user",
-                                "content": self._convert_to_content_parts(
-                                    message["content"]
-                                ),
-                            }
-                            new_message["content"] = new_message[
-                                "content"
-                            ] + self._convert_to_content_parts(result_content)
-                            await self.queue_input_item(
-                                True, messages=[new_message], no_tool=True
-                            )
+
+                            
+                            if tool_result["type"] == "direct_raw_response":
+                                self.send_raw_text_output(async_ten_env, json.dumps(tool_result["content"]), True)
+                            elif tool_result["type"] == "direct_speech_response":
+                                pass
+                            elif tool_result["type"] == "requery":
+                                # self.memory_cache = []
+                                self.memory_cache.pop()
+                                result_content = tool_result["content"]
+                                nonlocal message
+                                new_message = {
+                                    "role": "user",
+                                    "content": self._convert_to_content_parts(
+                                        message["content"]
+                                    ),
+                                }
+                                new_message["content"] = new_message[
+                                    "content"
+                                ] + self._convert_to_content_parts(result_content)
+                                await self.queue_input_item(
+                                    True, messages=[new_message], no_tool=True
+                                )
+                            else:
+                                async_ten_env.log_error(
+                                    f"Unknown tool result type: {tool_result}"
+                                )
                         else:
                             async_ten_env.log_error("Tool call failed")
                 self.tool_task_future.set_result(None)
