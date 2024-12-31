@@ -214,6 +214,10 @@ class MessageCollectorExtension(Extension):
             "text": text,
         }
 
+        # Add the raw data type if the data is raw text data
+        if data.get_name() == "raw_text_data":
+            base_msg_data["data_type"] = "raw"
+
         try:
             chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
             for chunk in chunks:

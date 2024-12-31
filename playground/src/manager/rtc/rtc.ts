@@ -86,10 +86,10 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this.emit("localTracksChanged", this.localTracks);
   }
 
-  async switchVideoSource(type:VideoSourceType) {
+  async switchVideoSource(type: VideoSourceType) {
     if (type === VideoSourceType.SCREEN) {
       await this.createScreenShareTrack();
-      if(this.localTracks.screenTrack) {
+      if (this.localTracks.screenTrack) {
         this.client.unpublish(this.localTracks.videoTrack);
         this.localTracks.videoTrack?.close();
         this.localTracks.videoTrack = undefined;
@@ -98,7 +98,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       }
     } else if (type === VideoSourceType.CAMERA) {
       await this.createCameraTracks();
-      if(this.localTracks.videoTrack) {
+      if (this.localTracks.videoTrack) {
         this.client.unpublish(this.localTracks.screenTrack);
         this.localTracks.screenTrack?.close();
         this.localTracks.screenTrack = undefined;
@@ -228,18 +228,30 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         const completeMessage = this.reconstructMessage(
           this.messageCache[message_id]
         );
-        const { stream_id, is_final, text, text_ts } = JSON.parse(
+        const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
           atob(completeMessage)
         );
-        const textItem: ITextItem = {
-          uid: `${stream_id}`,
-          time: text_ts,
-          dataType: "transcribe",
-          text: text,
-          isFinal: is_final,
-        };
+        let textItem: ITextItem;
 
-        if (text.trim().length > 0) {
+        if (data_type === "raw") {
+          textItem = {
+            uid: `${stream_id}`,
+            time: text_ts,
+            dataType: "image_url",
+            text: text,
+            isFinal: is_final,
+          }
+        } else {
+          textItem = {
+            uid: `${stream_id}`,
+            time: text_ts,
+            dataType: "transcribe",
+            text: text,
+            isFinal: is_final,
+          };
+        }
+
+        if (text.trim().length > 0 && textItem) {
           this.emit("textChanged", textItem);
         }
 

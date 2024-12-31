@@ -35,7 +35,7 @@ export interface IChatItem {
 
 /** @deprecated */
 export interface ITextItem {
-  dataType: "transcribe" | "translate";
+  dataType: "transcribe" | "translate" | "image_url";
   uid: string;
   time: number;
   text: string;

@@ -546,16 +546,6 @@
         "connections": [
           {
             "extension": "agora_rtc",
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ],
             "cmd": [
               {
                 "name": "on_user_joined",
@@ -575,6 +565,16 @@
               },
               {
                 "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
                 "dest": [
                   {
                     "extension": "v2v"
@@ -698,7 +698,7 @@
               "max_memory_length": 10,
               "max_tokens": 512,
               "model": "${env:OPENAI_MODEL}",
-              "prompt": "",
+              "prompt": "You are an ai agent bot producing child picture books. Each response should be short and no more than 50 words as it's for child. \nFor each response, you will use the 'image_generate' tool to create an image based on the description or key moment in that part of the story.  The story should be set in a fantasy world. Try asking questions relevant to the story to decide how the story should proceed. Each response should include rich, vivid descriptions that will guide the 'image_generate' tool to produce an image that aligns with the scene or mood.\n Whether it’s the setting, a character’s expression, or a dramatic moment, the paragraph should give enough detail for a meaningful visual representation.",
               "proxy_url": "${env:OPENAI_PROXY_URL}"
             }
           },
@@ -834,6 +834,14 @@
                   {
                     "extension": "tts"
                   },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              },
+              {
+                "name": "raw_text_data",
+                "dest": [
                   {
                     "extension": "message_collector"
                   }

@@ -58,7 +58,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.config = None
         self.client = None
         self.sentence_fragment = ""
-        self.tool_task_future = None
+        self.tool_task_future: asyncio.Future | None = None
         self.users_count = 0
 
     async def on_init(self, async_ten_env: AsyncTenEnv) -> None:

@@ -105,7 +105,7 @@ class LLMToolResultDirectSpeechResponse(TypedDict, total=False):
 
 class LLMToolResultDirectRawResponse(TypedDict, total=False):
     type: Required[Literal["direct_raw_response"]]
-    content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
+    content: Required[str]
 
 LLMToolResult: TypeAlias = Union[
     LLMToolResultRequery,

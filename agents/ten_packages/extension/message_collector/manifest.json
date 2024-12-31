@@ -40,6 +40,17 @@
             "type": "bool"
           }
         }
+      },
+      {
+        "name": "raw_text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        }
       }
     ],
     "data_out": [

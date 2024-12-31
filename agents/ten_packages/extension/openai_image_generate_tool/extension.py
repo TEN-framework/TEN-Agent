@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import json
 from ten import (
     TenEnv,
     AsyncTenEnv,
@@ -63,11 +64,6 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_info(f"Generated image: {response_url}")
                 result = LLMToolResultDirectRawResponse(
                     type="direct_raw_response",
-                    content=[
-                        LLMChatCompletionContentPartImageParam(
-                            type="image_url",
-                            image_url=response_url
-                        )
-                    ]
+                    content=json.dumps({"data":{"image_url": response_url}, "type": "image_url"}),
                 )
                 return result
