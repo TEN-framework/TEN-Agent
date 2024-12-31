@@ -229,7 +229,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                         # cmd.set_property_from_json("arguments", json.dumps([]))
 
                         # Send the command and handle the result through the future
-                        result: CmdResult = await async_ten_env.send_cmd(cmd)
+                        [result, _] = await async_ten_env.send_cmd(cmd)
                         if result.get_status_code() == StatusCode.OK:
                             tool_result: LLMToolResult = json.loads(
                                 result.get_property_to_json(CMD_PROPERTY_RESULT)

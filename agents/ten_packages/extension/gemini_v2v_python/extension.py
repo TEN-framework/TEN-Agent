@@ -599,7 +599,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
             cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
             cmd.set_property_string("name", name)
             cmd.set_property_from_json("arguments", json.dumps(arguments))
-            result: CmdResult = await self.ten_env.send_cmd(cmd)
+            [result, _] = await self.ten_env.send_cmd(cmd)
 
             func_response = FunctionResponse(
                 id=tool_call_id, name=name, response={"error": "Failed to call tool"}
