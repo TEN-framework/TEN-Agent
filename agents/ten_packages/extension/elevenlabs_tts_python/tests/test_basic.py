@@ -22,7 +22,7 @@ class ExtensionTesterBasic(ExtensionTester):
         print("send hello_world")
         ten_env.send_cmd(
             new_cmd,
-            lambda ten_env, result: self.check_hello(ten_env, result),
+            lambda ten_env, result,_: self.check_hello(ten_env, result),
         )
 
         print("tester on_start_done")

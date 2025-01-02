@@ -52,7 +52,7 @@ class InterruptDetectorExtension(Extension):
         new_cmd.set_property_from_json(None, cmd_json)
         ten.send_cmd(
             new_cmd,
-            lambda ten, result: ten.log_info("send_cmd done"),
+            lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
         cmd_result = CmdResult.create(StatusCode.OK)

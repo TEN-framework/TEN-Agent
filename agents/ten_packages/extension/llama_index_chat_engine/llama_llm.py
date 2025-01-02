@@ -59,7 +59,7 @@ class LlamaLLM(CustomLLM):
         resp: ChatResponse
         wait_event = threading.Event()
 
-        def callback(_, result):
+        def callback(_, result, __):
             self.ten.log_debug("LlamaLLM chat callback done")
             nonlocal resp
             nonlocal wait_event
@@ -71,7 +71,9 @@ class LlamaLLM(CustomLLM):
         cmd = Cmd.create("call_chat")
         cmd.set_property_string("messages", messages_str)
         cmd.set_property_bool("stream", False)
-        self.ten.log_info(f"LlamaLLM chat send_cmd {cmd.get_name()}, messages {messages_str}")
+        self.ten.log_info(
+            f"LlamaLLM chat send_cmd {cmd.get_name()}, messages {messages_str}"
+        )
 
         self.ten.send_cmd(cmd, callback)
         wait_event.wait()
@@ -103,7 +105,7 @@ class LlamaLLM(CustomLLM):
                     delta=delta_text,
                 )
 
-        def callback(_, result):
+        def callback(_, result, __):
             nonlocal cur_tokens
             nonlocal resp_queue
 
