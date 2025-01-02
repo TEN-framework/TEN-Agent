@@ -84,7 +84,7 @@ class FileChunkerExtension(Extension):
         wait_event = threading.Event()
         ten.send_cmd(
             cmd_out,
-            lambda ten, result: wait_event.set(),
+            lambda ten, result, _: wait_event.set(),
         )
         if wait:
             wait_event.wait()
@@ -97,7 +97,7 @@ class FileChunkerExtension(Extension):
         cmd_out = Cmd.create("embed_batch")
         cmd_out.set_property_from_json("inputs", json.dumps(texts))
         ten.send_cmd(
-            cmd_out, lambda ten, result: self.vector_store(ten, path, texts, result)
+            cmd_out, lambda ten, result, _: self.vector_store(ten, path, texts, result)
         )
 
     def vector_store(self, ten: TenEnv, path: str, texts: List[str], result: CmdResult):
@@ -114,7 +114,7 @@ class FileChunkerExtension(Extension):
             content.append({"text": text, "embedding": embedding})
         cmd_out.set_property_string("content", json.dumps(content))
         # ten.log_info(json.dumps(content))
-        ten.send_cmd(cmd_out, lambda ten, result: self.file_chunked(ten, path))
+        ten.send_cmd(cmd_out, lambda ten, result, _: self.file_chunked(ten, path))
 
     def file_chunked(self, ten: TenEnv, path: str):
         if path in self.counters and path in self.expected:
@@ -137,7 +137,7 @@ class FileChunkerExtension(Extension):
                 cmd_out.set_property_string("collection", self.new_collection_name)
                 ten.send_cmd(
                     cmd_out,
-                    lambda ten, result: ten.log_info("send_cmd done"),
+                    lambda ten, result, _: ten.log_info("send_cmd done"),
                 )
                 self.file_chunked_event.set()
         else:

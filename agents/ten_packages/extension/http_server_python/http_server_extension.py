@@ -25,7 +25,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 self.ten.log_info("incoming request %s", input_file)
                 self.ten.send_cmd(
                     Cmd.create_from_json(input_file),
-                    lambda ten, result: ten.log_info(
+                    lambda ten, result, _: ten.log_info(
                         "finish send_cmd from http server %s %s", input_file, result
                     ),
                 )
