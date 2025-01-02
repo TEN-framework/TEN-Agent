@@ -18,6 +18,7 @@ from datetime import datetime
 import threading
 import re
 import aisuite as ai
+import traceback
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT = "end_of_segment"
@@ -28,7 +29,6 @@ class AISuiteLLMExtension(Extension):
         super().__init__(name)
         self.history = []
         self.provider_config = {}
-        self.api_key = ""
         self.model = ""
         self.prompt = ""
         self.max_tokens = 512
@@ -44,6 +44,7 @@ class AISuiteLLMExtension(Extension):
         self.mutex = threading.Lock()
 
         self.client = None
+        self.ten_env = None
 
     def on_msg(self, role: str, content: str) -> None:
         self.mutex.acquire()
@@ -133,7 +134,7 @@ class AISuiteLLMExtension(Extension):
             callback(total, True)  # callback once until full answer returned
 
     def stream_chat(self, ts: datetime.time, messages: List[Any], callback):
-        ten = self.ten
+        ten = self.ten_env
         ten.log_info(f"before stream_chat call {messages} {ts}")
 
         if self.need_interrupt(ts):
@@ -186,11 +187,13 @@ class AISuiteLLMExtension(Extension):
 
     def on_start(self, ten: TenEnv) -> None:
         ten.log_info("on_start")
-        self.provider_config = ten.get_property_string("provider_config")
+        self.provider_config = ten.get_property_to_json("provider_config")
         self.model = ten.get_property_string("model")
         self.prompt = ten.get_property_string("prompt")
         self.max_history = ten.get_property_int("max_memory_length")
         self.max_tokens = ten.get_property_int("max_tokens")
+        self.ten_env = ten
+        ten.log_info(f"provider_config {self.provider_config}")
         self.client = ai.Client(json.loads(self.provider_config))
         greeting = ten.get_property_string("greeting")
 
@@ -242,7 +245,7 @@ class AISuiteLLMExtension(Extension):
             return
 
         ts = datetime.now()
-        ten.log_info("on data %s, %s", input_text, ts)
+        ten.log_info(f"on data {input_text}, {ts}")
         self.queue.put((input_text, ts))
 
     def async_handle(self, ten: TenEnv):
@@ -262,7 +265,7 @@ class AISuiteLLMExtension(Extension):
                     ten.log_info(f"fetched from queue {chat_input.get_name()}")
                     self.call_chat(ten, ts, chat_input)
             except Exception as e:
-                ten.log_error(str(e))
+                ten.log_error(str(e), traceback.print_exc())
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         ts = datetime.now()
@@ -274,7 +277,7 @@ class AISuiteLLMExtension(Extension):
             cmd_out = Cmd.create("flush")
             ten.send_cmd(
                 cmd_out,
-                lambda ten, result: ten.log_info("send_cmd flush done"),
+                lambda ten, result, error: ten.log_info("send_cmd flush done"),
             )
         elif cmd_name == "call_chat":
             self.queue.put((cmd, ts))

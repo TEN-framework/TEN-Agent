@@ -1,1 +1,2 @@
 aisuite
+aisuite[all]

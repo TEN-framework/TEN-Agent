@@ -11,9 +11,6 @@
   ],
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
       "model": {
         "type": "string"
       },
@@ -30,7 +27,8 @@
         "type": "int64"
       },
       "provider_config": {
-        "type": "string"
+        "type": "object",
+        "properties":{}
       }
     },
     "data_in": [
