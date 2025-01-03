@@ -173,12 +173,6 @@ class AISuiteLLMExtension(Extension):
                 if callback is not None:
                     callback(sentence, False)
 
-            else:
-                ten.log_warn(
-                    f"request_id: {response.request_id}, status_code: {response.status_code}, error code: {response.code}, error message: {response.message}"
-                )
-                break
-
         # always send end_of_segment
         if callback is not None:
             callback(partial, True)
