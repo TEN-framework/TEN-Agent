@@ -55,6 +55,11 @@
     },
     {
       "type": "extension",
+      "name": "aisuite_llm_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
       "name": "fish_audio_tts",
       "version": "=0.1.0"
     },
