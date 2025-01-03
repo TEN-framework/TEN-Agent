@@ -63,7 +63,7 @@ class LlamaRetriever(BaseRetriever):
         wait_event = threading.Event()
         resp: List[NodeWithScore] = []
 
-        def cmd_callback(_, result):
+        def cmd_callback(_, result, __):
             nonlocal resp
             nonlocal wait_event
             resp = format_node_result(self.ten, result)

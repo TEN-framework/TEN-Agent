@@ -39,7 +39,7 @@ class LlamaEmbedding(BaseEmbedding):
         wait_event = threading.Event()
         resp: List[float]
 
-        def callback(_, result):
+        def callback(_, result, __):
             nonlocal resp
             nonlocal wait_event
 
