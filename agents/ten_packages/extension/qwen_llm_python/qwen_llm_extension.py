@@ -269,7 +269,7 @@ class QWenLLMExtension(Extension):
             cmd_out = Cmd.create("flush")
             ten.send_cmd(
                 cmd_out,
-                lambda ten, result: ten.log_info("send_cmd flush done"),
+                lambda ten, result, _: ten.log_info("send_cmd flush done"),
             )
         elif cmd_name == "call_chat":
             self.queue.put((cmd, ts))

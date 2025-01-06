@@ -13,7 +13,7 @@ from ten import (
     Cmd,
 )
 from ten.async_ten_env import AsyncTenEnv
-from ten_ai_base.helper import get_properties_string
+from ten_ai_base.config import BaseConfig
 from ten_ai_base import AsyncLLMToolBaseExtension
 from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
 
@@ -61,13 +61,15 @@ DEFAULT_BING_SEARCH_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search"
 #  2. https://learn.microsoft.com/en-us/bing/search-apis/bing-custom-search/overview
 #  3. https://azure.microsoft.com/en-in/updates/bing-search-apis-will-transition-from-azure-cognitive-services-to-azure-marketplace-on-31-october-2023/
 
+class BingSearchToolConfig(BaseConfig):
+    api_key: str = ""
 
 class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.api_key = None
         self.session = None
+        self.config = None
         self.k = 10
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -79,10 +81,9 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_start")
         await super().on_start(ten_env)
 
-        get_properties_string(
-            ten_env, [PROPERTY_API_KEY], lambda name, value: setattr(self, name, value)
-        )
-        if not self.api_key:
+        self.config = await BingSearchToolConfig.create_async(ten_env=ten_env)
+
+        if not self.config.api_key:
             ten_env.log_info("API key is missing, exiting on_start")
             return
 
@@ -146,7 +147,7 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
     async def _bing_search_results(self, ten_env: AsyncTenEnv, search_term: str, count: int) -> List[dict]:
         await self._initialize_session(ten_env)
-        headers = {"Ocp-Apim-Subscription-Key": self.api_key}
+        headers = {"Ocp-Apim-Subscription-Key": self.config.api_key}
         params = {
             "q": search_term,
             "count": count,
