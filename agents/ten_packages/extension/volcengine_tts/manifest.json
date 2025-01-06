@@ -1,0 +1,56 @@
+{
+    "type": "extension",
+    "name": "volcengine_tts",
+    "version": "0.1.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_go",
+            "version": "0.6"
+        }
+    ],
+    "api": {
+        "property": {
+            "api_id": {
+                "type": "string"
+            },
+            "token": {
+                "type": "string"
+            },
+            "cluster": {
+                "type": "string"
+            },
+            "timbre": {
+                "type": "string"
+            },
+            "request_timeout_seconds": {
+                "type": "int64"
+            }
+        },
+        "data_in": [
+            {
+                "name": "text_data",
+                "property": {
+                    "text": {
+                        "type": "string"
+                    }
+                }
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "flush"
+            }
+        ],
+        "cmd_out": [
+            {
+                "name": "flush"
+            }
+        ],
+        "audio_frame_out": [
+            {
+                "name": "pcm_frame"
+            }
+        ]
+    }
+}
