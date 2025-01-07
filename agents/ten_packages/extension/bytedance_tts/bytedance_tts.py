@@ -16,7 +16,6 @@ from ten import (
 
 import copy
 import websockets
-import ssl
 import uuid
 import json
 import gzip
@@ -91,11 +90,9 @@ class TTSClient:
         self.default_header = bytearray(b"\x11\x10\x11\x00")
 
     async def connect(self) -> None:
-        ssl_context = ssl._create_unverified_context()
         header = {"Authorization": f"Bearer; {self.config.token}"}
         self.websocket = await websockets.connect(
             self.config.api_url,
-            ssl=ssl_context,
             extra_headers=header,
             ping_interval=None,
         )
