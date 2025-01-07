@@ -11,7 +11,7 @@ from ten import (
 from ten_ai_base import (
     AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
 )
-from ten_ai_base.types import LLMChatCompletionContentPartImageParam, LLMToolMetadataParameter, LLMToolResultDirectRawResponse
+from ten_ai_base.types import LLMChatCompletionContentPartImageParam, LLMToolMetadataParameter, LLMToolResultNormal
 from .openai import OpenAIImageGenerateClient, OpenAIImageGenerateToolConfig
 
 class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
@@ -62,8 +62,8 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
                 # call OpenAIImageGenerateClient to generate images
                 response_url = await self.client.generate_images(prompt)
                 ten_env.log_info(f"Generated image: {response_url}")
-                result = LLMToolResultDirectRawResponse(
-                    type="direct_raw_response",
+                result = LLMToolResultNormal(
+                    type="normal",
                     content={"data":{"image_url": response_url}, "type": "image_url"},
                 )
                 return result

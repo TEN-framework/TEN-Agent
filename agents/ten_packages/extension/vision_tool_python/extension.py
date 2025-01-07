@@ -145,7 +145,9 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
                 content=[
                     LLMChatCompletionContentPartImageParam(
                         type="image_url",
-                        image_url=base64_image,
+                        image_url={
+                            "url": base64_image,
+                        },
                     )
                 ],
             )

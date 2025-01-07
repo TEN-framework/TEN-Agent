@@ -26,8 +26,6 @@ from ten_ai_base.types import (
     LLMDataCompletionArgs,
     LLMToolMetadata,
     LLMToolResult,
-    LLMToolResultDirectRawResponse,
-    LLMToolResultDirectSpeechResponse,
     LLMToolResultRequery,
 )
 
@@ -166,43 +164,44 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         kmessages: Iterable[LLMChatCompletionUserMessageParam] = kargs.get(
             "messages", []
         )
-        kmessage = next(iter(kmessages), None)
 
-        if not kmessage:
+        if len(kmessages) == 0:
             async_ten_env.log_error("No message in data")
             return
 
-        message = self.message_to_dict(kmessage)
+        messages = []
+        for message in kmessages:
+            messages = messages + [self.message_to_dict(message)]
 
         self.memory_cache = []
         memory = self.memory
         try:
-            async_ten_env.log_info(f"for input text: [{message}] memory: {memory}")
+            async_ten_env.log_info(f"for input text: [{messages}] memory: {memory}")
             tools = None
             no_tool = kargs.get("no_tool", False)
 
-            if (
-                not isinstance(message.get("content"), str)
-                and message.get("role") == "user"
-            ):
-                non_artifact_content = [
-                    item
-                    for item in message.get("content", [])
-                    if item.get("type") == "text"
-                ]
-                non_artifact_message = {
-                    "role": message.get("role"),
-                    "content": non_artifact_content,
-                }
-                self.memory_cache = self.memory_cache + [
-                    non_artifact_message,
-                    {"role": "assistant", "content": ""},
-                ]
-            else:
-                self.memory_cache = self.memory_cache + [
-                    message,
-                    {"role": "assistant", "content": ""},
-                ]
+            for message in messages:
+                if (
+                    not isinstance(message.get("content"), str)
+                    and message.get("role") == "user"
+                ):
+                    non_artifact_content = [
+                        item
+                        for item in message.get("content", [])
+                        if item.get("type") == "text"
+                    ]
+                    non_artifact_message = {
+                        "role": message.get("role"),
+                        "content": non_artifact_content,
+                    }
+                    self.memory_cache = self.memory_cache + [
+                        non_artifact_message,
+                    ]
+                else:
+                    self.memory_cache = self.memory_cache + [
+                        message,
+                    ]
+            self.memory_cache = self.memory_cache + [{"role": "assistant", "content": ""}]
 
             tools = None
             if not no_tool and len(self.available_tools) > 0:
@@ -241,10 +240,25 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                             async_ten_env.log_info(f"tool_result: {tool_result}")
 
                             
-                            if tool_result["type"] == "direct_raw_response":
-                                self.send_raw_text_output(async_ten_env, json.dumps(tool_result["content"]), True)
-                            elif tool_result["type"] == "direct_speech_response":
-                                pass
+                            if tool_result["type"] == "normal":
+                                result_content = tool_result["content"]
+                                if isinstance(result_content, str):
+                                    tool_message = {
+                                        "role": "assistant",
+                                        "tool_calls": [tool_call],
+                                    }
+                                    new_message = {
+                                        "role": "tool",
+                                        "content": result_content,
+                                        "tool_call_id": tool_call["id"],
+                                    }
+                                    await self.queue_input_item(
+                                        True, messages=[tool_message, new_message], no_tool=True
+                                    )
+                                else:
+                                    async_ten_env.log_error(
+                                        f"Unknown tool result content: {result_content}"
+                                    )
                             elif tool_result["type"] == "requery":
                                 # self.memory_cache = []
                                 self.memory_cache.pop()
@@ -295,20 +309,20 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
             # Make an async API call to get chat completions
             await self.client.get_chat_completions_stream(
-                memory + [message], tools, listener
+                memory + messages, tools, listener
             )
 
             # Wait for the content to be finished
             await content_finished_event.wait()
 
             async_ten_env.log_info(
-                f"Chat completion finished for input text: {message}"
+                f"Chat completion finished for input text: {messages}"
             )
         except asyncio.CancelledError:
-            async_ten_env.log_info(f"Task cancelled: {message}")
+            async_ten_env.log_info(f"Task cancelled: {messages}")
         except Exception:
             async_ten_env.log_error(
-                f"Error in chat_completion: {traceback.format_exc()} for input text: {message}"
+                f"Error in chat_completion: {traceback.format_exc()} for input text: {messages}"
             )
         finally:
             self.send_text_output(async_ten_env, "", True)
@@ -355,10 +369,11 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         return json_dict
 
     def message_to_dict(self, message: LLMChatCompletionMessageParam):
-        if isinstance(message["content"], str):
-            message["content"] = str(message["content"])
-        else:
-            message["content"] = list(message["content"])
+        if message.get("content") is not None:
+            if isinstance(message["content"], str):
+                message["content"] = str(message["content"])
+            else:
+                message["content"] = list(message["content"])
         return message
 
     def _append_memory(self, message: str):
