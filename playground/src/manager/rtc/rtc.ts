@@ -233,6 +233,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
           atob(completeMessage)
         );
+        console.log(`[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`);
         const isAgent = Number(stream_id) != Number(this.userId)
         let textItem: IChatItem = {
           type: isAgent ? EMessageType.AGENT : EMessageType.USER,

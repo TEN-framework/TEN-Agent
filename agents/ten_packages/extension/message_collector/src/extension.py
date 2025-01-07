@@ -32,8 +32,6 @@ TEXT_DATA_FINAL_FIELD = "is_final"
 TEXT_DATA_STREAM_ID_FIELD = "stream_id"
 TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 
-# record the cached text data for each stream id
-cached_text_map = {}
 MAX_CHUNK_SIZE_BYTES = 1024
 
 
@@ -104,6 +102,7 @@ class MessageCollectorExtension(Extension):
         super().__init__(name)
         self.queue = asyncio.Queue()
         self.loop = None
+        self.cached_text_map = {}
 
     def on_init(self, ten_env: TenEnv) -> None:
         ten_env.log_info("on_init")
@@ -191,15 +190,15 @@ class MessageCollectorExtension(Extension):
         # We cache all final text data and append the non-final text data to the cached data
         # until the end of the segment.
         if end_of_segment:
-            if stream_id in cached_text_map:
-                text = cached_text_map[stream_id] + text
-                del cached_text_map[stream_id]
+            if stream_id in self.cached_text_map:
+                text = self.cached_text_map[stream_id] + text
+                del self.cached_text_map[stream_id]
         else:
             if final:
-                if stream_id in cached_text_map:
-                    text = cached_text_map[stream_id] + text
+                if stream_id in self.cached_text_map:
+                    text = self.cached_text_map[stream_id] + text
 
-                cached_text_map[stream_id] = text
+                self.cached_text_map[stream_id] = text
 
         # Generate a unique message ID for this batch of parts
         message_id = str(uuid.uuid4())[:8]

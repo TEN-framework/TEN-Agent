@@ -378,5 +378,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
     def _append_memory(self, message: str):
         if len(self.memory) > self.config.max_memory_length:
-            self.memory.pop(0)
+            removed_item = self.memory.pop(0)
+            # Remove tool calls from memory
+            if removed_item.get("tool_calls") and self.memory[0].get("role") == "tool":
+                self.memory.pop(0)
         self.memory.append(message)

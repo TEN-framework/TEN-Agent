@@ -102,6 +102,16 @@
           }
         }
       }
+    ],
+    "data_out": [
+      {
+        "name": "raw_text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
     ]
   }
 }

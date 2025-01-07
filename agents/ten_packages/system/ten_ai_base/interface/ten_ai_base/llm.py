@@ -117,22 +117,6 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
             async_ten_env.log_info("Cancelling the current task during flush.")
             self.current_task.cancel()
 
-    def send_raw_text_output(
-        self, async_ten_env: AsyncTenEnv, sentence: str, end_of_segment: bool
-    ):
-        try:
-            output_data = Data.create(RAW_DATA_OUT_NAME)
-            output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, sentence)
-            output_data.set_property_bool(
-                DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
-            )
-            asyncio.create_task(async_ten_env.send_data(output_data))
-            async_ten_env.log_info(
-                f"{'end of segment ' if end_of_segment else ''}sent raw sentence [{sentence}]"
-            )
-        except Exception as err:
-            async_ten_env.log_warn(f"send sentence [{sentence}] failed, err: {err}")
-
     def send_text_output(
         self, async_ten_env: AsyncTenEnv, sentence: str, end_of_segment: bool
     ):
