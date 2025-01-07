@@ -41,7 +41,7 @@ build_cxx_extensions() {
     fi
     if [[ ! -d $extension/lib ]]; then
       echo "No output for extension $extension_name."
-      # exit 1
+      continue
     fi
 
     mkdir -p $app_dir/ten_packages/extension/$extension_name/lib
