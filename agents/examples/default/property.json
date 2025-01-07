@@ -59,14 +59,18 @@
           {
             "type": "extension",
             "name": "tts",
-            "addon": "fish_audio_tts",
+            "addon": "volcengine_tts",
             "extension_group": "tts",
             "property": {
-              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
-              "optimize_streaming_latency": true,
+              "app_id": "${env:VOLCENGINE_APP_ID}",
+              "token": "${env:VOLCENGINE_TOKEN}",
+              "cluster": "volcano_mega",
+              "pitch_ratio": 1,
               "request_timeout_seconds": 30,
-              "base_url": "https://api.fish.audio"
+              "sample_rate": 24000,
+              "speed_ratio": 1,
+              "timbre": "S_hk32y8311",
+              "volumn_ratio": 1
             }
           },
           {
@@ -522,13 +526,15 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "subscribe_audio_sample_rate": 24000,
+              "subscribe_video_pix_fmt": 4,
+              "subscribe_video": true
             }
           },
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "openai_v2v_python",
+            "addon": "gemini_v2v_python",
             "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
@@ -1348,6 +1354,236 @@
                 "dest": [
                   {
                     "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+
+        "name": "va_openai_v2v_custom_tts",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "subscribe_audio_sample_rate": 24000,
+              "enable_agora_asr": false,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "v2v",
+            "addon": "openai_v2v_python",
+            "extension_group": "llm",
+            "property": {
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "temperature": 0.9,
+              "model": "gpt-4o-realtime-preview-2024-12-17",
+              "max_tokens": 2048,
+              "audio_out": false,
+              "input_transcript": false,
+              "language": "en-US",
+              "server_vad": true,
+              "dump": true,
+              "max_history": 10
+            }
+          },
+          {
+            "type": "extension",
+            "name": "tts",
+            "addon": "volcengine_tts",
+            "extension_group": "tts",
+            "property": {
+              "app_id": "8639907241",
+              "cluster": "volcano_tts",
+              "pitch_ratio": 1,
+              "request_timeout_seconds": 30,
+              "sample_rate": 24000,
+              "speed_ratio": 1,
+              "timbre": "zh_male_shaonianzixin_moon_bigtts",
+              "token": "O-ktM5BaahfH-cElmERi8KvRaPaksSjD",
+              "volumn_ratio": 1
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
+            "extension_group": "tools",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY}"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "bingsearch_tool_python",
+            "addon": "bingsearch_tool_python",
+            "extension_group": "tools",
+            "property": {
+              "api_key": "${env:BING_API_KEY}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "bingsearch_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "v2v",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "weatherapi_tool_python"
+                  },
+                  {
+                    "extension": "bingsearch_tool_python"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  },
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
                   }
                 ]
               }

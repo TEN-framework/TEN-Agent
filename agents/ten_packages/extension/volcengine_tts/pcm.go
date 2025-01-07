@@ -34,8 +34,8 @@ func defaultPcmConfig() *pcmConfig {
 		Channel:           1,
 		ChannelLayout:     1,
 		Name:              "pcm_frame",
-		SampleRate:        44100,
-		SamplesPerChannel: 44100 / 100,
+		SampleRate:        24000,
+		SamplesPerChannel: 24000 / 100,
 		Timestamp:         0,
 	}
 }

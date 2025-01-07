@@ -23,11 +23,15 @@ const (
 	cmdOutFlush                = "flush"
 	dataInTextDataPropertyText = "text"
 
-	propertyApiKey                   = "api_key"                    // Required
-	propertyModelId                  = "model_id"                   // Optional
-	propertyOptimizeStreamingLatency = "optimize_streaming_latency" // Optional
-	propertyRequestTimeoutSeconds    = "request_timeout_seconds"    // Optional
-	propertyBaseUrl                  = "base_url"                   // Optional
+	propertyAppId                 = "app_id"                  // Required
+	propertyToken                 = "token"                   // Required
+	propertyCluster               = "cluster"                 // Required
+	propertyTimbre                = "timbre"                  // Required
+	propertySampleRate            = "sample_rate"             // Required
+	propertySpeedRatio            = "speed_ratio"             // Optional
+	propertyVolumnRatio           = "volume_ratio"            // Optional
+	propertyPitchRatio            = "pitch_ratio"             // Optional
+	propertyRequestTimeoutSeconds = "request_timeout_seconds" // Optional
 )
 
 const (
@@ -66,46 +70,101 @@ func (e *volcengineTTSExtension) OnStart(ten ten.TenEnv) {
 	ten.LogInfo("OnStart")
 
 	// prepare configuration
-	fishAudioTTSConfig := defaultVolcengineTTSConfig()
+	volcengineTTSConfig := defaultVolcengineTTSConfig()
 
-	if apiKey, err := ten.GetPropertyString(propertyApiKey); err != nil {
-		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err))
+	if appID, err := ten.GetPropertyString(propertyAppId); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyAppId, err))
 		return
 	} else {
-		fishAudioTTSConfig.AppID = apiKey
+		if len(appID) > 0 {
+			volcengineTTSConfig.AppID = appID
+		}
 	}
 
-	if modelId, err := ten.GetPropertyString(propertyModelId); err != nil {
-		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModelId, err))
+	if token, err := ten.GetPropertyString(propertyToken); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyToken, err))
 	} else {
-		if len(modelId) > 0 {
-			fishAudioTTSConfig.Token = modelId
+		if len(token) > 0 {
+			volcengineTTSConfig.Token = token
+		}
+	}
+
+	if cluster, err := ten.GetPropertyString(propertyCluster); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyCluster, err))
+	} else {
+		if len(cluster) > 0 {
+			volcengineTTSConfig.Cluster = cluster
+		}
+	}
+
+	if timbre, err := ten.GetPropertyString(propertyTimbre); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyTimbre, err))
+	} else {
+		if len(timbre) > 0 {
+			volcengineTTSConfig.Timbre = timbre
+		}
+	}
+
+	if sampleRate, err := ten.GetPropertyInt32(propertySampleRate); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertySampleRate, err))
+	} else {
+		if sampleRate != 8000 && sampleRate != 16000 && sampleRate != 24000 {
+			ten.LogError(fmt.Sprintf("GetProperty required %s invalid value %d", propertySampleRate, sampleRate))
+		} else {
+			volcengineTTSConfig.SampleRate = sampleRate
+		}
+	}
+
+	if speedRatio, err := ten.GetPropertyFloat64(propertySpeedRatio); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySpeedRatio, err))
+	} else {
+		if speedRatio >= 0.2 && speedRatio <= 3 {
+			volcengineTTSConfig.SpeedRatio = float32(speedRatio)
+		}
+	}
+
+	if volumnRatio, err := ten.GetPropertyFloat64(propertyVolumnRatio); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVolumnRatio, err))
+	} else {
+		if volumnRatio >= 0.1 && volumnRatio <= 3 {
+			volcengineTTSConfig.VolumnRatio = float32(volumnRatio)
+		}
+	}
+
+	if pitchRatio, err := ten.GetPropertyFloat64(propertyPitchRatio); err != nil {
+		ten.LogError(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyPitchRatio, err))
+	} else {
+		if pitchRatio >= 0.1 && pitchRatio <= 3 {
+			volcengineTTSConfig.PitchRatio = float32(pitchRatio)
 		}
 	}
 
 	if requestTimeoutSeconds, err := ten.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
-		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err))
+		ten.LogError(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err))
 	} else {
 		if requestTimeoutSeconds > 0 {
-			fishAudioTTSConfig.RequestTimeoutSeconds = int(requestTimeoutSeconds)
+			volcengineTTSConfig.RequestTimeoutSeconds = int(requestTimeoutSeconds)
 		}
 	}
-
+	ten.LogInfo(fmt.Sprintf("volcengineTTSConfig: %v", volcengineTTSConfig))
 	// create volcengineTTS instance
-	volcengineTTS, err := newVolcengineTTS(fishAudioTTSConfig)
+	volcengineTTS, err := newVolcengineTTS(volcengineTTSConfig)
 	if err != nil {
-		ten.LogError(fmt.Sprintf("newFishAudioTTS failed, err: %v", err))
+		ten.LogError(fmt.Sprintf("newVolcengineTTS failed, err: %v", err))
 		return
 	}
 
-	ten.LogInfo(fmt.Sprintf("newFishAudioTTS succeed with ModelId: %s",
-		fishAudioTTSConfig.Token))
+	ten.LogInfo(fmt.Sprintf("newVolcengineTTS succeed with token: %s",
+		volcengineTTSConfig.Token))
 
 	// set volcengine instance
 	e.volcengineTTS = volcengineTTS
 
 	// create pcm instance
-	pcm := newPcm(defaultPcmConfig())
+	pcmConfig := defaultPcmConfig()
+	pcmConfig.SampleRate = volcengineTTSConfig.SampleRate
+	pcmConfig.SamplesPerChannel = volcengineTTSConfig.SampleRate / 100
+	pcm := newPcm(pcmConfig)
 	pcmFrameSize := pcm.getPcmFrameSize()
 
 	// init chan

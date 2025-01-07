@@ -11,7 +11,7 @@
     ],
     "api": {
         "property": {
-            "api_id": {
+            "app_id": {
                 "type": "string"
             },
             "token": {
@@ -22,6 +22,18 @@
             },
             "timbre": {
                 "type": "string"
+            },
+            "sample_rate": {
+                "type": "int32"
+            },
+            "speed_ratio": {
+                "type": "float64"
+            },
+            "volumn_ratio": {
+                "type": "float64"
+            },
+            "pitch_ratio": {
+                "type": "float64"
             },
             "request_timeout_seconds": {
                 "type": "int64"

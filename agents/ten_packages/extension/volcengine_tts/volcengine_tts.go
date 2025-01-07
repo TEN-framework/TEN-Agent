@@ -33,6 +33,10 @@ type volcengineTTSConfig struct {
 	Token                 string
 	Cluster               string
 	Timbre                string
+	SampleRate            int32
+	SpeedRatio            float32
+	VolumnRatio           float32
+	PitchRatio            float32
 	RequestTimeoutSeconds int
 }
 
@@ -42,6 +46,10 @@ func defaultVolcengineTTSConfig() volcengineTTSConfig {
 		Token:                 "",
 		Cluster:               "",
 		Timbre:                "",
+		SampleRate:            24000,
+		SpeedRatio:            1.0,
+		VolumnRatio:           1.0,
+		PitchRatio:            1.0,
 		RequestTimeoutSeconds: 30,
 	}
 }
@@ -110,10 +118,11 @@ func (v *volcengineTTS) textToSpeechStream(tenEnv ten.TenEnv, streamWriter io.Wr
 	params["audio"] = make(map[string]interface{})
 	//填写选中的音色代号
 	params["audio"]["voice_type"] = v.config.Timbre
+	params["audio"]["rate"] = v.config.SampleRate
 	params["audio"]["encoding"] = "pcm"
-	params["audio"]["speed_ratio"] = 1.5
-	params["audio"]["volume_ratio"] = 1.0
-	params["audio"]["pitch_ratio"] = 1.0
+	params["audio"]["speed_ratio"] = v.config.SpeedRatio
+	params["audio"]["volume_ratio"] = v.config.VolumnRatio
+	params["audio"]["pitch_ratio"] = v.config.PitchRatio
 	params["request"] = make(map[string]interface{})
 	params["request"]["reqid"] = reqID
 	params["request"]["text"] = text
@@ -133,19 +142,18 @@ func (v *volcengineTTS) textToSpeechStream(tenEnv ten.TenEnv, streamWriter io.Wr
 		time.Second*time.Duration(v.config.RequestTimeoutSeconds),
 	)
 	if err != nil {
-		fmt.Printf("http post fail [err:%s]\n", err.Error())
+		tenEnv.LogError(fmt.Sprintf("http post fail [err:%s]\n", err.Error()))
 		return err
 	}
-	fmt.Printf("resp body:%s\n", synResp)
 	var respJSON TTSServResponse
 	err = json.Unmarshal(synResp, &respJSON)
 	if err != nil {
-		fmt.Printf("unmarshal response fail [err:%s]\n", err.Error())
+		tenEnv.LogError(fmt.Sprintf("unmarshal response fail [err:%s]\n", err.Error()))
 		return err
 	}
 	code := respJSON.Code
 	if code != 3000 {
-		fmt.Printf("code fail [code:%d]\n", code)
+		tenEnv.LogError(fmt.Sprintf("code fail [code:%d]\n", code))
 		return errors.New("resp code fail")
 	}
 
