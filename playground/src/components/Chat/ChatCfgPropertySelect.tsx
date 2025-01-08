@@ -237,6 +237,7 @@ const convertToType = (value: any, type: string) => {
     case "int32":
       return parseInt(value, 10)
     case "float64":
+    case "float32":
       return parseFloat(value)
     case "bool":
       return value === true || value === "true"
