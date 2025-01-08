@@ -57,4 +57,4 @@ class BytedanceTTSExtension(AsyncTTSBaseExtension):
             await self.send_audio_out(ten_env, audio_data)
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
-        return await super().on_cancel_tts(ten_env)
+        await self.client.cancel()
