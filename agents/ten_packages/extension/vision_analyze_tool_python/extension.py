@@ -23,7 +23,7 @@ from ten_ai_base.types import (
     LLMToolMetadata,
     LLMToolMetadataParameter,
     LLMToolResult,
-    LLMToolResultDirectSpeechResponse,
+    LLMToolResultNormal,
 )
 
 
@@ -177,7 +177,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
             ten_env.log_info("send_cmd {}".format(message))
             [cmd_result, _] = await ten_env.send_cmd(cmd)
             result = cmd_result.get_property_to_json("response")
-            return LLMToolResultDirectSpeechResponse(
-                type="direct_speech_response",
+            return LLMToolResultNormal(
+                type="normal",
                 content=json.dumps(result),
             )
