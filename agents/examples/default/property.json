@@ -535,11 +535,11 @@
           },
           {
             "type": "extension",
-            "name": "bingsearch_tool_python",
-            "addon": "bingsearch_tool_python",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
             "extension_group": "default",
             "property": {
-              "api_key": "${env:BING_API_KEY|}"
+              "api_key": "${env:WEATHERAPI_API_KEY|}"
             }
           }
         ],
@@ -598,7 +598,7 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension": "bingsearch_tool_python"
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -638,7 +638,7 @@
             ]
           },
           {
-            "extension": "bingsearch_tool_python",
+            "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
@@ -738,15 +738,6 @@
           },
           {
             "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
-          },
-          {
-            "type": "extension",
             "name": "openai_image_generate_tool",
             "addon": "openai_image_generate_tool",
             "extension_group": "default",
@@ -825,9 +816,6 @@
               {
                 "name": "tool_call",
                 "dest": [
-                  {
-                    "extension": "weatherapi_tool_python"
-                  },
                   {
                     "extension": "openai_image_generate_tool"
                   }
@@ -912,19 +900,6 @@
             "data": [
               {
                 "name": "text_data",
-                "dest": [
-                  {
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
                 "dest": [
                   {
                     "extension": "llm"

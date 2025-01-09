@@ -140,6 +140,11 @@ export const toolModuleRegistry: Record<string, ModuleRegistry.ToolModule> = {
         type: ModuleRegistry.ModuleType.TOOL,
         label: "Vision Tool",
     },
+    openai_image_generate_tool: {
+        name: "openai_image_generate_tool",
+        type: ModuleRegistry.ModuleType.TOOL,
+        label: "OpenAI Image Generate Tool",
+    },
 }
 
 export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
@@ -150,7 +155,7 @@ export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
 }
 
 export const compatibleTools: Record<string, string[]> = {
-    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python"],
-    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python"],
-    gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python"],
+    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
+    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
+    gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
 }
