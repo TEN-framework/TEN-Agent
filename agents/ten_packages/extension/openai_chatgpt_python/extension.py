@@ -26,7 +26,6 @@ from ten_ai_base.types import (
     LLMDataCompletionArgs,
     LLMToolMetadata,
     LLMToolResult,
-    LLMToolResultRequery,
 )
 
 from .helper import parse_sentences

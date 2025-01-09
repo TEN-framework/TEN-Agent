@@ -14,7 +14,7 @@ from ten_ai_base import (
     AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
 )
 from ten_ai_base.const import DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT, RAW_DATA_OUT_NAME
-from ten_ai_base.types import LLMChatCompletionContentPartImageParam, LLMToolMetadataParameter, LLMToolResultNormal
+from ten_ai_base.types import LLMToolMetadataParameter, LLMToolResultNormal
 from .openai import OpenAIImageGenerateClient, OpenAIImageGenerateToolConfig
 
 class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):

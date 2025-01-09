@@ -9,7 +9,6 @@ from ten import (
     VideoFrame,
     AsyncTenEnv,
     Cmd,
-    CmdResult,
     Data,
 )
 from PIL import Image

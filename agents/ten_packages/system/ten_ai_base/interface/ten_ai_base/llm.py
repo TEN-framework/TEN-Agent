@@ -21,7 +21,6 @@ from .const import (
     DATA_OUT_PROPERTY_END_OF_SEGMENT,
     DATA_OUT_PROPERTY_TEXT,
     CMD_CHAT_COMPLETION_CALL,
-    RAW_DATA_OUT_NAME,
 )
 from .types import LLMCallCompletionArgs, LLMDataCompletionArgs, LLMToolMetadata
 from .helper import AsyncQueue

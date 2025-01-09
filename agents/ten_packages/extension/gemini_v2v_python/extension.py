@@ -24,7 +24,6 @@ from ten import (
     StatusCode,
     CmdResult,
     Data,
-    TenError,
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
