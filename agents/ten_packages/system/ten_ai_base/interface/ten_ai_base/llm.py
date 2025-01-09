@@ -149,12 +149,6 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
         """
 
     @abstractmethod
-    async def on_generate_image(
-        self, async_ten_env: AsyncTenEnv, prompt: str
-    ) -> str:
-        """Called when an image generation is requested. Implement this method to process the image generation."""
-
-    @abstractmethod
     async def on_tools_update(
         self, async_ten_env: AsyncTenEnv, tool: LLMToolMetadata
     ) -> None:
