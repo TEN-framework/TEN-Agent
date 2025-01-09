@@ -25,7 +25,7 @@ import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { rtmManager } from "@/manager/rtm";
-import { type IRTMTextItem, EMessageType, ERTMTextType } from "@/types";
+import { type IRTMTextItem, EMessageDataType, EMessageType, ERTMTextType } from "@/types";
 import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
@@ -72,6 +72,7 @@ export default function ChatCard(props: { className?: string }) {
           userId: options.userId,
           text: text.text,
           type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
+          data_type: EMessageDataType.TEXT,
           isFinal: text.is_final,
           time: text.ts,
         })
@@ -83,6 +84,7 @@ export default function ChatCard(props: { className?: string }) {
           userId: options.userId,
           text: text.text,
           type: EMessageType.USER,
+          data_type: EMessageDataType.TEXT,
           isFinal: true,
           time: text.ts,
         })
