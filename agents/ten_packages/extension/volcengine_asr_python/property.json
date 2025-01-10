@@ -1,0 +1,5 @@
+{
+    "app_id": "${env:VOLCENGINE_ASR_APP_ID}",
+    "access_token": "${env:VOLCENGINE_ASR_ACCESS_TOKEN}",
+    "resource_id": "${env:VOLCENGINE_ASR_RESOURCE_ID}"
+}

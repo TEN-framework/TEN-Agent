@@ -30,13 +30,12 @@
           {
             "type": "extension",
             "name": "stt",
-            "addon": "deepgram_asr_python",
+            "addon": "volcengine_asr_python",
             "extension_group": "stt",
             "property": {
-              "api_key": "${env:DEEPGRAM_API_KEY}",
-              "language": "en-US",
-              "model": "nova-2",
-              "sample_rate": 16000
+              "access_token": "${env:VOLCENGINE_ASR_ACCESS_TOKEN}",
+              "app_id": "${env:VOLCENGINE_ASR_APP_ID}",
+              "resource_id": "${env:VOLCENGINE_ASR_RESOURCE_ID}"
             }
           },
           {
@@ -68,7 +67,7 @@
               "pitch_ratio": 1,
               "request_timeout_seconds": 30,
               "sample_rate": 24000,
-              "speed_ratio": 1,
+              "speed_ratio": 1.1,
               "timbre": "S_hk32y8311",
               "volumn_ratio": 1
             }
@@ -526,15 +525,13 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000,
-              "subscribe_video_pix_fmt": 4,
-              "subscribe_video": true
+              "subscribe_audio_sample_rate": 24000
             }
           },
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "gemini_v2v_python",
+            "addon": "openai_v2v_python",
             "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
@@ -1362,7 +1359,6 @@
         ]
       },
       {
-
         "name": "va_openai_v2v_custom_tts",
         "auto_start": true,
         "nodes": [
@@ -1414,12 +1410,12 @@
             "extension_group": "tts",
             "property": {
               "app_id": "8639907241",
-              "cluster": "volcano_tts",
+              "cluster": "volcano_mega",
               "pitch_ratio": 1,
               "request_timeout_seconds": 30,
               "sample_rate": 24000,
-              "speed_ratio": 1,
-              "timbre": "zh_male_shaonianzixin_moon_bigtts",
+              "speed_ratio": 1.1,
+              "timbre": "S_hk32y8311",
               "token": "O-ktM5BaahfH-cElmERi8KvRaPaksSjD",
               "volumn_ratio": 1
             }

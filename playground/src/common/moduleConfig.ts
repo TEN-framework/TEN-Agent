@@ -63,6 +63,11 @@ export const sttModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "transcribe_asr_python",
         type: ModuleRegistry.ModuleType.STT,
         label: "Transcribe STT",
+    },
+    volcengine_asr_python: {
+        name: "volcengine_asr_python",
+        type: ModuleRegistry.ModuleType.STT,
+        label: "Volcengine STT",
     }
 }
 
