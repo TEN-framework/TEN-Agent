@@ -487,8 +487,7 @@ class GraphEditor {
 
       protocols.forEach((protocol) => {
         if (connection[protocol]) {
-          connection[protocol] = connection[protocol]?.filter(
-            (item) => !item.dest.some((dest) => dest.extension === node.name),
+          connection[protocol].forEach((item) => item.dest = item.dest.filter(d => d.extension !== node.name),
           )
         }
       })
