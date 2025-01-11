@@ -153,8 +153,6 @@ class MessageCollectorExtension(Extension):
             {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
         """
         # ten_env.log_debug(f"on_data")
-
-        content = ""
         text = ""
         final = True
         stream_id = 0
