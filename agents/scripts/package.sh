@@ -56,7 +56,7 @@ cp property.json .release
 
 # copy packages
 mkdir -p .release/ten_packages
-for package_type in system extension_group extension; do
+for package_type in system extension_group extension addon_loader; do
     for package_path in ten_packages/${package_type}/*; do
         package_name=$(basename ${package_path})
         copy_package ${package_type} ${package_name}
