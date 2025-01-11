@@ -62,6 +62,21 @@
       },
       "greeting": {
         "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int64"
+      },
+      "is_memory_enabled": {
+        "type": "bool"
+      },
+      "topP": {
+        "type": "float32"
+      },
+      "topK": {
+        "type": "int32"
+      },
+      "is_enable_video": {
+        "type": "bool"
       }
     },
     "video_frame_in": [
