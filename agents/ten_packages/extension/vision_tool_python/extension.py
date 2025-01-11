@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 from ten_ai_base import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMToolMetadata, LLMToolResult
+from ten_ai_base.types import LLMChatCompletionContentPartImageParam, LLMToolMetadata, LLMToolResult, LLMToolResultRequery
 from ten import (
     AudioFrame,
     VideoFrame,
@@ -140,7 +140,14 @@ class VisionToolExtension(AsyncLLMToolBaseExtension):
             base64_image = rgb2base64jpeg(
                 self.image_data, self.image_width, self.image_height
             )
-            # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
-            return {
-                "content": [{"type": "image_url", "image_url": {"url": base64_image}}]
-            }
+            return LLMToolResultRequery(
+                type="requery",
+                content=[
+                    LLMChatCompletionContentPartImageParam(
+                        type="image_url",
+                        image_url={
+                            "url": base64_image,
+                        },
+                    )
+                ],
+            )

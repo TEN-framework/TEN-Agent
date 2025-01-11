@@ -32,8 +32,6 @@ TEXT_DATA_FINAL_FIELD = "is_final"
 TEXT_DATA_STREAM_ID_FIELD = "stream_id"
 TEXT_DATA_END_OF_SEGMENT_FIELD = "end_of_segment"
 
-# record the cached text data for each stream id
-cached_text_map = {}
 MAX_CHUNK_SIZE_BYTES = 1024
 
 
@@ -104,6 +102,7 @@ class MessageCollectorExtension(Extension):
         super().__init__(name)
         self.queue = asyncio.Queue()
         self.loop = None
+        self.cached_text_map = {}
 
     def on_init(self, ten_env: TenEnv) -> None:
         ten_env.log_info("on_init")
@@ -154,74 +153,109 @@ class MessageCollectorExtension(Extension):
             {"name": "text_data", "properties": {"text": "hello", "is_final": true, "stream_id": 123, "end_of_segment": true}}
         """
         # ten_env.log_debug(f"on_data")
-
         text = ""
         final = True
         stream_id = 0
         end_of_segment = False
 
-        try:
-            text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
-        except Exception as e:
-            ten_env.log_error(
-                f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
+
+        # Add the raw data type if the data is raw text data
+        if data.get_name() == "text_data":
+            try:
+                text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+            except Exception as e:
+                ten_env.log_error(
+                    f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
+                )
+
+            try:
+                final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
+            except Exception:
+                pass
+
+            try:
+                stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
+            except Exception:
+                pass
+
+            try:
+                end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+            except Exception as e:
+                ten_env.log_warn(
+                    f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
+                )
+
+            ten_env.log_info(
+                f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final} {TEXT_DATA_STREAM_ID_FIELD}: {stream_id} {TEXT_DATA_END_OF_SEGMENT_FIELD}: {end_of_segment}"
             )
 
-        try:
-            final = data.get_property_bool(TEXT_DATA_FINAL_FIELD)
-        except Exception:
-            pass
+            # We cache all final text data and append the non-final text data to the cached data
+            # until the end of the segment.
+            if end_of_segment:
+                if stream_id in self.cached_text_map:
+                    text = self.cached_text_map[stream_id] + text
+                    del self.cached_text_map[stream_id]
+            else:
+                if final:
+                    if stream_id in self.cached_text_map:
+                        text = self.cached_text_map[stream_id] + text
 
-        try:
-            stream_id = data.get_property_int(TEXT_DATA_STREAM_ID_FIELD)
-        except Exception:
-            pass
+                    self.cached_text_map[stream_id] = text
 
-        try:
-            end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
-        except Exception as e:
-            ten_env.log_warn(
-                f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
+            # Generate a unique message ID for this batch of parts
+            message_id = str(uuid.uuid4())[:8]
+
+            # Prepare the main JSON structure without the text field
+            base_msg_data = {
+                "is_final": end_of_segment,
+                "stream_id": stream_id,
+                "message_id": message_id,  # Add message_id to identify the split message
+                "data_type": "transcribe",
+                "text_ts": int(time.time() * 1000),  # Convert to milliseconds
+                "text": text,
+            }
+
+
+            try:
+                chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
+                for chunk in chunks:
+                    asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
+
+            except Exception as e:
+                ten_env.log_warn(f"on_data new_data error: {e}")
+        elif data.get_name() == "content_data":
+            try:
+                text = data.get_property_string(TEXT_DATA_TEXT_FIELD)
+            except Exception as e:
+                ten_env.log_error(
+                    f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
+                )
+
+            ten_env.log_info(
+                f"on_data {TEXT_DATA_TEXT_FIELD}: {text}"
             )
 
-        ten_env.log_info(
-            f"on_data {TEXT_DATA_TEXT_FIELD}: {text} {TEXT_DATA_FINAL_FIELD}: {final} {TEXT_DATA_STREAM_ID_FIELD}: {stream_id} {TEXT_DATA_END_OF_SEGMENT_FIELD}: {end_of_segment}"
-        )
+            # Generate a unique message ID for this batch of parts
+            message_id = str(uuid.uuid4())[:8]
 
-        # We cache all final text data and append the non-final text data to the cached data
-        # until the end of the segment.
-        if end_of_segment:
-            if stream_id in cached_text_map:
-                text = cached_text_map[stream_id] + text
-                del cached_text_map[stream_id]
-        else:
-            if final:
-                if stream_id in cached_text_map:
-                    text = cached_text_map[stream_id] + text
+            # Prepare the main JSON structure without the text field
+            base_msg_data = {
+                "is_final": True,
+                "stream_id": stream_id,
+                "message_id": message_id,  # Add message_id to identify the split message
+                "data_type": "raw",
+                "text_ts": int(time.time() * 1000),  # Convert to milliseconds
+                "text": text,
+            }
 
-                cached_text_map[stream_id] = text
 
-        # Generate a unique message ID for this batch of parts
-        message_id = str(uuid.uuid4())[:8]
+            try:
+                chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
+                for chunk in chunks:
+                    asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
 
-        # Prepare the main JSON structure without the text field
-        base_msg_data = {
-            "is_final": end_of_segment,
-            "stream_id": stream_id,
-            "message_id": message_id,  # Add message_id to identify the split message
-            "data_type": "transcribe",
-            "text_ts": int(time.time() * 1000),  # Convert to milliseconds
-            "text": text,
-        }
-
-        try:
-            chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
-            for chunk in chunks:
-                asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
-
-        except Exception as e:
-            ten_env.log_warn(f"on_data new_data error: {e}")
-            return
+            except Exception as e:
+                ten_env.log_warn(f"on_data new_data error: {e}")
 
     def on_audio_frame(self, ten_env: TenEnv, audio_frame: AudioFrame) -> None:
         # TODO: process pcm frame

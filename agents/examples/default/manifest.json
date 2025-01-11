@@ -31,7 +31,7 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.7.1"
+      "version": "=0.7.2"
     },
     {
       "type": "extension",
@@ -136,6 +136,11 @@
     {
       "type": "extension",
       "name": "coze_python_async",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_image_generate_tool",
       "version": "=0.1.0"
     }
   ]

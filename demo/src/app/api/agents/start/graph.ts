@@ -202,6 +202,31 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "story_teller_stt_integrated") {
+        let story_greeting = "Hey, I'm Story Teller, I can tell story based on your imagination, say Hi to me!";
+
+        if (language === "zh-CN") {
+            story_greeting = "嗨，我是一个讲故事的机器人，我可以根据你的想象讲故事，和我打个招呼吧！";
+        } else if (language === "ja-JP") {
+            story_greeting = "こんにちは、私はストーリーテラーです。あなたの想像に基づいて物語を語ることができます。私に挨拶してください！";
+        } else if (language === "ko-KR") {
+            story_greeting = "안녕하세요, 저는 이야기꾼입니다. 당신의 상상력을 바탕으로 이야기를 할 수 있어요. 저에게 인사해 보세요!";
+        }
+
+
+        combined_greeting = greeting || story_greeting;
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "llm": {
+                "greeting": combined_greeting,
+            },
+            "tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     }
+
     return {}
 }

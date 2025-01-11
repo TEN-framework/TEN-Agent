@@ -88,6 +88,11 @@ export const useSettingsTabs = () => {
         greeting: true,
         prompt: false,
       }
+    } else if (graphName === "story_teller_stt_integrated") {
+      return {
+        greeting: true,
+        prompt: false,
+      }
     }
 
     return {

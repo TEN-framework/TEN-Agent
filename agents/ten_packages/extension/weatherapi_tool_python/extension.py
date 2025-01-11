@@ -17,7 +17,7 @@ from ten import Cmd
 from ten.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 from ten_ai_base import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult
+from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult, LLMToolResultLLMResult
 
 CMD_TOOL_REGISTER = "tool_register"
 CMD_TOOL_CALL = "tool_call"
@@ -172,16 +172,24 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_info(f"run_tool name: {name}, args: {args}")
         if name == CURRENT_TOOL_NAME:
             result = await self._get_current_weather(args)
-            # result = LLMCompletionContentItemText(text="I see something")
-            return {"content": json.dumps(result)}
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=json.dumps(result),
+            )
         elif name == HISTORY_TOOL_NAME:
             result = await self._get_past_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"content": json.dumps(result)}
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=json.dumps(result),
+            )
         elif name == FORECAST_TOOL_NAME:
             result = await self._get_future_weather(args)
             # result = LLMCompletionContentItemText(text="I see something")
-            return {"content": json.dumps(result)}
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=json.dumps(result),
+            )
 
     async def _get_current_weather(self, args: dict) -> Any:
         if "location" not in args:

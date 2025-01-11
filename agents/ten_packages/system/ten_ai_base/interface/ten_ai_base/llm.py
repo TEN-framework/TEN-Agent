@@ -82,7 +82,7 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                     self.available_tools.append(tool_metadata)
                 await self.on_tools_update(async_ten_env, tool_metadata)
                 await async_ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
-            except Exception as err:
+            except Exception:
                 async_ten_env.log_warn(f"on_cmd failed: {traceback.format_exc()}")
                 await async_ten_env.return_result(
                     CmdResult.create(StatusCode.ERROR), cmd
@@ -166,5 +166,5 @@ class AsyncLLMBaseExtension(AsyncExtension, ABC):
                 await self.current_task  # Wait for the current task to finish or be cancelled
             except asyncio.CancelledError:
                 async_ten_env.log_info(f"Task cancelled: {args}")
-            except Exception as err:
-                async_ten_env.log_error(f"Task failed: {args}, err: {err}")
+            except Exception:
+                async_ten_env.log_error(f"Task failed: {args}, err: {traceback.format_exc()}")
