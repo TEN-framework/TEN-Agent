@@ -3,7 +3,7 @@
 import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm"
 import { AGEventEmitter } from "../events"
 import { apiGenAgoraData } from "@/common"
-import { type IRTMTextItem, ERTMTextType } from "@/types"
+import { type IRTMTextItem, EMessageDataType, ERTMTextType } from "@/types"
 
 export interface IRtmEvents {
   rtmMessage: (text: any) => void // TODO: update type
@@ -114,6 +114,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     const msg: IRTMTextItem = {
       is_final: true,
       ts: Date.now(),
+      data_type: EMessageDataType.TEXT,
       text,
       type: ERTMTextType.INPUT_TEXT,
       stream_id: String(this.userId),
