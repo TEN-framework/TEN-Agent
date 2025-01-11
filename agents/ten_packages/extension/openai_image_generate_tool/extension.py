@@ -49,7 +49,7 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
                     LLMToolMetadataParameter(
                         name="prompt",
                         type="string",
-                        description="Prompt to generate images",
+                        description="Prompt to generate images in the language you use",
                     ),
                 ],
             )
