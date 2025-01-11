@@ -731,13 +731,6 @@
           },
           {
             "type": "extension",
-            "name": "message_collector2",
-            "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
             "name": "openai_image_generate_tool",
             "addon": "openai_image_generate_tool",
             "extension_group": "default",
@@ -850,19 +843,6 @@
             ]
           },
           {
-            "extension": "message_collector2",
-            "data": [
-              {
-                "name": "data",
-                "dest": [
-                  {
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "extension": "tts",
             "cmd": [
               {
@@ -922,10 +902,10 @@
             ],
             "data": [
               {
-                "name": "raw_text_data",
+                "name": "content_data",
                 "dest": [
                   {
-                    "extension": "message_collector2"
+                    "extension": "message_collector"
                   }
                 ]
               }
@@ -999,13 +979,6 @@
           {
             "type": "extension",
             "name": "message_collector",
-            "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "message_collector2",
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
@@ -1111,19 +1084,6 @@
             ]
           },
           {
-            "extension": "message_collector2",
-            "data": [
-              {
-                "name": "data",
-                "dest": [
-                  {
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "extension": "tts",
             "cmd": [
               {
@@ -1183,10 +1143,10 @@
             ],
             "data": [
               {
-                "name": "raw_text_data",
+                "name": "content_data",
                 "dest": [
                   {
-                    "extension": "message_collector2"
+                    "extension": "message_collector"
                   }
                 ]
               }
@@ -1236,13 +1196,6 @@
           {
             "type": "extension",
             "name": "message_collector",
-            "addon": "message_collector",
-            "extension_group": "transcriber",
-            "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "message_collector2",
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
@@ -1352,19 +1305,6 @@
             ]
           },
           {
-            "extension": "message_collector2",
-            "data": [
-              {
-                "name": "data",
-                "dest": [
-                  {
-                    "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "extension": "openai_image_generate_tool",
             "cmd": [
               {
@@ -1378,10 +1318,10 @@
             ],
             "data": [
               {
-                "name": "raw_text_data",
+                "name": "content_data",
                 "dest": [
                   {
-                    "extension": "message_collector2"
+                    "extension": "message_collector"
                   }
                 ]
               }

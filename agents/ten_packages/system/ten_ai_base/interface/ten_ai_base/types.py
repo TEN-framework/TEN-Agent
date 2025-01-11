@@ -99,13 +99,13 @@ class LLMToolResultRequery(TypedDict, total=False):
     type: Required[Literal["requery"]]
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
 
-class LLMToolResultNormal(TypedDict, total=False):
-    type: Required[Literal["normal"]]
+class LLMToolResultLLMResult(TypedDict, total=False):
+    type: Required[Literal["llmresult"]]
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
 
 LLMToolResult: TypeAlias = Union[
     LLMToolResultRequery,
-    LLMToolResultNormal,
+    LLMToolResultLLMResult,
 ]
 
 class LLMCallCompletionArgs(TypedDict, total=False):

@@ -239,7 +239,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                             async_ten_env.log_info(f"tool_result: {tool_result}")
 
                             
-                            if tool_result["type"] == "normal":
+                            if tool_result["type"] == "llmresult":
                                 result_content = tool_result["content"]
                                 if isinstance(result_content, str):
                                     tool_message = {

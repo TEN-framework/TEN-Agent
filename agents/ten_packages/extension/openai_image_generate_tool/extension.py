@@ -13,8 +13,8 @@ from ten import (
 from ten_ai_base import (
     AsyncLLMToolBaseExtension, LLMToolMetadata, LLMToolResult
 )
-from ten_ai_base.const import DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT, RAW_DATA_OUT_NAME
-from ten_ai_base.types import LLMToolMetadataParameter, LLMToolResultNormal
+from ten_ai_base.const import DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT, CONTENT_DATA_OUT_NAME
+from ten_ai_base.types import LLMToolMetadataParameter, LLMToolResultLLMResult
 from .openai import OpenAIImageGenerateClient, OpenAIImageGenerateToolConfig
 
 class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
@@ -60,7 +60,7 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
         async_ten_env.log_info(f"Sending image: {image_url}")
         try:
             sentence = json.dumps({"data":{"image_url": image_url}, "type": "image_url"})
-            output_data = Data.create(RAW_DATA_OUT_NAME)
+            output_data = Data.create(CONTENT_DATA_OUT_NAME)
             output_data.set_property_string(
                 DATA_OUT_PROPERTY_TEXT,
                 sentence
@@ -87,8 +87,8 @@ class OpenAIImageGenerateToolExtension(AsyncLLMToolBaseExtension):
                 response_url = await self.client.generate_images(prompt)
                 ten_env.log_info(f"Generated image: {response_url}")
                 await self.send_image(ten_env, response_url)
-                result = LLMToolResultNormal(
-                    type="normal",
+                result = LLMToolResultLLMResult(
+                    type="llmresult",
                     content=json.dumps({"success": True}),
                 )
                 return result

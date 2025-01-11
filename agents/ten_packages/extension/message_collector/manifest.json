@@ -42,7 +42,7 @@
         }
       },
       {
-        "name": "raw_text_data",
+        "name": "content_data",
         "property": {
           "text": {
             "type": "string"
