@@ -77,3 +77,32 @@ tasks:
     internal: true
     cmds:
       - rm -rf bin
+
+  test:
+    desc: run tests
+    cmds:
+      - task: test-agent-extensions
+      - task: test-agent
+      - task: test-server
+
+  test-agent:
+    desc: test agent
+    dir: ./agents
+    internal: true
+    cmds:
+      - echo TODO test agent 
+
+  test-agent-extensions:
+    desc: run standalone testing of extensions
+    dir: ./agents/ten_packages/extension
+    internal: true
+    cmds:
+      - find . -type d -name tests -exec echo "TODO test {}" \;
+      # - cd ../system/ten_ai_base && pytest tests
+
+  test-server:
+    desc: test server
+    dir: ./server
+    internal: true
+    cmds:
+      - go test -v ./...
