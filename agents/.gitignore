@@ -14,7 +14,8 @@ ten_packages/addon_loader
 agoradns.dat
 agorareport.dat
 agorartmreport.dat
-bin/
+bin/man
+bin/worker
 /BUILD.gn
 .cache/
 /compile_commands.json
