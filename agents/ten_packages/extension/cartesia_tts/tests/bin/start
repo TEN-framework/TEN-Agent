@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+export PYTHONPATH=.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface
+
+# If the Python app imports some modules that are compiled with a different
+# version of libstdc++ (ex: PyTorch), the Python app may encounter confusing
+# errors. To solve this problem, we can preload the correct version of
+# libstdc++.
+#
+# export LD_PRELOAD=/lib/x86_64-linux-gnu/libstdc++.so.6
+#
+# Another solution is to make sure the module 'ten_runtime_python' is imported
+# _after_ the module that requires another version of libstdc++ is imported.
+#
+# Refer to https://github.com/pytorch/pytorch/issues/102360?from_wecom=1#issuecomment-1708989096
+
+pytest tests/ "$@"
