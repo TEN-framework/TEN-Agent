@@ -72,7 +72,7 @@ def filter_images(image_array: List[Any], max_images: int = 10) -> List[Any]:
     
     return result
 
-# 将多张图片合并成一张图片, 图片的数量不超过max_images张，合并后的大小为width
+# merge images into one image with a grid layout
 def merge_images(image_array: List[Any], max_images: int = 4, width: int = 512) -> bytes:
     """Merge multiple images into one image."""
     if len(image_array) == 0:
