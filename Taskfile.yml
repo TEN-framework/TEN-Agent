@@ -107,3 +107,12 @@ tasks:
     internal: true
     cmds:
       - go test -v ./...
+
+  test-extension:
+    desc: run standalone testing of one single extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+    # env:
+    #   PYTHONPATH: "{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - cd {{.EXTENSION}} && tman install && ./tests/bin/start {{ .CLI_ARGS }}
