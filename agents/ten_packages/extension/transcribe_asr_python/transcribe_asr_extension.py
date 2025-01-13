@@ -63,14 +63,24 @@ class TranscribeAsrExtension(Extension):
         ten.on_start_done()
 
     def put_pcm_frame(self, ten: TenEnv, pcm_frame: AudioFrame) -> None:
+        if self.stopped:
+            return
+
         try:
-            asyncio.run_coroutine_threadsafe(
-                self.queue.put(pcm_frame), self.loop
-            ).result(timeout=0.1)
-        except asyncio.QueueFull:
-            ten.log_error("Queue is full, dropping frame")
+            # Use a simpler synchronous approach with put_nowait
+            if not self.loop.is_closed():
+                if self.queue.qsize() < self.queue.maxsize:
+                    self.loop.call_soon_threadsafe(
+                        self.queue.put_nowait, pcm_frame
+                    )
+                else:
+                    ten.log_error("Queue is full, dropping frame")
+            else:
+                ten.log_error("Event loop is closed, cannot process frame")
         except Exception as e:
-            ten.log_error(f"Error putting frame in queue: {e}")
+            import traceback
+            error_msg = f"Error putting frame in queue: {str(e)}\n{traceback.format_exc()}"
+            ten.log_error(error_msg)
 
     def on_audio_frame(self, ten: TenEnv, frame: AudioFrame) -> None:
         self.put_pcm_frame(ten, pcm_frame=frame)

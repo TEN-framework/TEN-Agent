@@ -13,6 +13,8 @@ export const voiceNameMap: LanguageMap = {
         polly: {
             male: "Zhiyu",
             female: "Zhiyu",
+            langCode: "cmn-CN",
+            langEngine: "neural"
         },
         openai: {
             male: "ash",
@@ -31,6 +33,8 @@ export const voiceNameMap: LanguageMap = {
         polly: {
             male: "Matthew",
             female: "Ruth",
+            langCode: "en-US",
+            langEngine: "generative"
         },
         openai: {
             male: "ash",
@@ -226,7 +230,25 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va_nova_multimodal_aws") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "llm": {
+                "greeting": combined_greeting,
+            },
+            "tts": {
+                "voice": voiceNameMap[language]["polly"][voiceType],
+                "lang_code": voiceNameMap[language]["polly"]["langCode"],
+                "engine": voiceNameMap[language]["polly"]["langEngine"],
+            },
+            "stt": {
+                "lang_code": language,
+            }
+        }
     }
+
 
     return {}
 }
