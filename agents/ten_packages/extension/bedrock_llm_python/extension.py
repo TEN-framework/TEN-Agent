@@ -72,7 +72,7 @@ class BedrockLLMConfig(BaseConfig):
     vendor: str = ""
     stream_id: int = 0
     dump: bool = False
-    max_history: int = 10
+    max_memory_length: int = 10
     is_memory_enabled: bool = False
     is_enable_video: bool = False
     greeting: str = "Hello, I'm here to help you. How can I assist you today?"
@@ -311,7 +311,7 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
                         }
                     })
             # Prepare memory
-            while len(self.memory) > self.config.max_history:
+            while len(self.memory) > self.config.max_memory_length:
                 self.memory.pop(0)
             while len(self.memory) > 0 and self.memory[0]["role"] == "assistant":
                 self.memory.pop(0)

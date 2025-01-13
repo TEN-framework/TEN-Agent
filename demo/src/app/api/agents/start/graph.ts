@@ -13,6 +13,8 @@ export const voiceNameMap: LanguageMap = {
         polly: {
             male: "Zhiyu",
             female: "Zhiyu",
+            langCode: "cmn-CN",
+            langEngine: "neural"
         },
         openai: {
             male: "ash",
@@ -31,6 +33,8 @@ export const voiceNameMap: LanguageMap = {
         polly: {
             male: "Matthew",
             female: "Ruth",
+            langCode: "en-US",
+            langEngine: "generative"
         },
         openai: {
             male: "ash",

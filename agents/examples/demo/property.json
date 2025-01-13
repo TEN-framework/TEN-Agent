@@ -1517,7 +1517,8 @@
               "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
               "agora_asr_session_control_file_path": "session_control.conf",
               "subscribe_video_pix_fmt": 4,
-              "subscribe_video": true
+              "subscribe_video": true,
+              "max_memory_length":10
             }
           },
           {
@@ -1541,7 +1542,7 @@
             "property": {
               "access_key_id": "${env:AWS_ACCESS_KEY_ID}",
               "greeting": "TEN Agent connected. I am nova, How can I help you today?",
-              "max_memory_length": "10",
+              "max_memory_length": 10,
               "max_tokens": 256,
               "model": "us.amazon.nova-lite-v1:0",
               "prompt": "Now you are an intelligent assistant with real-time interaction capabilities. I will provide you with a series of real-time video image information. Please understand these images as video frames. Based on the images and the user's input, engage in a conversation with the user, remembering the dialogue content in a concise and clear manner.",
