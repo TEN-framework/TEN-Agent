@@ -51,7 +51,7 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
     ) -> None:
         try:
-            data = self.client.text_to_speech_stream(ten_env, input_text)
+            data = self.client.text_to_speech_stream(ten_env, input_text, end_of_segment)
             async for frame in data:
                 await self.send_audio_out(
                     ten_env, frame, sample_rate=self.client.config.sample_rate
@@ -60,4 +60,12 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
             ten_env.log_error(f"on_request_tts failed: {traceback.format_exc()}")
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
-        return await super().on_cancel_tts(ten_env)
+        """
+        Cancel ongoing TTS operation
+        """
+        await super().on_cancel_tts(ten_env)
+        try:
+            if self.client:
+                self.client.on_cancel_tts(ten_env)
+        except Exception:
+            ten_env.log_error(f"on_cancel_tts failed: {traceback.format_exc()}")

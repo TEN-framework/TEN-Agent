@@ -15,12 +15,15 @@ from .transcribe_config import TranscribeConfig
 
 DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
 DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
+DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID = "stream_id"
+DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
 
-
-def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool):
+def create_and_send_data(ten: TenEnv, text_result: str, is_final: bool, stream_id: int = 0):
     stable_data = Data.create("text_data")
     stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_IS_FINAL, is_final)
     stable_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text_result)
+    stable_data.set_property_int(DATA_OUT_TEXT_DATA_PROPERTY_STREAM_ID, stream_id)
+    stable_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, is_final)
     ten.send_data(stable_data)
 
 
@@ -75,10 +78,10 @@ class AsyncTranscribeWrapper:
 
         self.reset_stream()
 
-    async def create_stream(self) -> bool:
+    async def create_stream(self, stream_id) -> bool:
         try:
             self.stream = await self.get_transcribe_stream()
-            self.handler = TranscribeEventHandler(self.stream.output_stream, self.ten)
+            self.handler = TranscribeEventHandler(self.stream.output_stream, self.ten, stream_id)
             self.event_handler_task = asyncio.create_task(self.handler.handle_events())
         except Exception as e:
             self.ten.log_error(str(e))
@@ -89,7 +92,7 @@ class AsyncTranscribeWrapper:
     async def send_frame(self) -> None:
         while not self.stopped:
             try:
-                pcm_frame = await asyncio.wait_for(self.queue.get(), timeout=10.0)
+                pcm_frame = await asyncio.wait_for(self.queue.get(), timeout=3.0)
 
                 if pcm_frame is None:
                     self.ten.log_warn("send_frame: exit due to None value got.")
@@ -99,10 +102,10 @@ class AsyncTranscribeWrapper:
                 if not frame_buf:
                     self.ten.log_warn("send_frame: empty pcm_frame detected.")
                     continue
-
+                stream_id = pcm_frame.get_property_int("stream_id")
                 if not self.stream:
                     self.ten.log_info("lazy init stream.")
-                    if not await self.create_stream():
+                    if not await self.create_stream(stream_id):
                         continue
 
                 await self.stream.input_stream.send_audio_event(audio_chunk=frame_buf)
@@ -110,11 +113,11 @@ class AsyncTranscribeWrapper:
             except asyncio.TimeoutError:
                 if self.stream:
                     await self.cleanup()
-                    self.ten.log_debug(
+                    self.ten.log_info(
                         "send_frame: no data for 10s, will close current stream and create a new one when receving new frame."
                     )
                 else:
-                    self.ten.log_debug("send_frame: waiting for pcm frame.")
+                    self.ten.log_info("send_frame: waiting for pcm frame.")
             except IOError as e:
                 self.ten.log_error(f"Error in send_frame: {e}")
             except Exception as e:
@@ -149,9 +152,10 @@ class AsyncTranscribeWrapper:
 
 
 class TranscribeEventHandler(TranscriptResultStreamHandler):
-    def __init__(self, transcript_result_stream: TranscriptResultStream, ten: TenEnv):
+    def __init__(self, transcript_result_stream: TranscriptResultStream, ten: TenEnv, stream_id: int = 0):
         super().__init__(transcript_result_stream)
         self.ten = ten
+        self.stream_id = stream_id
 
     async def handle_transcript_event(self, transcript_event: TranscriptEvent) -> None:
         results = transcript_event.transcript.results
@@ -172,4 +176,4 @@ class TranscribeEventHandler(TranscriptResultStreamHandler):
 
         self.ten.log_info(f"got transcript: [{text_result}], is_final: [{is_final}]")
 
-        create_and_send_data(ten=self.ten, text_result=text_result, is_final=is_final)
+        create_and_send_data(ten=self.ten, text_result=text_result, is_final=is_final, stream_id=self.stream_id)
