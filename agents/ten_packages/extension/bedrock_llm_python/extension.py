@@ -5,23 +5,20 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 import asyncio
-import json
-import os
 import time
 import traceback
 from enum import Enum
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 
 import boto3
 from ten import (
     AsyncTenEnv,
-    Extension,
     Cmd,
     StatusCode,
     CmdResult,
     Data,
 )
-from ten_ai_base import BaseConfig, ChatMemory, EVENT_MEMORY_EXPIRED, EVENT_MEMORY_APPENDED
+from ten_ai_base import BaseConfig
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from dataclasses import dataclass
 
@@ -100,6 +97,7 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         self.input_start_time: float = 0
         self.processing_times = []
         self.ten_env = None
+        self.ctx = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         """Initialize the extension."""
@@ -165,7 +163,7 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         except Exception as err:
             ten_env.log_info(f"Error processing data: {err}")
 
-    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame) -> None:
+    async def on_video_frame(self, _: AsyncTenEnv, video_frame) -> None:
         """Handle incoming video frames."""
         if not self.config.is_enable_video:
             return
@@ -227,7 +225,14 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
             cmd_result = CmdResult.create(StatusCode.ERROR)
             cmd_result.set_property_string("detail", str(e))
             await ten_env.return_result(cmd_result, cmd)
+    async def _handle_user_left(self) -> None:
+        """Handle user left event."""
+        self.users_count -= 1
+        if self.users_count == 0:
+            self._reset_state()
 
+        if self.users_count < 0:
+            self.users_count = 0
     async def _handle_user_joined(self) -> None:
         """Handle user joined event."""
         self.users_count += 1
@@ -385,9 +390,6 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
             traceback.print_exc()
             self.ten_env.log_error(f"Error calling Nova model: {e}")
 
-        except Exception as e:
-            self.ten_env.log_error(f"Error appending memory: {e}")
-
     async def _process_stream_response(self, response: Dict, start_time: float):
         """Process streaming response from Nova model."""
         sentence = ""
@@ -429,3 +431,16 @@ class BedrockLLMExtension(AsyncLLMBaseExtension):
         # Update metrics
         self.processing_times.append(time.time() - start_time)
         return full_content
+    
+    async def on_call_chat_completion(self, async_ten_env, **kargs):
+        raise NotImplementedError
+
+    async def on_data_chat_completion(self, async_ten_env, **kargs):
+        raise NotImplementedError
+    
+    async def on_tools_update(
+        self, ten_env: AsyncTenEnv, tool
+    ) -> None:
+        """Called when a new tool is registered. Implement this method to process the new tool."""
+        ten_env.log_info(f"on tools update {tool}")
+        # await self._update_session()

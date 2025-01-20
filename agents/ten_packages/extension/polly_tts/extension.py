@@ -66,6 +66,6 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         await super().on_cancel_tts(ten_env)
         try:
             if self.client:
-                self.client._on_cancel_tts(ten_env)
+                self.client.on_cancel_tts(ten_env)
         except Exception:
             ten_env.log_error(f"on_cancel_tts failed: {traceback.format_exc()}")

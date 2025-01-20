@@ -1,5 +1,4 @@
 """Utility functions for BedrockV2V extension."""
-import base64
 from io import BytesIO
 from PIL import Image
 from typing import List, Tuple, Any

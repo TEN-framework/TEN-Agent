@@ -50,6 +50,7 @@ class PollyTTS:
             * self.config.bytes_per_sample
             / 100
         )
+        self.audio_stream = None
 
     def _synthesize(self, text, ten_env: AsyncTenEnv):
         """
@@ -103,7 +104,7 @@ class PollyTTS:
         except Exception:
             ten_env.log_error(traceback.format_exc())
 
-    def _on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
+    def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         """
         Cancel ongoing TTS operation
         """
