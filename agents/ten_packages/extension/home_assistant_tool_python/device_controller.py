@@ -154,4 +154,19 @@ class DeviceController:
                 }
             categorized_devices[domain]['devices'].append(device)
         
-        return categorized_devices 
+        return categorized_devices
+
+    async def set_light_brightness(self, entity_id: str, **params) -> Dict[str, Any]:
+        """Set the brightness of a light
+        
+        Args:
+            entity_id: The ID of the light entity
+            brightness: The brightness level (0-255)
+        
+        Returns:
+            Dict: Operation result
+        """
+
+        return await self.ha.turn_on(entity_id, **params)
+
+

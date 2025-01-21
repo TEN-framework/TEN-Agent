@@ -43,11 +43,9 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_start")
         self.ten_env = ten_env
         self.config = await HomeAssistantConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"config: {self.config}")
         if self.config.api_key and self.config.base_url:
             self.device_controller = DeviceController(self.config.base_url, self.config.api_key)
             self.categorized_devices = await self._get_all_devices()
-            ten_env.log_info("get all devices finished")
 
             await super().on_start(ten_env)
 
@@ -71,27 +69,21 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
             if domain == "light":
                 metadata = self.light_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
             elif domain == "camera":
                 metadata = self.camera_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
             elif domain == "climate":
                 metadata = self.climate_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
             elif domain == "cover":
                 metadata = self.cover_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
             elif domain == "media_player":
                 metadata = self.media_player_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
             elif domain == "fan":
                 metadata = self.fan_metadata(domain, category['devices'], ten_env)
                 metadata_list.append(metadata)
-                ten_env.log_info(f"will register tool: {metadata.name}")
 
         return metadata_list
     
@@ -117,7 +109,6 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         2. Turn off the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
-        ten_env.log_info(f"fan_tool_name: {FAN_TOOL_NAME}, fan_tool_description: {tool_description}")
 
         return LLMToolMetadata(
             name=FAN_TOOL_NAME,
@@ -150,8 +141,7 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         2. Close the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
-        ten_env.log_info(f"cover_tool_name: {COVER_TOOL_NAME}, cover_tool_description: {tool_description}")
-
+        
         return LLMToolMetadata(
             name=COVER_TOOL_NAME,
             description=tool_description,
@@ -176,9 +166,9 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         1. Play the {device_type}
         2. Pause the {device_type}
         3. Stop the {device_type}
+        4. Volume down the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
-        ten_env.log_info(f"media_player_tool_name: {MEDIA_PLAYER_TOOL_NAME}, media_player_tool_description: {tool_description}")
 
         return LLMToolMetadata(
             name=MEDIA_PLAYER_TOOL_NAME,
@@ -193,14 +183,8 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
                 LLMToolMetadataParameter(
                     name="action",
                     type="string",
-                    description="The action to perform on the device, such as play, pause, stop etc.",
+                    description="The action to perform on the device, such as play, pause, stop, volume down etc.",
                     required=True,
-                ),
-                LLMToolMetadataParameter(
-                    name="volume",
-                    type="string",
-                    description="The volume to set, in percentage",
-                    required=False,
                 ),
             ],
         )
@@ -211,7 +195,6 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         2. Turn off the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
-        ten_env.log_info(f"climate_tool_name: {CLIMATE_TOOL_NAME}, climate_tool_description: {tool_description}")
 
         return LLMToolMetadata(
             name=CLIMATE_TOOL_NAME,
@@ -244,7 +227,6 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         2. Turn off the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
-        ten_env.log_info(f"camera_tool_name: {CAMERA_TOOL_NAME}, camera_tool_description: {tool_description}")
 
         return LLMToolMetadata(
             name=CAMERA_TOOL_NAME,
@@ -269,10 +251,10 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         action = f"""
         1. Turn on the {device_type}
         2. Turn off the {device_type}
+        3. Set brightness of the {device_type}
         """
         tool_description = self.tool_description(device_type, action, devices, ten_env)
 
-        ten_env.log_info(f"light_tool_name: {LIGHT_TOOL_NAME}, light_tool_description: {tool_description}")
         return LLMToolMetadata(
             name=LIGHT_TOOL_NAME,
             description=tool_description,
@@ -286,18 +268,25 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
                 LLMToolMetadataParameter(
                     name="action",
                     type="string",
-                    description="The action to perform on the device, such as turn on, turn off etc.",
+                    description="The action to perform on the device, such as turn on, turn off, set brightness etc.",
                     required=True,
+                ),
+                LLMToolMetadataParameter(
+                    name="brightness",
+                    type="number",
+                    description="The brightness level to set, from 0 to 255",
+                    required=False,
                 ),
             ],
         )
     
     async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult | None:
-        ten_env.log_info(f"run_tool name: {name}, args: {args}")
+        self.ten_env.log_info(f"run tool name {name}, args {args}")
         entity_id = args.get("entity_id")
         action = args.get("action")
         if name == LIGHT_TOOL_NAME:
-            result = await self._control_light(entity_id, action)
+            brightness = args.get("brightness")
+            result = await self._control_light(entity_id, action, brightness=brightness)
             return LLMToolResultLLMResult(
                 type="llmresult",
                 content=json.dumps(result),
@@ -322,8 +311,7 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
                 content=json.dumps(result),
             )
         elif name == MEDIA_PLAYER_TOOL_NAME:
-            volume = args.get("volume")
-            result = await self._control_media_player(entity_id, action, volume=volume)
+            result = await self._control_media_player(entity_id, action)
             return LLMToolResultLLMResult(
                 type="llmresult",
                 content=json.dumps(result),
@@ -342,35 +330,35 @@ class HomeAssistantExtension(AsyncLLMToolBaseExtension):
         return categorized_devices
 
     async def _control_device(self, entity_id: str, action: str) -> Any:
-        self.ten_env.log_info(f"control_device entity_id: {entity_id}, action: {action}")
         result = await self.device_controller.control_device(entity_id, action)
         return result
     
     async def _control_cover(self, entity_id: str, action: str) -> Any:
         return await self._control_device(entity_id, action)
     
-    async def _control_light(self, entity_id: str, action: str) -> Any:
-        return await self._control_device(entity_id, action)
+    async def _control_light(self, entity_id: str, action: str, **kwargs) -> Any:
+        if kwargs.get("brightness") is None:        
+            return await self._control_device(entity_id, action)
+        
+        return await self.device_controller.set_light_brightness(entity_id, **kwargs)
     
     async def _control_camera(self, entity_id: str, action: str) -> Any:
         return await self._control_device(entity_id, action)
 
     async def _control_media_player(self, entity_id: str, action: str, **kwargs) -> Any:
-        self.ten_env.log_info(f"control_media_player entity_id: {entity_id}, action: {action}, kwargs: {kwargs}")
         if kwargs.get("volume") is None:
             return await self._control_device(entity_id, action)
         
-        return await self.device_controller.control_device(entity_id, action, **kwargs)
+        data = {"entity_id": entity_id, "volume_level": kwargs.get("volume")}
+        return await self.device_controller.control_device(entity_id, action, **data)
 
     async def _control_climate(self, entity_id: str, action: str, **kwargs) -> Any:
-        self.ten_env.log_info(f"control_climate entity_id: {entity_id}, action: {action}, kwargs: {kwargs}")
         if kwargs.get("temperature") is None:
             return await self._control_device(entity_id, action)
         
         return await self.device_controller.control_device(entity_id, action, **kwargs)
 
     async def _control_fan(self, entity_id: str, action: str, **kwargs) -> Any:
-        self.ten_env.log_info(f"control_fan entity_id: {entity_id}, action: {action}, kwargs: {kwargs}")
         if kwargs.get("percentage") is None:
             return await self._control_device(entity_id, action)
         
