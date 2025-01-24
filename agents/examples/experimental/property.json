@@ -683,78 +683,18 @@
                 ]
               },
               {
-                "name": "tool_call_get_current_weather",
+                "name": "tool_call",
                 "dest": [
                   {
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               },
               {
-                "name": "tool_call_get_past_weather",
+                "name": "tool_call",
                 "dest": [
                   {
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_get_future_weather",
-                "dest": [
-                  {
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "tool_call_bing_search",
-                "dest": [
-                  {
-                    "extension": "weatherapi_tool_python",
-                    "msg_conversion": {
-                      "type": "per_property",
-                      "keep_original": true,
-                      "rules": [
-                        {
-                          "path": "_ten.name",
-                          "conversion_mode": "fixed_value",
-                          "value": "tool_call"
-                        }
-                      ]
-                    }
+                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
