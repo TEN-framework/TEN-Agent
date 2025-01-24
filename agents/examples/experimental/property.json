@@ -199,7 +199,8 @@
               "model": "qwen-max",
               "max_tokens": 512,
               "prompt": "",
-              "max_memory_length": 10
+              "max_memory_length": 10,
+              "greeting": "TEN Agent connected. How can I help you today?"
             }
           },
           {

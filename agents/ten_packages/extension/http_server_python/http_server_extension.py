@@ -12,7 +12,7 @@ from functools import partial
 
 class HTTPHandler(BaseHTTPRequestHandler):
     def __init__(self, ten, *args, directory=None, **kwargs):
-        ten.log_info("new handler: %s %s %s", directory, args, kwargs)
+        ten.log_info(f"fnew handler: {directory} {args} {kwargs}")
         self.ten = ten
         super().__init__(*args, **kwargs)
 
@@ -22,11 +22,11 @@ class HTTPHandler(BaseHTTPRequestHandler):
             try:
                 content_length = int(self.headers["Content-Length"])
                 input_file = self.rfile.read(content_length).decode("utf-8")
-                self.ten.log_info("incoming request %s", input_file)
+                self.ten.log_info(f"incoming request {input_file}")
                 self.ten.send_cmd(
                     Cmd.create_from_json(input_file),
                     lambda ten, result, _: ten.log_info(
-                        "finish send_cmd from http server %s %s", input_file, result
+                        f"finish send_cmd from http server {input_file} {result}"
                     ),
                 )
                 self.send_response_only(200)
@@ -36,7 +36,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 self.send_response_only(500)
                 self.end_headers()
         else:
-            self.ten.log_warn("invalid path: %s", self.path)
+            self.ten.log_warn(f"invalid path: {self.path}")
             self.send_response_only(404)
             self.end_headers()
 
@@ -59,10 +59,7 @@ class HTTPServerExtension(Extension):
         #     self.cmd_white_list = white_list.split(",")
 
         ten.log_info(
-            "HTTPServerExtension on_start %s:%d, %s",
-            self.listen_addr,
-            self.listen_port,
-            self.cmd_white_list,
+            f"HTTPServerExtension on_start {self.listen_addr}:{self.listen_port}, {self.cmd_white_list}"
         )
 
         self.server = HTTPServer(
