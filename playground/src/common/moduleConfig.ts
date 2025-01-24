@@ -116,6 +116,11 @@ export const v2vModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "gemini_v2v_python",
         type: ModuleRegistry.ModuleType.V2V,
         label: "Gemini Realtime",
+    },
+    glm_v2v_python: {
+        name: "glm_v2v_python",
+        type: ModuleRegistry.ModuleType.V2V,
+        label: "GLM Realtime",
     }
 }
 
