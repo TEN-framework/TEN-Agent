@@ -24,6 +24,11 @@
       "version": "1.38.0"
     },
     {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.2"
+    },
+    {
       "type": "extension",
       "name": "azure_tts",
       "version": "=0.8.0"

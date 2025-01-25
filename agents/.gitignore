@@ -9,6 +9,7 @@ ten_packages/system/agora_rtc_sdk
 ten_packages/system/azure_speech_sdk
 ten_packages/system/nlohmann_json
 ten_packages/system/ten_runtime*
+ten_packages/system
 ten_packages/addon_loader
 .ten
 agoradns.dat
