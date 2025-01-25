@@ -1,27 +1,22 @@
 {
   "type": "app",
   "name": "agent_demo",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.6"
-    },
-    {
-      "type": "extension",
-      "name": "py_init_extension_cpp",
-      "version": "0.6"
+      "version": "0.8"
     },
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.10.2"
+      "version": "=0.11.4"
     },
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "=0.4.1"
+      "version": "=0.4.2"
     },
     {
       "type": "system",
@@ -31,7 +26,7 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.7.2"
+      "version": "=0.8.0"
     },
     {
       "type": "extension",

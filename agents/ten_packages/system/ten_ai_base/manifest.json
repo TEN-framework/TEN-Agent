@@ -13,7 +13,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.6"
+      "version": "0.8"
     }
   ],
   "api": {}
