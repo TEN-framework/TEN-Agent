@@ -92,15 +92,6 @@ tasks:
     cmds:
       - echo TODO test agent 
 
-  test-agent-extensions:
-    desc: run standalone testing of extensions
-    dir: ./agents/ten_packages/extension
-    internal: true
-    env:
-      PYTHONPATH: "{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
-    cmds:
-      - find . -type d -name tests -exec {}/bin/start {{ .CLI_ARGS }} \;
-
   test-server:
     desc: test server
     dir: ./server
@@ -108,11 +99,26 @@ tasks:
     cmds:
       - go test -v ./...
 
+  test-agent-extensions:
+    desc: run standalone testing of extensions
+    internal: true
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    vars:
+      EXTENSIONS:
+        sh: 'find agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
+    cmds:
+      - for: { var: EXTENSIONS }
+        task: test-extension
+        vars:
+          EXTENSION: '{{ .ITEM }}'
+
   test-extension:
     desc: run standalone testing of one single extension
     vars:
       EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
-    # env:
-    #   PYTHONPATH: "{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    dotenv: ['.env']
     cmds:
-      - cd {{.EXTENSION}} && tman install && ./tests/bin/start {{ .CLI_ARGS }}
+      - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
