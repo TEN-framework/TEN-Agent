@@ -45,6 +45,16 @@
 
 ## 编译和下载
 
+### Agora IOT SDK
+
+SDK 可以在 [这里](https://rte-store.s3.amazonaws.com/agora_iot_sdk.tar) 下载。
+将 `agora_iot_sdk.tar` 放到 `esp32-client/components` 目录下，并运行如下命令：
+
+```bash
+cd esp32-client/components
+tar -xvf agora_iot_sdk.tar
+```
+
 ### Linux 操作系统
 
 #### 默认 IDF 分支
