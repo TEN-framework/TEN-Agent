@@ -2,7 +2,7 @@
 
 
 //LLM Agent Service
-#define TENAI_AGENT_URL       "http://xxxxxxxxxxxxxx"
+#define TENAI_AGENT_URL       "http://<ip_address>:<port>"
 
 // LLM Agent Property. don't edit, if you want to edit pls contact Agora at first.
 #define GRAPH_NAME             "va_openai_v2v"
