@@ -1,6 +1,6 @@
 # 声网 ESP32 大模型智能对话
 
-*简体中文| [English](README.en.md)*
+*简体中文| [English](README.md)*
 
 ## 例程简介
 
