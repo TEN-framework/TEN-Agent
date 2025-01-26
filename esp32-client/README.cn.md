@@ -161,18 +161,14 @@ $ idf.py -p /dev/ttyUSB0 flash monitor
 4. 按键 `VOL-` 表示减小音量，一次减小10，最小到0
 5. 设备开机后，设备自动连接到服务器生成APPID对应的Channel频道内。按下 `SET` 键，开始启动大模型，开始进行实时语音对话；按下 `MUTE` 键，停止大模型。
 
+### 配置你自己的 AI Agent
 
-### 开始注册自己的门铃账号
-
-接下来我们带您创建属于您自己的用户账号和设备账号。
-
-
-#### 设备端创建新的设备账号
-
-1. 打开项目工程里的 app_config.h
-2. 修改 `AI_AGENT_NAME` 为大模型AiAgent的TASK名称，只能唯一，不可与其他设备重复。
-3. 修改 `AI_AGENT_CHANNEL_NAME`，为大模型AiAgent Channel名称，只能唯一。
-4. 重新编译和下载固件。至此，您将使用新的 `AI_AGENT_NAME` 和 `AI_AGENT_CHANNEL_NAME` 来进行实时语音对话。
+1. 请在 `app_config.h` 文件中配置你自己的 AI Agent。
+2. 修改 `TENAI_AGENT_URL` 为你自己的 TEN-Agent 服务器 URL (一般为你通过 `task run` 启动的8080服务)。
+3. 修改 `AI_AGENT_CHANNEL_NAME` 为你自己的 AI Agent Channel 名称。
+4. 如果你之前就配置过 `openai_v2v` graph，那在配置好服务器URL后，你就可以开始体验了。
+5. 如果你没有配置过 `openai_v2v` graph 或者想使用其他 graph，你需要在 `ai_agent.c` 的 `_build_start_json` 函数中修改启动的相关参数。
+6. 重新编译后烧录到芯片上。
 
 
 ## 关于声网

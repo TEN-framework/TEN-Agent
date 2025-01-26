@@ -167,16 +167,18 @@ Ensure at least one speaker is connected to the development board.
 4. Press the `VOL-` button to decrease volume (decrements of 10, down to a minimum of 0).
 5. After the device boots up, it will automatically connect to the RTC channel associated with the generated APPID. Press the `SET` button to initiate real-time voice dialogue; press the `MUTE` button to stop it.
 
-### Registering Your Own Doorbell Account
+### Configure your own agent
 
 Let's walk you through creating your own user and device accounts.
 
-#### Creating a New Device Account
+#### Update app_config.h
 
 1. Open the `app_config.h` file in the project.
-2. Modify `AI_AGENT_NAME` to a unique name for the large model AiAgent task.
+2. Modify `TENAI_AGENT_URL` to the URL of your TEN-Agent server (usually the 8080 port service).
 3. Modify `AI_AGENT_CHANNEL_NAME` to a unique channel name.
-4. Recompile and flash the firmware. You can now use the new `AI_AGENT_NAME` and `AI_AGENT_CHANNEL_NAME` for real-time voice dialogue.
+4. If you have your Ten-Agent configured for `openai_v2v` graph working, you should be good to go.
+5. If you want to use other graphs, you can modify how request is constructed in `ai_agent.c` file the `_build_start_json` method.
+6. Recompile and flash the firmware.
 
 ## About Agora
 
