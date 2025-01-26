@@ -159,13 +159,6 @@ Once flashing is complete, the example will run automatically. After the device 
 **Note:**  
 Ensure at least one speaker is connected to the development board.
 
-#### Demo: Real-time Voice Dialogue with Large Model AiAgent
-
-1. Press the `SET` button to start the large model.
-2. Press the `MUTE` button to stop the large model.
-3. Press the `VOL+` button to increase volume (increments of 10, up to a maximum of 100).
-4. Press the `VOL-` button to decrease volume (decrements of 10, down to a minimum of 0).
-5. After the device boots up, it will automatically connect to the RTC channel associated with the generated APPID. Press the `SET` button to initiate real-time voice dialogue; press the `MUTE` button to stop it.
 
 ### Configure your own agent
 
@@ -179,6 +172,15 @@ Let's walk you through creating your own user and device accounts.
 4. If you have your Ten-Agent configured for `openai_v2v` graph working, you should be good to go.
 5. If you want to use other graphs, you can modify how request is constructed in `ai_agent.c` file the `_build_start_json` method.
 6. Recompile and flash the firmware.
+
+#### Demo: Real-time Voice Dialogue with Large Model AiAgent
+
+1. Press the `SET` button to start the large model.
+2. Press the `MUTE` button to stop the large model.
+3. Press the `VOL+` button to increase volume (increments of 10, up to a maximum of 100).
+4. Press the `VOL-` button to decrease volume (decrements of 10, down to a minimum of 0).
+5. After the device boots up, it will automatically connect to the RTC channel associated with the generated APPID. Press the `SET` button to initiate real-time voice dialogue; press the `MUTE` button to stop it.
+
 
 ## About Agora
 
