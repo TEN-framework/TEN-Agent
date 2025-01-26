@@ -1,6 +1,6 @@
 # Agora ESP32 Large Model Intelligent Dialogue
 
-*Simplified Chinese | [English](README.en.md)*
+*[Simplified Chinese](./README.cn.md) | English*
 
 ## Overview
 
