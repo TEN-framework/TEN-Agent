@@ -47,6 +47,7 @@ This example currently supports the `ESP32-S3-Korvo-2 V3` development board only
 
 ### Agora IOT SDK
 
+To compile and run this example, you need the Agora IoT SDK.
 The SDK can be downloaded at [here](https://rte-store.s3.amazonaws.com/agora_iot_sdk.tar)
 Put `agora_iot_sdk.tar` to `esp32-client/components` directory and run the following command:
 

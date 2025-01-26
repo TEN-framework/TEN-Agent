@@ -47,7 +47,7 @@
 
 ### Agora IOT SDK
 
-SDK 可以在 [这里](https://rte-store.s3.amazonaws.com/agora_iot_sdk.tar) 下载。
+编译运行本示例需要 Agora IoT SDK。Agora IoT SDK 可以在 [这里](https://rte-store.s3.amazonaws.com/agora_iot_sdk.tar) 下载。
 将 `agora_iot_sdk.tar` 放到 `esp32-client/components` 目录下，并运行如下命令：
 
 ```bash
