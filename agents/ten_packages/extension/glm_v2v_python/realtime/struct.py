@@ -23,7 +23,7 @@ class Voices(str, Enum):
     Shimmer = "shimmer"
 
 class AudioFormats(str, Enum):
-    PCM16 = "pcm"
+    PCM = "pcm"
     G711_ULAW = "g711_ulaw"
     G711_ALAW = "g711_alaw"
 
@@ -90,8 +90,8 @@ class Session:
     instructions: Optional[str] = None  # Instructions or guidance for the session
     voice: Voices = Voices.Alloy  # Voice configuration for audio responses, defaulting to "Alloy"
     turn_detection: Optional[ServerVADUpdateParams] = None  # Voice activity detection (VAD) settings
-    input_audio_format: AudioFormats = AudioFormats.PCM16  # Audio format for input (e.g., "pcm16")
-    output_audio_format: AudioFormats = AudioFormats.PCM16  # Audio format for output (e.g., "pcm16")
+    input_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for input (e.g., "pcm16")
+    output_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for output (e.g., "pcm16")
     input_audio_transcription: Optional[InputAudioTranscription] = None  # Audio transcription model settings (e.g., "whisper-1")
     tools: List[Dict[str, Union[str, Any]]] = field(default_factory=list)  # List of tools available during the session
     tool_choice: Literal["auto", "none", "required"] = "auto"  # How tools should be used in the session
@@ -378,6 +378,7 @@ class ResponseTextDone(ServerToClientMessage):
 
 @dataclass
 class ResponseAudioTranscriptDelta(ServerToClientMessage):
+    response_id: str
     output_index: int
     content_index: int
     delta: str
@@ -386,6 +387,7 @@ class ResponseAudioTranscriptDelta(ServerToClientMessage):
 
 @dataclass
 class ResponseAudioTranscriptDone(ServerToClientMessage):
+    response_id: str
     output_index: int
     content_index: int
     transcript: str

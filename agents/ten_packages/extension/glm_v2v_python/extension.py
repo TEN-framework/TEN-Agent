@@ -47,7 +47,9 @@ from ten_ai_base.types import (
 )
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
+    AudioFormats,
     ItemCreate,
+    ServerToClientMessage,
     SessionCreated,
     ItemCreated,
     UserMessageItemParam,
@@ -333,7 +335,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 {
                                     "role": "user",
                                     "content": message.transcript,
-                                    "id": message.item_id,
+                                    # "id": message.item_id,
                                 }
                             )
                         case ItemInputAudioTranscriptionFailed():
@@ -353,6 +355,11 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On response done {msg_resp_id} {status} {message.response.usage}"
                             )
+
+                            # workaround as GLM does not have responseAudioTranscriptDone
+                            self.transcript = ""
+                            self._send_transcript("", Role.Assistant, True)
+
                             if message.response.usage:
                                 pass
                                 # await self._update_usage(message.response.usage)
@@ -360,11 +367,11 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On response transcript delta {message.output_index} {message.content_index} {message.delta}"
                             )
-                            # if message.response_id in flushed:
-                            #     self.ten_env.log_warn(
-                            #         f"On flushed transcript delta {message.output_index} {message.content_index} {message.delta}"
-                            #     )
-                            #     continue
+                            if message.response_id in flushed:
+                                self.ten_env.log_warn(
+                                    f"On flushed transcript delta {message.output_index} {message.content_index} {message.delta}"
+                                )
+                                continue
                             self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseTextDelta():
                             self.ten_env.log_info(
@@ -382,19 +389,20 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             #     )
                             self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
+                            # this is not triggering by GLM
                             self.ten_env.log_info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}"
                             )
-                            # if message.response_id in flushed:
-                            #     self.ten_env.log_warn(
-                            #         f"On flushed transcript done"
-                            #     )
-                            #     continue
+                            if message.response_id in flushed:
+                                self.ten_env.log_warn(
+                                    f"On flushed transcript done"
+                                )
+                                continue
                             self.memory.put(
                                 {
                                     "role": "assistant",
                                     "content": message.transcript,
-                                    "id": message.item_id,
+                                    # "id": message.item_id,
                                 }
                             )
                             self.transcript = ""
@@ -600,7 +608,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             session=SessionUpdateParams(
                 instructions=prompt,
                 # model=self.config.model,
-                output_audio_format="pcm16",
+                output_audio_format=AudioFormats.PCM,
                 # tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
             )
