@@ -15,6 +15,7 @@ ten_packages/addon_loader
 agoradns.dat
 agorareport.dat
 agorartmreport.dat
+agora_cache.db
 bin/man
 bin/worker
 /BUILD.gn
