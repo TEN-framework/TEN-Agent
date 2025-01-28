@@ -28,6 +28,7 @@ jobs:
 
       - name: Use agent
         run: |
+          git config --global --add safe.directory $(pwd)
           task use AGENT=${{ matrix.agent }}
 
       - name: Run tests
