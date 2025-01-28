@@ -19,7 +19,7 @@ jobs:
       image: ghcr.io/ten-framework/ten_agent_build:0.4.10
     strategy:
       matrix:
-        agent: [agents/example/default, agents/example/demo]
+        agent: [agents/examples/default, agents/examples/demo]
     steps:
       - uses: actions/checkout@v4
         with:
