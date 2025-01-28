@@ -28,7 +28,7 @@ jobs:
 
       - name: Use agent
         run: |
-          task use AGENT={{ matrix.agent }}
+          task use AGENT=${{ matrix.agent }}
 
       - name: Run tests
         run: |
