@@ -34,3 +34,6 @@ jobs:
         run: |
           task test -- -s -v
 
+      - name: Run lint
+        run: |
+          task lint
