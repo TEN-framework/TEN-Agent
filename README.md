@@ -34,14 +34,85 @@
 </div>
 
 <br>
-<h2>🌟 Gemini Multimodal Live API Extension with RTC</h2>
+<h2>✨ TEN Agent + Deepseek R1</h2>
 
-![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+[TEN Agent + Deepseek R1](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
-[agent.theten.ai](https://agent.theten.ai)
+TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
+
+<br>
+<h2>✨ TEN Agent + ESP32</h2>
+
+[TEN Agent ESP32 Client](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
+
+TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
+
+<br>
+<h2>TEN Agent + Dify with RAG + Coze</h2>
+
+<details>
+  <summary><kbd>TEN Agent with Dify Agent with RAG</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Dify with RAG](https://github.com/TEN-framework/docs/blob/main/assets/gif/dify-rag.gif?raw=true)
+
+  </picture>
+
+</details>
+
+  [TEN Agent Dify Bot doc](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+
+<details>
+  <summary><kbd>TEN Agent with Coze</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Dify with RAG](https://github.com/TEN-framework/docs/blob/main/assets/gif/dify-rag.gif?raw=true)
+
+  </picture>
+
+</details>
+
+  [TEN Agent Dify Bot doc](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+
+TEN offers a great support to make the realtime interactive epxerience even better on other LLM platform as well, check out docs for more.
+
+<br>
+<h2>TEN Agent + Gemini Multimodal Live API</h2>
+
+<details>
+  <summary><kbd>Gemini 2.0 Multimodal Live API</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+
+  </picture>
+
+</details>
 
 Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
+<!-- <br>
+<h2>TEN Agent + Image Generator</h2>
+
+<details>
+  <summary><kbd>Gemini 2.0 Multimodal Live API</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+
+  </picture>
+
+</details> -->
+
+Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
 <br>
 <h2>TEN Agent Usecases</h2>
@@ -53,7 +124,6 @@ Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtim
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
-
 <br>
 <h2>TEN Agent Playground in Local Environment</h2>
 
@@ -61,7 +131,7 @@ Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtim
 
 | Category | Requirements |
 |----------|-------------|
-| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
+| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [FishAudio](https://fish.audio/) TTS (free credits available with signup)|
 | **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
@@ -91,43 +161,40 @@ AGORA_APP_CERTIFICATE=
 ```
 
 #### 3. Start agent development containers
+
 ```bash
 docker compose up -d
 ```
 
 #### 4. Enter container
+
 ```bash
 docker exec -it ten_agent_dev bash
 ```
 
-#### 5. Build agent 
+#### 5. Build agent
+
 ```bash
 task use
 ```
 
 #### 6. Start the web server
+
 ```bash
 task run
 ```
 
 #### 7. Edit playground settings
+
 Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
+
  1. Select a graph type (e.g. Voice Agent, Realtime Agent)
  2. Choose a corresponding module
  3. Select an extension and configure its API key settings
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
-#### Running Gemini Realtime Extension
-Open the playground at [localhost:3000](http://localhost:3000).
-
- 1. Select voice_assistant_realtime graph
- 2. Choose Gemini Realtime module
- 3. Select v2v extension and enter Gemini API key
-
-![Gemini Realtime Playground](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
-
-Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [ documentation ](https://doc.theten.ai/ten-agent/overview).
+Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [documentation](https://doc.theten.ai/ten-agent/overview).
 
 <br>
 <h2>TEN Agent Components</h2>
