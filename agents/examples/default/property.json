@@ -1328,6 +1328,182 @@
             ]
           }
         ]
+      },
+      {
+        "name": "voice_assistant_realtime_memory",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "subscribe_audio_sample_rate": 24000
+            }
+          },
+          {
+            "type": "extension",
+            "name": "v2v",
+            "addon": "openai_v2v_python",
+            "extension_group": "llm",
+            "property": {
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "temperature": 0.9,
+              "model": "gpt-4o-realtime-preview-2024-12-17",
+              "max_tokens": 2048,
+              "voice": "ash",
+              "language": "en-US",
+              "server_vad": true,
+              "dump": true,
+              "max_history": 100,
+              "enable_storage": true,
+              "greeting": "Now greet the user by their name if present in the transcript OR ask for their name if not found in the transcript. ",
+              "prompt": "You are a language learning coach teaching French to an English user. Speak in English (with a french accent) unless correcting a French word. Ask the user to translate English words into French. Adjust the hardness level to suite their skills which you can infer as you go. From time to time, re-test words but only words that were previously got wrong by the user. "
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "extension_group": "context",
+            "addon": "tsdb_firestore",
+            "name": "tsdb_firestore",
+            "property": {
+              "credentials": {
+                "type": "service_account",
+                "project_id": "${env:FIRESTORE_PROJECT_ID}",
+                "private_key_id": "${env:FIRESTORE_PRIVATE_KEY_ID}",
+                "private_key": "${env:FIRESTORE_PRIVATE_KEY}",
+                "client_email": "${env:FIRESTORE_CLIENT_EMAIL}",
+                "client_id": "${env:FIRESTORE_CLIENT_ID}",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "${env:FIRESTORE_CERT_URL}",
+                "universe_domain": "googleapis.com"
+              },
+              "channel_name": "ten_agent_test",
+              "collection_name": "llm_context"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "v2v",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              },
+              {
+                "name": "retrieve",
+                "dest": [
+                  {
+                    "extension": "tsdb_firestore"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "append",
+                "dest": [
+                  {
+                    "extension": "tsdb_firestore"
+                  }
+                ]
+              },
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ],
     "log_level": 3

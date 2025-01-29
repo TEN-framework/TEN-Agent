@@ -84,7 +84,7 @@ CMD_OUT_FLUSH = "flush"
 
 class Role(str, Enum):
     User = "user"
-    Assistant = "assistant"
+    Assistant = "you"
 
 
 @dataclass
@@ -175,8 +175,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                     try:
                         history = json.loads(result.get_property_string("response"))
                         for i in history:
-                            self.memory.put(i)
-                        ten_env.log_info(f"on retrieve context {history}")
+                            self.memory.put(i)                      
                     except Exception as e:
                         ten_env.log_error(f"Failed to handle retrieve result {e}")
                 else:
@@ -286,11 +285,17 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             )
                             self.session_id = message.session.id
                             self.session = message.session
-                            await self._update_session()
-
                             history = self.memory.get()
+                            self.ten_env.log_info(f"found history {history}")
+
+                            await self._update_session()
+                            if not self.connected:
+                                self.connected = True
+                                await self._greeting()
+
+
                             for h in history:
-                                if h["role"] == "user":
+                                if h["role"] == Role.User:
                                     await self.conn.send_request(
                                         ItemCreate(
                                             item=UserMessageItemParam(
@@ -303,25 +308,23 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                             )
                                         )
                                     )
-                                elif h["role"] == "assistant":
+                                elif h["role"] == Role.Assistant:
                                     await self.conn.send_request(
                                         ItemCreate(
                                             item=AssistantMessageItemParam(
                                                 content=[
                                                     {
-                                                        "type": ContentType.InputText,
+                                                        "type": ContentType.Text,
                                                         "text": h["content"],
                                                     }
                                                 ]
                                             )
                                         )
                                     )
-                            self.ten_env.log_info(f"Finish send history {history}")
+                        
                             self.memory.clear()
 
-                            if not self.connected:
-                                self.connected = True
-                                await self._greeting()
+
                         case ItemInputAudioTranscriptionCompleted():
                             self.ten_env.log_info(
                                 f"On request transcript {message.transcript}"
@@ -338,8 +341,8 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_warn(
                                 f"On request transcript failed {message.item_id} {message.error}"
                             )
-                        case ItemCreated():
-                            self.ten_env.log_info(f"On item created {message.item}")
+                        #case ItemCreated():
+                            #self.ten_env.log_info(f"On item created {message.item}")                            
                         case ResponseCreated():
                             response_id = message.response.id
                             self.ten_env.log_info(f"On response created {response_id}")
@@ -355,9 +358,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 pass
                                 # await self._update_usage(message.response.usage)
                         case ResponseAudioTranscriptDelta():
-                            self.ten_env.log_info(
-                                f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                            )
+                            #self.ten_env.log_info(
+                            #    f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
+                            #)
                             if message.response_id in flushed:
                                 self.ten_env.log_warn(
                                     f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
@@ -390,7 +393,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 continue
                             self.memory.put(
                                 {
-                                    "role": "assistant",
+                                    "role": Role.Assistant,
                                     "content": message.transcript,
                                     "id": message.item_id,
                                 }
@@ -564,12 +567,23 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 tool_prompt += f"- ***{t.name}***: {t.description}"
             self.ctx["tools"] = tool_prompt
             tools = [tool_dict(t) for t in self.available_tools]
-        prompt = self._replace(self.config.prompt)
 
+        prompt = self._replace(self.config.prompt)
         self.ten_env.log_info(f"update session {prompt} {tools}")
+        history = self.memory.get()
+
+        history_prompt = ""
+        if history:  
+            history_prompt = " Here is the transcript of your previous conversations sessions with this user, only refer back to it in your conversation when appropriate: "
+            for h in history:
+                history_prompt += f'{{ {h["role"]} : {h["content"]} }}, '
+
+
+        self.ten_env.log_info(f"BBBB history_prompt {prompt+history_prompt} ")
+
         su = SessionUpdate(
             session=SessionUpdateParams(
-                instructions=prompt,
+                instructions=prompt+history_prompt,
                 model=self.config.model,
                 tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
@@ -753,7 +767,8 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         if self.connected and self.users_count == 1:
             text = self._greeting_text()
             if self.config.greeting:
-                text = "Say '" + self.config.greeting + "' to me."
+                #text = "Say '" + self.config.greeting + "' to me."
+                text =  self.config.greeting
             self.ten_env.log_info(f"send greeting {text}")
             await self.conn.send_request(
                 ItemCreate(

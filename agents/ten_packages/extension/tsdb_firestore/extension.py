@@ -43,7 +43,7 @@ DOC_CONTENTS_PATH = "contents"
 CONTENT_ROLE_PATH = "role"
 CONTENT_TS_PATH = "ts"
 CONTENT_STREAM_ID_PATH = "stream_id"
-CONTENT_INPUT_PATH = "input"
+CONTENT_INPUT_PATH = "content"
 DEFAULT_TTL = 1  # days
 
 
@@ -143,7 +143,9 @@ class TSDBFirestoreExtension(Extension):
             return
 
         # start firestore db
-        cred = credentials.Certificate(json.loads(self.credentials))
+        myjson=json.loads(self.credentials)
+        myjson["private_key"] = myjson["private_key"].replace("\\n", "\n")
+        cred = credentials.Certificate(myjson)
         firebase_admin.initialize_app(cred)
         self.client = firestore.client()
 
@@ -273,6 +275,7 @@ class TSDBFirestoreExtension(Extension):
             ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
+            return
 
         stream_id = 0
         try:
