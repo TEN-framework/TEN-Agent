@@ -51,7 +51,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 <h2>TEN Agent + Dify with RAG + Coze</h2>
 
 <details>
-  <summary><kbd>TEN Agent with Dify Agent with RAG</kbd></summary>
+  <summary><kbd>TEN Agent + Dify Agent with RAG</kbd></summary>
 
   <br>
   <picture>
@@ -62,21 +62,9 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 </details>
 
-  [TEN Agent Dify Bot doc](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
 
-<details>
-  <summary><kbd>TEN Agent with Coze</kbd></summary>
-
-  <br>
-  <picture>
-
-  ![Dify with RAG](https://github.com/TEN-framework/docs/blob/main/assets/gif/dify-rag.gif?raw=true)
-
-  </picture>
-
-</details>
-
-  [TEN Agent Dify Bot doc](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
 
 TEN offers a great support to make the realtime interactive epxerience even better on other LLM platform as well, check out docs for more.
 
