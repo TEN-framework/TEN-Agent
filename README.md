@@ -64,7 +64,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
   [TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
 
-  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
 
 TEN offers a great support to make the realtime interactive epxerience even better on other LLM platform as well, check out docs for more.
 
@@ -85,22 +85,22 @@ TEN offers a great support to make the realtime interactive epxerience even bett
 
 Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
 
-<!-- <br>
-<h2>TEN Agent + Image Generator</h2>
+<br>
+<h2>TEN Agent + Storyteller + Image Generator</h2>
 
 <details>
-  <summary><kbd>Gemini 2.0 Multimodal Live API</kbd></summary>
+  <summary><kbd>Storyteller + Image Generator</kbd></summary>
 
   <br>
   <picture>
 
-  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/storyteller_image_generator.jpg?raw=true)
 
   </picture>
 
-</details> -->
+</details>
 
-Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
+Describe a topic and ask TEN Agent to tell you a story while also generating images of the story to provide a more immersive experience for kids.
 
 <br>
 <h2>TEN Agent Usecases</h2>
