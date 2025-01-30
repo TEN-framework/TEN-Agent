@@ -6,7 +6,7 @@ import AgoraRTC, {
   IRemoteAudioTrack,
   UID,
 } from "agora-rtc-sdk-ng";
-import { ITextItem } from "@/types";
+import { EMessageDataType, EMessageType, IChatItem, ITextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 import { RtcEvents, IUserTracks } from "./types";
 import { apiGenAgoraData, VideoSourceType } from "@/common";
@@ -26,6 +26,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   localTracks: IUserTracks;
   appId: string | null = null;
   token: string | null = null;
+  userId: number | null = null;
 
   constructor() {
     super();
@@ -45,6 +46,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       const { appId, token } = data;
       this.appId = appId;
       this.token = token;
+      this.userId = userId;
       await this.client?.join(appId, channel, token, userId);
       this._joined = true;
     }
@@ -86,10 +88,10 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this.emit("localTracksChanged", this.localTracks);
   }
 
-  async switchVideoSource(type:VideoSourceType) {
+  async switchVideoSource(type: VideoSourceType) {
     if (type === VideoSourceType.SCREEN) {
       await this.createScreenShareTrack();
-      if(this.localTracks.screenTrack) {
+      if (this.localTracks.screenTrack) {
         this.client.unpublish(this.localTracks.videoTrack);
         this.localTracks.videoTrack?.close();
         this.localTracks.videoTrack = undefined;
@@ -98,7 +100,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       }
     } else if (type === VideoSourceType.CAMERA) {
       await this.createCameraTracks();
-      if(this.localTracks.videoTrack) {
+      if (this.localTracks.videoTrack) {
         this.client.unpublish(this.localTracks.screenTrack);
         this.localTracks.screenTrack?.close();
         this.localTracks.screenTrack = undefined;
@@ -228,16 +230,30 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         const completeMessage = this.reconstructMessage(
           this.messageCache[message_id]
         );
-        const { stream_id, is_final, text, text_ts } = JSON.parse(
+        const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
           atob(completeMessage)
         );
-        const textItem: ITextItem = {
-          uid: `${stream_id}`,
+        console.log(`[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`);
+        const isAgent = Number(stream_id) != Number(this.userId)
+        let textItem: IChatItem = {
+          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
           time: text_ts,
-          dataType: "transcribe",
           text: text,
+          data_type: EMessageDataType.TEXT,
+          userId: stream_id,
           isFinal: is_final,
-        };
+        };;
+
+        if (data_type === "raw") {
+          let { data, type } = JSON.parse(text);
+          if (type === "image_url") {
+            textItem = {
+              ...textItem,
+              data_type: EMessageDataType.IMAGE,
+              text: data.image_url,
+            };
+          }
+        }
 
         if (text.trim().length > 0) {
           this.emit("textChanged", textItem);

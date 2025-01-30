@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       const errorData = await error.json();
       return NextResponse.json(errorData, { status: error.status });
     } else {
+      console.error(`Error starting agent: ${error}`);
       return NextResponse.json({ code: "1", data: null, msg: "Internal Server Error" }, { status: 500 });
     }
   }

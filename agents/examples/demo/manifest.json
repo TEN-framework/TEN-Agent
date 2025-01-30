@@ -1,27 +1,27 @@
 {
   "type": "app",
   "name": "agent_demo",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.5"
+      "version": "0.6"
     },
     {
       "type": "extension",
       "name": "py_init_extension_cpp",
-      "version": "0.5"
+      "version": "0.6"
     },
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.10.0-rc3"
+      "version": "=0.10.2"
     },
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "=0.4.0-rc1"
+      "version": "=0.4.1"
     },
     {
       "type": "system",
@@ -31,12 +31,7 @@
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.7.0"
-    },
-    {
-      "type": "extension",
-      "name": "agora_rtm",
-      "version": "=0.5.1"
+      "version": "=0.7.2"
     },
     {
       "type": "extension",
@@ -91,6 +86,11 @@
     {
       "type": "extension",
       "name": "fish_audio_tts",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "openai_image_generate_tool",
       "version": "=0.1.0"
     }
   ]

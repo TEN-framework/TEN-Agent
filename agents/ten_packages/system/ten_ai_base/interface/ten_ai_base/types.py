@@ -95,10 +95,18 @@ LLMChatCompletionMessageParam: TypeAlias = Union[
     LLMChatCompletionUserMessageParam, LLMChatCompletionToolMessageParam
 ]
 
-
-class LLMToolResult(TypedDict, total=False):
+class LLMToolResultRequery(TypedDict, total=False):
+    type: Required[Literal["requery"]]
     content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
 
+class LLMToolResultLLMResult(TypedDict, total=False):
+    type: Required[Literal["llmresult"]]
+    content: Required[Union[str, Iterable[LLMChatCompletionContentPartParam]]]
+
+LLMToolResult: TypeAlias = Union[
+    LLMToolResultRequery,
+    LLMToolResultLLMResult,
+]
 
 class LLMCallCompletionArgs(TypedDict, total=False):
     messages: Iterable[LLMChatCompletionMessageParam]

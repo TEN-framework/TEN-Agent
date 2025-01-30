@@ -7,7 +7,8 @@ import {
   GRAPH_OPTIONS,
   isRagGraph,
 } from "@/common"
-import { EMessageType, type IChatItem } from "@/types"
+import { Bot } from "lucide-react"
+import { EMessageDataType, EMessageType, type IChatItem } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
@@ -42,13 +43,18 @@ export function MessageItem(props: { data: IChatItem }) {
           "flex-row-reverse": data.type === EMessageType.USER,
         })}
       >
-        <Avatar>
+        {data.type === EMessageType.AGENT && <Avatar>
           <AvatarFallback>
-            {data.type === EMessageType.AGENT ? "AG" : "U"}
+            <Bot />
           </AvatarFallback>
         </Avatar>
+        }
         <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
-          <p>{data.text}</p>
+          {data.data_type === EMessageDataType.IMAGE ? (
+            <img src={data.text} alt="chat" className="w-full" />
+          ) : (
+            <p>{data.text}</p>
+          )}
         </div>
       </div>
     </>

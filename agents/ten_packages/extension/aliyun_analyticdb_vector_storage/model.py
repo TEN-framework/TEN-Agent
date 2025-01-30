@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from alibabacloud_gpdb20160503 import models as gpdb_20160503_models  # type: ignore
-
-try:
-    from .log import logger
-except ImportError:
-    from log import logger
 import time
 import json
 from typing import Dict, List, Any, Tuple
@@ -13,12 +8,13 @@ from alibabacloud_tea_util import models as util_models
 
 
 class Model:
-    def __init__(self, region_id, dbinstance_id, client):
+    def __init__(self, ten_env, region_id, dbinstance_id, client):
         self.region_id = region_id
         self.dbinstance_id = dbinstance_id
         self.client = client
         self.read_timeout = 10 * 1000
         self.connect_timeout = 10 * 1000
+        self.ten_env = ten_env
 
     def get_client(self):
         return self.client.get()
@@ -37,11 +33,11 @@ class Model:
             response = self.get_client().init_vector_database_with_options(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"init_vector_database response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def init_vector_database_async(self, account, account_password) -> None:
@@ -58,11 +54,11 @@ class Model:
             response = await self.get_client().init_vector_database_with_options_async(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"init_vector_database response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     def create_namespace(
@@ -81,11 +77,11 @@ class Model:
                 read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
             )
             response = self.get_client().create_namespace_with_options(request, runtime)
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def create_namespace_async(
@@ -106,11 +102,11 @@ class Model:
             response = await self.get_client().create_namespace_with_options_async(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_namespace response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     def create_collection(
@@ -149,11 +145,11 @@ class Model:
             response = self.get_client().create_collection_with_options(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_document_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def create_collection_async(
@@ -192,11 +188,11 @@ class Model:
             response = await self.get_client().create_collection_with_options_async(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_document_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     def delete_collection(self, namespace, namespace_password, collection) -> None:
@@ -214,11 +210,11 @@ class Model:
             response = self.get_client().delete_collection_with_options(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"delete_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def delete_collection_async(
@@ -238,11 +234,11 @@ class Model:
             response = await self.get_client().delete_collection_with_options_async(
                 request, runtime
             )
-            logger.info(
+            self.ten_env.log_info(
                 f"delete_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     def upsert_collection_data(
@@ -283,11 +279,11 @@ class Model:
             response = self.get_client().upsert_collection_data_with_options(
                 upsert_collection_data_request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"upsert_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def upsert_collection_data_async(
@@ -330,11 +326,11 @@ class Model:
                     upsert_collection_data_request, runtime
                 )
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"upsert_collection response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     # pylint: disable=redefined-builtin
@@ -378,11 +374,10 @@ class Model:
             response = self.get_client().query_collection_data_with_options(
                 query_collection_data_request, runtime
             )
-            # logger.info(f"query_collection response code: {response.status_code}, body:{response.body}")
-            logger.debug(f"query_collection response code: {response.status_code}")
+            self.ten_env.log_debug(f"query_collection response code: {response.status_code}")
             return response, None
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return None, e
 
     # pylint: disable=redefined-builtin
@@ -426,10 +421,10 @@ class Model:
             response = await self.get_client().query_collection_data_with_options_async(
                 query_collection_data_request, runtime
             )
-            logger.debug(f"query_collection response code: {response.status_code}")
+            self.ten_env.log_debug(f"query_collection response code: {response.status_code}")
             return response, None
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return None, e
 
     def parse_collection_data(
@@ -445,7 +440,7 @@ class Model:
             json_str = json.dumps(results)
             return json_str
         except Exception as e:
-            logger.error(
+            self.ten_env.log_error(
                 f"parse collection data failed, error: {e}, data: {body.to_map()}"
             )
             return "[]"
@@ -462,13 +457,13 @@ class Model:
                 read_timeout=self.read_timeout, connect_timeout=self.connect_timeout
             )
             response = self.get_client().list_collections_with_options(request, runtime)
-            logger.debug(
+            self.ten_env.log_debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
             )
             collections = response.body.to_map()["Collections"]["collection"]
             return collections, None
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return [], e
 
     async def list_collections_async(
@@ -487,13 +482,13 @@ class Model:
             response = await self.get_client().list_collections_with_options_async(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"list_collections response code: {response.status_code}, body:{response.body}"
             )
             collections = response.body.to_map()["Collections"]["collection"]
             return collections, None
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return [], e
 
     def create_vector_index(
@@ -516,11 +511,11 @@ class Model:
             response = self.get_client().create_vector_index_with_options(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_vector_index response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e
 
     async def create_vector_index_async(
@@ -543,9 +538,9 @@ class Model:
             response = await self.get_client().create_vector_index_with_options_async(
                 request, runtime
             )
-            logger.debug(
+            self.ten_env.log_debug(
                 f"create_vector_index response code: {response.status_code}, body:{response.body}"
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
+            self.ten_env.log_error(f"Error: {e}")
             return e

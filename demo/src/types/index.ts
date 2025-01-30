@@ -35,11 +35,17 @@ export enum EMessageType {
   USER = "user",
 }
 
+export enum EMessageDataType {
+  TEXT = "text",
+  IMAGE = "image",
+}
+
 export interface IChatItem {
   userId: number | string
   userName?: string
   text: string
   type: EMessageType
+  data_type: EMessageDataType
   isFinal?: boolean
   time: number
 }
@@ -65,6 +71,7 @@ export enum ERTMTextType {
 export interface IRTMTextItem {
   is_final: boolean
   type: ERTMTextType
+  data_type: EMessageDataType
   ts: number
   text: string
   stream_id: string

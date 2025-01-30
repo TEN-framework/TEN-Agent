@@ -12,8 +12,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
+	"ten_framework/ten"
 	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
@@ -56,7 +56,7 @@ func newFishAudioTTS(config fishAudioTTSConfig) (*fishAudioTTS, error) {
 	}, nil
 }
 
-func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (err error) {
+func (e *fishAudioTTS) textToSpeechStream(tenEnv ten.TenEnv, streamWriter io.Writer, text string) (err error) {
 	latency := "normal"
 	if e.config.OptimizeStreamingLatency {
 		latency = "balanced"
@@ -101,7 +101,7 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		slog.Error("Unexpected response status", "status", resp.StatusCode)
+		tenEnv.LogError(fmt.Sprintf("Unexpected response status, status: %d", resp.StatusCode))
 		return fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
 
@@ -110,7 +110,7 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 	for {
 		n, err := resp.Body.Read(buffer)
 		if err != nil && err != io.EOF {
-			slog.Error("Failed to read from response body", "error", err)
+			tenEnv.LogError(fmt.Sprintf("Failed to read from response body, error: %s", err))
 			return fmt.Errorf("failed to read from response body: %w", err)
 		}
 		if n == 0 {
@@ -119,7 +119,7 @@ func (e *fishAudioTTS) textToSpeechStream(streamWriter io.Writer, text string) (
 
 		_, writeErr := streamWriter.Write(buffer[:n])
 		if writeErr != nil {
-			slog.Error("Failed to write to streamWriter", "error", writeErr)
+			tenEnv.LogError(fmt.Sprintf("Failed to write to streamWriter, error: %s", writeErr))
 			return fmt.Errorf("failed to write to streamWriter: %w", writeErr)
 		}
 	}

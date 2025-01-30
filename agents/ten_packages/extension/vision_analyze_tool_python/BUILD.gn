@@ -12,7 +12,6 @@ ten_package("vision_analyze_tool_python") {
     "__init__.py",
     "addon.py",
     "extension.py",
-    "log.py",
     "manifest.json",
     "property.json",
     "tests",

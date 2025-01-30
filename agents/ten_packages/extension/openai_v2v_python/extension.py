@@ -159,7 +159,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
         self.loop = asyncio.get_event_loop()
 
-        self.config = OpenAIRealtimeConfig.create(ten_env=ten_env)
+        self.config = await OpenAIRealtimeConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:
@@ -170,7 +170,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.memory = ChatMemory(self.config.max_history)
 
             if self.config.enable_storage:
-                result = await ten_env.send_cmd(Cmd.create("retrieve"))
+                [result, _] = await ten_env.send_cmd(Cmd.create("retrieve"))
                 if result.get_status_code() == StatusCode.OK:
                     try:
                         history = json.loads(result.get_property_string("response"))
@@ -687,7 +687,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
         cmd.set_property_string("name", name)
         cmd.set_property_from_json("arguments", arguments)
-        result: CmdResult = await self.ten_env.send_cmd(cmd)
+        [result, _] = await self.ten_env.send_cmd(cmd)
 
         tool_response = ItemCreate(
             item=FunctionCallOutputItemParam(

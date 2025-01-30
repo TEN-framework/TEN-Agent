@@ -13,7 +13,6 @@ from ten import (
     CmdResult,
 )
 
-from .log import logger
 import threading
 from datetime import datetime
 
@@ -35,7 +34,7 @@ class AliPGDBExtension(Extension):
         self.namespace_password = os.environ.get("ADBPG_NAMESPACE_PASSWORD")
 
     async def __thread_routine(self, ten_env: TenEnv):
-        logger.info("__thread_routine start")
+        ten_env.log_info("__thread_routine start")
         self.loop = asyncio.get_running_loop()
         ten_env.on_start_done()
         await self.stopEvent.wait()
@@ -44,7 +43,7 @@ class AliPGDBExtension(Extension):
         self.stopEvent.set()
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("on_start")
+        ten.log_info("on_start")
         self.access_key_id = self.get_property_string(
             ten, "ALIBABA_CLOUD_ACCESS_KEY_ID", self.access_key_id
         )
@@ -89,9 +88,9 @@ class AliPGDBExtension(Extension):
         from .model import Model
 
         client = AliGPDBClient(
-            self.access_key_id, self.access_key_secret, self.endpoint
+            ten, self.access_key_id, self.access_key_secret, self.endpoint
         )
-        self.model = Model(self.region_id, self.dbinstance_id, client)
+        self.model = Model(ten, self.region_id, self.dbinstance_id, client)
         self.thread = threading.Thread(
             target=asyncio.run, args=(self.__thread_routine(ten),)
         )
@@ -101,7 +100,7 @@ class AliPGDBExtension(Extension):
         return
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("on_stop")
+        ten.log_info("on_stop")
         if self.thread is not None and self.thread.is_alive():
             asyncio.run_coroutine_threadsafe(self.stop_thread(), self.loop)
             self.thread.join()
@@ -115,7 +114,7 @@ class AliPGDBExtension(Extension):
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
         try:
             cmd_name = cmd.get_name()
-            logger.info(f"on_cmd [{cmd_name}]")
+            ten.log_info(f"on_cmd [{cmd_name}]")
             if cmd_name == "create_collection":
                 asyncio.run_coroutine_threadsafe(
                     self.async_create_collection(ten, cmd), self.loop
@@ -143,7 +142,7 @@ class AliPGDBExtension(Extension):
         try:
             dimension = cmd.get_property_int("dimension")
         except Exception as e:
-            logger.warning(f"Error: {e}")
+            ten.log_warn(f"Error: {e}")
 
         err = await self.model.create_collection_async(
             self.account, self.account_password, self.namespace, collection
@@ -171,7 +170,7 @@ class AliPGDBExtension(Extension):
         err = await self.model.upsert_collection_data_async(
             collection, self.namespace, self.namespace_password, rows
         )
-        logger.info(
+        ten.log_info(
             f"upsert_vector finished for file {file}, collection {collection}, rows len {len(rows)}, err {err}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
         if err is None:
@@ -188,7 +187,7 @@ class AliPGDBExtension(Extension):
         response, error = await self.model.query_collection_data_async(
             collection, self.namespace, self.namespace_password, vector, top_k=top_k
         )
-        logger.info(
+        ten.log_info(
             f"query_vector finished for collection {collection}, embedding len {len(embedding)}, err {error}, cost {int((datetime.now() - start_time).total_seconds() * 1000)}ms"
         )
 
@@ -215,5 +214,5 @@ class AliPGDBExtension(Extension):
         try:
             return ten.get_property_string(key.lower())
         except Exception as e:
-            logger.error(f"Error: {e}")
+            ten.log_error(f"Error: {e}")
             return default

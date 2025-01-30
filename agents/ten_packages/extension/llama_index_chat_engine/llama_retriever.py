@@ -4,7 +4,6 @@ from llama_index.core.schema import QueryBundle, TextNode
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.retrievers import BaseRetriever
 
-from .log import logger
 from .llama_embedding import LlamaEmbedding
 from ten import (
     TenEnv,
@@ -14,13 +13,13 @@ from ten import (
 )
 
 
-def format_node_result(cmd_result: CmdResult) -> List[NodeWithScore]:
-    logger.info(f"LlamaRetriever retrieve response {cmd_result.to_json()}")
+def format_node_result(ten: TenEnv, cmd_result: CmdResult) -> List[NodeWithScore]:
+    ten.log_info(f"LlamaRetriever retrieve response {cmd_result.to_json()}")
     status = cmd_result.get_status_code()
     try:
         contents_json = cmd_result.get_property_to_json("response")
     except Exception as e:
-        logger.warning(f"Failed to get response from cmd_result: {e}")
+        ten.log_warn(f"Failed to get response from cmd_result: {e}")
         return [
             NodeWithScore(
                 node=TextNode(),
@@ -56,20 +55,20 @@ class LlamaRetriever(BaseRetriever):
             self.embed_model = LlamaEmbedding(ten=ten)
             self.collection_name = coll
         except Exception as e:
-            logger.error(f"Failed to initialize LlamaRetriever: {e}")
+            ten.log_error(f"Failed to initialize LlamaRetriever: {e}")
 
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
-        logger.info(f"LlamaRetriever retrieve: {query_bundle.to_json}")
+        self.ten.log_info(f"LlamaRetriever retrieve: {query_bundle.to_json}")
 
         wait_event = threading.Event()
         resp: List[NodeWithScore] = []
 
-        def cmd_callback(_, result):
+        def cmd_callback(_, result, __):
             nonlocal resp
             nonlocal wait_event
-            resp = format_node_result(result)
+            resp = format_node_result(self.ten, result)
             wait_event.set()
-            logger.debug("LlamaRetriever callback done")
+            self.ten.log_debug("LlamaRetriever callback done")
 
         embedding = self.embed_model.get_query_embedding(query=query_bundle.query_str)
 
@@ -77,7 +76,7 @@ class LlamaRetriever(BaseRetriever):
         query_cmd.set_property_string("collection_name", self.collection_name)
         query_cmd.set_property_int("top_k", 3)
         query_cmd.set_property_from_json("embedding", json.dumps(embedding))
-        logger.info(
+        self.ten.log_info(
             f"LlamaRetriever send_cmd, collection_name: {self.collection_name}, embedding len: {len(embedding)}"
         )
         self.ten.send_cmd(query_cmd, cmd_callback)

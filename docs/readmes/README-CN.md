@@ -86,14 +86,23 @@
 ```bash
 # 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
 # export 的有效期为一个 session
-export https_proxy=http://127.0.0.1:（端口例如 7890） 
-export http_proxy=http://127.0.0.1:（端口例如 7890） 
-export all_proxy=socks5://127.0.0.1:（端口例如 7890）
+export https_proxy=http://127.0.0.1:<port> 
+export http_proxy=http://127.0.0.1:<port>
+export all_proxy=socks5://127.0.0.1:<port>
 
 # Docker
-export https_proxy=http://host.docker.internal:（端口例如 7890）
-export http_proxy=http://host.docker.internal:（端口例如 7890）
-export all_proxy=http://host.docker.internal:（端口例如 7890）
+export https_proxy=http://host.docker.internal:<port>
+export http_proxy=http://host.docker.internal:<port>
+export all_proxy=http://host.docker.internal:<port>
+
+# tman 镜像设置
+mkdir -p ~/.tman && echo '{
+  "registry": {
+    "default": {
+      "index": "https://registry-ten.rtcdeveloper.cn/api/ten-cloud-store/v1/packages"
+    }
+  }
+}' > ~/.tman/config.json
 
 # GO 代理设置
 export GOPROXY=https://goproxy.cn,direct

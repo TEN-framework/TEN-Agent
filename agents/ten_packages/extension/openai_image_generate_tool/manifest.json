@@ -1,0 +1,117 @@
+{
+  "type": "extension",
+  "name": "openai_image_generate_tool",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "requirements.txt",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "size": {
+        "type": "string"
+      },
+      "n": {
+        "type": "int64"
+      },
+      "proxy_url": {
+        "type": "string"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "azure_endpoint": {
+        "type": "string"
+      },
+      "azure_api_version": {
+        "type": "string"
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "tool_call",
+        "property": {
+          "name": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "object",
+            "properties": {}
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "tool_register",
+        "property": {
+          "tool": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "parameters"
+            ]
+          }
+        },
+        "result": {
+          "property": {
+            "response": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "content_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ]
+  }
+}

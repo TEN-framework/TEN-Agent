@@ -25,7 +25,7 @@ class ElevenLabsTTSExtension(AsyncTTSBaseExtension):
         try:
             await super().on_start(ten_env)
             ten_env.log_debug("on_start")
-            self.config = ElevenLabsTTSConfig.create(ten_env=ten_env)
+            self.config = await ElevenLabsTTSConfig.create_async(ten_env=ten_env)
 
             if not self.config.api_key:
                 raise ValueError("api_key is required")

@@ -13,7 +13,6 @@ from ten import (
     StatusCode,
     CmdResult,
 )
-from .log import logger
 import queue, threading
 from datetime import datetime
 
@@ -44,27 +43,27 @@ class LlamaIndexExtension(Extension):
             output_data.set_property_string("text", text)
             output_data.set_property_bool("end_of_segment", end_of_segment)
             ten.send_data(output_data)
-            logger.info(f"text [{text}] end_of_segment {end_of_segment} sent")
+            ten.log_info(f"text [{text}] end_of_segment {end_of_segment} sent")
         except Exception as err:
-            logger.info(
+            ten.log_info(
                 f"text [{text}] end_of_segment {end_of_segment} send failed, err {err}"
             )
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("on_start")
+        ten.log_info("on_start")
 
         greeting = None
         try:
             greeting = ten.get_property_string(PROPERTY_GREETING)
         except Exception as err:
-            logger.warning(f"get {PROPERTY_GREETING} property failed, err: {err}")
+            ten.log_warn(f"get {PROPERTY_GREETING} property failed, err: {err}")
 
         try:
             self.chat_memory_token_limit = ten.get_property_int(
                 PROPERTY_CHAT_MEMORY_TOKEN_LIMIT
             )
         except Exception as err:
-            logger.warning(
+            ten.log_warn(
                 f"get {PROPERTY_CHAT_MEMORY_TOKEN_LIMIT} property failed, err: {err}"
             )
 
@@ -87,7 +86,7 @@ class LlamaIndexExtension(Extension):
         ten.on_start_done()
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("on_stop")
+        ten.log_info("on_stop")
 
         self.stop = True
         self.flush()
@@ -102,18 +101,18 @@ class LlamaIndexExtension(Extension):
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
 
         cmd_name = cmd.get_name()
-        logger.info("on_cmd {cmd_name}")
+        ten.log_info("on_cmd {cmd_name}")
         if cmd_name == "file_chunked":
             coll = cmd.get_property_string("collection")
 
             # only update selected collection if empty
             if len(self.collection_name) == 0:
-                logger.info(
+                ten.log_info(
                     f"collection for querying has been updated from {self.collection_name} to {coll}"
                 )
                 self.collection_name = coll
             else:
-                logger.info(
+                ten.log_info(
                     f"new collection {coll} incoming but won't change current collection_name {self.collection_name}"
                 )
 
@@ -130,7 +129,7 @@ class LlamaIndexExtension(Extension):
             self.queue.put((file_chunk_text, datetime.now(), TASK_TYPE_GREETING))
         elif cmd_name == "update_querying_collection":
             coll = cmd.get_property_string("collection")
-            logger.info(
+            ten.log_info(
                 f"collection for querying has been updated from {self.collection_name} to {coll}"
             )
             self.collection_name = coll
@@ -154,24 +153,24 @@ class LlamaIndexExtension(Extension):
         cmd_result.set_property_string("detail", "ok")
         ten.return_result(cmd_result, cmd)
 
-    def on_data(self, _: TenEnv, data: Data) -> None:
+    def on_data(self, ten: TenEnv, data: Data) -> None:
         is_final = data.get_property_bool("is_final")
         if not is_final:
-            logger.info("on_data ignore non final")
+            ten.log_info("on_data ignore non final")
             return
 
         inputText = data.get_property_string("text")
         if len(inputText) == 0:
-            logger.info("on_data ignore empty text")
+            ten.log_info("on_data ignore empty text")
             return
 
         ts = datetime.now()
 
-        logger.info("on_data text [%s], ts [%s]", inputText, ts)
+        ten.log_info("on_data text [%s], ts [%s]", inputText, ts)
         self.queue.put((inputText, ts, TASK_TYPE_CHAT_REQUEST))
 
     def async_handle(self, ten: TenEnv):
-        logger.info("async_handle started")
+        ten.log_info("async_handle started")
         while not self.stop:
             try:
                 value = self.queue.get()
@@ -180,7 +179,7 @@ class LlamaIndexExtension(Extension):
                 input_text, ts, task_type = value
 
                 if ts < self.get_outdated_ts():
-                    logger.info(
+                    ten.log_info(
                         f"text [{input_text}] ts [{ts}] task_type [{task_type}] dropped due to outdated"
                     )
                     continue
@@ -190,7 +189,7 @@ class LlamaIndexExtension(Extension):
                     self._send_text_data(ten, input_text, True)
                     continue
 
-                logger.info("process input text [%s] ts [%s]", input_text, ts)
+                ten.log_info("process input text [%s] ts [%s]", input_text, ts)
 
                 # lazy import packages which requires long time to load
                 from .llama_llm import LlamaLLM
@@ -243,7 +242,7 @@ class LlamaIndexExtension(Extension):
                     if self.stop:
                         break
                     if ts < self.get_outdated_ts():
-                        logger.info(
+                        ten.log_info(
                             "stream_chat coming responses dropped due to outdated for input text [%s] ts [%s] ",
                             input_text,
                             ts,
@@ -257,8 +256,8 @@ class LlamaIndexExtension(Extension):
                 # send out end_of_segment
                 self._send_text_data(ten, "", True)
             except Exception as e:
-                logger.exception(e)
-        logger.info("async_handle stoped")
+                ten.log_error(str(e))
+        ten.log_info("async_handle stoped")
 
     def flush(self):
         with self.outdate_ts_lock:
@@ -270,3 +269,4 @@ class LlamaIndexExtension(Extension):
     def get_outdated_ts(self):
         with self.outdate_ts_lock:
             return self.outdate_ts
+

@@ -7,7 +7,7 @@ import AgoraRTC, {
   IRemoteAudioTrack,
   UID, ICameraVideoTrack,
 } from "agora-rtc-sdk-ng"
-import { ITextItem } from "@/types"
+import { EMessageDataType, EMessageType, IChatItem, ITextItem } from "@/types"
 import { AGEventEmitter } from "../events"
 import { RtcEvents, IUserTracks } from "./types"
 import { apiGenAgoraData } from "@/common/request"
@@ -28,6 +28,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   localTracks: IUserTracks
   appId: string | null = null
   token: string | null = null
+  userId: number | null = null
 
   constructor() {
     super()
@@ -47,6 +48,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       const { appId, token } = data
       this.appId = appId
       this.token = token
+      this.userId = userId
       await this.client?.join(appId, channel, token, userId)
       this._joined = true
     }
@@ -88,10 +90,10 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this.emit("localTracksChanged", this.localTracks);
   }
 
-  async switchVideoSource(type:VideoSourceType) {
+  async switchVideoSource(type: VideoSourceType) {
     if (type === VideoSourceType.SCREEN) {
       await this.createScreenShareTrack();
-      if(this.localTracks.screenTrack) {
+      if (this.localTracks.screenTrack) {
         this.client.unpublish(this.localTracks.videoTrack);
         this.localTracks.videoTrack?.close();
         this.localTracks.videoTrack = undefined;
@@ -100,7 +102,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       }
     } else if (type === VideoSourceType.CAMERA) {
       await this.createCameraTracks();
-      if(this.localTracks.videoTrack) {
+      if (this.localTracks.videoTrack) {
         this.client.unpublish(this.localTracks.screenTrack);
         this.localTracks.screenTrack?.close();
         this.localTracks.screenTrack = undefined;
@@ -122,7 +124,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       await this.client.publish(tracks);
     }
   }
-  
+
   async destroy() {
     this.localTracks?.audioTrack?.close()
     this.localTracks?.videoTrack?.close()
@@ -166,11 +168,11 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _parseData(data: any): ITextItem | void {
     let decoder = new TextDecoder('utf-8');
     let decodedMessage = decoder.decode(data);
-  
+
     console.log("[test] textstream raw data", decodedMessage);
-    
+
     // const { stream_id, is_final, text, text_ts, data_type, message_id, part_number, total_parts } = textstream;
-  
+
     // if (total_parts > 0) {
     //   // If message is split, handle it accordingly
     //   this._handleSplitMessage(message_id, part_number, total_parts, stream_id, is_final, text, text_ts);
@@ -181,7 +183,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
     this.handleChunk(decodedMessage);
   }
-  
+
 
   private messageCache: { [key: string]: TextDataChunk[] } = {};
 
@@ -225,14 +227,28 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       // If all parts are received, reconstruct the message
       if (this.messageCache[message_id].length === total_parts) {
         const completeMessage = this.reconstructMessage(this.messageCache[message_id]);
-        const { stream_id, is_final, text, text_ts } = JSON.parse(atob(completeMessage));
-        const textItem: ITextItem = {
-          uid: `${stream_id}`,
+        const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(atob(completeMessage));
+        const isAgent = Number(stream_id) != Number(this.userId)
+
+        let textItem: IChatItem = {
+          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
           time: text_ts,
-          dataType: "transcribe",
           text: text,
-          isFinal: is_final
-        };
+          data_type: EMessageDataType.TEXT,
+          userId: stream_id,
+          isFinal: is_final,
+        };;
+
+        if (data_type === "raw") {
+          let { data, type } = JSON.parse(text);
+          if (type === "image_url") {
+            textItem = {
+              ...textItem,
+              data_type: EMessageDataType.IMAGE,
+              text: data.image_url,
+            };
+          }
+        }
 
         if (text.trim().length > 0) {
           this.emit("textChanged", textItem);

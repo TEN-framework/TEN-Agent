@@ -20,6 +20,7 @@
         "venv",
         "__pycache__",
         "./agents/ten_packages/system/ten_runtime_python/**/*",
+        "/usr/lib/**/*"
     ],
     "include": [
         "agents"

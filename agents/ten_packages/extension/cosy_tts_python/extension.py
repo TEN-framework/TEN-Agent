@@ -25,7 +25,7 @@ class CosyTTSExtension(AsyncTTSBaseExtension):
         await super().on_start(ten_env)
         ten_env.log_debug("on_start")
 
-        self.config = CosyTTSConfig.create(ten_env=ten_env)
+        self.config = await CosyTTSConfig.create_async(ten_env=ten_env)
         self.client = CosyTTS(self.config)
 
         asyncio.create_task(self._process_audio_data(ten_env))

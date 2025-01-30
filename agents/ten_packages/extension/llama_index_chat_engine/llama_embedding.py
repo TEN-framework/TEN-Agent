@@ -1,11 +1,11 @@
 from typing import Any, List
 import threading
 from llama_index.core.embeddings import BaseEmbedding
-from .log import logger
 import json
 from ten import (
     Cmd,
     CmdResult,
+    TenEnv,
 )
 
 EMBED_CMD = "embed"
@@ -19,7 +19,7 @@ def embed_from_resp(cmd_result: CmdResult) -> List[float]:
 class LlamaEmbedding(BaseEmbedding):
     ten: Any
 
-    def __init__(self, ten):
+    def __init__(self, ten: TenEnv):
         """Creates a new Llama embedding interface."""
         super().__init__()
         self.ten = ten
@@ -35,15 +35,15 @@ class LlamaEmbedding(BaseEmbedding):
         return self._get_text_embedding(text)
 
     def _get_query_embedding(self, query: str) -> List[float]:
-        logger.info(f"LlamaEmbedding generate embeddings for the query: {query}")
+        self.ten.log_info(f"LlamaEmbedding generate embeddings for the query: {query}")
         wait_event = threading.Event()
         resp: List[float]
 
-        def callback(_, result):
+        def callback(_, result, __):
             nonlocal resp
             nonlocal wait_event
 
-            logger.debug("LlamaEmbedding embedding received")
+            self.ten.log_debug("LlamaEmbedding embedding received")
             resp = embed_from_resp(result)
             wait_event.set()
 
@@ -59,5 +59,5 @@ class LlamaEmbedding(BaseEmbedding):
 
     # for texts embedding, will not be called in this module
     def _get_text_embeddings(self, texts: List[str]) -> List[List[float]]:
-        logger.warning("not implemented")
+        self.ten.log_warn("not implemented")
         return []

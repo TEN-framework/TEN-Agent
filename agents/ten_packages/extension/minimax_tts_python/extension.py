@@ -24,7 +24,7 @@ class MinimaxTTSExtension(AsyncTTSBaseExtension):
         await super().on_start(ten_env)
         ten_env.log_debug("on_start")
 
-        config = MinimaxTTSConfig.create(ten_env=ten_env)
+        config = await MinimaxTTSConfig.create_async(ten_env=ten_env)
 
         ten_env.log_info(f"config: {config.api_key}, {config.group_id}")
 

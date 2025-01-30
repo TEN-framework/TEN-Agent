@@ -11,7 +11,6 @@ package extension
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,8 +37,6 @@ const (
 )
 
 var (
-	logTag = slog.String("extension", "MINIMAX_TTS_EXTENSION")
-
 	outdateTs atomic.Int64
 	textChan  chan *message
 	wg        sync.WaitGroup
@@ -70,27 +67,27 @@ func newMinimaxTTSExtension(name string) ten.Extension {
 //   - url
 //   - voice_id
 func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
-	slog.Info("OnStart", logTag)
+	ten.LogInfo("OnStart")
 
 	// prepare configuration
 	minimaxTTSConfig := defaultMinimaxTTSConfig()
 
 	if apiKey, err := ten.GetPropertyString(propertyApiKey); err != nil {
-		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err))
 		return
 	} else {
 		minimaxTTSConfig.ApiKey = apiKey
 	}
 
 	if groupId, err := ten.GetPropertyString(propertyGroupId); err != nil {
-		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyGroupId, err), logTag)
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyGroupId, err))
 		return
 	} else {
 		minimaxTTSConfig.GroupId = groupId
 	}
 
 	if model, err := ten.GetPropertyString(propertyModel); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModel, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModel, err))
 	} else {
 		if len(model) > 0 {
 			minimaxTTSConfig.Model = model
@@ -98,7 +95,7 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if requestTimeoutSeconds, err := ten.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err))
 	} else {
 		if requestTimeoutSeconds > 0 {
 			minimaxTTSConfig.RequestTimeoutSeconds = int(requestTimeoutSeconds)
@@ -106,7 +103,7 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if sampleRate, err := ten.GetPropertyInt64(propertySampleRate); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySampleRate, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySampleRate, err))
 	} else {
 		if sampleRate > 0 {
 			minimaxTTSConfig.SampleRate = int32(sampleRate)
@@ -114,7 +111,7 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if url, err := ten.GetPropertyString(propertyUrl); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyUrl, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyUrl, err))
 	} else {
 		if len(url) > 0 {
 			minimaxTTSConfig.Url = url
@@ -122,7 +119,7 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if voiceId, err := ten.GetPropertyString(propertyVoiceId); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err))
 	} else {
 		minimaxTTSConfig.VoiceId = voiceId
 	}
@@ -130,11 +127,11 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	// create minimaxTTS instance
 	minimaxTTS, err := newMinimaxTTS(minimaxTTSConfig)
 	if err != nil {
-		slog.Error(fmt.Sprintf("newMinimaxTTS failed, err: %v", err), logTag)
+		ten.LogError(fmt.Sprintf("newMinimaxTTS failed, err: %v", err))
 		return
 	}
 
-	slog.Info(fmt.Sprintf("newMinimaxTTS succeed with Model: %s", minimaxTTSConfig.Model), logTag)
+	ten.LogInfo(fmt.Sprintf("newMinimaxTTS succeed with Model: %s", minimaxTTSConfig.Model))
 
 	// set minimaxTTS instance
 	e.minimaxTTS = minimaxTTS
@@ -150,17 +147,17 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 	textChan = make(chan *message, textChanMax)
 
 	go func() {
-		slog.Info("process textChan", logTag)
+		ten.LogInfo("process textChan")
 
 		for msg := range textChan {
 			if msg.receivedTs < outdateTs.Load() { // Check whether to interrupt
-				slog.Info(fmt.Sprintf("textChan interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
-					msg.text, msg.receivedTs, outdateTs.Load()), logTag)
+				ten.LogInfo(fmt.Sprintf("textChan interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
+					msg.text, msg.receivedTs, outdateTs.Load()))
 				continue
 			}
 
 			wg.Add(1)
-			slog.Info(fmt.Sprintf("textChan text: [%s]", msg.text), logTag)
+			ten.LogInfo(fmt.Sprintf("textChan text: [%s]", msg.text))
 
 			r, w := io.Pipe()
 			startTime := time.Now()
@@ -169,16 +166,16 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 				defer wg.Done()
 				defer w.Close()
 
-				slog.Info(fmt.Sprintf("textToSpeechStream text: [%s]", msg.text), logTag)
-				err = e.minimaxTTS.textToSpeechStream(w, msg.text)
-				slog.Info(fmt.Sprintf("textToSpeechStream result: [%v]", err), logTag)
+				ten.LogInfo(fmt.Sprintf("textToSpeechStream text: [%s]", msg.text))
+				err = e.minimaxTTS.textToSpeechStream(ten, w, msg.text)
+				ten.LogInfo(fmt.Sprintf("textToSpeechStream result: [%v]", err))
 				if err != nil {
-					slog.Error(fmt.Sprintf("textToSpeechStream failed, err: %v", err), logTag)
+					ten.LogError(fmt.Sprintf("textToSpeechStream failed, err: %v", err))
 					return
 				}
 			}()
 
-			slog.Info(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize), logTag)
+			ten.LogInfo(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize))
 
 			var (
 				firstFrameLatency int64
@@ -192,8 +189,8 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 			// read pcm stream
 			for {
 				if msg.receivedTs < outdateTs.Load() { // Check whether to interrupt
-					slog.Info(fmt.Sprintf("read pcm stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
-						msg.text, msg.receivedTs, outdateTs.Load()), logTag)
+					ten.LogInfo(fmt.Sprintf("read pcm stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
+						msg.text, msg.receivedTs, outdateTs.Load()))
 					break
 				}
 
@@ -203,16 +200,16 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 
 				if err != nil {
 					if err == io.EOF {
-						slog.Info("read pcm stream EOF", logTag)
+						ten.LogInfo("read pcm stream EOF")
 						break
 					}
 
-					slog.Error(fmt.Sprintf("read pcm stream failed, err: %v", err), logTag)
+					ten.LogError(fmt.Sprintf("read pcm stream failed, err: %v", err))
 					break
 				}
 
 				if pcmFrameRead != pcmFrameSize {
-					slog.Debug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", pcmFrameRead), logTag)
+					ten.LogDebug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", pcmFrameRead))
 					continue
 				}
 
@@ -224,21 +221,21 @@ func (e *minimaxTTSExtension) OnStart(ten ten.TenEnv) {
 
 				if firstFrameLatency == 0 {
 					firstFrameLatency = time.Since(startTime).Milliseconds()
-					slog.Info(fmt.Sprintf("first frame available for text: [%s], receivedTs: %d, firstFrameLatency: %dms", msg.text, msg.receivedTs, firstFrameLatency), logTag)
+					ten.LogInfo(fmt.Sprintf("first frame available for text: [%s], receivedTs: %d, firstFrameLatency: %dms", msg.text, msg.receivedTs, firstFrameLatency))
 				}
 
-				slog.Debug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text), logTag)
+				ten.LogDebug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text))
 			}
 
 			if pcmFrameRead > 0 {
 				pcm.send(ten, buf)
 				sentFrames++
-				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead), logTag)
+				ten.LogInfo(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead))
 			}
 
 			r.Close()
-			slog.Info(fmt.Sprintf("send pcm data finished, text: [%s], receivedTs: %d, readBytes: %d, sentFrames: %d, firstFrameLatency: %dms, finishLatency: %dms",
-				msg.text, msg.receivedTs, readBytes, sentFrames, firstFrameLatency, time.Since(startTime).Milliseconds()), logTag)
+			ten.LogInfo(fmt.Sprintf("send pcm data finished, text: [%s], receivedTs: %d, readBytes: %d, sentFrames: %d, firstFrameLatency: %dms, finishLatency: %dms",
+				msg.text, msg.receivedTs, readBytes, sentFrames, firstFrameLatency, time.Since(startTime).Milliseconds()))
 		}
 	}()
 
@@ -256,13 +253,13 @@ func (e *minimaxTTSExtension) OnCmd(
 ) {
 	cmdName, err := cmd.GetName()
 	if err != nil {
-		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("OnCmd get name failed, err: %v", err))
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 		return
 	}
 
-	slog.Info(fmt.Sprintf("OnCmd %s", cmdInFlush), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnCmd %s", cmdInFlush))
 
 	switch cmdName {
 	case cmdInFlush:
@@ -271,24 +268,24 @@ func (e *minimaxTTSExtension) OnCmd(
 		// send out
 		outCmd, err := ten.NewCmd(cmdOutFlush)
 		if err != nil {
-			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		}
 
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
-			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		} else {
-			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
+			tenEnv.LogInfo(fmt.Sprintf("cmd %s sent", cmdOutFlush))
 		}
 	}
 
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd)
+	tenEnv.ReturnResult(cmdResult, cmd, nil)
 }
 
 // OnData receives data from ten graph.
@@ -302,16 +299,16 @@ func (e *minimaxTTSExtension) OnData(
 ) {
 	text, err := data.GetPropertyString(dataInTextDataPropertyText)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err))
 		return
 	}
 
 	if len(text) == 0 {
-		slog.Debug("OnData text is empty, ignored", logTag)
+		tenEnv.LogDebug("OnData text is empty, ignored")
 		return
 	}
 
-	slog.Info(fmt.Sprintf("OnData input text: [%s]", text), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnData input text: [%s]", text))
 
 	go func() {
 		textChan <- &message{text: text, receivedTs: time.Now().UnixMicro()}
@@ -319,8 +316,6 @@ func (e *minimaxTTSExtension) OnData(
 }
 
 func init() {
-	slog.Info("minimax_tts extension init", logTag)
-
 	// Register addon
 	ten.RegisterAddonAsExtension(
 		"minimax_tts",

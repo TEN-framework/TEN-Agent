@@ -43,7 +43,7 @@ tasks:
     desc: run tman dev http server for graph designer
     dir: ./agents
     cmds:
-      - tman dev-server
+      - tman designer
 
   run:
     desc: run servers

@@ -9,4 +9,9 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
+  "git.ignoreLimitWarning": true,
+  "pylint.ignorePatterns": [
+    "*/ten_runtime_python/**/*",
+    "/usr/lib/**/*"
+  ],
 }

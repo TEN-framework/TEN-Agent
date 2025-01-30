@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.5"
+      "version": "0.6"
     }
   ],
   "api": {

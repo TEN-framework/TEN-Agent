@@ -59,7 +59,7 @@ class DeepgramASRExtension(AsyncExtension):
         self.loop = asyncio.get_event_loop()
         self.ten_env = ten_env
 
-        self.config = DeepgramASRConfig.create(ten_env=ten_env)
+        self.config = await DeepgramASRConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:
@@ -156,6 +156,8 @@ class DeepgramASRExtension(AsyncExtension):
             interim_results=self.config.interim_results,
             punctuate=self.config.punctuate,
         )
+
+        self.ten_env.log_info(f"deepgram options: {options}")
         # connect to websocket
         result = await self.client.start(options)
         if not result:

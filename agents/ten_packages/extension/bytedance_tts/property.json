@@ -1,0 +1,8 @@
+{
+    "appid": "${env:BYTEDANCE_TTS_APPID}",
+    "token": "${env:BYTEDANCE_TTS_TOKEN}",
+    "sample_rate": 16000,
+    "voice_type": "BV001_streaming",
+    "api_url": "wss://openspeech.bytedance.com/api/v1/tts/ws_binary",
+    "cluster": "volcano_tts"
+}

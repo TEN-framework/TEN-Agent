@@ -39,7 +39,6 @@ class OpenAIChatGPTConfig(BaseConfig):
     azure_endpoint: str = ""
     azure_api_version: str = ""
 
-
 class OpenAIChatGPT:
     client = None
 

@@ -1,0 +1,70 @@
+{
+  "type": "extension",
+  "name": "bytedance_tts",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "appid": {
+        "type": "string"
+      },
+      "token": {
+        "type": "string"
+      },
+      "voice_type": {
+        "type": "string"
+      },
+      "sample_rate": {
+        "type": "int64"
+      },
+      "api_url": {
+        "type": "string"
+      },
+      "cluster": {
+        "type": "string"
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}

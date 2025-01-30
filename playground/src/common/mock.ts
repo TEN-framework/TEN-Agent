@@ -1,5 +1,5 @@
 import { getRandomUserId } from "./utils";
-import { IChatItem, EMessageType } from "@/types";
+import { IChatItem, EMessageType, EMessageDataType } from "@/types";
 
 const SENTENCES = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -30,6 +30,7 @@ export const genRandomChatList = (num: number = 10): IChatItem[] => {
       userName: type == "agent" ? EMessageType.AGENT : "You",
       text: genRandomParagraph(3),
       type,
+      data_type: EMessageDataType.TEXT,
       time: Date.now(),
     });
   }

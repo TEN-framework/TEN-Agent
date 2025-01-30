@@ -90,6 +90,14 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
   },
+  {
+    label: "Voice Story Teller with Image Generator",
+    value: "story_teller_stt_integrated",
+  },
+  {
+    label: "Voice Agent / STT + Nova Multimodal + TTS",
+    value: "va_nova_multimodal_aws",
+  },
 ]
 
 export const isRagGraph = (graphName: string) => {

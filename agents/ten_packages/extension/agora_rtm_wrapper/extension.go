@@ -12,7 +12,7 @@ package extension
 
 import (
 	"encoding/json"
-	"log/slog"
+	"fmt"
 	"strconv"
 
 	"ten_framework/ten"
@@ -46,10 +46,6 @@ type RtcUserSate struct {
 	Reason       string `json:"reason"`         // 原因
 }
 
-var (
-	logTag = slog.String("extension", "AGORA_RTM_WRAPPER_EXTENSION")
-)
-
 type agoraRtmWrapperExtension struct {
 	ten.DefaultExtension
 }
@@ -65,14 +61,14 @@ func (p *agoraRtmWrapperExtension) OnData(
 ) {
 	buf, err := data.GetPropertyBytes("data")
 	if err != nil {
-		slog.Error("OnData GetProperty data error: " + err.Error())
+		tenEnv.LogError("OnData GetProperty data error: " + err.Error())
 		return
 	}
-	slog.Info("AGORA_RTM_WRAPPER_EXTENSION OnData: "+string(buf), logTag)
+	tenEnv.LogInfo("AGORA_RTM_WRAPPER_EXTENSION OnData: " + string(buf))
 	colllectorMessage := ColllectorMessage{}
 	err = json.Unmarshal(buf, &colllectorMessage)
 	if err != nil {
-		slog.Error("OnData Unmarshal data error: " + err.Error())
+		tenEnv.LogError("OnData Unmarshal data error: " + err.Error())
 		return
 	}
 
@@ -85,70 +81,70 @@ func (p *agoraRtmWrapperExtension) OnData(
 	}
 	jsonBytes, err := json.Marshal(message)
 	if err != nil {
-		slog.Error("failed to marshal JSON: " + err.Error())
+		tenEnv.LogError("failed to marshal JSON: " + err.Error())
 		return
 	}
-	slog.Info("AGORA_RTM_WRAPPER_EXTENSION OnData: "+string(jsonBytes), logTag)
+	tenEnv.LogInfo("AGORA_RTM_WRAPPER_EXTENSION OnData: " + string(jsonBytes))
 
 	cmd, _ := ten.NewCmd("publish")
 
 	err = cmd.SetPropertyBytes("message", jsonBytes)
 	if err != nil {
-		slog.Error("failed to set property message: " + err.Error())
+		tenEnv.LogError("failed to set property message: " + err.Error())
 		return
 	}
-	if err := tenEnv.SendCmd(cmd, func(_ ten.TenEnv, result ten.CmdResult) {
-		slog.Info("AGORA_RTM_WRAPPER_EXTENSION publish result " + result.ToJSON())
+	if err := tenEnv.SendCmd(cmd, func(_ ten.TenEnv, result ten.CmdResult, _ error) {
 		status, err := result.GetStatusCode()
+		tenEnv.LogInfo(fmt.Sprintf("AGORA_RTM_WRAPPER_EXTENSION publish result %d", status))
 		if status != ten.StatusCodeOk || err != nil {
-			slog.Error("failed to subscribe ")
+			tenEnv.LogError("failed to subscribe")
 		}
 	}); err != nil {
-		slog.Error("failed to send command " + err.Error())
+		tenEnv.LogError("failed to send command " + err.Error())
 	}
 }
 
 func (p *agoraRtmWrapperExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 	defer func() {
 		if r := recover(); r != nil {
-			slog.Error("OnCmd panic", "recover", r)
+			tenEnv.LogError(fmt.Sprintf("OnCmd panic: %v", r))
 		}
 		cmdResult, err := ten.NewCmdResult(ten.StatusCodeOk)
 		if err != nil {
-			slog.Error("failed to create cmd result", "err", err)
+			tenEnv.LogError(fmt.Sprintf("failed to create cmd result: %v", err))
 			return
 		}
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 	}()
 	cmdName, err := cmd.GetName()
 	if err != nil {
-		slog.Error("failed to get cmd name", "err", err)
+		tenEnv.LogError(fmt.Sprintf("failed to get cmd name: %v", err))
 		return
 	}
-	slog.Info(cmd.ToJSON(), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("received command: %s", cmdName))
 	switch cmdName {
 	case "on_user_audio_track_state_changed":
 		// on_user_audio_track_state_changed
 		p.handleUserStateChanged(tenEnv, cmd)
 	default:
-		slog.Warn("unsupported cmd", "cmd", cmdName)
+		tenEnv.LogWarn(fmt.Sprintf("unsupported cmd: %s", cmdName))
 	}
 }
 
 func (p *agoraRtmWrapperExtension) handleUserStateChanged(tenEnv ten.TenEnv, cmd ten.Cmd) {
 	remoteUserID, err := cmd.GetPropertyString("remote_user_id")
 	if err != nil {
-		slog.Error("failed to get remote_user_id", "err", err)
+		tenEnv.LogError(fmt.Sprintf("failed to get remote_user_id: %v", err))
 		return
 	}
 	state, err := cmd.GetPropertyInt32("state")
 	if err != nil {
-		slog.Error("failed to get state", "err", err)
+		tenEnv.LogError(fmt.Sprintf("failed to get state: %v", err))
 		return
 	}
 	reason, err := cmd.GetPropertyInt32("reason")
 	if err != nil {
-		slog.Error("failed to get reason", "err", err)
+		tenEnv.LogError(fmt.Sprintf("failed to get reason: %v", err))
 		return
 	}
 	userState := RtcUserSate{
@@ -158,28 +154,24 @@ func (p *agoraRtmWrapperExtension) handleUserStateChanged(tenEnv ten.TenEnv, cmd
 	}
 	jsonBytes, err := json.Marshal(userState)
 	if err != nil {
-		slog.Error("failed to marshal JSON: " + err.Error())
+		tenEnv.LogError("failed to marshal JSON: " + err.Error())
 		return
 	}
 	sendCmd, _ := ten.NewCmd("set_presence_state")
 	sendCmd.SetPropertyString("states", string(jsonBytes))
-	cmdStr := sendCmd.ToJSON()
-	slog.Info("AGORA_RTM_WRAPPER_EXTENSION SetRtmPresenceState " + cmdStr)
-	if err := tenEnv.SendCmd(sendCmd, func(_ ten.TenEnv, result ten.CmdResult) {
-		slog.Info("AGORA_RTM_WRAPPER_EXTENSION SetRtmPresenceState result " + result.ToJSON())
+	tenEnv.LogInfo("AGORA_RTM_WRAPPER_EXTENSION SetRtmPresenceState " + string(jsonBytes))
+	if err := tenEnv.SendCmd(sendCmd, func(_ ten.TenEnv, result ten.CmdResult, _ error) {
 		status, err := result.GetStatusCode()
+		tenEnv.LogInfo(fmt.Sprintf("AGORA_RTM_WRAPPER_EXTENSION SetRtmPresenceState result %d", status))
 		if status != ten.StatusCodeOk || err != nil {
-			panic("failed to SetRtmPresenceState ")
+			panic("failed to SetRtmPresenceState")
 		}
 	}); err != nil {
-		slog.Error("failed to send command " + err.Error())
+		tenEnv.LogError("failed to send command " + err.Error())
 	}
-
 }
 
 func init() {
-	slog.Info("agora_rtm_wrapper extension init", logTag)
-
 	// Register addon
 	ten.RegisterAddonAsExtension(
 		"agora_rtm_wrapper",

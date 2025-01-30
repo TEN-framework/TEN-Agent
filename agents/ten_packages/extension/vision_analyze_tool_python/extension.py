@@ -9,7 +9,6 @@ from ten import (
     VideoFrame,
     AsyncTenEnv,
     Cmd,
-    CmdResult,
     Data,
 )
 from PIL import Image
@@ -23,6 +22,7 @@ from ten_ai_base.types import (
     LLMToolMetadata,
     LLMToolMetadataParameter,
     LLMToolResult,
+    LLMToolResultLLMResult,
 )
 
 
@@ -174,6 +174,9 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
             )
             cmd.set_property_from_json("arguments", json.dumps({"messages": [message]}))
             ten_env.log_info("send_cmd {}".format(message))
-            cmd_result: CmdResult = await ten_env.send_cmd(cmd)
+            [cmd_result, _] = await ten_env.send_cmd(cmd)
             result = cmd_result.get_property_to_json("response")
-            return {"content": [{"type": "text", "text": result}]}
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=json.dumps(result),
+            )
