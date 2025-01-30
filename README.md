@@ -34,9 +34,9 @@
 </div>
 
 <br>
-<h2>✨ TEN Agent + Deepseek R1</h2>
+<h2>✨ TEN Agent + Deepseek</h2>
 
-[TEN Agent + Deepseek R1](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
+[TEN Agent + Deepseek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
