@@ -173,9 +173,9 @@ export const globalSlice = createSlice({
 });
 
 // Initialize graph data
-let initializeGraphData;
+let initializeGraphData:any;
 // Fetch graph details
-let fetchGraphDetails;
+let fetchGraphDetails:any;
 
 if (isEditModeOn) {
   // only for development, below requests depend on dev-server
