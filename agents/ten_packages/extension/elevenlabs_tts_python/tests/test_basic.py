@@ -14,6 +14,7 @@ class ExtensionTesterBasic(ExtensionTester):
         print("receive hello_world, status:" + str(statusCode))
 
         if statusCode == StatusCode.OK:
+            # TODO: move stop_test() to where the test passes
             ten_env.stop_test()
 
     def on_start(self, ten_env: TenEnvTester) -> None:
@@ -31,6 +32,5 @@ class ExtensionTesterBasic(ExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
-    tester.add_addon_base_dir(str(Path(__file__).resolve().parent.parent))
-    tester.set_test_mode_single("default_async_extension_python")
+    tester.set_test_mode_single("elevenlabs_tts_python")
     tester.run()
