@@ -512,18 +512,20 @@
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "openai_v2v_python",
+            "addon": "glm_v2v_python",
             "extension_group": "llm",
             "property": {
-              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview-2024-12-17",
-              "max_tokens": 2048,
-              "voice": "alloy",
-              "language": "en-US",
-              "server_vad": true,
+              "api_key": "${env:GLM_API_KEY}",
+              "base_uri": "wss://open.bigmodel.cn",
               "dump": true,
-              "max_history": 10
+              "enable_storage": false,
+              "history": 10,
+              "language": "en-US",
+              "max_tokens": 2048,
+              "model": "gpt-4o-realtime-preview",
+              "server_vad": true,
+              "temperature": 0.9,
+              "voice": "alloy"
             }
           },
           {
@@ -532,15 +534,6 @@
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
           }
         ],
         "connections": [
@@ -593,14 +586,6 @@
                     "extension": "agora_rtc"
                   }
                 ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension": "weatherapi_tool_python"
-                  }
-                ]
               }
             ],
             "data": [
@@ -632,19 +617,6 @@
                 "dest": [
                   {
                     "extension": "agora_rtc"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
-                "dest": [
-                  {
-                    "extension": "v2v"
                   }
                 ]
               }
