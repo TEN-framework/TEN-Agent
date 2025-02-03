@@ -13,7 +13,6 @@ on:
       - "**.md"
       - "Dockerfile"
       - "docker-compose.yml"
-      - ".**"
       - "demo/**"
       - "playground/**"
   workflow_dispatch:
