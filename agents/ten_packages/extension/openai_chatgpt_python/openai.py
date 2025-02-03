@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import random
 import requests
-from openai import AsyncOpenAI, AsyncAzureOpenAI
+import litellm
 from openai.types.chat.chat_completion import ChatCompletion
 
 from ten.async_ten_env import AsyncTenEnv
@@ -45,17 +45,6 @@ class OpenAIChatGPT:
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
         ten_env.log_info(f"OpenAIChatGPT initialized with config: {config.api_key}")
-        if self.config.vendor == "azure":
-            self.client = AsyncAzureOpenAI(
-                api_key=config.api_key,
-                api_version=self.config.azure_api_version,
-                azure_endpoint=config.azure_endpoint,
-            )
-            ten_env.log_info(
-                f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}"
-            )
-        else:
-            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {
@@ -68,7 +57,7 @@ class OpenAIChatGPT:
 
     async def get_chat_completions(self, messages, tools=None) -> ChatCompletion:
         req = {
-            "model": self.config.model,
+            "model": f"{self.config.vendor}/{self.config.model}",
             "messages": [
                 {
                     "role": "system",
@@ -86,7 +75,7 @@ class OpenAIChatGPT:
         }
 
         try:
-            response = await self.client.chat.completions.create(**req)
+            response = await litellm.acompletion(**req)
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
 
@@ -94,7 +83,7 @@ class OpenAIChatGPT:
 
     async def get_chat_completions_stream(self, messages, tools=None, listener=None):
         req = {
-            "model": self.config.model,
+            "model": f"{self.config.vendor}/{self.config.model}",
             "messages": [
                 {
                     "role": "system",
@@ -113,7 +102,7 @@ class OpenAIChatGPT:
         }
 
         try:
-            response = await self.client.chat.completions.create(**req)
+            response = await litellm.acompletion(**req)
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
 
