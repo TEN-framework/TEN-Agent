@@ -6,10 +6,16 @@ on:
     paths-ignore:
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/build-docker.yaml"
+      - "!.github/workflows/ci.yaml"
       - ".vscode/**"
       - "docs/**"
+      - "esp32-client/**"
       - "**.md"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".**"
+      - "demo/**"
+      - "playground/**"
   workflow_dispatch:
 
 jobs:
