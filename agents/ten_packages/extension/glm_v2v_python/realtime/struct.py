@@ -152,7 +152,7 @@ class FunctionCallItemParam:
 
 @dataclass
 class FunctionCallOutputItemParam:
-    call_id: str
+    # call_id: str
     output: str
     id: Optional[str] = None
     type: str = "function_call_output"
@@ -420,7 +420,7 @@ class ResponseFunctionCallArgumentsDelta(ServerToClientMessage):
 @dataclass
 class ResponseFunctionCallArgumentsDone(ServerToClientMessage):
     output_index: int
-    call_id: str
+    # call_id: str
     name: str
     arguments: str
     type: str = EventType.RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE

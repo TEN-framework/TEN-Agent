@@ -470,12 +470,12 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}"
                             )
                         case ResponseFunctionCallArgumentsDone():
-                            tool_call_id = message.call_id
+                            # tool_call_id = message.call_id
                             name = message.name
                             arguments = message.arguments
                             self.ten_env.log_info(f"need to call func {name}")
                             self.loop.create_task(
-                                self._handle_tool_call(tool_call_id, name, arguments)
+                                self._handle_tool_call(name, arguments)
                             )
                         case ErrorMessage():
                             self.ten_env.log_error(
@@ -719,9 +719,9 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             dump_file.write(buf)
 
     async def _handle_tool_call(
-        self, tool_call_id: str, name: str, arguments: str
+        self, name: str, arguments: str
     ) -> None:
-        self.ten_env.log_info(f"_handle_tool_call {tool_call_id} {name} {arguments}")
+        self.ten_env.log_info(f"_handle_tool_call {name} {arguments}")
         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
         cmd.set_property_string("name", name)
         cmd.set_property_from_json("arguments", arguments)
@@ -729,7 +729,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
 
         tool_response = ItemCreate(
             item=FunctionCallOutputItemParam(
-                call_id=tool_call_id,
                 output='{"success":false}',
             )
         )
@@ -742,7 +741,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             tool_response.item.output = json.dumps(
                 self._convert_to_content_parts(result_content)
             )
-            self.ten_env.log_info(f"tool_result: {tool_call_id} {tool_result}")
+            self.ten_env.log_info(f"tool_result: {tool_result}")
         else:
             self.ten_env.log_error("Tool call failed")
 
