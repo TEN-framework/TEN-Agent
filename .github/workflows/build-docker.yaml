@@ -25,6 +25,7 @@ on:
 env:
   SERVER_IMAGE_NAME: ten_agent_server
   PLAYGROUND_IMAGE_NAME: ten_agent_playground
+  NON_EDIT_PLAYGROUND_IMAGE_NAME: ten_agent_non_edit_playground
   DEMO_IMAGE_NAME: ten_agent_demo
 
 jobs:
@@ -66,7 +67,7 @@ jobs:
         env:
           EDIT_GRAPH_MODE: false
         with:
-          name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
+          name: ${{ github.repository_owner }}/${{ env.NON_EDIT_PLAYGROUND_IMAGE_NAME }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
