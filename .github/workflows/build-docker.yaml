@@ -50,6 +50,8 @@ jobs:
           no_push: ${{ github.event_name == 'pull_request' }}
       - name: Build & Publish Docker Image for Playground
         uses: elgohr/Publish-Docker-Github-Action@v5
+        env:
+          EDIT_GRAPH_MODE: true
         with:
           name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
           username: ${{ github.actor }}
