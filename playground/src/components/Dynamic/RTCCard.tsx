@@ -14,6 +14,7 @@ import {
 } from "@/store/reducers/global"
 import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect"
 import AgentView from "@/components/Agent/View"
+import Avatar from "@/components/Agent/AvatarTrulience"
 import MicrophoneBlock from "@/components/Agent/Microphone"
 import VideoBlock from "@/components/Agent/Camera"
 
@@ -32,6 +33,7 @@ export default function RTCCard(props: { className?: string }) {
   const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
+  const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -85,6 +87,10 @@ export default function RTCCard(props: { className?: string }) {
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user)
+    if (useTrulienceAvatar) {
+      // trulience SDK will play audio in synch with mouth
+      user.audioTrack?.stop();
+    }
     setRemoteUser(user)
   }
 
@@ -114,6 +120,7 @@ export default function RTCCard(props: { className?: string }) {
     setVideoSourceType(value)
   }
 
+
   return (
     <>
       <div className={cn("flex-shrink-0", "overflow-y-auto", className)}>
@@ -121,9 +128,14 @@ export default function RTCCard(props: { className?: string }) {
           {/* -- Agent */}
           <div className="w-full">
             <div className="flex w-full items-center justify-between p-2">
-              <h2 className="mb-2 text-xl font-semibold">Audio & Video</h2>
+              <h2 className="mb-0 text-l font-semibold">Audio & Video</h2>
             </div>
-            <AgentView audioTrack={remoteuser?.audioTrack} />
+            {/* Conditionally render either Avatar or AgentView */}
+            {useTrulienceAvatar ? (
+              <Avatar audioTrack={remoteuser?.audioTrack} />
+            ) : (
+              <AgentView audioTrack={remoteuser?.audioTrack} />
+            )}
           </div>
 
           {/* -- You */}
