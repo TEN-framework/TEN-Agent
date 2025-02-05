@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/ci.yaml"
+      - ".vscode/**"
+      - "docs/**"
+      - "esp32-client/**"
+      - "**.md"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "demo/**"
+      - "playground/**"
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.4.10
+    strategy:
+      matrix:
+        agent: [agents/examples/default, agents/examples/demo]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+
+      - name: Use agent
+        run: |
+          git config --global --add safe.directory $(pwd)
+          task use AGENT=${{ matrix.agent }}
+
+      - name: Run tests
+        run: |
+          task test -- -s -v
+
+      # - name: Run lint
+      #   run: |
+      #     task lint

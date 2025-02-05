@@ -109,6 +109,53 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 	s.output(c, codeSuccess, filtered)
 }
 
+func (s *HttpServer) handleGraphs(c *gin.Context) {
+	// read the property.json file and get the graph list from predefined_graphs, return the result as response
+	// for every graph object returned, only keep the name and auto_start fields
+	content, err := os.ReadFile(PropertyJsonFile)
+	if err != nil {
+		slog.Error("failed to read property.json file", "err", err, logTag)
+		s.output(c, codeErrReadFileFailed, http.StatusInternalServerError)
+		return
+	}
+
+	var propertyJson map[string]interface{}
+	err = json.Unmarshal(content, &propertyJson)
+	if err != nil {
+		slog.Error("failed to parse property.json file", "err", err, logTag)
+		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
+		return
+	}
+
+	tenSection, ok := propertyJson["_ten"].(map[string]interface{})
+	if !ok {
+		slog.Error("Invalid format: _ten section missing", logTag)
+		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
+		return
+	}
+
+	predefinedGraphs, ok := tenSection["predefined_graphs"].([]interface{})
+	if !ok {
+		slog.Error("Invalid format: predefined_graphs missing or not an array", logTag)
+		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
+		return
+	}
+
+	// Filter the graph with the matching name
+	var graphs []map[string]interface{}
+	for _, graph := range predefinedGraphs {
+		graphMap, ok := graph.(map[string]interface{})
+		if ok {
+			graphs = append(graphs, map[string]interface{}{
+				"name":       graphMap["name"],
+				"auto_start": graphMap["auto_start"],
+			})
+		}
+	}
+
+	s.output(c, codeSuccess, graphs)
+}
+
 func (s *HttpServer) handleAddonDefaultProperties(c *gin.Context) {
 	// Get the base directory path
 	baseDir := "./agents/ten_packages/extension"
@@ -623,6 +670,7 @@ func (s *HttpServer) Start() {
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/ping", s.handlerPing)
+	r.GET("/graphs", s.handleGraphs)
 	r.GET("/dev-tmp/addons/default-properties", s.handleAddonDefaultProperties)
 	r.POST("/token/generate", s.handlerGenerateToken)
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
