@@ -60,6 +60,7 @@ jobs:
           workdir: playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
+          buildargs: EDIT_GRAPH_MODE
       - name: Build & Publish Docker Image for demo
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
