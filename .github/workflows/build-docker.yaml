@@ -25,6 +25,7 @@ on:
 env:
   SERVER_IMAGE_NAME: ten_agent_server
   PLAYGROUND_IMAGE_NAME: ten_agent_playground
+  NON_EDIT_PLAYGROUND_IMAGE_NAME: ten_agent_non_edit_playground
   DEMO_IMAGE_NAME: ten_agent_demo
 
 jobs:
@@ -50,6 +51,8 @@ jobs:
           no_push: ${{ github.event_name == 'pull_request' }}
       - name: Build & Publish Docker Image for Playground
         uses: elgohr/Publish-Docker-Github-Action@v5
+        env:
+          EDIT_GRAPH_MODE: true
         with:
           name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
           username: ${{ github.actor }}
@@ -58,6 +61,20 @@ jobs:
           workdir: playground
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
+          buildargs: EDIT_GRAPH_MODE
+      - name: Build & Publish Docker Image for Non-Editable Playground
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        env:
+          EDIT_GRAPH_MODE: false
+        with:
+          name: ${{ github.repository_owner }}/${{ env.NON_EDIT_PLAYGROUND_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          workdir: playground
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+          buildargs: EDIT_GRAPH_MODE
       - name: Build & Publish Docker Image for demo
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
