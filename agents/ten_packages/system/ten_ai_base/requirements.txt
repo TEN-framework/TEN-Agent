@@ -1,2 +1,0 @@
-pydantic>=2
-typing-extensions

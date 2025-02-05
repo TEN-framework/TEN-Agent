@@ -9,7 +9,7 @@ agoradns.dat
 agorartmdns.dat
 agora_rtm_cache.db
 agorareport.dat
-bin/
+server/bin/
 /BUILD.gn
 .cache/
 /compile_commands.json

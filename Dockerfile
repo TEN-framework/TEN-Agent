@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.3.4 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.4.10 AS builder
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 # Add a new argument for USE_AGENT (defaulting to 'agents/examples/default')
