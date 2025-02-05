@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # 1. Install dependencies only when needed
 FROM base AS deps
@@ -12,7 +12,7 @@ COPY package.json .yarnrc* yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN \
     if [ -f yarn.lock ]; then corepack enable yarn && yarn --immutable; \
     elif [ -f package-lock.json ]; then npm ci; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i; \
+    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm i; \
     else echo "Lockfile not found." && exit 1; \
     fi
 
@@ -30,10 +30,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN \
     if [ -f yarn.lock ]; then corepack enable yarn && yarn run build; \
     elif [ -f package-lock.json ]; then npm run build; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
+    elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm run build; \
     else echo "Lockfile not found." && exit 1; \
     fi
-
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner
