@@ -31,51 +31,18 @@ TOOL_CALLBACK = "callback"
 
 CURRENT_TOOL_NAME = "get_current_weather"
 CURRENT_TOOL_DESCRIPTION = "Determine current weather in user's location."
-CURRENT_TOOL_PARAMETERS = {
-    "type": "object",
-    "properties": {
-        "location": {
-            "type": "string",
-            "description": "The city and state (use only English) e.g. San Francisco, CA",
-        }
-    },
-    "required": ["location"],
-}
+
 
 # for free key, only 7 days before, see more in https://www.weatherapi.com/pricing.aspx
 HISTORY_TOOL_NAME = "get_past_weather"
 HISTORY_TOOL_DESCRIPTION = "Determine weather within past 7 days in user's location."
-HISTORY_TOOL_PARAMETERS = {
-    "type": "object",
-    "properties": {
-        "location": {
-            "type": "string",
-            "description": "The city and state (use only English) e.g. San Francisco, CA",
-        },
-        "datetime": {
-            "type": "string",
-            "description": "The datetime user is referring in date format e.g. 2024-10-09",
-        },
-    },
-    "required": ["location", "datetime"],
-}
 
 # for free key, only 3 days after, see more in https://www.weatherapi.com/pricing.aspx
 FORECAST_TOOL_NAME = "get_future_weather"
 FORECAST_TOOL_DESCRIPTION = "Determine weather in next 3 days in user's location."
-FORECAST_TOOL_PARAMETERS = {
-    "type": "object",
-    "properties": {
-        "location": {
-            "type": "string",
-            "description": "The city and state (use only English) e.g. San Francisco, CA",
-        }
-    },
-    "required": ["location"],
-}
+
 
 PROPERTY_API_KEY = "api_key"  # Required
-
 
 @dataclass
 class WeatherToolConfig(BaseConfig):

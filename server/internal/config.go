@@ -14,6 +14,8 @@ const (
 	extensionNameAgoraRTC   = "agora_rtc"
 	extensionNameAgoraRTM   = "agora_rtm"
 	extensionNameTSDBFirestore   = "tsdb_firestore"
+	extensionNameLanguageTutor   = "language_tutor_tool_python"
+	
 	extensionNameHttpServer = "http_server"
 
 	// Property json
@@ -35,6 +37,8 @@ var (
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
 			{ExtensionName: extensionNameAgoraRTM, Property: "channel"},
 			{ExtensionName: extensionNameTSDBFirestore, Property: "channel_name"},
+			{ExtensionName: extensionNameLanguageTutor, Property: "channel_name"},
+			
 		},
 		"RemoteStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "remote_stream_id"},

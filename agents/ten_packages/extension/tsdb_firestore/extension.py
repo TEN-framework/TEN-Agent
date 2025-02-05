@@ -275,7 +275,6 @@ class TSDBFirestoreExtension(Extension):
             ten_env.log_info(
                 f"OnData GetProperty {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
             )
-            return
 
         stream_id = 0
         try:

@@ -246,9 +246,7 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                     session = cast(AsyncSession, session)
                     self.session = session
                     self.connected = True
-
                     await self._greeting()
-
                     while True:
                         try:
                             async for response in session.receive():
@@ -268,14 +266,16 @@ class GeminiRealtimeExtension(AsyncLLMBaseExtension):
                                                 part
                                             ) in (
                                                 response.server_content.model_turn.parts
-                                            ):
-                                                await self.send_audio_out(
-                                                    ten_env,
-                                                    part.inline_data.data,
-                                                    sample_rate=24000,
-                                                    bytes_per_sample=2,
-                                                    number_of_channels=1,
-                                                )
+                                            ):    
+                                                if part.inline_data is not None:      
+                                                    if part.inline_data.data:
+                                                        await self.send_audio_out(
+                                                            ten_env,
+                                                            part.inline_data.data,
+                                                            sample_rate=24000,
+                                                            bytes_per_sample=2,
+                                                            number_of_channels=1,
+                                                        )
                                         elif response.server_content.turn_complete:
                                             ten_env.log_info("Turn complete")
                                     elif response.setup_complete:
