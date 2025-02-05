@@ -10,6 +10,9 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json .yarnrc* yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN \
+    echo "Before: corepack version => $(corepack --version || echo 'not installed')" && \
+    npm install -g corepack@latest && \
+    echo "After : corepack version => $(corepack --version)" && \
     if [ -f yarn.lock ]; then corepack enable yarn && yarn --immutable; \
     elif [ -f package-lock.json ]; then npm ci; \
     elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i; \
