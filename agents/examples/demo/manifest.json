@@ -65,6 +65,11 @@
     },
     {
       "type": "extension",
+      "name": "home_assistant_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
       "name": "interrupt_detector_python",
       "version": "=0.1.0"
     },
