@@ -70,7 +70,6 @@ from .realtime.struct import (
     ResponseFunctionCallArgumentsDone,
     ErrorMessage,
     ItemDelete,
-    ItemTruncate,
     SessionUpdate,
     SessionUpdateParams,
     InputAudioTranscription,
