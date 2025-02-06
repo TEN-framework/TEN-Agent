@@ -38,7 +38,6 @@ class RealtimeApiConnection:
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
-        model: str = DEFAULT_VIRTUAL_MODEL,
         vendor: str = "",
         verbose: bool = False
     ):

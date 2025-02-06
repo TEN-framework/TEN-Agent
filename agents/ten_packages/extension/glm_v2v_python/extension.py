@@ -49,7 +49,6 @@ from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
     AudioFormats,
     ItemCreate,
-    ServerToClientMessage,
     SessionCreated,
     ItemCreated,
     UserMessageItemParam,
@@ -96,7 +95,6 @@ class GLMRealtimeConfig(BaseConfig):
     base_uri: str = "wss://open.bigmodel.cn"
     api_key: str = ""
     path: str = "/api/paas/v4/realtime"
-    model: str = "gpt-4o-realtime-preview"
     language: str = "en-US"
     prompt: str = ""
     temperature: float = 0.5
@@ -117,7 +115,6 @@ class GLMRealtimeConfig(BaseConfig):
     def build_ctx(self) -> dict:
         return {
             "language": self.language,
-            "model": self.model,
         }
 
 
@@ -147,10 +144,11 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.connect_times = []
         self.first_token_times = []
 
-        self.buff: bytearray = b""
         self.transcript: str = ""
         self.ctx: dict = {}
         self.input_end = time.time()
+        self.input_audio_queue = asyncio.Queue()
+        self.input_audio_buf = b""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -162,6 +160,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env = ten_env
 
         self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self._on_process_audio())
 
         self.config = await GLMRealtimeConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
@@ -197,7 +196,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                model=self.config.model,
                 vendor=self.config.vendor,
             )
             ten_env.log_info("Finish init client")
@@ -211,6 +209,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         await super().on_stop(ten_env)
         ten_env.log_info("on_stop")
 
+        self.input_audio_queue.put_nowait(None)
         self.stopped = True
 
     async def on_audio_frame(self, _: AsyncTenEnv, audio_frame: AudioFrame) -> None:
@@ -223,9 +222,8 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                 self.remote_stream_id = stream_id
 
             frame_buf = audio_frame.get_buf()
-            self._dump_audio_if_need(frame_buf, Role.User)
+            self.input_audio_queue.put_nowait(frame_buf)
 
-            await self._on_audio(frame_buf)
             if not self.config.server_vad:
                 self.input_end = time.time()
         except Exception as e:
@@ -263,6 +261,22 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
     # Not support for now
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass
+
+    async def _on_process_audio(self) -> None:
+        while True:
+            try:
+                audio_frame = await self.input_audio_queue.get()
+
+                if audio_frame is None:
+                    break
+
+                self._dump_audio_if_need(audio_frame, Role.User)
+                if self.connected:
+                    wav_buff = self.convert_to_wav_in_memory(audio_frame)
+                    await self.conn.send_audio_data(wav_buff)
+            except Exception as e:
+                traceback.print_exc()
+                self.ten_env.log_error(f"Error processing audio frame {e}")
 
     async def _loop(self):
         def get_time_ms() -> int:
@@ -395,7 +409,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             )
                             if message.response_id in flushed:
                                 self.ten_env.log_warn(
-                                    f"On flushed transcript done"
+                                    "On flushed transcript done"
                                 )
                                 continue
                             self.memory.put(
@@ -506,7 +520,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                model=self.config.model,
                 vendor=self.config.vendor,
             )
 
@@ -560,14 +573,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         # Return the WAV data as bytes
         wav_bytes = memory_stream.getvalue()
         return wav_bytes
-    
-    async def _on_audio(self, buff: bytearray):
-        self.buff += buff
-        # Buffer audio
-        if self.connected and len(self.buff) >= self.audio_len_threshold:
-            wav_buff = self.convert_to_wav_in_memory(self.buff)
-            await self.conn.send_audio_data(wav_buff)
-            self.buff = b""
 
     async def _update_session(self) -> None:
         tools = []
@@ -607,9 +612,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
-                # model=self.config.model,
                 output_audio_format=AudioFormats.PCM,
-                # tool_choice="auto" if self.available_tools else "none",
                 tools=tools,
             )
         )
@@ -791,7 +794,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             text = self._greeting_text()
             if self.config.greeting:
                 text = "Say '" + self.config.greeting + "' to me."
-            # self.ten_env.log_info(f"send greeting {text}")
+            self.ten_env.log_info(f"send greeting {text}")
             # await self.conn.send_request(
             #     ItemCreate(
             #         item=UserMessageItemParam(

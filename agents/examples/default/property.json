@@ -517,12 +517,9 @@
             "property": {
               "api_key": "${env:GLM_API_KEY}",
               "base_uri": "wss://open.bigmodel.cn",
-              "dump": true,
               "enable_storage": false,
-              "history": 10,
+              "history": "10",
               "language": "en-US",
-              "max_tokens": 2048,
-              "model": "gpt-4o-realtime-preview",
               "server_vad": true,
               "temperature": 0.9,
               "voice": "alloy"
@@ -534,6 +531,15 @@
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY|}"
+            }
           }
         ],
         "connections": [
@@ -586,6 +592,14 @@
                     "extension": "agora_rtc"
                   }
                 ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "weatherapi_tool_python"
+                  }
+                ]
               }
             ],
             "data": [
@@ -617,6 +631,19 @@
                 "dest": [
                   {
                     "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "v2v"
                   }
                 ]
               }
