@@ -99,7 +99,6 @@ class GLMRealtimeConfig(BaseConfig):
     prompt: str = ""
     temperature: float = 0.5
     max_tokens: int = 1024
-    voice: str = "alloy"
     server_vad: bool = True
     audio_out: bool = True
     input_transcript: bool = True
@@ -460,13 +459,13 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             )
                             # Tuncate the on-going audio stream
                             end_ms = get_time_ms() - relative_start_ms
-                            if item_id:
-                                truncate = ItemTruncate(
-                                    item_id=item_id,
-                                    content_index=content_index,
-                                    audio_end_ms=end_ms,
-                                )
-                                await self.conn.send_request(truncate)
+                            # if item_id:
+                            #     truncate = ItemTruncate(
+                            #         item_id=item_id,
+                            #         content_index=content_index,
+                            #         audio_end_ms=end_ms,
+                            #     )
+                            #     await self.conn.send_request(truncate)
                             if self.config.server_vad:
                                 await self._flush()
                             if response_id and self.transcript:
@@ -617,7 +616,8 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             )
         )
         if self.config.audio_out:
-            su.session.voice = self.config.voice
+            # su.session.voice = self.config.voice
+            pass
         else:
             su.session.modalities = ["text"]
 

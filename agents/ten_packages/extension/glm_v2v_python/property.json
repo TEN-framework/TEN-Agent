@@ -2,11 +2,11 @@
     "api_key": "${env:GLM_API_KEY}",
     "temperature": 0.9,
     "max_tokens": 2048,
-    "voice": "alloy",
     "language": "en-US",
     "server_vad": true,
-    "dump": true,
+    "dump": false,
     "max_history": 10,
     "enable_storage": false,
+    "prompt": "",
     "base_uri": "wss://open.bigmodel.cn"
 }

@@ -47,9 +47,6 @@
       "max_tokens": {
         "type": "int32"
       },
-      "voice": {
-        "type": "string"
-      },
       "server_vad": {
         "type": "bool"
       },

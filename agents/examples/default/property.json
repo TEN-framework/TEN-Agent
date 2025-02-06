@@ -506,20 +506,22 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "subscribe_audio_sample_rate": 16000
             }
           },
           {
             "type": "extension",
             "name": "v2v",
-            "addon": "glm_v2v_python",
+            "addon": "openai_v2v_python",
             "extension_group": "llm",
             "property": {
-              "api_key": "${env:GLM_API_KEY}",
-              "base_uri": "wss://open.bigmodel.cn",
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "dump": true,
               "enable_storage": false,
-              "history": "10",
+              "history": 10,
               "language": "en-US",
+              "max_tokens": 2048,
+              "model": "gpt-4o-realtime-preview",
               "server_vad": true,
               "temperature": 0.9,
               "voice": "alloy"
@@ -574,6 +576,16 @@
             "audio_frame": [
               {
                 "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
                 "dest": [
                   {
                     "extension": "v2v"

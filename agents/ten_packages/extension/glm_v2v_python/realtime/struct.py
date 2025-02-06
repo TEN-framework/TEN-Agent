@@ -9,18 +9,6 @@ import uuid
 def generate_event_id() -> str:
     return str(uuid.uuid4())
 
-# Enums
-class Voices(str, Enum):
-    Alloy = "alloy"
-    Echo = "echo"
-    Fable = "fable"
-    Nova = "nova"
-    Nova_2 = "nova_2"
-    Nova_3 = "nova_3"
-    Nova_4 = "nova_4"
-    Nova_5 = "nova_5"
-    Onyx = "onyx"
-    Shimmer = "shimmer"
 
 class AudioFormats(str, Enum):
     PCM = "pcm"
@@ -88,7 +76,6 @@ class Session:
     object: str = "realtime.session"  # Fixed value indicating the object type
     modalities: Set[str] = field(default_factory=lambda: {"text", "audio"})  # Set of allowed modalities (e.g., "text", "audio")
     instructions: Optional[str] = None  # Instructions or guidance for the session
-    voice: Voices = Voices.Alloy  # Voice configuration for audio responses, defaulting to "Alloy"
     turn_detection: Optional[ServerVADUpdateParams] = None  # Voice activity detection (VAD) settings
     input_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for input (e.g., "pcm16")
     output_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for output (e.g., "pcm16")
@@ -567,7 +554,7 @@ class ResponseCreateParams:
     input_items: Optional[List[ItemParam]] = None  # Initial messages to use for generation
     modalities: Optional[Set[str]] = None  # Allowed modalities (e.g., "text", "audio")
     instructions: Optional[str] = None  # Instructions or guidance for the model
-    voice: Optional[Voices] = None  # Voice setting for audio output
+    # voice: Optional[Voices] = None  # Voice setting for audio output
     output_audio_format: Optional[AudioFormats] = None  # Format for the audio output
     tools: Optional[List[Dict[str, Any]]] = None  # Tools available for this response
     tool_choice: Optional[ToolChoice] = None  # How to choose the tool ("auto", "required", etc.)
@@ -592,7 +579,7 @@ class UpdateConversationConfig(ClientToServerMessage):
     type: str = EventType.UPDATE_CONVERSATION_CONFIG
     label: str = DEFAULT_CONVERSATION
     subscribe_to_user_audio: Optional[bool] = None
-    voice: Optional[Voices] = None
+    # voice: Optional[Voices] = None
     system_message: Optional[str] = None
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
