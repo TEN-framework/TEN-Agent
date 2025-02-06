@@ -1,10 +1,15 @@
 {
-    "region": "us-east-1",
-    "access_key": "${env:AWS_ACCESS_KEY_ID}",
-    "secret_key": "${env:AWS_SECRET_ACCESS_KEY}",
-    "model": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    "region": "us-west-2",
+    "access_key_id": "${env:AWS_ACCESS_KEY_ID}",
+    "secret_access_key": "${env:AWS_SECRET_ACCESS_KEY}",
+    "model": "amazon.nova-pro-v1:0",
+    "temperature": 0.7,
     "max_tokens": 512,
-    "prompt": "",
-    "greeting": "TEN Agent connected. How can I help you today?",
-    "max_memory_length": 10
+    "topP": 0.5,
+    "topK": 20,
+    "prompt": "Now you are an intelligent assistant with real-time interaction capabilities. I will provide you with a series of real-time video image information. Please understand these images as video frames. Based on the images and the user's input, engage in a conversation with the user, remembering the dialogue content in a concise and clear manner.",
+    "greeting": "TEN Agent connected. I am nova, How can I help you today?",
+    "max_memory_length": 10,
+    "is_memory_enabled": false,
+    "is_enable_video": false
 }

@@ -8,7 +8,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
-  COLOR_LIST
+  COLOR_LIST,
+  isEditModeOn
 } from "@/common/constant";
 import {
   apiReloadPackage,
@@ -172,27 +173,47 @@ export const globalSlice = createSlice({
 });
 
 // Initialize graph data
-export const initializeGraphData = createAsyncThunk(
-  "global/initializeGraphData",
-  async (_, { dispatch }) => {
-    await apiReloadPackage();
-    const [fetchedGraphs, modules] = await Promise.all([
-      apiFetchGraphs(),
-      apiFetchInstalledAddons(),
-    ]);
-    dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
-    dispatch(setAddonModules(modules));
-  }
-);
-
+let initializeGraphData:any;
 // Fetch graph details
-export const fetchGraphDetails = createAsyncThunk(
-  "global/fetchGraphDetails",
-  async (graphId: string, { dispatch }) => {
-    const graph = await apiFetchGraphDetails(graphId);
-    dispatch(setGraph(graph));
-  }
-);
+let fetchGraphDetails:any;
+
+if (isEditModeOn) {
+  // only for development, below requests depend on dev-server
+  initializeGraphData = createAsyncThunk(
+    "global/initializeGraphData",
+    async (_, { dispatch }) => {
+      await apiReloadPackage();
+      const [fetchedGraphs, modules] = await Promise.all([
+        apiFetchGraphs(),
+        apiFetchInstalledAddons(),
+      ]);
+      dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+      dispatch(setAddonModules(modules));
+    }
+  );
+  fetchGraphDetails = createAsyncThunk(
+    "global/fetchGraphDetails",
+    async (graphId: string, { dispatch }) => {
+      const graph = await apiFetchGraphDetails(graphId);
+      dispatch(setGraph(graph));
+    }
+  );
+} else {
+  initializeGraphData = createAsyncThunk(
+    "global/initializeGraphData",
+    async (_, { dispatch }) => {
+      const fetchedGraphs = await apiFetchGraphs();
+      dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+    }
+  );
+  fetchGraphDetails = createAsyncThunk(
+    "global/fetchGraphDetails",
+    async (graphId: string, { dispatch }) => {
+      // Do nothing in production
+      return
+    }
+  );
+}
 
 // Update a graph
 export const updateGraph = createAsyncThunk(
@@ -231,5 +252,9 @@ export const {
   setGraph,
   setAddonModules,
 } = globalSlice.actions;
+
+export {
+  initializeGraphData, fetchGraphDetails
+}
 
 export default globalSlice.reducer;

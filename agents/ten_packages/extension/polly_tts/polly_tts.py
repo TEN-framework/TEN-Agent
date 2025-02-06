@@ -14,7 +14,7 @@ class PollyTTSConfig(BaseConfig):
     region: str = "us-east-1"
     access_key: str = ""
     secret_key: str = ""
-    engine: str = "generative"
+    engine: str = "neural"
     voice: str = (
         "Matthew"  # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
     )
@@ -50,6 +50,7 @@ class PollyTTS:
             * self.config.bytes_per_sample
             / 100
         )
+        self.audio_stream = None
 
     def _synthesize(self, text, ten_env: AsyncTenEnv):
         """
@@ -88,7 +89,7 @@ class PollyTTS:
             return audio_stream, visemes
 
     async def text_to_speech_stream(
-        self, ten_env: AsyncTenEnv, text: str
+        self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool
     ) -> AsyncIterator[bytes]:
         inputText = text
         if len(inputText) == 0:
@@ -98,5 +99,19 @@ class PollyTTS:
             with closing(audio_stream) as stream:
                 for chunk in stream.iter_chunks(chunk_size=self.frame_size):
                     yield chunk
+                if end_of_segment:
+                    ten_env.log_debug("End of segment reached")
         except Exception:
             ten_env.log_error(traceback.format_exc())
+
+    def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
+        """
+        Cancel ongoing TTS operation
+        """
+        try:
+            if hasattr(self, 'audio_stream') and self.audio_stream:
+                self.audio_stream.close()
+                self.audio_stream = None
+                ten_env.log_debug("TTS cancelled successfully")
+        except Exception:
+            ten_env.log_error(f"Failed to cancel TTS: {traceback.format_exc()}")
