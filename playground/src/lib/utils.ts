@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function useIsMobileScreen(breakpoint?: string) {
-  /*
   const [isMobileScreen, setIsMobileScreen] = React.useState(false);
 
   React.useEffect(() => {
@@ -20,6 +19,4 @@ export function useIsMobileScreen(breakpoint?: string) {
   }, [breakpoint]);
 
   return isMobileScreen;
-  */
- return false;
 }

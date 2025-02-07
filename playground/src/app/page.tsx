@@ -9,7 +9,7 @@ import Action from "@/components/Layout/Action";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import React from "react";
-import { IRtcUser, rtcManager } from "@/manager";
+import { IRtcUser } from "@/manager";
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
@@ -17,6 +17,7 @@ const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
 const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
   ssr: false,
 });
+
 
 export default function Home() {
   const mobileActiveTab = useAppSelector(
@@ -28,13 +29,22 @@ export default function Home() {
   const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
  
-  React.useEffect(() => {
-    rtcManager.on("remoteUserChanged", onRemoteUserChanged) 
 
-   }, [])
+ React.useEffect(() => {
+  // Only runs on the client
+  const { rtcManager } = require("../manager/rtc/rtc"); 
+  rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+
+  return () => {
+    rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+  };
+}, []);
+
+  //React.useEffect(() => {
+  //  rtcManager.on("remoteUserChanged", onRemoteUserChanged) 
+  // }, [])
  
   const onRemoteUserChanged = (user: IRtcUser) => {
-    console.log("[rtc] onRemoteUserChanged", user)
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
     }
