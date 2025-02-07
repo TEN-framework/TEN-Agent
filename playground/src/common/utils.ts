@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 
 export const genRandomString = (length: number = 10) => {
@@ -61,6 +63,7 @@ export const isMobile = () => {
 }
 
 export function useIsCompactLayout(): boolean {
+  /*
   const [isCompactLayout, setIsCompactLayout] = useState(false);
 
   useEffect(() => {
@@ -90,6 +93,8 @@ export function useIsCompactLayout(): boolean {
   }, []);
 
   return isCompactLayout;
+  */
+ return true;
 }
 
 export const deepMerge = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {

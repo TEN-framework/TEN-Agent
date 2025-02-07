@@ -17,9 +17,9 @@ import {
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { RemoteGraphSelect } from "../Chat/ChatCfgGraphSelect";
-import { RemoteModuleCfgSheet } from "../Chat/ChatCfgModuleSelect";
-import { RemotePropertyCfgSheet } from "../Chat/ChatCfgPropertySelect";
+import { RemotePropertyCfgSheet} from "@/components/Chat/ChatCfgPropertySelect";
+import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
+import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
 let intervalId: NodeJS.Timeout | null = null;
 

@@ -18,8 +18,8 @@ export default function Avatar({ audioTrack }: AvatarProps) {
 
   // Resolve the final avatar ID from URL param or environment variable
   const finalAvatarId = useMemo(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const avatarIdFromURL = urlParams.get("avatarId")
+    //const urlParams = new URLSearchParams(window.location.search)
+    const avatarIdFromURL = null; //urlParams.get("avatarId")
     return avatarIdFromURL || process.env.NEXT_PUBLIC_trulienceAvatarId || ""
   }, [])
 
