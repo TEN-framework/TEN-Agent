@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export const genRandomString = (length: number = 10) => {
   let result = '';
   const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -56,6 +58,38 @@ export const genUUID = () => {
 
 export const isMobile = () => {
   return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
+}
+
+export function useIsCompactLayout(): boolean {
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+
+  useEffect(() => {
+    // Guard clause for SSR or environments without window
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // Create a media query for max-width: 768px
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    // Set initial value based on the current match state
+    setIsCompactLayout(mediaQuery.matches);
+
+    // Handler to update state whenever the media query match status changes
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsCompactLayout(event.matches);
+    };
+
+    // Attach the listener using the modern API
+    mediaQuery.addEventListener('change', handleChange);
+
+    // Cleanup
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  return isCompactLayout;
 }
 
 export const deepMerge = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {

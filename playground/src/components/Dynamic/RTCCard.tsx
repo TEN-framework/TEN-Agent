@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType } from "@/common"
+import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType, useIsCompactLayout } from "@/common"
 import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
@@ -17,6 +17,8 @@ import AgentView from "@/components/Agent/View"
 import Avatar from "@/components/Agent/AvatarTrulience"
 import MicrophoneBlock from "@/components/Agent/Microphone"
 import VideoBlock from "@/components/Agent/Camera"
+import dynamic from "next/dynamic"
+import ChatCard from "@/components/Chat/ChatCard"
 
 let hasInit: boolean = false
 
@@ -34,6 +36,13 @@ export default function RTCCard(props: { className?: string }) {
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
   const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
+  const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
+
+  const isCompactLayout = useIsCompactLayout();
+
+  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
+    ssr: false,
+  });
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -120,36 +129,35 @@ export default function RTCCard(props: { className?: string }) {
     setVideoSourceType(value)
   }
 
-
   return (
-    <>
-      <div className={cn("flex-shrink-0", "overflow-y-auto", className)}>
-        <div className="flex h-full w-full flex-col">
-          {/* -- Agent */}
-          <div className="w-full">
-            <div className="flex w-full items-center justify-between p-2">
-              <h2 className="mb-0 text-l font-semibold">Audio & Video</h2>
-            </div>
-            {/* Conditionally render either Avatar or AgentView */}
-            {useTrulienceAvatar ? (
+    <div className={cn("flex h-full flex-col min-h-0", className)}>
+      {/* Scrollable top region (Avatar or ChatCard) */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {useTrulienceAvatar ? (
+          (isCompactLayout || !avatarInLargeWindow) ? (
+            <div className="h-60 w-full p-1">
               <Avatar audioTrack={remoteuser?.audioTrack} />
-            ) : (
-              <AgentView audioTrack={remoteuser?.audioTrack} />
-            )}
-          </div>
-
-          {/* -- You */}
-          <div className="w-full space-y-2 px-2">
-            <MicrophoneBlock audioTrack={audioTrack} />
-            <VideoBlock
-              cameraTrack={videoTrack}
-              screenTrack={screenTrack}
-              videoSourceType={videoSourceType}
-              onVideoSourceChange={onVideoSourceTypeChange}
+            </div>
+          ) : (
+            <ChatCard
+              className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
             />
-          </div>
-        </div>
+          )
+        ) : (
+          <AgentView audioTrack={remoteuser?.audioTrack} />
+        )}
       </div>
-    </>
-  )
+
+      {/* Bottom region for microphone and video blocks */}
+      <div className="w-full space-y-2 px-2 py-2">
+        <MicrophoneBlock audioTrack={audioTrack} />
+        <VideoBlock
+          cameraTrack={videoTrack}
+          screenTrack={screenTrack}
+          videoSourceType={videoSourceType}
+          onVideoSourceChange={onVideoSourceTypeChange}
+        />
+      </div>
+    </div>
+  );
 }

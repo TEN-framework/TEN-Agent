@@ -10,6 +10,8 @@ import { useAppDispatch, useAppSelector } from "@/common/hooks"
 import {
   setSelectedGraphId,
 } from "@/store/reducers/global"
+import { useIsCompactLayout } from "@/common"
+import { cn } from "@/lib/utils"
 
 
 export function RemoteGraphSelect() {
@@ -17,7 +19,8 @@ export function RemoteGraphSelect() {
     const graphName = useAppSelector((state) => state.global.selectedGraphId)
     const graphs = useAppSelector((state) => state.global.graphList)
     const agentConnected = useAppSelector((state) => state.global.agentConnected)
-  
+    const isCompactLayout = useIsCompactLayout();
+    
     const onGraphNameChange = (val: string) => {
       dispatch(setSelectedGraphId(val))
     }
@@ -34,8 +37,13 @@ export function RemoteGraphSelect() {
           onValueChange={onGraphNameChange}
           disabled={agentConnected}
         >
-          <SelectTrigger className="w-auto max-w-full">
-            <SelectValue placeholder="Select Graph" />
+          <SelectTrigger
+            className={cn(
+              "w-auto", // or "w-auto max-w-full" if you want to keep the existing defaults
+              isCompactLayout ? "max-w-[80px]" : "max-w-full"
+            )}
+          >
+            <SelectValue placeholder={isCompactLayout ? "Graph" : "Select Graph"} />
           </SelectTrigger>
           <SelectContent>
             {graphOptions.map((item) => (

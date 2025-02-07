@@ -77,7 +77,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   }, [audioTrack, agentConnected])
 
   return (
-    <div className="relative my-3 h-60 w-full">
+    <div className="overflow-hidden rounded-lg h-full w-full">
       {/* Render the TrulienceAvatar */}
       {trulienceAvatarInstance}
 

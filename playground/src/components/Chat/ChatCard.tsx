@@ -109,31 +109,19 @@ export default function ChatCard(props: { className?: string }) {
   return (
     <>
       {/* Chat Card */}
-      <div className={cn("flex-grow", className)}>
+      <div className={cn("h-full overflow-hidden min-h-0", className)}>
         <div className="flex h-full w-full flex-col p-4">
-          {/* Action Bar */}
-          <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
-            <RemoteGraphSelect />
-            {
-              isEditModeOn ? (
-                <>
-                  <RemoteModuleCfgSheet />
-                  <RemotePropertyCfgSheet />
-                </>
-              ) : null
-            }
+          {/* Scrollable messages container */}
+          <div className="flex-1 overflow-y-auto" ref={chatRef}>
+            <MessageList />
           </div>
-          {/* Chat messages would go here */}
-          <MessageList />
+          {/* Input area */}
           <div
             className={cn("border-t pt-4", {
               ["hidden"]: !graphName.includes("rtm"), // TODO: TMP use rtm key word
             })}
           >
-            <form
-              onSubmit={handleInputSubmit}
-              className="flex items-center space-x-2"
-            >
+            <form onSubmit={handleInputSubmit} className="flex items-center space-x-2">
               <input
                 type="text"
                 disabled={disableInputMemo}
@@ -149,11 +137,11 @@ export default function ChatCard(props: { className?: string }) {
               />
               <Button
                 type="submit"
-                disabled={disableInputMemo || inputValue.length == 0}
+                disabled={disableInputMemo || inputValue.length === 0}
                 size="icon"
                 variant="outline"
                 className={cn("bg-transparent", {
-                  ["opacity-50"]: disableInputMemo || inputValue.length == 0,
+                  ["opacity-50"]: disableInputMemo || inputValue.length === 0,
                   ["cursor-not-allowed"]: disableInputMemo,
                 })}
               >
@@ -166,4 +154,5 @@ export default function ChatCard(props: { className?: string }) {
       </div>
     </>
   );
+  
 }

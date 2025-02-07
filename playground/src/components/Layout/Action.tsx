@@ -12,10 +12,14 @@ import {
   apiStopService,
   MOBILE_ACTIVE_TAB_MAP,
   EMobileActiveTab,
+  isEditModeOn,
 } from "@/common";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { RemoteGraphSelect } from "../Chat/ChatCfgGraphSelect";
+import { RemoteModuleCfgSheet } from "../Chat/ChatCfgModuleSelect";
+import { RemotePropertyCfgSheet } from "../Chat/ChatCfgPropertySelect";
 
 let intervalId: NodeJS.Timeout | null = null;
 
@@ -115,9 +119,10 @@ export default function Action(props: { className?: string }) {
         {/* -- Description Part */}
         <div className="hidden md:block">
           <span className="text-sm font-bold">Description</span>
-          <span className="ml-2 text-xs text-muted-foreground">
-            A Realtime Conversational AI Agent powered by TEN
-          </span>
+          <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">
+  A Realtime Conversational AI Agent powered by TEN
+</span>
+
         </div>
 
         <Tabs
@@ -134,13 +139,24 @@ export default function Action(props: { className?: string }) {
           </TabsList>
         </Tabs>
 
+          <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
+            <RemoteGraphSelect />
+            {
+              isEditModeOn ? (
+                <>
+                  <RemoteModuleCfgSheet />
+                  <RemotePropertyCfgSheet />
+                </>
+              ) : null
+            }
+          </div>
         {/* -- Action Button */}
         <div className="ml-auto flex items-center gap-2">
           <LoadingButton
             onClick={onClickConnect}
             variant={!agentConnected ? "default" : "destructive"}
             size="sm"
-            disabled={graphName === ""}
+            disabled={graphName === "" && !agentConnected }
             className="w-fit min-w-24"
             loading={loading}
             svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
