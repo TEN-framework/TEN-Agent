@@ -43,7 +43,7 @@ export function RemoteGraphSelect() {
               isCompactLayout ? "max-w-[80px]" : "max-w-full"
             )}
           >
-            <SelectValue placeholder={isCompactLayout ? "Graph" : "Select Graph"} />
+          <SelectValue placeholder={isCompactLayout ? "Graph" : "Select Graph"} />
           </SelectTrigger>
           <SelectContent>
             {graphOptions.map((item) => (
