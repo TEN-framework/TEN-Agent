@@ -11,7 +11,7 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.11.4"
+      "version": "=0.12.0"
     },
     {
       "type": "extension",
