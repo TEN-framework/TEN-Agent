@@ -17,7 +17,6 @@ from ten_ai_base.helper import (
     get_property_bool,
     get_property_string,
 )
-from ten_ai_base import AsyncLLMBaseExtension
 from ten_ai_base.types import (
     LLMCallCompletionArgs,
     LLMChatCompletionContentPartParam,
@@ -27,6 +26,7 @@ from ten_ai_base.types import (
     LLMToolMetadata,
     LLMToolResult,
 )
+from ten_ai_base.llm import AsyncLLMBaseExtension
 
 from .helper import parse_sentences
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig

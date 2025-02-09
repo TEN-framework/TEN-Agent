@@ -26,7 +26,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.2"
+      "version": "0.4.1"
     },
     {
       "type": "extension",
