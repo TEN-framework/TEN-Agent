@@ -25,7 +25,6 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
-from ten_ai_base import AsyncLLMBaseExtension
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.chat_memory import (
@@ -43,6 +42,7 @@ from ten_ai_base.types import (
     LLMToolResult,
     LLMChatCompletionContentPartParam,
 )
+from ten_ai_base.llm import AsyncLLMBaseExtension
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
     ItemCreate,
