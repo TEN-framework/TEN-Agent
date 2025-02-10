@@ -27,7 +27,6 @@ from ten import (
 )
 from ten.audio_frame import AudioFrameDataFmt
 from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
-from ten_ai_base import AsyncLLMBaseExtension
 from dataclasses import dataclass
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.chat_memory import (
@@ -45,6 +44,7 @@ from ten_ai_base.types import (
     LLMToolResult,
     LLMChatCompletionContentPartParam,
 )
+from ten_ai_base.llm import AsyncLLMBaseExtension
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
     AudioFormats,
@@ -94,7 +94,6 @@ class GLMRealtimeConfig(BaseConfig):
     base_uri: str = "wss://open.bigmodel.cn"
     api_key: str = ""
     path: str = "/api/paas/v4/realtime"
-    language: str = "en-US"
     prompt: str = ""
     temperature: float = 0.5
     max_tokens: int = 1024
@@ -103,16 +102,13 @@ class GLMRealtimeConfig(BaseConfig):
     input_transcript: bool = True
     sample_rate: int = 24000
 
-    vendor: str = ""
     stream_id: int = 0
     dump: bool = False
-    greeting: str = ""
     max_history: int = 20
     enable_storage: bool = False
 
     def build_ctx(self) -> dict:
         return {
-            "language": self.language,
         }
 
 
@@ -187,14 +183,12 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
 
             self.ctx = self.config.build_ctx()
-            self.ctx["greeting"] = self.config.greeting
 
             self.conn = RealtimeApiConnection(
                 ten_env=ten_env,
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                vendor=self.config.vendor,
             )
             ten_env.log_info("Finish init client")
 

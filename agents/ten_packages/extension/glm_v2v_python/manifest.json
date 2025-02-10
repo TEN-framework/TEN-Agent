@@ -32,12 +32,6 @@
       "path": {
         "type": "string"
       },
-      "model": {
-        "type": "string"
-      },
-      "language": {
-        "type": "string"
-      },
       "prompt": {
         "type": "string"
       },
@@ -58,9 +52,6 @@
       },
       "sample_rate": {
         "type": "int32"
-      },
-      "vendor": {
-        "type": "string"
       },
       "stream_id": {
         "type": "int32"

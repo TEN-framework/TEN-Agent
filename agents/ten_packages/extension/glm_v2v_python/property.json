@@ -2,7 +2,6 @@
     "api_key": "${env:GLM_API_KEY}",
     "temperature": 0.9,
     "max_tokens": 2048,
-    "language": "en-US",
     "server_vad": true,
     "dump": false,
     "max_history": 10,

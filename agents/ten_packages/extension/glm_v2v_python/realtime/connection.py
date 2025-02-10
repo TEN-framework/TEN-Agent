@@ -34,11 +34,9 @@ class RealtimeApiConnection:
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
-        vendor: str = "",
         verbose: bool = False
     ):
         self.ten_env = ten_env
-        self.vendor = vendor
         self.url = f"{base_uri}{path}"
         # if not self.vendor and "model=" not in self.url:
         #     self.url += f"?model={model}"
