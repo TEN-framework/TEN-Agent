@@ -9,10 +9,6 @@ from ten import AsyncTenEnv
 from typing import Any, AsyncGenerator
 from .struct import InputAudioBufferAppend, ClientToServerMessage, ServerToClientMessage, parse_server_message, to_json
 
-DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
-
-VENDOR_AZURE = "azure"
-
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
     try:
