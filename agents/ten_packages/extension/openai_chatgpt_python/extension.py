@@ -9,9 +9,10 @@ import asyncio
 import json
 import traceback
 from typing import Iterable
+import uuid
 
 from ten.async_ten_env import AsyncTenEnv
-from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL
+from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, CONTENT_DATA_OUT_NAME, DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT
 from ten_ai_base.helper import (
     AsyncEventEmitter,
     get_property_bool,
@@ -216,6 +217,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             # Create a future to track the single tool call task
             self.tool_task_future = None
 
+            message_id = str(uuid.uuid4())[:8]
+
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
                 self.tool_task_future = asyncio.get_event_loop().create_future()
@@ -295,6 +298,13 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 for s in sentences:
                     self.send_text_output(async_ten_env, s, False)
 
+            async def handle_reasoning_update(think: str):
+                self.send_reasoning_text_output(async_ten_env, msg_id=message_id ,sentence=think, end_of_segment=False)
+
+
+            async def handle_reasoning_update_finish(think: str):
+                self.send_reasoning_text_output(async_ten_env, msg_id=message_id ,sentence=think, end_of_segment=True)
+
             async def handle_content_finished(_: str):
                 # Wait for the single tool task to complete (if any)
                 if self.tool_task_future:
@@ -304,6 +314,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             listener = AsyncEventEmitter()
             listener.on("tool_call", handle_tool_call)
             listener.on("content_update", handle_content_update)
+            listener.on("reasoning_update", handle_reasoning_update)
+            listener.on("reasoning_update_finish", handle_reasoning_update_finish)
             listener.on("content_finished", handle_content_finished)
 
             # Make an async API call to get chat completions
@@ -382,3 +394,26 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             if removed_item.get("tool_calls") and self.memory[0].get("role") == "tool":
                 self.memory.pop(0)
         self.memory.append(message)
+
+    def send_reasoning_text_output(
+        self, async_ten_env: AsyncTenEnv, msg_id:str, sentence: str, end_of_segment: bool
+    ):
+        try:
+            output_data = Data.create(CONTENT_DATA_OUT_NAME)
+            output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, json.dumps({
+                "id":msg_id,
+                "data": {
+                    "text": sentence
+                },
+                "type": "reasoning"
+            }))
+            output_data.set_property_bool(
+                DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
+            )
+            asyncio.create_task(async_ten_env.send_data(output_data))
+            async_ten_env.log_info(
+                f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
+            )
+        except Exception as err:
+            async_ten_env.log_warn(
+                f"send sentence [{sentence}] failed, err: {traceback.format_exc()}")
