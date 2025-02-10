@@ -26,15 +26,14 @@ from ten import (
 
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.chat_memory import ChatMemory
-from ten_ai_base import (
-    AsyncLLMBaseExtension,
-)
-
 from ten_ai_base.types import (
     LLMChatCompletionUserMessageParam,
     LLMCallCompletionArgs,
     LLMDataCompletionArgs,
     LLMToolMetadata,
+)
+from ten_ai_base.llm import (
+    AsyncLLMBaseExtension,
 )
 
 CMD_IN_FLUSH = "flush"
