@@ -27,10 +27,10 @@
     ],
     "executionEnvironments": [
         {
-            "root": "./agents",
+            "root": "/app/agents",
             "extraPaths": [
-                "./ten_packages/system/ten_runtime_python/interface",
-                "./ten_packages/system/ten_ai_base/interface"
+                "/app/agents/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/ten_packages/system/ten_ai_base/interface"
             ]
         }
     ]
