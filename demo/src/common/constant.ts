@@ -63,6 +63,10 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
+    label: "DeepSeek R1",
+    value: "deepseek_r1",
+  },
+  {
     label: "Voice Agent Gemini 2.0 Realtime",
     value: "va_gemini_v2v",
   },

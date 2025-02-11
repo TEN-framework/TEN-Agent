@@ -38,6 +38,7 @@ export enum EMessageType {
 export enum EMessageDataType {
   TEXT = "text",
   IMAGE = "image",
+  REASON = "reason",
 }
 
 export interface IChatItem {

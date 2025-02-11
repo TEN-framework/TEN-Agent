@@ -76,10 +76,8 @@ class OpenAIChatGPT:
                 f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}"
             )
         else:
-            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url,default_query={
-                "api-version": "2024-05-01-preview"
-            }, default_headers={
-                "api-key": "<api_key>"
+            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url, default_headers={
+                "api-key": config.api_key,
             })
         self.session = requests.Session()
         if config.proxy_url:
@@ -156,6 +154,7 @@ class OpenAIChatGPT:
         parser = ThinkParser()
 
         async for chat_completion in response:
+            # self.ten_env.log_info(f"Chat completion: {chat_completion}")
             if len(chat_completion.choices) == 0:
                 continue
             choice = chat_completion.choices[0]

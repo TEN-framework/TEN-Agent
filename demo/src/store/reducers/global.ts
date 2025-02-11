@@ -54,7 +54,7 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "va_gemini_v2v",
+    graphName: "deepseek_r1",
     agentSettings: DEFAULT_AGENT_SETTINGS,
     cozeSettings: DEFAULT_COZE_SETTINGS,
     difySettings: DEFAULT_DIFY_SETTINGS,
