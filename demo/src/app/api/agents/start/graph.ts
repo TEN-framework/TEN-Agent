@@ -253,6 +253,7 @@ export const getGraphProperties = (
                 "agora_asr_language": language,
             },
             "llm": {
+                "prompt": prompt,
                 "greeting": combined_greeting,
                 "model": "DeepSeek-R1",
             },
