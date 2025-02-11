@@ -226,7 +226,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "subscribe_audio_sample_rate": 16000
             }
           },
           {
@@ -679,7 +679,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000
+              "subscribe_audio_sample_rate": 16000
             }
           },
           {
@@ -868,7 +868,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000,
+              "subscribe_audio_sample_rate": 16000,
               "enable_agora_asr": false,
               "agora_asr_vendor_name": "microsoft",
               "agora_asr_language": "en-US",
@@ -1271,7 +1271,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 24000,
+              "subscribe_audio_sample_rate": 16000,
               "subscribe_video_pix_fmt": 4,
               "subscribe_video": true
             }
