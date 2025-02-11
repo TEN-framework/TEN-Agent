@@ -8,7 +8,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
 import random
-import re
 import requests
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 from openai.types.chat.chat_completion import ChatCompletion

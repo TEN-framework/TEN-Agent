@@ -12,7 +12,7 @@ from typing import Iterable
 import uuid
 
 from ten.async_ten_env import AsyncTenEnv
-from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, CONTENT_DATA_OUT_NAME, DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT
+from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, CONTENT_DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT
 from ten_ai_base.helper import (
     AsyncEventEmitter,
     get_property_bool,
@@ -414,6 +414,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             async_ten_env.log_info(
                 f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
             )
-        except Exception as err:
+        except Exception:
             async_ten_env.log_warn(
                 f"send sentence [{sentence}] failed, err: {traceback.format_exc()}")
