@@ -26,6 +26,7 @@ export enum EMessageType {
 
 export enum EMessageDataType {
   TEXT = "text",
+  REASON = "reason",
   IMAGE = "image",
 }
 
