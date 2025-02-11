@@ -7,6 +7,7 @@
 #
 import asyncio
 import json
+import time
 import traceback
 from typing import Iterable
 import uuid
@@ -58,6 +59,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.sentence_fragment = ""
         self.tool_task_future: asyncio.Future | None = None
         self.users_count = 0
+        self.last_reasoning_ts = 0
 
     async def on_init(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_init")
@@ -86,6 +88,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
         await super().on_stop(async_ten_env)
+        self.reasoning_text_queue.put_nowait(None)
 
     async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_deinit")
@@ -218,6 +221,7 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             self.tool_task_future = None
 
             message_id = str(uuid.uuid4())[:8]
+            self.last_reasoning_ts = int(time.time() * 1000)
 
             # Create an async listener to handle tool calls and content updates
             async def handle_tool_call(tool_call):
@@ -299,11 +303,15 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                     self.send_text_output(async_ten_env, s, False)
 
             async def handle_reasoning_update(think: str):
-                self.send_reasoning_text_output(async_ten_env, msg_id=message_id ,sentence=think, end_of_segment=False)
+                ts = int(time.time() * 1000)
+                if ts - self.last_reasoning_ts >= 200:
+                    self.last_reasoning_ts = ts
+                    self.send_reasoning_text_output(async_ten_env, message_id, think, False)
 
 
             async def handle_reasoning_update_finish(think: str):
-                self.send_reasoning_text_output(async_ten_env, msg_id=message_id ,sentence=think, end_of_segment=True)
+                self.last_reasoning_ts = int(time.time() * 1000)
+                self.send_reasoning_text_output(async_ten_env, message_id, think, True)
 
             async def handle_content_finished(_: str):
                 # Wait for the single tool task to complete (if any)
@@ -411,9 +419,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
             )
             asyncio.create_task(async_ten_env.send_data(output_data))
-            async_ten_env.log_info(
-                f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
-            )
+            # async_ten_env.log_info(
+            #     f"{'end of segment ' if end_of_segment else ''}sent sentence [{sentence}]"
+            # )
         except Exception:
             async_ten_env.log_warn(
                 f"send sentence [{sentence}] failed, err: {traceback.format_exc()}")
