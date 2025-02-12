@@ -180,6 +180,14 @@
                     "extension": "message_collector"
                   }
                 ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
               }
             ]
           },
@@ -407,6 +415,14 @@
                   {
                     "extension": "tts"
                   },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
                   {
                     "extension": "message_collector"
                   }
