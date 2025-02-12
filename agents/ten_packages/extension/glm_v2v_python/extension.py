@@ -282,7 +282,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
             self.connect_times.append(time.time() - start_time)
             item_id = ""  # For truncate
             response_id = ""
-            content_index = 0
+            # content_index = 0
             relative_start_ms = get_time_ms()
             flushed = set()
 
@@ -443,7 +443,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                             #     self.first_token_times.append(
                             #         time.time() - self.input_end
                             #     )
-                            content_index = message.content_index
+                            # content_index = message.content_index
                             await self._on_audio_delta(message.delta)
                         case ResponseAudioDone():
                             self.completion_times.append(time.time() - self.input_end)
@@ -452,7 +452,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On server listening, in response {response_id}, last item {item_id}"
                             )
                             # Tuncate the on-going audio stream
-                            end_ms = get_time_ms() - relative_start_ms
+                            # end_ms = get_time_ms() - relative_start_ms
                             # if item_id:
                             #     truncate = ItemTruncate(
                             #         item_id=item_id,
