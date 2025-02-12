@@ -522,7 +522,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 16000
+              "subscribe_audio_sample_rate": 24000
             }
           },
           {
@@ -532,7 +532,6 @@
             "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "dump": true,
               "enable_storage": false,
               "history": 10,
               "language": "en-US",
@@ -1199,7 +1198,7 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "subscribe_audio_sample_rate": 16000
+              "subscribe_audio_sample_rate": 24000
             }
           },
           {

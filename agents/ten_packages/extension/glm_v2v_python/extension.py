@@ -106,6 +106,8 @@ class GLMRealtimeConfig(BaseConfig):
     dump: bool = False
     max_history: int = 20
     enable_storage: bool = False
+    greeting: str = ""
+    language: str = "en-US"
 
     def build_ctx(self) -> dict:
         return {
@@ -142,7 +144,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         self.ctx: dict = {}
         self.input_end = time.time()
         self.input_audio_queue = asyncio.Queue()
-        self.input_audio_buf = b""
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -512,7 +513,6 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                vendor=self.config.vendor,
             )
 
             self.loop.create_task(self._loop())
@@ -551,7 +551,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         # Use pydub to create an AudioSegment
         audio_segment = AudioSegment(
             pcm_data.tobytes(), 
-            frame_rate=16000,
+            frame_rate=24000,
             sample_width=2, 
             channels=1
         )
@@ -604,6 +604,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
+                input_audio_format=AudioFormats.WAV24,
                 output_audio_format=AudioFormats.PCM,
                 tools=tools,
             )
@@ -784,6 +785,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
 
     async def _greeting(self) -> None:
         if self.connected and self.users_count == 1:
+            # somehow it's not working
             text = self._greeting_text()
             if self.config.greeting:
                 text = "Say '" + self.config.greeting + "' to me."

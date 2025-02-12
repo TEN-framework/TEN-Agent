@@ -11,6 +11,7 @@ def generate_event_id() -> str:
 
 
 class AudioFormats(str, Enum):
+    WAV24 = "wav24"
     PCM = "pcm"
     G711_ULAW = "g711_ulaw"
     G711_ALAW = "g711_alaw"
@@ -530,7 +531,7 @@ class InputAudioBufferClear(ClientToServerMessage):
 class ItemCreate(ClientToServerMessage):
     item: Optional[ItemParam] = field(default=None)  # Assuming `ItemParam` is already defined
     type: str = EventType.ITEM_CREATE
-    # previous_item_id: Optional[str] = None
+    previous_item_id: Optional[str] = None
 
 
 @dataclass
