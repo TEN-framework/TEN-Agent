@@ -7,6 +7,5 @@
     "max_tokens": 2048,
     "voice": "Puck",
     "language": "en-US",
-    "server_vad": true,
-    "dump": true
+    "server_vad": true
 }

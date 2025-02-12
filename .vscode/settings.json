@@ -1,8 +1,4 @@
 {
-  "python.analysis.extraPaths": [
-    "./agents/ten_packages/system/ten_runtime_python/interface",
-    "./agents/ten_packages/system/ten_ai_base/interface",
-  ],
   "C_Cpp.intelliSenseEngine": "disabled",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": null,
