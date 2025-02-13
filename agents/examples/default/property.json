@@ -293,32 +293,33 @@
           },
           {
             "type": "extension",
+            "extension_group": "tts",
+            "addon": "azure_tts",
+            "name": "tts",
+            "property": {
+              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
+              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
+              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+            }
+          },
+          {
+            "type": "extension",
             "name": "llm",
-            "addon": "openai_chatgpt_python",
+            "addon": "aisuite_llm_python",
             "extension_group": "chatgpt",
             "property": {
-              "api_key": "${env:OPENAI_API_KEY}",
               "base_url": "",
               "frequency_penalty": 0.9,
               "greeting": "TEN Agent connected. How can I help you today?",
               "max_memory_length": 10,
               "max_tokens": 512,
-              "model": "${env:OPENAI_MODEL}",
+              "model": "openai:gpt-4o-mini",
               "prompt": "",
-              "proxy_url": "${env:OPENAI_PROXY_URL}"
-            }
-          },
-          {
-            "type": "extension",
-            "name": "tts",
-            "addon": "fish_audio_tts",
-            "extension_group": "tts",
-            "property": {
-              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
-              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
-              "optimize_streaming_latency": true,
-              "request_timeout_seconds": 30,
-              "base_url": "https://api.fish.audio"
+              "provider_config": {
+                "openai": {
+                  "api_key": "${env:OPENAI_API_KEY}"
+                }
+              }
             }
           },
           {
@@ -334,15 +335,6 @@
             "addon": "message_collector",
             "extension_group": "transcriber",
             "property": {}
-          },
-          {
-            "type": "extension",
-            "name": "weatherapi_tool_python",
-            "addon": "weatherapi_tool_python",
-            "extension_group": "default",
-            "property": {
-              "api_key": "${env:WEATHERAPI_API_KEY|}"
-            }
           }
         ],
         "connections": [
@@ -396,14 +388,6 @@
                 "dest": [
                   {
                     "extension": "tts"
-                  }
-                ]
-              },
-              {
-                "name": "tool_call",
-                "dest": [
-                  {
-                    "extension": "weatherapi_tool_python"
                   }
                 ]
               }
@@ -488,19 +472,6 @@
                 ]
               }
             ]
-          },
-          {
-            "extension": "weatherapi_tool_python",
-            "cmd": [
-              {
-                "name": "tool_register",
-                "dest": [
-                  {
-                    "extension": "llm"
-                  }
-                ]
-              }
-            ]
           }
         ]
       },
@@ -523,23 +494,6 @@
               "publish_audio": true,
               "publish_data": true,
               "subscribe_audio_sample_rate": 24000
-            }
-          },
-          {
-            "type": "extension",
-            "name": "v2v",
-            "addon": "openai_v2v_python",
-            "extension_group": "llm",
-            "property": {
-              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview-2024-12-17",
-              "max_tokens": 2048,
-              "voice": "alloy",
-              "language": "en-US",
-              "server_vad": true,
-              "dump": true,
-              "max_history": 10
             }
           },
           {
