@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	// Load .env
-	err := godotenv.Load()
+	// Overload .env if .evn file exists,forcefully set all vars
+	err := godotenv.Overload()
 	if err != nil {
 		slog.Warn("load .env file failed", "err", err)
 	}
