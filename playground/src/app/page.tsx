@@ -27,23 +27,23 @@ export default function Home() {
   const isCompactLayout = useIsCompactLayout();
   const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
   const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
- const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
- 
+  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
 
- React.useEffect(() => {
-  // Only runs on the client
-  const { rtcManager } = require("../manager/rtc/rtc"); 
-  rtcManager.on("remoteUserChanged", onRemoteUserChanged);
 
-  return () => {
-    rtcManager.off("remoteUserChanged", onRemoteUserChanged);
-  };
-}, []);
+  React.useEffect(() => {
+    // Only runs on the client
+    const { rtcManager } = require("../manager/rtc/rtc");
+    rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+
+    return () => {
+      rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+    };
+  }, []);
 
   //React.useEffect(() => {
   //  rtcManager.on("remoteUserChanged", onRemoteUserChanged) 
   // }, [])
- 
+
   const onRemoteUserChanged = (user: IRtcUser) => {
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
@@ -53,30 +53,47 @@ export default function Home() {
 
   return (
     <AuthInitializer>
-      <div className="relative mx-auto flex h-full min-h-screen flex-col md:h-screen">
+      <div className="relative mx-auto flex flex-1 min-h-screen flex-col md:h-screen">
         <Header className="h-[60px]" />
         <Action className="h-[48px]" />
-        <div className="mx-2 mb-2 flex h-full max-h-[calc(100vh-108px-24px)] flex-col md:flex-row md:gap-2">
+        <div className={cn(
+          "mx-2 mb-2 flex h-full max-h-[calc(100vh-108px-24px)] flex-col md:flex-row md:gap-2 flex-1",
+          {
+            ["flex-col-reverse"]: avatarInLargeWindow && isCompactLayout
+          }
+        )}>
           <DynamicRTCCard
             className={cn(
-              "m-0 w-full rounded-b-lg bg-[#181a1d] md:w-[480px] md:rounded-lg",
+              "m-0 w-full rounded-b-lg bg-[#181a1d] md:w-[480px] md:rounded-lg flex-1 flex",
               {
-                ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
+                ["hidden md:flex"]: mobileActiveTab === EMobileActiveTab.CHAT,
               }
             )}
           />
-          {(!useTrulienceAvatar || isCompactLayout || !avatarInLargeWindow) ? (
-              <DynamicChatCard
+
+          {(!useTrulienceAvatar || isCompactLayout || !avatarInLargeWindow) && (
+            <DynamicChatCard
               className={cn(
-                "m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg",
+                "m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg flex-auto",
                 {
-                  ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.AGENT,
+                  ["hidden md:flex"]: mobileActiveTab === EMobileActiveTab.AGENT,
                 }
               )}
             />
-          ) : (
-          <Avatar audioTrack={remoteuser?.audioTrack} />
           )}
+
+          {(useTrulienceAvatar && avatarInLargeWindow) && (
+            <div className={cn(
+              "w-full",
+              {
+                ["h-60 flex-auto p-1 bg-[#181a1d]"]: isCompactLayout,
+                ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
+              }
+            )}>
+              <Avatar audioTrack={remoteuser?.audioTrack} />
+            </div>
+          )}
+
         </div>
       </div>
     </AuthInitializer>

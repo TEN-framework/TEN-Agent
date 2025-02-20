@@ -134,11 +134,12 @@ export default function RTCCard(props: { className?: string }) {
       {/* Scrollable top region (Avatar or ChatCard) */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {useTrulienceAvatar ? (
-          (isCompactLayout || !avatarInLargeWindow) ? (
+          !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
               <Avatar audioTrack={remoteuser?.audioTrack} />
             </div>
           ) : (
+            !isCompactLayout &&
             <ChatCard
               className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
             />
