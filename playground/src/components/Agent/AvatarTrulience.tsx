@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useAppSelector } from "@/common"
 import { TrulienceAvatar } from "trulience-sdk"
 import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import { Maximize, Minimize } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AvatarProps {
   audioTrack?: IMicrophoneAudioTrack
@@ -18,6 +20,9 @@ export default function Avatar({ audioTrack }: AvatarProps) {
 
   // State for the final avatar ID
   const [finalAvatarId, setFinalAvatarId] = useState("")
+
+  // State for toggling fullscreen
+  const [fullscreen, setFullscreen] = useState(false)
 
   // Safely read URL param on the client
   useEffect(() => {
@@ -84,7 +89,16 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   }, [audioTrack, agentConnected])
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg">
+    <div className={cn("relative h-full w-full overflow-hidden rounded-lg", {
+      ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen
+    })}>
+      <button
+        className="absolute z-10 top-2 right-2 bg-black/50 p-2 rounded-lg hover:bg-black/70 transition"
+        onClick={() => setFullscreen(prevValue => !prevValue)}
+      >
+        {fullscreen ? <Minimize className="text-white" size={24} /> : <Maximize className="text-white" size={24} />}
+      </button>
+
       {/* Render the TrulienceAvatar */}
       {trulienceAvatarInstance}
 
