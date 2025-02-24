@@ -1,0 +1,6 @@
+{
+    "appkey": "${env:ALIYUN_ASR_APPKEY}",
+    "akid": "${env:ALIYUN_ASR_AKID}",
+    "aksecret": "${env:ALIYUN_ASR_AKKEY}",
+    "api_url": "wss://nls-gateway.aliyuncs.com/ws/v1"
+}
