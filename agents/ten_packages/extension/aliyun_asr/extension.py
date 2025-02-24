@@ -12,8 +12,6 @@ import asyncio
 
 import json
 
-import nls
-
 from dataclasses import dataclass
 
 from ten_ai_base.config import BaseConfig
@@ -147,6 +145,7 @@ class AliyunASRExtension(AsyncExtension):
         def on_error(message, *args):
             self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
 
+        import nls
         token = nls.token.getToken(self.config.akid, self.config.aksecret)
         self.client = nls.NlsSpeechTranscriber(
             url=self.config.api_url,
