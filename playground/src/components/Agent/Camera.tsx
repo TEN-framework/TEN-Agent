@@ -105,7 +105,7 @@ export default function VideoBlock(props: {
       onVideoSourceChange={onVideoSourceChange}
       select={videoSourceType === VideoSourceType.CAMERA ? <CamSelect videoTrack={cameraTrack} /> : <div className="w-[180px]" />}
     >
-      <div className="my-3 h-52 w-full overflow-hidden rounded-lg">
+      <div className="my-3 h-60 w-full overflow-hidden rounded-lg">
         <LocalStreamPlayer videoTrack={videoSourceType === VideoSourceType.CAMERA ? cameraTrack : screenTrack} />
       </div>
     </VideoDeviceWrapper>
