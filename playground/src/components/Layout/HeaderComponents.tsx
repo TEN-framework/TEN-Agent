@@ -51,7 +51,7 @@ export function HeaderRoomInfo() {
             <span className="hidden text-sm md:inline-block">
               Channel Name:{" "}
             </span>
-            <span className="max-w-24 truncate text-ellipsis text-sm md:text-base">
+            <span className="max-w-24  text-sm md:text-base">
               {channel}
             </span>
           </TooltipTrigger>
