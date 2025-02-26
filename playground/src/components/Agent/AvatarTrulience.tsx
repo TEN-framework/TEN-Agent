@@ -8,10 +8,11 @@ import { Maximize, Minimize } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AvatarProps {
-  audioTrack?: IMicrophoneAudioTrack
+  audioTrack?: IMicrophoneAudioTrack,
+  localAudioTrack?: IMicrophoneAudioTrack
 }
 
-export default function Avatar({ audioTrack }: AvatarProps) {
+export default function Avatar({ audioTrack, localAudioTrack }: AvatarProps) {
   const agentConnected = useAppSelector((state) => state.global.agentConnected)
   const trulienceAvatarRef = useRef<TrulienceAvatar>(null)
 
@@ -70,6 +71,11 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   // Update the Avatar’s audio stream whenever audioTrack or agentConnected changes
   useEffect(() => {
     if (trulienceAvatarRef.current) {
+
+      if (localAudioTrack) {
+        const stream = new MediaStream([localAudioTrack.getMediaStreamTrack()])
+        //trulienceAvatarRef.current.setLocalMediaStream(null)
+      }
       if (audioTrack && agentConnected) {
         const stream = new MediaStream([audioTrack.getMediaStreamTrack()])
         trulienceAvatarRef.current.setMediaStream(null)

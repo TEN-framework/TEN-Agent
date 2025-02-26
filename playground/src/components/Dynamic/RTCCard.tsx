@@ -100,7 +100,9 @@ export default function RTCCard(props: { className?: string }) {
       // trulience SDK will play audio in synch with mouth
       user.audioTrack?.stop();
     }
-    setRemoteUser(user)
+    if (user.audioTrack) {
+      setRemoteUser(user)
+    } 
   }
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
@@ -136,7 +138,7 @@ export default function RTCCard(props: { className?: string }) {
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
-              <Avatar audioTrack={remoteuser?.audioTrack} />
+              <Avatar localAudioTrack={audioTrack} audioTrack={remoteuser?.audioTrack} />
             </div>
           ) : (
             !isCompactLayout &&
@@ -145,7 +147,7 @@ export default function RTCCard(props: { className?: string }) {
             />
           )
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} />
+          <AgentView  audioTrack={remoteuser?.audioTrack} />
         )}
       </div>
 
