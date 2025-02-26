@@ -8,19 +8,23 @@ import boto3
 from botocore.exceptions import ClientError
 from contextlib import closing
 
+
 @dataclass
 class PollyTTSConfig(BaseConfig):
     region: str = "us-east-1"
     access_key: str = ""
     secret_key: str = ""
-    engine: str = "generative"
-    voice: str = "Matthew" # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
+    engine: str = "neural"
+    voice: str = (
+        "Matthew"  # https://docs.aws.amazon.com/polly/latest/dg/available-voices.html
+    )
     sample_rate: int = 16000
-    lang_code: str = 'en-US'
+    lang_code: str = "en-US"
     bytes_per_sample: int = 2
     include_visemes: bool = False
     number_of_channels: int = 1
-    audio_format: str = 'pcm'
+    audio_format: str = "pcm"
+
 
 class PollyTTS:
     def __init__(self, config: PollyTTSConfig, ten_env: AsyncTenEnv) -> None:
@@ -30,12 +34,14 @@ class PollyTTS:
         ten_env.log_info("startinit polly tts")
         self.config = config
         if config.access_key and config.secret_key:
-            self.client = boto3.client(service_name='polly', 
-                                    region_name=config.region,
-                                    aws_access_key_id=config.access_key,
-                                    aws_secret_access_key=config.secret_key)
+            self.client = boto3.client(
+                service_name="polly",
+                region_name=config.region,
+                aws_access_key_id=config.access_key,
+                aws_secret_access_key=config.secret_key,
+            )
         else:
-            self.client = boto3.client(service_name='polly', region_name=config.region)
+            self.client = boto3.client(service_name="polly", region_name=config.region)
 
         self.voice_metadata = None
         self.frame_size = int(
@@ -44,6 +50,7 @@ class PollyTTS:
             * self.config.bytes_per_sample
             / 100
         )
+        self.audio_stream = None
 
     def _synthesize(self, text, ten_env: AsyncTenEnv):
         """
@@ -81,14 +88,30 @@ class PollyTTS:
         else:
             return audio_stream, visemes
 
-    async def text_to_speech_stream(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
+    async def text_to_speech_stream(
+        self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool
+    ) -> AsyncIterator[bytes]:
         inputText = text
         if len(inputText) == 0:
-             ten_env.log_warning("async_polly_handler: empty input detected.")
+            ten_env.log_warning("async_polly_handler: empty input detected.")
         try:
-            audio_stream, visemes = self._synthesize(inputText, ten_env)
+            audio_stream, _ = self._synthesize(inputText, ten_env)
             with closing(audio_stream) as stream:
-                 for chunk in stream.iter_chunks(chunk_size=self.frame_size):
-                     yield chunk
-        except Exception as e:
+                for chunk in stream.iter_chunks(chunk_size=self.frame_size):
+                    yield chunk
+                if end_of_segment:
+                    ten_env.log_debug("End of segment reached")
+        except Exception:
             ten_env.log_error(traceback.format_exc())
+
+    def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
+        """
+        Cancel ongoing TTS operation
+        """
+        try:
+            if hasattr(self, 'audio_stream') and self.audio_stream:
+                self.audio_stream.close()
+                self.audio_stream = None
+                ten_env.log_debug("TTS cancelled successfully")
+        except Exception:
+            ten_env.log_error(f"Failed to cancel TTS: {traceback.format_exc()}")

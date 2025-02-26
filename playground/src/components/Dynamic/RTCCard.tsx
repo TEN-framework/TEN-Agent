@@ -2,9 +2,9 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { useAppSelector, useAppDispatch, VOICE_OPTIONS } from "@/common"
-import { ITextItem, EMessageType } from "@/types"
+import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType } from "@/common"
+import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
   setRoomConnected,
@@ -15,7 +15,7 @@ import {
 import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect"
 import AgentView from "@/components/Agent/View"
 import MicrophoneBlock from "@/components/Agent/Microphone"
-import CameraBlock from "@/components/Agent/Camera"
+import VideoBlock from "@/components/Agent/Camera"
 
 let hasInit: boolean = false
 
@@ -29,7 +29,9 @@ export default function RTCCard(props: { className?: string }) {
   const { userId, channel } = options
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>()
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
+  const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
+  const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -53,7 +55,8 @@ export default function RTCCard(props: { className?: string }) {
     rtcManager.on("localTracksChanged", onLocalTracksChanged)
     rtcManager.on("textChanged", onTextChanged)
     rtcManager.on("remoteUserChanged", onRemoteUserChanged)
-    await rtcManager.createTracks()
+    await rtcManager.createCameraTracks()
+    await rtcManager.createMicrophoneAudioTrack()
     await rtcManager.join({
       channel,
       userId,
@@ -87,33 +90,28 @@ export default function RTCCard(props: { className?: string }) {
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
     console.log("[rtc] onLocalTracksChanged", tracks)
-    const { videoTrack, audioTrack } = tracks
-    if (videoTrack) {
-      setVideoTrack(videoTrack)
-    }
+    const { videoTrack, audioTrack, screenTrack } = tracks
+    setVideoTrack(videoTrack)
+    setScreenTrack(screenTrack)
     if (audioTrack) {
       setAudioTrack(audioTrack)
     }
   }
 
-  const onTextChanged = (text: ITextItem) => {
+  const onTextChanged = (text: IChatItem) => {
     console.log("[rtc] onTextChanged", text)
-    if (text.dataType == "transcribe") {
-      const isAgent = Number(text.uid) != Number(userId)
-      dispatch(
-        addChatItem({
-          userId: text.uid,
-          text: text.text,
-          type: isAgent ? EMessageType.AGENT : EMessageType.USER,
-          isFinal: text.isFinal,
-          time: text.time,
-        }),
-      )
-    }
+    dispatch(
+      addChatItem(text),
+    )
   }
 
   const onVoiceChange = (value: any) => {
     dispatch(setVoiceType(value))
+  }
+
+  const onVideoSourceTypeChange = async (value: VideoSourceType) => {
+    await rtcManager.switchVideoSource(value)
+    setVideoSourceType(value)
   }
 
   return (
@@ -130,11 +128,13 @@ export default function RTCCard(props: { className?: string }) {
 
           {/* -- You */}
           <div className="w-full space-y-2 px-2">
-            <div className="flex w-full items-center justify-between py-2">
-              <h2 className="mb-2 text-xl font-semibold">You</h2>
-            </div>
             <MicrophoneBlock audioTrack={audioTrack} />
-            <CameraBlock videoTrack={videoTrack} />
+            <VideoBlock
+              cameraTrack={videoTrack}
+              screenTrack={screenTrack}
+              videoSourceType={videoSourceType}
+              onVideoSourceChange={onVideoSourceTypeChange}
+            />
           </div>
         </div>
       </div>

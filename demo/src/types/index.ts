@@ -25,9 +25,20 @@ export interface ICozeSettings {
   base_url: string
 }
 
+
+export interface IDifySettings {
+  api_key: string
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",
+}
+
+export enum EMessageDataType {
+  TEXT = "text",
+  IMAGE = "image",
+  REASON = "reason",
 }
 
 export interface IChatItem {
@@ -35,6 +46,7 @@ export interface IChatItem {
   userName?: string
   text: string
   type: EMessageType
+  data_type: EMessageDataType
   isFinal?: boolean
   time: number
 }
@@ -60,6 +72,7 @@ export enum ERTMTextType {
 export interface IRTMTextItem {
   is_final: boolean
   type: ERTMTextType
+  data_type: EMessageDataType
   ts: number
   text: string
   stream_id: string

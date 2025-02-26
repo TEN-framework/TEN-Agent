@@ -25,54 +25,92 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
+[Documentation](https://doc.theten.ai/ten-agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Create Extensions](https://doc.theten.ai/ten-agent/create_a_hello_world_extension)
+[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
 </div>
 
 <br>
-<h2>🎉 TEN Agent with OpenAI Realtime API and RTC</h2>
+<h2>✨ TEN Agent + Deepseek</h2>
 
-Try OpenAI Realtime API, **Weather Check** and **Web Search** at [agent.theten.ai](https://agent.theten.ai).
+[TEN Agent + Deepseek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
-Combining OpenAI Realtime API for ultra-low latency with RTC’s AI noise suppression ensures smooth, high-quality interactions. On top of that, the seamless integration of weather and news tools makes TEN Agent even more versatile. 
+TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
-![TEN Agent with OpenAI Realtime API and RTC](https://github.com/TEN-framework/docs/blob/main/assets/gif/weather-and-news.gif?raw=true)
+<br>
+<h2>✨ TEN Agent + ESP32</h2>
+
+[TEN Agent ESP32 Client](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
+
+TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
+
+<br>
+<h2>TEN Agent + Dify with RAG + Coze</h2>
+
+<details>
+  <summary><kbd>TEN Agent + Dify Agent with RAG</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Dify with RAG](https://github.com/TEN-framework/docs/blob/main/assets/gif/dify-rag.gif?raw=true)
+
+  </picture>
+
+</details>
+
+  [TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+
+  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+
+TEN offers a great support to make the realtime interactive epxerience even better on other LLM platform as well, check out docs for more.
+
+<br>
+<h2>TEN Agent + Gemini Multimodal Live API</h2>
+
+<details>
+  <summary><kbd>Gemini 2.0 Multimodal Live API</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
+
+  </picture>
+
+</details>
+
+Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
+
+<br>
+<h2>TEN Agent + Storyteller + Image Generator</h2>
+
+<details>
+  <summary><kbd>Storyteller + Image Generator</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/storyteller_image_generator.jpg?raw=true)
+
+  </picture>
+
+</details>
+
+Describe a topic and ask TEN Agent to tell you a story while also generating images of the story to provide a more immersive experience for kids.
 
 <br>
 <h2>TEN Agent Usecases</h2>
 
 ![Usecases](https://github.com/TEN-framework/docs/blob/main/assets/jpg/usecases.jpg?raw=true)
 
-<!-- <br>
-<h2>TEN Agent Features</h2>
-
-* **OpenAI Realtime API and RTC Integration**:
-TEN Agent seamlessly integrates OpenAI's Realtime API with RTC capabilities, enabling natural, responsive conversations with ultra-low latency and high-quality audio processing.
-
-* **High-Performance Real-Time Multimodal Interactions**:
-Offers high-performance, low-latency solutions for complex audio-visual AI applications.
-
-* **Multi-Language and Multi-Platform Support** :
-Supports extension development in C++, Go, Python, etc. Runs on Windows, Mac, Linux, and mobile devices.
-
-* **Edge-Cloud Integration**:
-Flexibly combines edge and cloud-deployed extensions, balancing privacy, cost, and performance.
-
-* **Flexibility Beyond Model Limitations**:
-Easily build complex AI applications through simple drag-and-drop programming, integrating audio-visual tools, databases, RAG, and more.
-
-* **Real-Time Agent State Management**:
-Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
-
 <br>
 <h2>Ready-to-use Extensions</h2>
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
-
 
 <br>
 <h2>TEN Agent Playground in Local Environment</h2>
@@ -81,25 +119,9 @@ Manages and adjusts agent behavior in real-time for dynamic responsiveness. -->
 
 | Category | Requirements |
 |----------|-------------|
-| **Keys** | • Agora [ App ID ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [ App Certificate ](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [ Deepgram ](https://deepgram.com/) ASR (free credits available with signup)<br>• [ FishAudio ](https://fish.audio/) TTS (free credits available with signup)|
+| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [FishAudio](https://fish.audio/) TTS (free credits available with signup)|
 | **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
-
-<!-- <br>
-
-### Windows settings(MUST READ)
-
-On Windows, Git automatically adds a carriage return(\r) at the end of each line, which causes the `agents/bin/start: not found` error when running the server.
-
-**If you encounter this issue**, follow these steps:
-1. Completely remove the current project folder
-2. Run the following command to disable Git's auto CRLF:
-
-```bash
-git config --global core.autocrlf false
-``` -->
-
-<!-- 3. Re-clone the project and start the process again -->
 
 <br>
 
@@ -127,32 +149,40 @@ AGORA_APP_CERTIFICATE=
 ```
 
 #### 3. Start agent development containers
+
 ```bash
 docker compose up -d
 ```
 
 #### 4. Enter container
+
 ```bash
 docker exec -it ten_agent_dev bash
 ```
 
-#### 5. Build agent 
+#### 5. Build agent
+
 ```bash
 task use
 ```
 
 #### 6. Start the web server
+
 ```bash
 task run
 ```
 
 #### 7. Edit playground settings
+
 Open the playground at [localhost:3000](http://localhost:3000) to configure your agent.
+
  1. Select a graph type (e.g. Voice Agent, Realtime Agent)
  2. Choose a corresponding module
  3. Select an extension and configure its API key settings
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
+
+Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [documentation](https://doc.theten.ai/ten-agent/overview).
 
 <br>
 <h2>TEN Agent Components</h2>
@@ -167,7 +197,6 @@ Before we get started, be sure to star our repository and get instant notificati
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <br>
-
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
@@ -175,6 +204,10 @@ Before we get started, be sure to star our repository and get instant notificati
 - [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
 - [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
 
+<br>
+<h2>Star History</h2>
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ten-framework/ten-agent&type=Date)](https://star-history.com/#ten-framework/ten-agent&Date)
 
  <br>
  <h2>Code Contributors</h2>

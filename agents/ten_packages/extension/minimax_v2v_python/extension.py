@@ -22,7 +22,7 @@ import httpx
 from datetime import datetime
 import aiofiles
 import asyncio
-from typing import Iterator, List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any
 import base64
 import json
 
@@ -43,24 +43,24 @@ class MinimaxV2VConfig:
     max_memory_length: int = 10
     dump: bool = False
 
-    def read_from_property(self, ten_env: AsyncTenEnv):
+    async def read_from_property(self, ten_env: AsyncTenEnv):
         for field in fields(self):
-            # TODO: 'is_property_exist' has a bug that can not be used in async extension currently, use it instead of try .. except once fixed
+            # 'is_property_exist' has a bug that can not be used in async extension currently, use it instead of try .. except once fixed
             # if not ten_env.is_property_exist(field.name):
             #     continue
             try:
                 match field.type:
                     case builtins.str:
-                        val = ten_env.get_property_string(field.name)
+                        val = await ten_env.get_property_string(field.name)
                         if val:
                             setattr(self, field.name, val)
                             ten_env.log_info(f"{field.name}={val}")
                     case builtins.int:
-                        val = ten_env.get_property_int(field.name)
+                        val = await ten_env.get_property_int(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case builtins.bool:
-                        val = ten_env.get_property_bool(field.name)
+                        val = await ten_env.get_property_bool(field.name)
                         setattr(self, field.name, val)
                         ten_env.log_info(f"{field.name}={val}")
                     case _:
@@ -80,24 +80,23 @@ class MinimaxV2VExtension(AsyncExtension):
         self.ten_env = None
 
         # able to cancel
-        self.curr_task = None   
+        self.curr_task = None
 
         # make sure tasks processing in order
         self.process_input_task = None
         self.queue = asyncio.Queue()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        self.config.read_from_property(ten_env=ten_env)
+        await self.config.read_from_property(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         self.memory = ChatMemory(self.config.max_memory_length)
         self.ten_env = ten_env
-        ten_env.on_init_done()
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        self.process_input_task = asyncio.create_task(self._process_input(ten_env=ten_env, queue=self.queue), name="process_input")
-
-        ten_env.on_start_done()
+        self.process_input_task = asyncio.create_task(
+            self._process_input(ten_env=ten_env, queue=self.queue), name="process_input"
+        )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
 
@@ -108,8 +107,6 @@ class MinimaxV2VExtension(AsyncExtension):
             await asyncio.gather(self.process_input_task, return_exceptions=True)
             self.process_input_task = None
 
-        ten_env.on_stop_done()
-
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
 
@@ -117,7 +114,6 @@ class MinimaxV2VExtension(AsyncExtension):
             await self.client.aclose()
             self.client = None
         self.ten_env = None
-        ten_env.on_deinit_done()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         try:
@@ -128,14 +124,14 @@ class MinimaxV2VExtension(AsyncExtension):
             match cmd_name:
                 case "flush":
                     await self._flush(ten_env=ten_env)
-                    _result = await ten_env.send_cmd(Cmd.create("flush"))
+                    await ten_env.send_cmd(Cmd.create("flush"))
                     ten_env.log_debug("flush done")
                 case _:
                     pass
-            ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.OK), cmd)
         except asyncio.CancelledError:
             ten_env.log_warn(f"cmd {cmd_name} cancelled")
-            ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
+            await ten_env.return_result(CmdResult.create(StatusCode.ERROR), cmd)
             raise
         except Exception as e:
             ten_env.log_warn(f"cmd {cmd_name} failed, err {e}")
@@ -165,10 +161,10 @@ class MinimaxV2VExtension(AsyncExtension):
 
             # dump input audio if need
             await self._dump_audio_if_need(frame_buf, "in")
-            
+
             # ten_env.log_debug(f"on audio frame {len(frame_buf)} {stream_id} put done")
         except asyncio.CancelledError:
-            ten_env.log_warn(f"on audio frame cancelled")
+            ten_env.log_warn("on audio frame cancelled")
             raise
         except Exception as e:
             ten_env.log_error(f"on audio frame failed, err {e}")
@@ -190,7 +186,9 @@ class MinimaxV2VExtension(AsyncExtension):
             ten_env.log_debug(f"start process task {ts} {len(frame_buf)}")
 
             try:
-                self.curr_task = asyncio.create_task(self._complete_with_history(ts, frame_buf))
+                self.curr_task = asyncio.create_task(
+                    self._complete_with_history(ts, frame_buf)
+                )
                 await self.curr_task
                 self.curr_task = None
             except asyncio.CancelledError:
@@ -202,9 +200,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
         ten_env.log_info("process_input exit")
 
-    async def _complete_with_history(
-        self, ts: datetime, buff: bytearray
-    ):
+    async def _complete_with_history(self, ts: datetime, buff: bytearray):
         start_time = datetime.now()
         ten_env = self.ten_env
         ten_env.log_debug(
@@ -249,7 +245,7 @@ class MinimaxV2VExtension(AsyncExtension):
 
                 i = 0
                 async for line in response.aiter_lines():
-                    # logger.info(f"-> line {line}")
+                    # ten_env.log_info(f"-> line {line}")
                     # if self._need_interrupt(ts):
                     #     ten_env.log_warn(f"trace-id: {trace_id}, interrupted")
                     #     if self.transcript:
@@ -311,7 +307,9 @@ class MinimaxV2VExtension(AsyncExtension):
                                 base64_str = delta["audio_content"]
                                 buff = base64.b64decode(base64_str)
                                 await self._dump_audio_if_need(buff, "out")
-                                self._send_audio_frame(ten_env=ten_env, audio_data=buff)
+                                await self._send_audio_frame(
+                                    ten_env=ten_env, audio_data=buff
+                                )
 
                             # tool calls
                             if delta.get("tool_calls"):
@@ -398,7 +396,6 @@ class MinimaxV2VExtension(AsyncExtension):
         payload = {
             "model": config.model,
             "messages": messages,
-            "tools": [],
             "tool_choice": "none",
             "stream": True,
             "stream_options": {"speech_output": True},  # 开启语音输出
@@ -420,7 +417,9 @@ class MinimaxV2VExtension(AsyncExtension):
 
         return (headers, payload)
 
-    def _send_audio_frame(self, ten_env: AsyncTenEnv, audio_data: bytearray) -> None:
+    async def _send_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_data: bytearray
+    ) -> None:
         try:
             f = AudioFrame.create("pcm_frame")
             f.set_sample_rate(self.config.out_sample_rate)
@@ -432,7 +431,7 @@ class MinimaxV2VExtension(AsyncExtension):
             buff = f.lock_buf()
             buff[:] = audio_data
             f.unlock_buf(buff)
-            ten_env.send_audio_frame(f)
+            await ten_env.send_audio_frame(f)
         except Exception as e:
             ten_env.log_error(f"send audio frame failed, err {e}")
 
@@ -455,7 +454,7 @@ class MinimaxV2VExtension(AsyncExtension):
             ten_env.log_info(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role}"
             )
-            self.ten_env.send_data(d)
+            asyncio.create_task(self.ten_env.send_data(d))
         except Exception as e:
             ten_env.log_warn(
                 f"send transcript text [{content}] {stream_id} end_of_segment {end_of_segment} role {role} failed, err {e}"
@@ -468,7 +467,7 @@ class MinimaxV2VExtension(AsyncExtension):
                 self.queue.get_nowait()
                 self.queue.task_done()
             except Exception as e:
-                ten_env.log_warn("flush queue error {e}")
+                ten_env.log_warn(f"flush queue error {e}")
 
         # cancel current task
         if self.curr_task:

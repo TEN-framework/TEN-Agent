@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "elevenlabs_tts_python",
-  "version": "0.4.2",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4.2"
+      "version": "0.8"
     }
   ],
   "package": {

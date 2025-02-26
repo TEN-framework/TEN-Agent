@@ -15,11 +15,10 @@ from llama_index.core.base.llms.types import (
 from llama_index.core.llms.callbacks import llm_chat_callback, llm_completion_callback
 
 from llama_index.core.llms.custom import CustomLLM
-from .log import logger
-from ten import Cmd, StatusCode, CmdResult
+from ten import Cmd, StatusCode, CmdResult, TenEnv
 
 
-def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse:
+def chat_from_llama_response(cmd_result: CmdResult) -> ChatResponse | None:
     status = cmd_result.get_status_code()
     if status != StatusCode.OK:
         return None
@@ -39,7 +38,7 @@ def _messages_str_from_chat_messages(messages: Sequence[ChatMessage]) -> str:
 class LlamaLLM(CustomLLM):
     ten: Any
 
-    def __init__(self, ten):
+    def __init__(self, ten: TenEnv):
         """Creates a new Llama model interface."""
         super().__init__()
         self.ten = ten
@@ -47,7 +46,6 @@ class LlamaLLM(CustomLLM):
     @property
     def metadata(self) -> LLMMetadata:
         return LLMMetadata(
-            # TODO: fix metadata
             context_window=1024,
             num_output=512,
             model_name="llama_llm",
@@ -56,13 +54,13 @@ class LlamaLLM(CustomLLM):
 
     @llm_chat_callback()
     def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
-        logger.debug("LlamaLLM chat start")
+        self.ten.log_debug("LlamaLLM chat start")
 
         resp: ChatResponse
         wait_event = threading.Event()
 
-        def callback(_, result):
-            logger.debug("LlamaLLM chat callback done")
+        def callback(_, result, __):
+            self.ten.log_debug("LlamaLLM chat callback done")
             nonlocal resp
             nonlocal wait_event
             resp = chat_from_llama_response(result)
@@ -73,10 +71,8 @@ class LlamaLLM(CustomLLM):
         cmd = Cmd.create("call_chat")
         cmd.set_property_string("messages", messages_str)
         cmd.set_property_bool("stream", False)
-        logger.info(
-            "LlamaLLM chat send_cmd {}, messages {}".format(
-                cmd.get_name(), messages_str
-            )
+        self.ten.log_info(
+            f"LlamaLLM chat send_cmd {cmd.get_name()}, messages {messages_str}"
         )
 
         self.ten.send_cmd(cmd, callback)
@@ -87,13 +83,13 @@ class LlamaLLM(CustomLLM):
     def complete(
         self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponse:
-        logger.warning("LlamaLLM complete hasn't been implemented yet")
+        raise NotImplementedError("LlamaLLM complete hasn't been implemented yet")
 
     @llm_chat_callback()
     def stream_chat(
         self, messages: Sequence[ChatMessage], **kwargs: Any
     ) -> ChatResponseGen:
-        logger.debug("LlamaLLM stream_chat start")
+        self.ten.log_debug("LlamaLLM stream_chat start")
 
         cur_tokens = ""
         resp_queue = queue.Queue()
@@ -109,18 +105,18 @@ class LlamaLLM(CustomLLM):
                     delta=delta_text,
                 )
 
-        def callback(_, result):
+        def callback(_, result, __):
             nonlocal cur_tokens
             nonlocal resp_queue
 
             status = result.get_status_code()
             if status != StatusCode.OK:
-                logger.warn("LlamaLLM stream_chat callback status {}".format(status))
+                self.ten.log_warn(f"LlamaLLM stream_chat callback status {status}")
                 resp_queue.put(None)
                 return
 
             cur_tokens = result.get_property_string("text")
-            logger.debug("LlamaLLM stream_chat callback text [{}]".format(cur_tokens))
+            self.ten.log_debug(f"LlamaLLM stream_chat callback text [{cur_tokens}]")
             resp_queue.put(cur_tokens)
             if result.get_is_final():
                 resp_queue.put(None)
@@ -130,10 +126,8 @@ class LlamaLLM(CustomLLM):
         cmd = Cmd.create("call_chat")
         cmd.set_property_string("messages", messages_str)
         cmd.set_property_bool("stream", True)
-        logger.info(
-            "LlamaLLM stream_chat send_cmd {}, messages {}".format(
-                cmd.get_name(), messages_str
-            )
+        self.ten.log_info(
+            f"LlamaLLM stream_chat send_cmd {cmd.get_name()}, messages {messages_str}"
         )
         self.ten.send_cmd(cmd, callback)
         return gen()
@@ -141,7 +135,9 @@ class LlamaLLM(CustomLLM):
     def stream_complete(
         self, prompt: str, formatted: bool = False, **kwargs: Any
     ) -> CompletionResponseGen:
-        logger.warning("LlamaLLM stream_complete hasn't been implemented yet")
+        raise NotImplementedError(
+            "LlamaLLM stream_complete hasn't been implemented yet"
+        )
 
     @classmethod
     def class_name(cls) -> str:

@@ -13,7 +13,6 @@ package extension
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,8 +41,6 @@ const (
 )
 
 var (
-	logTag = slog.String("extension", "ELEVENLABS_TTS_EXTENSION")
-
 	outdateTs atomic.Int64
 	textChan  chan *message
 	wg        sync.WaitGroup
@@ -76,20 +73,20 @@ func newElevenlabsTTSExtension(name string) ten.Extension {
 //   - style
 //   - voice_id
 func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
-	slog.Info("OnStart", logTag)
+	ten.LogInfo("OnStart")
 
 	// prepare configuration
 	elevenlabsTTSConfig := defaultElevenlabsTTSConfig()
 
 	if apiKey, err := ten.GetPropertyString(propertyApiKey); err != nil {
-		slog.Error(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err), logTag)
+		ten.LogError(fmt.Sprintf("GetProperty required %s failed, err: %v", propertyApiKey, err))
 		return
 	} else {
 		elevenlabsTTSConfig.ApiKey = apiKey
 	}
 
 	if modelId, err := ten.GetPropertyString(propertyModelId); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModelId, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyModelId, err))
 	} else {
 		if len(modelId) > 0 {
 			elevenlabsTTSConfig.ModelId = modelId
@@ -97,7 +94,7 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if optimizeStreamingLatency, err := ten.GetPropertyInt64(propertyOptimizeStreamingLatency); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyOptimizeStreamingLatency, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyOptimizeStreamingLatency, err))
 	} else {
 		if optimizeStreamingLatency > 0 {
 			elevenlabsTTSConfig.OptimizeStreamingLatency = int(optimizeStreamingLatency)
@@ -105,7 +102,7 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if requestTimeoutSeconds, err := ten.GetPropertyInt64(propertyRequestTimeoutSeconds); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyRequestTimeoutSeconds, err))
 	} else {
 		if requestTimeoutSeconds > 0 {
 			elevenlabsTTSConfig.RequestTimeoutSeconds = int(requestTimeoutSeconds)
@@ -113,31 +110,31 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	}
 
 	if similarityBoost, err := ten.GetPropertyFloat64(propertySimilarityBoost); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySimilarityBoost, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySimilarityBoost, err))
 	} else {
 		elevenlabsTTSConfig.SimilarityBoost = float32(similarityBoost)
 	}
 
 	if speakerBoost, err := ten.GetPropertyBool(propertySpeakerBoost); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySpeakerBoost, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertySpeakerBoost, err))
 	} else {
 		elevenlabsTTSConfig.SpeakerBoost = speakerBoost
 	}
 
 	if stability, err := ten.GetPropertyFloat64(propertyStability); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStability, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStability, err))
 	} else {
 		elevenlabsTTSConfig.Stability = float32(stability)
 	}
 
 	if style, err := ten.GetPropertyFloat64(propertyStyle); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStyle, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyStyle, err))
 	} else {
 		elevenlabsTTSConfig.Style = float32(style)
 	}
 
 	if voiceId, err := ten.GetPropertyString(propertyVoiceId); err != nil {
-		slog.Warn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err), logTag)
+		ten.LogWarn(fmt.Sprintf("GetProperty optional %s failed, err: %v", propertyVoiceId, err))
 	} else {
 		if len(voiceId) > 0 {
 			elevenlabsTTSConfig.VoiceId = voiceId
@@ -147,12 +144,12 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	// create elevenlabsTTS instance
 	elevenlabsTTS, err := newElevenlabsTTS(elevenlabsTTSConfig)
 	if err != nil {
-		slog.Error(fmt.Sprintf("newElevenlabsTTS failed, err: %v", err), logTag)
+		ten.LogError(fmt.Sprintf("newElevenlabsTTS failed, err: %v", err))
 		return
 	}
 
-	slog.Info(fmt.Sprintf("newElevenlabsTTS succeed with ModelId: %s, VoiceId: %s",
-		elevenlabsTTSConfig.ModelId, elevenlabsTTSConfig.VoiceId), logTag)
+	ten.LogInfo(fmt.Sprintf("newElevenlabsTTS succeed with ModelId: %s, VoiceId: %s",
+		elevenlabsTTSConfig.ModelId, elevenlabsTTSConfig.VoiceId))
 
 	// set elevenlabsTTS instance
 	e.elevenlabsTTS = elevenlabsTTS
@@ -165,17 +162,17 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 	textChan = make(chan *message, textChanMax)
 
 	go func() {
-		slog.Info("process textChan", logTag)
+		ten.LogInfo("process textChan")
 
 		for msg := range textChan {
 			if msg.receivedTs < outdateTs.Load() { // Check whether to interrupt
-				slog.Info(fmt.Sprintf("textChan interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
-					msg.text, msg.receivedTs, outdateTs.Load()), logTag)
+				ten.LogInfo(fmt.Sprintf("textChan interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
+					msg.text, msg.receivedTs, outdateTs.Load()))
 				continue
 			}
 
 			wg.Add(1)
-			slog.Info(fmt.Sprintf("textChan text: [%s]", msg.text), logTag)
+			ten.LogInfo(fmt.Sprintf("textChan text: [%s]", msg.text))
 
 			r, w := io.Pipe()
 			startTime := time.Now()
@@ -184,16 +181,16 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 				defer wg.Done()
 				defer w.Close()
 
-				slog.Info(fmt.Sprintf("textToSpeechStream text: [%s]", msg.text), logTag)
+				ten.LogInfo(fmt.Sprintf("textToSpeechStream text: [%s]", msg.text))
 
 				err = e.elevenlabsTTS.textToSpeechStream(w, msg.text)
 				if err != nil {
-					slog.Error(fmt.Sprintf("textToSpeechStream failed, err: %v", err), logTag)
+					ten.LogError(fmt.Sprintf("textToSpeechStream failed, err: %v", err))
 					return
 				}
 			}()
 
-			slog.Info(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize), logTag)
+			ten.LogInfo(fmt.Sprintf("read pcm stream, text:[%s], pcmFrameSize:%d", msg.text, pcmFrameSize))
 
 			var (
 				firstFrameLatency int64
@@ -207,8 +204,8 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 			// read pcm stream
 			for {
 				if msg.receivedTs < outdateTs.Load() { // Check whether to interrupt
-					slog.Info(fmt.Sprintf("read pcm stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
-						msg.text, msg.receivedTs, outdateTs.Load()), logTag)
+					ten.LogInfo(fmt.Sprintf("read pcm stream interrupt and flushing for input text: [%s], receivedTs: %d, outdateTs: %d",
+						msg.text, msg.receivedTs, outdateTs.Load()))
 					break
 				}
 
@@ -218,16 +215,16 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 
 				if err != nil {
 					if err == io.EOF {
-						slog.Info("read pcm stream EOF", logTag)
+						ten.LogInfo("read pcm stream EOF")
 						break
 					}
 
-					slog.Error(fmt.Sprintf("read pcm stream failed, err: %v", err), logTag)
+					ten.LogError(fmt.Sprintf("read pcm stream failed, err: %v", err))
 					break
 				}
 
 				if pcmFrameRead != pcmFrameSize {
-					slog.Debug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", pcmFrameRead), logTag)
+					ten.LogDebug(fmt.Sprintf("the number of bytes read is [%d] inconsistent with pcm frame size", pcmFrameRead))
 					continue
 				}
 
@@ -239,21 +236,21 @@ func (e *elevenlabsTTSExtension) OnStart(ten ten.TenEnv) {
 
 				if firstFrameLatency == 0 {
 					firstFrameLatency = time.Since(startTime).Milliseconds()
-					slog.Info(fmt.Sprintf("first frame available for text: [%s], receivedTs: %d, firstFrameLatency: %dms", msg.text, msg.receivedTs, firstFrameLatency), logTag)
+					ten.LogInfo(fmt.Sprintf("first frame available for text: [%s], receivedTs: %d, firstFrameLatency: %dms", msg.text, msg.receivedTs, firstFrameLatency))
 				}
 
-				slog.Debug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text), logTag)
+				ten.LogDebug(fmt.Sprintf("sending pcm data, text: [%s]", msg.text))
 			}
 
 			if pcmFrameRead > 0 {
 				pcm.send(ten, buf)
 				sentFrames++
-				slog.Info(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead), logTag)
+				ten.LogInfo(fmt.Sprintf("sending pcm remain data, text: [%s], pcmFrameRead: %d", msg.text, pcmFrameRead))
 			}
 
 			r.Close()
-			slog.Info(fmt.Sprintf("send pcm data finished, text: [%s], receivedTs: %d, readBytes: %d, sentFrames: %d, firstFrameLatency: %dms, finishLatency: %dms",
-				msg.text, msg.receivedTs, readBytes, sentFrames, firstFrameLatency, time.Since(startTime).Milliseconds()), logTag)
+			ten.LogInfo(fmt.Sprintf("send pcm data finished, text: [%s], receivedTs: %d, readBytes: %d, sentFrames: %d, firstFrameLatency: %dms, finishLatency: %dms",
+				msg.text, msg.receivedTs, readBytes, sentFrames, firstFrameLatency, time.Since(startTime).Milliseconds()))
 		}
 	}()
 
@@ -271,13 +268,13 @@ func (e *elevenlabsTTSExtension) OnCmd(
 ) {
 	cmdName, err := cmd.GetName()
 	if err != nil {
-		slog.Error(fmt.Sprintf("OnCmd get name failed, err: %v", err), logTag)
+		tenEnv.LogError(fmt.Sprintf("OnCmd get name failed, err: %v", err))
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-		tenEnv.ReturnResult(cmdResult, cmd)
+		tenEnv.ReturnResult(cmdResult, cmd, nil)
 		return
 	}
 
-	slog.Info(fmt.Sprintf("OnCmd %s", cmdInFlush), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnCmd %s", cmdInFlush))
 
 	switch cmdName {
 	case cmdInFlush:
@@ -286,24 +283,24 @@ func (e *elevenlabsTTSExtension) OnCmd(
 		// send out
 		outCmd, err := ten.NewCmd(cmdOutFlush)
 		if err != nil {
-			slog.Error(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("new cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		}
 
 		if err := tenEnv.SendCmd(outCmd, nil); err != nil {
-			slog.Error(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err), logTag)
+			tenEnv.LogError(fmt.Sprintf("send cmd %s failed, err: %v", cmdOutFlush, err))
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError)
-			tenEnv.ReturnResult(cmdResult, cmd)
+			tenEnv.ReturnResult(cmdResult, cmd, nil)
 			return
 		} else {
-			slog.Info(fmt.Sprintf("cmd %s sent", cmdOutFlush), logTag)
+			tenEnv.LogInfo(fmt.Sprintf("cmd %s sent", cmdOutFlush))
 		}
 	}
 
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk)
-	tenEnv.ReturnResult(cmdResult, cmd)
+	tenEnv.ReturnResult(cmdResult, cmd, nil)
 }
 
 // OnData receives data from ten graph.
@@ -317,16 +314,16 @@ func (e *elevenlabsTTSExtension) OnData(
 ) {
 	text, err := data.GetPropertyString(dataInTextDataPropertyText)
 	if err != nil {
-		slog.Warn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err), logTag)
+		tenEnv.LogWarn(fmt.Sprintf("OnData GetProperty %s failed, err: %v", dataInTextDataPropertyText, err))
 		return
 	}
 
 	if len(text) == 0 {
-		slog.Debug("OnData text is empty, ignored", logTag)
+		tenEnv.LogDebug("OnData text is empty, ignored")
 		return
 	}
 
-	slog.Info(fmt.Sprintf("OnData input text: [%s]", text), logTag)
+	tenEnv.LogInfo(fmt.Sprintf("OnData input text: [%s]", text))
 
 	go func() {
 		textChan <- &message{text: text, receivedTs: time.Now().UnixMicro()}
@@ -334,8 +331,6 @@ func (e *elevenlabsTTSExtension) OnData(
 }
 
 func init() {
-	slog.Info("elevenlabs_tts extension init", logTag)
-
 	// Register addon
 	ten.RegisterAddonAsExtension(
 		"elevenlabs_tts",

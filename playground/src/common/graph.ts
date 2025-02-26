@@ -97,14 +97,12 @@ type MsgConversion = {
 
 type Destination = {
   app: string // Application identifier
-  extensionGroup: string // Extension group name
   extension: string // Extension name
   msgConversion?: MsgConversion // Optional message conversion rules
 }
 
 type Connection = {
   app: string // Application identifier
-  extensionGroup: string // Extension group name
   extension: string // Extension name
   cmd?: Array<Command> // Optional command connections
   data?: Array<Data> // Optional data connections
@@ -152,7 +150,7 @@ class GraphEditor {
       )
     }
 
-    const node = {
+    const node: Node = {
       name,
       addon,
       extensionGroup: group,
@@ -244,16 +242,14 @@ class GraphEditor {
     // Find the source connection in the graph
     let connection = graph.connections.find(
       (conn) =>
-        conn.extensionGroup === source.split(".")[0] &&
-        conn.extension === source.split(".")[1],
+        conn.extension === source,
     )
 
     if (!connection) {
       // If no connection exists, create a new one
       connection = {
         app: GraphEditor.sharedApp,
-        extensionGroup: source.split(".")[0],
-        extension: source.split(".")[1],
+        extension: source,
       }
       graph.connections.push(connection)
     }
@@ -283,7 +279,7 @@ class GraphEditor {
     // Check if the destination already exists
     if (
       protocolObject.dest.some(
-        (dest) => dest.extension === destination.split(".")[1],
+        (dest) => dest.extension === destination,
       )
     ) {
       throw new Error(
@@ -294,8 +290,7 @@ class GraphEditor {
     // Add the destination
     protocolObject.dest.push({
       app: GraphEditor.sharedApp,
-      extensionGroup: destination.split(".")[0],
-      extension: destination.split(".")[1],
+      extension: destination,
     })
   }
   static addOrUpdateConnection(
@@ -305,8 +300,7 @@ class GraphEditor {
     protocolLabel: GraphConnProtocol,
     protocolName: string, // Explicit name of the protocol object
   ): void {
-    const [srcGroup, srcExtension] = source.split(".")
-    let connection = this.findConnection(graph, srcGroup, srcExtension)
+    let connection = this.findConnection(graph, source)
 
     if (connection) {
       // Add or update destination in the existing connection
@@ -335,14 +329,13 @@ class GraphEditor {
       // Check if the destination already exists
       if (
         !protocolObject.dest.some(
-          (dest) => dest.extension === destination.split(".")[1],
+          (dest) => dest.extension === destination,
         )
       ) {
         // Add the new destination
         protocolObject.dest.push({
           app: GraphEditor.sharedApp,
-          extensionGroup: destination.split(".")[0],
-          extension: destination.split(".")[1],
+          extension: destination,
         })
       }
     } else {
@@ -357,8 +350,8 @@ class GraphEditor {
     }
   }
   /**
-   * Remove a connection from the graph across all protocols (cmd, data, audio_frame, video_frame)
-   */
+ * Remove a connection from the graph across all protocols (cmd, data, audio_frame, video_frame)
+ */
   static removeConnection(
     graph: Graph,
     source: string,
@@ -369,56 +362,58 @@ class GraphEditor {
     // Find the source connection in the graph
     const connectionIndex = graph.connections.findIndex(
       (conn) =>
-        conn.extensionGroup === source.split(".")[0] &&
-        conn.extension === source.split(".")[1],
-    )
+        conn.extension === source,
+    );
 
     if (connectionIndex === -1) {
-      throw new Error(`Source "${source}" not found in the graph.`)
+      console.warn(`Source "${source}" not found in the graph. Operation ignored.`);
+      return; // Exit the function if the connection does not exist
     }
 
-    const connection = graph.connections[connectionIndex]
+    const connection = graph.connections[connectionIndex];
 
     // If protocolLabel is provided, handle protocol-specific removal
     if (protocolLabel) {
-      const protocolField = protocolLabel.toLowerCase() as keyof Connection
+      const protocolField = protocolLabel.toLowerCase() as keyof Connection;
       const protocolArray = connection[protocolField] as Array<
         Command | Data | AudioFrame | VideoFrame
-      >
+      >;
 
       if (!protocolArray) {
-        throw new Error(
-          `Protocol "${protocolLabel}" does not exist for source "${source}".`,
-        )
+        console.warn(
+          `Protocol "${protocolLabel}" does not exist for source "${source}". Operation ignored.`
+        );
+        return; // Exit the function if the protocol does not exist
       }
 
       const protocolObjectIndex = protocolArray.findIndex(
         (item) => item.name === protocolName,
-      )
+      );
 
       if (protocolObjectIndex === -1) {
-        throw new Error(
-          `Protocol object with name "${protocolName}" not found in protocol "${protocolLabel}".`,
-        )
+        console.warn(
+          `Protocol object with name "${protocolName}" not found in protocol "${protocolLabel}". Operation ignored.`
+        );
+        return; // Exit the function if the protocol object does not exist
       }
 
       if (destination) {
         // Remove a specific destination
         protocolArray[protocolObjectIndex].dest = protocolArray[
           protocolObjectIndex
-        ].dest.filter((dest) => dest.extension !== destination.split(".")[1])
+        ].dest.filter((dest) => dest.extension !== destination);
 
         // Remove the protocol object if it has no destinations
         if (protocolArray[protocolObjectIndex].dest.length === 0) {
-          protocolArray.splice(protocolObjectIndex, 1)
+          protocolArray.splice(protocolObjectIndex, 1);
         }
       } else {
         // Remove the entire protocol object
-        protocolArray.splice(protocolObjectIndex, 1)
+        protocolArray.splice(protocolObjectIndex, 1);
       }
     } else {
       // If no protocolLabel is provided, remove the entire connection
-      graph.connections.splice(connectionIndex, 1)
+      graph.connections.splice(connectionIndex, 1);
     }
 
     // Clean up empty connections
@@ -435,13 +430,11 @@ class GraphEditor {
 
   static findConnection(
     graph: Graph,
-    extensionGroup: string,
     extension: string,
   ): Connection | null {
     return (
       graph.connections.find(
         (conn) =>
-          conn.extensionGroup === extensionGroup &&
           conn.extension === extension,
       ) || null
     )
@@ -489,13 +482,12 @@ class GraphEditor {
     // Remove all connections involving this node
     graph.connections = graph.connections.filter((connection) => {
       const isSource =
-        connection.extensionGroup + "." + connection.extension === `${node.extensionGroup}.${node.name}`
+        connection.extension === `${node.name}`
       const protocols = ["cmd", "data", "audio_frame", "video_frame"] as const
 
       protocols.forEach((protocol) => {
         if (connection[protocol]) {
-          connection[protocol] = connection[protocol]?.filter(
-            (item) => !item.dest.some((dest) => dest.extension === node.name && dest.extensionGroup === node.extensionGroup),
+          connection[protocol].forEach((item) => item.dest = item.dest.filter(d => d.extension !== node.name),
           )
         }
       })
@@ -517,13 +509,11 @@ class GraphEditor {
  * Link a tool to an LLM node by creating the appropriate connections.
  */
   static linkTool(graph: Graph, llmNode: Node, toolNode: Node): void {
-    const llmExtensionGroup = llmNode.extensionGroup;
-
     // Create the connection from the LLM node to the tool node
     GraphEditor.addOrUpdateConnection(
       graph,
-      `${llmExtensionGroup}.${llmNode.name}`,
-      `${toolNode.extensionGroup}.${toolNode.name}`,
+      `${llmNode.name}`,
+      `${toolNode.name}`,
       GraphConnProtocol.CMD,
       "tool_call"
     );
@@ -531,8 +521,8 @@ class GraphEditor {
     // Create the connection from the tool node back to the LLM node
     GraphEditor.addOrUpdateConnection(
       graph,
-      `${toolNode.extensionGroup}.${toolNode.name}`,
-      `${llmExtensionGroup}.${llmNode.name}`,
+      `${toolNode.name}`,
+      `${llmNode.name}`,
       GraphConnProtocol.CMD,
       "tool_register"
     );
@@ -542,8 +532,8 @@ class GraphEditor {
       // Create the connection from the RTC node to the tool node to deliver video frame
       GraphEditor.addOrUpdateConnection(
         graph,
-        `${rtcModule.extensionGroup}.${rtcModule.name}`,
-        `${toolNode.extensionGroup}.${toolNode.name}`,
+        `${rtcModule.name}`,
+        `${toolNode.name}`,
         GraphConnProtocol.VIDEO_FRAME,
         "video_frame"
       );

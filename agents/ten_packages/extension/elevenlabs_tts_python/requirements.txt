@@ -1,1 +1,1 @@
-elevenlabs>=1.13.0
+elevenlabs>=1.50.0

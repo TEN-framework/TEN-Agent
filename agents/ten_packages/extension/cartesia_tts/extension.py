@@ -11,6 +11,7 @@ from ten import (
 )
 from ten_ai_base.tts import AsyncTTSBaseExtension
 
+
 class CartesiaTTSExtension(AsyncTTSBaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -25,13 +26,13 @@ class CartesiaTTSExtension(AsyncTTSBaseExtension):
         try:
             await super().on_start(ten_env)
             ten_env.log_debug("on_start")
-            self.config = CartesiaTTSConfig.create(ten_env=ten_env)
+            self.config = await CartesiaTTSConfig.create_async(ten_env=ten_env)
 
             if not self.config.api_key:
                 raise ValueError("api_key is required")
 
             self.client = CartesiaTTS(self.config)
-        except Exception as err:
+        except Exception:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -42,11 +43,13 @@ class CartesiaTTSExtension(AsyncTTSBaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_request_tts(self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool) -> None:
+    async def on_request_tts(
+        self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
+    ) -> None:
         audio_stream = await self.client.text_to_speech_stream(input_text)
 
         async for audio_data in audio_stream:
-            self.send_audio_out(ten_env, audio_data["audio"])
+            await self.send_audio_out(ten_env, audio_data["audio"])
 
     async def on_cancel_tts(self, ten_env: AsyncTenEnv) -> None:
         return await super().on_cancel_tts(ten_env)

@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-try:
-    from .log import logger
-except ImportError:
-    from log import logger
 import asyncio
 import threading
 from typing import Coroutine
@@ -16,7 +12,7 @@ from alibabacloud_tea_openapi import models as open_api_models
 
 # maybe need multiple clients
 class AliGPDBClient:
-    def __init__(self, access_key_id, access_key_secret, endpoint):
+    def __init__(self, ten_env, access_key_id, access_key_secret, endpoint):
         self.stopEvent = asyncio.Event()
         self.loop = None
         self.tasks = asyncio.Queue()
@@ -28,6 +24,7 @@ class AliGPDBClient:
             target=asyncio.run, args=(self.__thread_routine(),)
         )
         self.thread.start()
+        self.ten_env = ten_env
 
     async def stop_thread(self):
         self.stopEvent.set()
@@ -50,7 +47,7 @@ class AliGPDBClient:
             self.thread.join()
 
     async def __thread_routine(self):
-        logger.info("client __thread_routine start")
+        self.ten_env.log_info("client __thread_routine start")
         self.loop = asyncio.get_running_loop()
         tasks = set()
         while not self.stopEvent.is_set():
@@ -68,11 +65,11 @@ class AliGPDBClient:
                 )
                 for task in done:
                     if task.exception():
-                        logger.error(f"task exception: {task.exception()}")
+                        self.ten_env.log_error(f"task exception: {task.exception()}")
                         future.set_exception(task.exception())
             else:
                 await asyncio.sleep(0.1)
-        logger.info("client __thread_routine end")
+        self.ten_env.log_info("client __thread_routine end")
 
     async def submit_task(self, coro: Coroutine) -> Future:
         future = Future()

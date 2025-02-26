@@ -7,6 +7,18 @@ tasks:
       - task: clean-agents
       - task: clean-server
 
+  lint:
+    desc: lint-agent
+    env:
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - ./agents/scripts/pylint.sh
+
+  install-tools:
+    desc: install tools
+    cmds:
+      - pip install pylint
+
   build:
     desc: build
     cmds:
@@ -25,13 +37,13 @@ tasks:
   run-server:
     desc: run backend http server
     cmds:
-      - /app/server/bin/api
+      - source .env && /app/server/bin/api
 
   run-gd-server:
     desc: run tman dev http server for graph designer
     dir: ./agents
     cmds:
-      - tman dev-server
+      - tman designer
 
   run:
     desc: run servers
@@ -57,7 +69,11 @@ tasks:
     dir: ./agents
     internal: true
     cmds:
-      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system/ten_runtime* ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/extension/py_init_extension_cpp
+      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader
+      - find . -type d -name .pytest_cache -exec rm -rf {} \; || true
+      - find . -type d -name __pycache__ -exec rm -rf {} \; || true
+      - find . -type d -name .ten -exec rm -rf {} \; || true
+      - find . -name .coverage -exec rm -f {} \; || true
 
   clean-server:
     desc: clean up server
@@ -65,3 +81,40 @@ tasks:
     internal: true
     cmds:
       - rm -rf bin
+
+  test:
+    desc: run tests
+    cmds:
+      - task: test-agent-extensions
+      - task: test-server
+
+  test-server:
+    desc: test server
+    dir: ./server
+    internal: true
+    cmds:
+      - go test -v ./...
+
+  test-agent-extensions:
+    desc: run standalone testing of extensions
+    internal: true
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    vars:
+      EXTENSIONS:
+        sh: 'find agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
+    cmds:
+      - for: { var: EXTENSIONS }
+        task: test-extension
+        vars:
+          EXTENSION: '{{ .ITEM }}'
+
+  test-extension:
+    desc: run standalone testing of one single extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    dotenv: ['.env']
+    cmds:
+      - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}

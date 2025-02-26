@@ -7,7 +7,8 @@ import {
   GRAPH_OPTIONS,
   isRagGraph,
 } from "@/common"
-import { EMessageType, type IChatItem } from "@/types"
+import { Bot, Brain, MessageCircleQuestion } from "lucide-react"
+import { EMessageDataType, EMessageType, type IChatItem } from "@/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
@@ -42,13 +43,28 @@ export function MessageItem(props: { data: IChatItem }) {
           "flex-row-reverse": data.type === EMessageType.USER,
         })}
       >
-        <Avatar>
-          <AvatarFallback>
-            {data.type === EMessageType.AGENT ? "AG" : "U"}
-          </AvatarFallback>
-        </Avatar>
+        {data.type === EMessageType.AGENT ? data.data_type === EMessageDataType.REASON ? (
+          <Avatar>
+            <AvatarFallback>
+              <Brain size={20} />
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <Avatar>
+            <AvatarFallback>
+              <Bot />
+            </AvatarFallback>
+          </Avatar>
+        ) : null}
         <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
-          <p>{data.text}</p>
+          {data.data_type === EMessageDataType.IMAGE ? (
+            <img src={data.text} alt="chat" className="w-full" />
+          ) : (
+            <p className={data.data_type === EMessageDataType.REASON ? cn(
+              "text-xs",
+              "text-zinc-500",
+            ) : ""}>{data.text}</p>
+          )}
         </div>
       </div>
     </>

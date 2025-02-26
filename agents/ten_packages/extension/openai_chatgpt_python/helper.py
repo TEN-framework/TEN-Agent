@@ -5,14 +5,11 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-import asyncio
-from collections import deque
-from ten.data import Data
-from .log import logger
 from PIL import Image
 from datetime import datetime
 from io import BytesIO
 from base64 import b64encode
+
 
 def get_current_time():
     # Get the current time
@@ -42,7 +39,6 @@ def parse_sentences(sentence_fragment, content):
 
     remain = current_sentence  # Any remaining characters form the incomplete sentence
     return sentences, remain
-
 
 
 def rgb2base64jpeg(rgb_data, width, height):

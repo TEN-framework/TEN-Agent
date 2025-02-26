@@ -14,6 +14,7 @@ import {
   useAppSelector,
   GRAPH_OPTIONS,
   isRagGraph,
+  isEditModeOn,
 } from "@/common";
 import {
   setRtmConnected,
@@ -25,7 +26,7 @@ import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { rtmManager } from "@/manager/rtm";
-import { type IRTMTextItem, EMessageType, ERTMTextType } from "@/types";
+import { type IRTMTextItem, EMessageDataType, EMessageType, ERTMTextType } from "@/types";
 import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
@@ -72,6 +73,7 @@ export default function ChatCard(props: { className?: string }) {
           userId: options.userId,
           text: text.text,
           type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
+          data_type: EMessageDataType.TEXT,
           isFinal: text.is_final,
           time: text.ts,
         })
@@ -83,6 +85,7 @@ export default function ChatCard(props: { className?: string }) {
           userId: options.userId,
           text: text.text,
           type: EMessageType.USER,
+          data_type: EMessageDataType.TEXT,
           isFinal: true,
           time: text.ts,
         })
@@ -111,9 +114,14 @@ export default function ChatCard(props: { className?: string }) {
           {/* Action Bar */}
           <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
             <RemoteGraphSelect />
-            <RemoteModuleCfgSheet />
-            <RemotePropertyCfgSheet />
-            {isRagGraph(graphName) && <PdfSelect />}
+            {
+              isEditModeOn ? (
+                <>
+                  <RemoteModuleCfgSheet />
+                  <RemotePropertyCfgSheet />
+                </>
+              ) : null
+            }
           </div>
           {/* Chat messages would go here */}
           <MessageList />

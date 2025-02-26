@@ -26,6 +26,7 @@ type Worker struct {
 	LogFile            string
 	Log2Stdout         bool
 	PropertyJsonFile   string
+	GraphName          string // New field to store the graphName
 	Pid                int
 	QuitTimeoutSeconds int
 	CreateTs           int64

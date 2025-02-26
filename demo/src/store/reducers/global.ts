@@ -5,6 +5,7 @@ import {
   VoiceType,
   IAgentSettings,
   ICozeSettings,
+  IDifySettings,
 } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import {
@@ -18,6 +19,9 @@ import {
   setAgentSettingsToLocal,
   setCozeSettingsToLocal,
   resetCozeSettings as resetCozeSettingsLocal,
+  DEFAULT_DIFY_SETTINGS,
+  setDifySettingsToLocal,
+  resetDifySettings as resetDifySettingsLocal,
 } from "@/common"
 
 export interface InitialState {
@@ -32,6 +36,7 @@ export interface InitialState {
   graphName: string
   agentSettings: IAgentSettings
   cozeSettings: ICozeSettings
+  difySettings: IDifySettings
   mobileActiveTab: EMobileActiveTab
   globalSettingsDialog: {
     open?: boolean
@@ -49,9 +54,10 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
-    graphName: "va_openai_v2v",
+    graphName: "va_openai_azure",
     agentSettings: DEFAULT_AGENT_SETTINGS,
     cozeSettings: DEFAULT_COZE_SETTINGS,
+    difySettings: DEFAULT_DIFY_SETTINGS,
     mobileActiveTab: EMobileActiveTab.AGENT,
     globalSettingsDialog: { open: false },
   }
@@ -155,9 +161,17 @@ export const globalSlice = createSlice({
       state.cozeSettings = { ...state.cozeSettings, ...action.payload }
       setCozeSettingsToLocal(state.cozeSettings)
     },
+    setDifySettings: (state, action: PayloadAction<Partial<IDifySettings>>) => {
+      state.difySettings = { ...state.difySettings, ...action.payload }
+      setDifySettingsToLocal(state.difySettings)
+    },
     resetCozeSettings: (state) => {
       state.cozeSettings = DEFAULT_COZE_SETTINGS
       resetCozeSettingsLocal()
+    },
+    resetDifySettings: (state) => {
+      state.difySettings = DEFAULT_DIFY_SETTINGS
+      resetDifySettingsLocal()
     },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
@@ -198,6 +212,8 @@ export const {
   setAgentSettings,
   setCozeSettings,
   resetCozeSettings,
+  setDifySettings,
+  resetDifySettings,
   setMobileActiveTab,
   setGlobalSettingsDialog,
 } = globalSlice.actions

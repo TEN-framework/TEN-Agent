@@ -10,7 +10,6 @@ from ten import (
 import asyncio
 import threading
 
-from .log import logger
 from .transcribe_wrapper import AsyncTranscribeWrapper, TranscribeConfig
 
 PROPERTY_REGION = "region"  # Optional
@@ -33,7 +32,7 @@ class TranscribeAsrExtension(Extension):
         asyncio.set_event_loop(self.loop)
 
     def on_start(self, ten: TenEnv) -> None:
-        logger.info("TranscribeAsrExtension on_start")
+        ten.log_info("TranscribeAsrExtension on_start")
 
         transcribe_config = TranscribeConfig.default_config()
 
@@ -49,7 +48,7 @@ class TranscribeAsrExtension(Extension):
                 if value:
                     transcribe_config.__setattr__(optional_param, value)
             except Exception as err:
-                logger.debug(
+                ten.log_debug(
                     f"GetProperty optional {optional_param} failed, err: {err}. Using default value: {transcribe_config.__getattribute__(optional_param)}"
                 )
 
@@ -57,30 +56,40 @@ class TranscribeAsrExtension(Extension):
             transcribe_config, self.queue, ten, self.loop
         )
 
-        logger.info("Starting async_transcribe_wrapper thread")
+        ten.log_info("Starting async_transcribe_wrapper thread")
         self.thread = threading.Thread(target=self.transcribe.run, args=[])
         self.thread.start()
 
         ten.on_start_done()
 
-    def put_pcm_frame(self, pcm_frame: AudioFrame) -> None:
+    def put_pcm_frame(self, ten: TenEnv, pcm_frame: AudioFrame) -> None:
+        if self.stopped:
+            return
+
         try:
-            asyncio.run_coroutine_threadsafe(
-                self.queue.put(pcm_frame), self.loop
-            ).result(timeout=0.1)
-        except asyncio.QueueFull:
-            logger.exception("Queue is full, dropping frame")
+            # Use a simpler synchronous approach with put_nowait
+            if not self.loop.is_closed():
+                if self.queue.qsize() < self.queue.maxsize:
+                    self.loop.call_soon_threadsafe(
+                        self.queue.put_nowait, pcm_frame
+                    )
+                else:
+                    ten.log_error("Queue is full, dropping frame")
+            else:
+                ten.log_error("Event loop is closed, cannot process frame")
         except Exception as e:
-            logger.exception(f"Error putting frame in queue: {e}")
+            import traceback
+            error_msg = f"Error putting frame in queue: {str(e)}\n{traceback.format_exc()}"
+            ten.log_error(error_msg)
 
     def on_audio_frame(self, ten: TenEnv, frame: AudioFrame) -> None:
-        self.put_pcm_frame(pcm_frame=frame)
+        self.put_pcm_frame(ten, pcm_frame=frame)
 
     def on_stop(self, ten: TenEnv) -> None:
-        logger.info("TranscribeAsrExtension on_stop")
+        ten.log_info("TranscribeAsrExtension on_stop")
 
         # put an empty frame to stop transcribe_wrapper
-        self.put_pcm_frame(None)
+        self.put_pcm_frame(ten, None)
         self.stopped = True
         self.thread.join()
         self.loop.stop()
@@ -89,12 +98,12 @@ class TranscribeAsrExtension(Extension):
         ten.on_stop_done()
 
     def on_cmd(self, ten: TenEnv, cmd: Cmd) -> None:
-        logger.info("TranscribeAsrExtension on_cmd")
+        ten.log_info("TranscribeAsrExtension on_cmd")
         cmd_json = cmd.to_json()
-        logger.info("TranscribeAsrExtension on_cmd json: " + cmd_json)
+        ten.log_info(f"TranscribeAsrExtension on_cmd json: {cmd_json}")
 
         cmdName = cmd.get_name()
-        logger.info("got cmd %s" % cmdName)
+        ten.log_info(f"got cmd {cmdName}")
 
         cmd_result = CmdResult.create(StatusCode.OK)
         cmd_result.set_property_string("detail", "success")

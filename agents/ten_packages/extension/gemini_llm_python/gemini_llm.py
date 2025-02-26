@@ -3,14 +3,16 @@ import google.generativeai as genai
 
 
 class GeminiLLMConfig:
-    def __init__(self,
-                 api_key: str,
-                 max_output_tokens: int,
-                 model: str,
-                 prompt: str,
-                 temperature: float,
-                 top_k: int,
-                 top_p: float):
+    def __init__(
+        self,
+        api_key: str,
+        max_output_tokens: int,
+        model: str,
+        prompt: str,
+        temperature: float,
+        top_k: int,
+        top_p: float,
+    ):
         self.api_key = api_key
         self.max_output_tokens = max_output_tokens
         self.model = model
@@ -36,19 +38,24 @@ class GeminiLLM:
     def __init__(self, config: GeminiLLMConfig):
         self.config = config
         genai.configure(api_key=self.config.api_key)
-        self.model = genai.GenerativeModel(model_name=self.config.model, system_instruction=self.config.prompt)
+        self.model = genai.GenerativeModel(
+            model_name=self.config.model, system_instruction=self.config.prompt
+        )
 
     def get_chat_completions_stream(self, messages: List[Dict[str, str]]):
         try:
             chat = self.model.start_chat(history=messages[0:-1])
-            response = chat.send_message(messages[-1].get("parts"),
-                                            generation_config=genai.types.GenerationConfig(
-                                                max_output_tokens=self.config.max_output_tokens,
-                                                temperature=self.config.temperature,
-                                                top_k=self.config.top_k,
-                                                top_p=self.config.top_p),
-                                            stream=True)
+            response = chat.send_message(
+                messages[-1].get("parts"),
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=self.config.max_output_tokens,
+                    temperature=self.config.temperature,
+                    top_k=self.config.top_k,
+                    top_p=self.config.top_p,
+                ),
+                stream=True,
+            )
 
             return response
         except Exception as e:
-            raise Exception(f"get_chat_completions_stream failed, err: {e}")
+            raise RuntimeError(f"get_chat_completions_stream failed, err: {e}") from e

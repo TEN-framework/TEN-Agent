@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils"
 import SettingsDialog, {
   isCozeGraph,
   cozeSettingsFormSchema,
+  isDifyGraph,
+  difySettingsFormSchema,
 } from "@/components/Dialog/Settings"
 
 let intervalId: NodeJS.Timeout | null = null
@@ -39,6 +41,7 @@ export default function Action(props: { className?: string }) {
   const graphName = useAppSelector((state) => state.global.graphName)
   const agentSettings = useAppSelector((state) => state.global.agentSettings)
   const cozeSettings = useAppSelector((state) => state.global.cozeSettings)
+  const difySettings = useAppSelector((state) => state.global.difySettings)
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab,
   )
@@ -101,6 +104,20 @@ export default function Action(props: { className?: string }) {
           startServicePayload.coze_token = cozeSettingsResult.data.token
           startServicePayload.coze_bot_id = cozeSettingsResult.data.bot_id
           startServicePayload.coze_base_url = cozeSettingsResult.data.base_url
+        } else if (isDifyGraph(graphName)) {
+          const difySettingsResult = difySettingsFormSchema.safeParse(difySettings)
+          if (!difySettingsResult.success) {
+            dispatch(
+              setGlobalSettingsDialog({
+                open: true,
+                tab: "dify",
+              }),
+            )
+            throw new Error(
+              "Invalid Dify settings. Please check your settings.",
+            )
+          }
+          startServicePayload.dify_api_key = difySettingsResult.data.api_key
         }
         // common -- start service
         const res = await apiStartService(startServicePayload)

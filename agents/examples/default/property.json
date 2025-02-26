@@ -95,14 +95,12 @@
         ],
         "connections": [
           {
-            "extension_group": "default",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -111,7 +109,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -120,7 +117,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -131,7 +127,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "stt",
                     "extension": "stt"
                   }
                 ]
@@ -139,18 +134,15 @@
             ]
           },
           {
-            "extension_group": "stt",
             "extension": "stt",
             "data": [
               {
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -158,14 +150,12 @@
             ]
           },
           {
-            "extension_group": "chatgpt",
             "extension": "llm",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -174,7 +164,6 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   }
                 ]
@@ -185,11 +174,17 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   },
                   {
-                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
+                  {
                     "extension": "message_collector"
                   }
                 ]
@@ -197,14 +192,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -212,14 +205,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -230,7 +221,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -238,14 +228,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "interrupt_detector",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -256,7 +244,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -264,14 +251,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -362,14 +347,12 @@
         ],
         "connections": [
           {
-            "extension_group": "default",
             "extension": "agora_rtc",
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -378,7 +361,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -387,7 +369,6 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -398,11 +379,9 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "interrupt_detector"
                   },
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -410,14 +389,12 @@
             ]
           },
           {
-            "extension_group": "chatgpt",
             "extension": "llm",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   }
                 ]
@@ -426,7 +403,6 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "weatherapi_tool_python"
                   }
                 ]
@@ -437,11 +413,17 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "tts",
                     "extension": "tts"
                   },
                   {
-                    "extension_group": "transcriber",
+                    "extension": "message_collector"
+                  }
+                ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
+                  {
                     "extension": "message_collector"
                   }
                 ]
@@ -449,14 +431,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -464,14 +444,12 @@
             ]
           },
           {
-            "extension_group": "tts",
             "extension": "tts",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -482,7 +460,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "default",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -490,14 +467,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "interrupt_detector",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -508,7 +483,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -516,14 +490,12 @@
             ]
           },
           {
-            "extension_group": "default",
             "extension": "weatherapi_tool_python",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "chatgpt",
                     "extension": "llm"
                   }
                 ]
@@ -560,13 +532,690 @@
             "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "temperature": 0.9,
+              "enable_storage": false,
+              "history": 10,
+              "language": "en-US",
+              "max_tokens": 2048,
               "model": "gpt-4o-realtime-preview",
+              "server_vad": true,
+              "temperature": 0.9,
+              "voice": "alloy"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "weatherapi_tool_python",
+            "addon": "weatherapi_tool_python",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:WEATHERAPI_API_KEY|}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "v2v",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "weatherapi_tool_python"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "weatherapi_tool_python",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "story_teller",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": false
+            }
+          },
+          {
+            "type": "extension",
+            "name": "stt",
+            "addon": "deepgram_asr_python",
+            "extension_group": "stt",
+            "property": {
+              "api_key": "${env:DEEPGRAM_API_KEY}",
+              "language": "en-US",
+              "model": "nova-2",
+              "sample_rate": 16000
+            }
+          },
+          {
+            "type": "extension",
+            "name": "llm",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "base_url": "",
+              "frequency_penalty": 0.9,
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "max_memory_length": 10,
+              "max_tokens": 512,
+              "model": "${env:OPENAI_MODEL}",
+              "prompt": "You are an ai agent bot producing child picture books. Each response should be short and no more than 50 words as it's for child. \nFor every response relevant to the story-telling, you will use the 'image_generate' tool to create an image based on the description or key moment in that part of the story. \n The story should be set in a fantasy world. Try asking questions relevant to the story to decide how the story should proceed. Every response should include rich, vivid descriptions that will guide the 'image_generate' tool to produce an image that aligns with the scene or mood.\n Whether it’s the setting, a character’s expression, or a dramatic moment, the paragraph should give enough detail for a meaningful visual representation.",
+              "proxy_url": "${env:OPENAI_PROXY_URL}"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector_python",
+            "extension_group": "default",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "openai_image_generate_tool",
+            "addon": "openai_image_generate_tool",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "stt"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "stt",
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "llm",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "openai_image_generate_tool"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "openai_image_generate_tool",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "story_teller_stt_integrated",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "default",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "enable_agora_asr": true,
+              "agora_asr_vendor_name": "microsoft",
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+              "agora_asr_session_control_file_path": "session_control.conf"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "llm",
+            "addon": "openai_chatgpt_python",
+            "extension_group": "chatgpt",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}",
+              "base_url": "",
+              "frequency_penalty": 0.9,
+              "greeting": "TEN Agent connected. How can I help you today?",
+              "max_memory_length": 10,
+              "max_tokens": 512,
+              "model": "${env:OPENAI_MODEL}",
+              "prompt": "You are an ai agent bot producing child picture books. Each response should be short and no more than 50 words as it's for child. \nFor every response relevant to the story-telling, you will use the 'image_generate' tool to create an image based on the description or key moment in that part of the story. \n The story should be set in a fantasy world. Try asking questions relevant to the story to decide how the story should proceed. Every response should include rich, vivid descriptions that will guide the 'image_generate' tool to produce an image that aligns with the scene or mood.\n Whether it’s the setting, a character’s expression, or a dramatic moment, the paragraph should give enough detail for a meaningful visual representation.",
+              "proxy_url": "${env:OPENAI_PROXY_URL}"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "tts",
+            "addon": "fish_audio_tts",
+            "extension_group": "tts",
+            "property": {
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
+            }
+          },
+          {
+            "type": "extension",
+            "name": "interrupt_detector",
+            "addon": "interrupt_detector_python",
+            "extension_group": "default",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "message_collector",
+            "addon": "message_collector",
+            "extension_group": "transcriber",
+            "property": {}
+          },
+          {
+            "type": "extension",
+            "name": "openai_image_generate_tool",
+            "addon": "openai_image_generate_tool",
+            "extension_group": "default",
+            "property": {
+              "api_key": "${env:OPENAI_API_KEY}"
+            }
+          }
+        ],
+        "connections": [
+          {
+            "extension": "agora_rtc",
+            "cmd": [
+              {
+                "name": "on_user_joined",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_user_left",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              },
+              {
+                "name": "on_connection_failure",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "interrupt_detector"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "llm",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  }
+                ]
+              },
+              {
+                "name": "tool_call",
+                "dest": [
+                  {
+                    "extension": "openai_image_generate_tool"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "tts"
+                  },
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "message_collector",
+            "data": [
+              {
+                "name": "data",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "tts",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "agora_rtc"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "interrupt_detector",
+            "cmd": [
+              {
+                "name": "flush",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "text_data",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "extension": "openai_image_generate_tool",
+            "cmd": [
+              {
+                "name": "tool_register",
+                "dest": [
+                  {
+                    "extension": "llm"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "story_teller_realtime",
+        "auto_start": true,
+        "nodes": [
+          {
+            "type": "extension",
+            "name": "agora_rtc",
+            "addon": "agora_rtc",
+            "extension_group": "rtc",
+            "property": {
+              "app_id": "${env:AGORA_APP_ID}",
+              "token": "",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
+              "publish_data": true,
+              "subscribe_audio_sample_rate": 24000
+            }
+          },
+          {
+            "type": "extension",
+            "name": "v2v",
+            "addon": "openai_v2v_python",
+            "extension_group": "llm",
+            "property": {
+              "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+              "temperature": 0.9,
+              "model": "gpt-4o-realtime-preview-2024-12-17",
               "max_tokens": 2048,
               "voice": "alloy",
               "language": "en-US",
               "server_vad": true,
-              "dump": true,
+              "prompt": "You are an ai agent bot producing child picture books. Each response should be short and no more than 50 words as it's for child. \nFor every response relevant to the story-telling, you will use the 'image_generate' tool to create an image based on the description or key moment in that part of the story. \n The story should be set in a fantasy world. Try asking questions relevant to the story to decide how the story should proceed. Every response should include rich, vivid descriptions that will guide the 'image_generate' tool to produce an image that aligns with the scene or mood.\n Whether it’s the setting, a character’s expression, or a dramatic moment, the paragraph should give enough detail for a meaningful visual representation.",
+              "dump": false,
               "max_history": 10
             }
           },
@@ -579,35 +1228,22 @@
           },
           {
             "type": "extension",
-            "name": "bingsearch_tool_python",
-            "addon": "bingsearch_tool_python",
+            "name": "openai_image_generate_tool",
+            "addon": "openai_image_generate_tool",
             "extension_group": "default",
             "property": {
-              "api_key": "${env:BING_API_KEY|}"
+              "api_key": "${env:OPENAI_API_KEY}"
             }
           }
         ],
         "connections": [
           {
-            "extension_group": "rtc",
             "extension": "agora_rtc",
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension_group": "llm",
-                    "extension": "v2v"
-                  }
-                ]
-              }
-            ],
             "cmd": [
               {
                 "name": "on_user_joined",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -616,7 +1252,6 @@
                 "name": "on_user_left",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
                   }
                 ]
@@ -625,7 +1260,16 @@
                 "name": "on_connection_failure",
                 "dest": [
                   {
-                    "extension_group": "llm",
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "audio_frame": [
+              {
+                "name": "pcm_frame",
+                "dest": [
+                  {
                     "extension": "v2v"
                   }
                 ]
@@ -633,14 +1277,12 @@
             ]
           },
           {
-            "extension_group": "llm",
             "extension": "v2v",
             "cmd": [
               {
                 "name": "flush",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -649,8 +1291,7 @@
                 "name": "tool_call",
                 "dest": [
                   {
-                    "extension_group": "default",
-                    "extension": "bingsearch_tool_python"
+                    "extension": "openai_image_generate_tool"
                   }
                 ]
               }
@@ -660,7 +1301,6 @@
                 "name": "text_data",
                 "dest": [
                   {
-                    "extension_group": "transcriber",
                     "extension": "message_collector"
                   }
                 ]
@@ -671,7 +1311,6 @@
                 "name": "pcm_frame",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -679,14 +1318,12 @@
             ]
           },
           {
-            "extension_group": "transcriber",
             "extension": "message_collector",
             "data": [
               {
                 "name": "data",
                 "dest": [
                   {
-                    "extension_group": "rtc",
                     "extension": "agora_rtc"
                   }
                 ]
@@ -694,15 +1331,23 @@
             ]
           },
           {
-            "extension_group": "default",
-            "extension": "bingsearch_tool_python",
+            "extension": "openai_image_generate_tool",
             "cmd": [
               {
                 "name": "tool_register",
                 "dest": [
                   {
-                    "extension_group": "llm",
                     "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "data": [
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
                   }
                 ]
               }

@@ -1,0 +1,37 @@
+{
+    "typeCheckingMode": "basic",
+    "reportUnusedCoroutine": "error",
+    "reportMissingAwait": "error",
+    "reportUnawaitedAsyncFunctions": "error",
+    "reportArgumentType": false,
+    "reportMissingParameterType": false,
+    "reportAssignmentType": false,
+    "reportAttributeAccessIssue": false,
+    "reportOptionalMemberAccess": false,
+    "reportOptionalContextManager": false,
+    "reportCallIssue": false,
+    "reportGeneralTypeIssues": "warning",
+    "reportReturnType": false,
+    "reportUnboundVariable": false,
+    "reportOptionalSubscript": false,
+    "reportOptionalIterable": false,
+    "reportOperatorIssue": false,
+    "exclude": [
+        "venv",
+        "__pycache__",
+        "./agents/ten_packages/system/ten_runtime_python/**/*",
+        "/usr/lib/**/*"
+    ],
+    "include": [
+        "agents"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "/app/agents",
+            "extraPaths": [
+                "/app/agents/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/ten_packages/system/ten_ai_base/interface"
+            ]
+        }
+    ]
+}

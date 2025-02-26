@@ -6,7 +6,6 @@
     "voice": "alloy",
     "language": "en-US",
     "server_vad": true,
-    "dump": true,
     "history": 10,
     "enable_storage": false
 }

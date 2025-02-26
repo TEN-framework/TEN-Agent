@@ -24,10 +24,17 @@ export enum EMessageType {
   USER = "user",
 }
 
+export enum EMessageDataType {
+  TEXT = "text",
+  REASON = "reason",
+  IMAGE = "image",
+}
+
 export interface IChatItem {
   userId: number | string;
   userName?: string;
   text: string;
+  data_type: EMessageDataType;
   type: EMessageType;
   isFinal?: boolean;
   time: number;
@@ -35,7 +42,7 @@ export interface IChatItem {
 
 /** @deprecated */
 export interface ITextItem {
-  dataType: "transcribe" | "translate";
+  dataType: "transcribe" | "translate" | "image_url";
   uid: string;
   time: number;
   text: string;

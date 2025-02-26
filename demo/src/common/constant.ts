@@ -5,6 +5,7 @@ import {
   VoiceOptionItem,
   GraphOptionItem,
   ICozeSettings,
+  IDifySettings,
 } from "@/types"
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent"
 export const API_GH_GET_REPO_INFO =
@@ -12,6 +13,7 @@ export const API_GH_GET_REPO_INFO =
 export const OPTIONS_KEY = "__options__"
 export const AGENT_SETTINGS_KEY = "__agent_settings__"
 export const COZE_SETTINGS_KEY = "__coze_settings__"
+export const DIFY_SETTINGS_KEY = "__dify_settings__"
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
@@ -36,6 +38,10 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
   base_url: ECozeBaseUrl.GLOBAL,
 }
 
+export const DEFAULT_DIFY_SETTINGS: IDifySettings = {
+  api_key: "",
+}
+
 export const DESCRIPTION = "A Realtime Conversational AI Agent powered by TEN"
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
@@ -57,38 +63,72 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
-    label: "Voice Agent - OpenAI LLM + Azure TTS",
-    value: "va_openai_azure",
+    label: "Voice Agent with DeepSeek R1 Reasoning",
+    value: "deepseek_r1",
   },
   {
-    label: "Voice Agent with Vision - OpenAI LLM + Azure TTS",
-    value: "camera_va_openai_azure",
+    label: "Voice Agent Gemini 2.0 Realtime",
+    value: "va_gemini_v2v",
+  },
+  {
+    label: "Voice Agent with Dify",
+    value: "va_dify_azure",
+  },
+  {
+    label: "Voice Agent / STT + LLM + TTS",
+    value: "va_openai_azure",
   },
   // {
   //   label: "Voice Agent with Knowledge - RAG + Qwen LLM + Cosy TTS",
   //   value: "va_qwen_rag"
   // },
   {
-    label: "Voice Agent with OpenAI Realtime API (Beta)",
+    label: "Voice Agent OpenAI Realtime",
     value: "va_openai_v2v",
   },
   {
-    label: "Voice Agent with OpenAI Realtime API (Beta) + FishAudio TTS",
+    label: "Voice Agent OpenAI Realtime + Custom STT/TTS",
     value: "va_openai_v2v_fish",
-  },
-  {
-    label: "Voice Agent with Vision - OpenAI LLM + Azure TTS + RTM",
-    value: "camera_va_openai_azure_rtm",
   },
   {
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
+  },
+  {
+    label: "Voice Story Teller with Image Generator",
+    value: "story_teller_stt_integrated",
+  },
+  {
+    label: "Voice Agent / STT + Nova Multimodal + TTS",
+    value: "va_nova_multimodal_aws",
   },
 ]
 
 export const isRagGraph = (graphName: string) => {
   return graphName === "va_qwen_rag"
 }
+
+export const isLanguageSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
+}
+
+export const isVoiceGenderSupported = (graphName: string) => {
+  return !["va_gemini_v2v"].includes(graphName)
+}
+
+
+export enum VideoSourceType {
+  CAMERA = 'camera',
+  SCREEN = 'screen',
+}
+
+export const VIDEO_SOURCE_OPTIONS = [{
+  label: "Camera",
+  value: VideoSourceType.CAMERA,
+}, {
+  label: "Screen Share",
+  value: VideoSourceType.SCREEN,
+}]
 
 export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {

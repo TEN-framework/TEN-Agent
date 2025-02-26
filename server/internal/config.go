@@ -21,6 +21,8 @@ const (
 	tokenExpirationInSeconds = uint32(86400)
 
 	WORKER_TIMEOUT_INFINITY = -1
+
+	MAX_GEMINI_WORKER_COUNT = 3
 )
 
 var (

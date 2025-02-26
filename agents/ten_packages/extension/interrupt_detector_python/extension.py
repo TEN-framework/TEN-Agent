@@ -20,6 +20,7 @@ CMD_NAME_FLUSH = "flush"
 TEXT_DATA_TEXT_FIELD = "text"
 TEXT_DATA_FINAL_FIELD = "is_final"
 
+
 class InterruptDetectorExtension(Extension):
     def on_start(self, ten: TenEnv) -> None:
         ten.log_info("on_start")
@@ -33,7 +34,7 @@ class InterruptDetectorExtension(Extension):
         flush_cmd = Cmd.create(CMD_NAME_FLUSH)
         ten.send_cmd(
             flush_cmd,
-            lambda ten, result: ten.log_info("send_cmd done"),
+            lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
         ten.log_info(f"sent cmd: {CMD_NAME_FLUSH}")
@@ -46,11 +47,12 @@ class InterruptDetectorExtension(Extension):
         self.send_flush_cmd(ten)
 
         # then forward the cmd to downstream
-        cmd_json = cmd.to_json()
-        new_cmd = Cmd.create_from_json(cmd_json)
+        cmd_json = cmd.get_property_to_json()
+        new_cmd = Cmd.create(cmd_name)
+        new_cmd.set_property_from_json(None, cmd_json)
         ten.send_cmd(
             new_cmd,
-            lambda ten, result: ten.log_info("send_cmd done"),
+            lambda ten, result, _: ten.log_info("send_cmd done"),
         )
 
         cmd_result = CmdResult.create(StatusCode.OK)
@@ -64,7 +66,7 @@ class InterruptDetectorExtension(Extension):
             example:
             {name: text_data, properties: {text: "hello", is_final: false}
         """
-        ten.log_info(f"on_data")
+        ten.log_info("on_data")
 
         try:
             text = data.get_property_string(TEXT_DATA_TEXT_FIELD)

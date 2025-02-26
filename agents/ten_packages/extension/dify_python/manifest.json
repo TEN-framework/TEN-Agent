@@ -1,0 +1,42 @@
+{
+  "type": "extension",
+  "name": "dify_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "user_id": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "failure_info": {
+        "type": "string"
+      }
+    }
+  }
+}

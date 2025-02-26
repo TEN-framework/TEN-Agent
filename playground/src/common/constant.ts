@@ -63,6 +63,20 @@ export const VOICE_OPTIONS: VoiceOptionItem[] = [
     value: "female",
   },
 ];
+
+export enum VideoSourceType {
+  CAMERA = 'camera',
+  SCREEN = 'screen',
+}
+
+export const VIDEO_SOURCE_OPTIONS = [{
+  label: "Camera",
+  value: VideoSourceType.CAMERA,
+}, {
+  label: "Screen Share",
+  value: VideoSourceType.SCREEN,
+}]
+
 export const COLOR_LIST: ColorItem[] = [
   {
     active: "#0888FF",
@@ -115,3 +129,5 @@ export const MOBILE_ACTIVE_TAB_MAP = {
 export const isLLM = (extensionName: string) => {
   return extensionName === "llm" || extensionName === "v2v";
 }
+
+export const isEditModeOn = process.env.NEXT_PUBLIC_EDIT_GRAPH_MODE === "true";
