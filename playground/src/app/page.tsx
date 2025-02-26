@@ -9,7 +9,8 @@ import Action from "@/components/Layout/Action";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import React from "react";
-import { IRtcUser } from "@/manager";
+import { IRtcUser, IUserTracks } from "@/manager";
+import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
@@ -17,7 +18,6 @@ const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
 const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
   ssr: false,
 });
-
 
 export default function Home() {
   const mobileActiveTab = useAppSelector(
@@ -28,27 +28,32 @@ export default function Home() {
   const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
   const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
-
+  const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
 
   React.useEffect(() => {
-    // Only runs on the client
     const { rtcManager } = require("../manager/rtc/rtc");
     rtcManager.on("remoteUserChanged", onRemoteUserChanged);
-
+    rtcManager.on("localTracksChanged", onLocalTracksChanged)
     return () => {
       rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+      rtcManager.off("localTracksChanged", onLocalTracksChanged);
     };
   }, []);
-
-  //React.useEffect(() => {
-  //  rtcManager.on("remoteUserChanged", onRemoteUserChanged) 
-  // }, [])
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
     }
-    setRemoteUser(user)
+    if (user.audioTrack) {
+      setRemoteUser(user)
+    } 
+  }
+
+  const onLocalTracksChanged = (tracks: IUserTracks) => {
+    const { audioTrack } = tracks
+    if (audioTrack) {
+      setAudioTrack(audioTrack)
+    }
   }
 
   return (
@@ -90,7 +95,7 @@ export default function Home() {
                 ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
               }
             )}>
-              <Avatar audioTrack={remoteuser?.audioTrack} />
+              <Avatar localAudioTrack={audioTrack} audioTrack={remoteuser?.audioTrack} />
             </div>
           )}
 
