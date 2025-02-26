@@ -35,15 +35,15 @@ from ten_ai_base.usage import (
     LLMCompletionTokensDetails,
     LLMPromptTokensDetails,
 )
-from ten_ai_base import (
-    AsyncLLMBaseExtension,
-)
 from ten_ai_base.types import (
     LLMChatCompletionUserMessageParam,
     LLMToolResult,
     LLMCallCompletionArgs,
     LLMDataCompletionArgs,
     LLMToolMetadata,
+)
+from ten_ai_base.llm import (
+    AsyncLLMBaseExtension,
 )
 
 CMD_IN_FLUSH = "flush"

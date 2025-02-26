@@ -39,11 +39,31 @@ class OpenAIChatGPTConfig(BaseConfig):
     azure_endpoint: str = ""
     azure_api_version: str = ""
 
+class ThinkParser:
+    def __init__(self):
+        self.state = 'NORMAL'  # States: 'NORMAL', 'THINK'
+        self.think_content = ""
+        self.content = ""
+    
+    def process(self, new_chars):
+        if new_chars == "<think>":
+            self.state = 'THINK'
+            return True
+        elif new_chars == "</think>":
+            self.state = 'NORMAL'
+            return True
+        else:
+            if self.state == "THINK":
+                self.think_content += new_chars
+        return False
+        
+
 class OpenAIChatGPT:
     client = None
 
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
+        self.ten_env = ten_env
         ten_env.log_info(f"OpenAIChatGPT initialized with config: {config.api_key}")
         if self.config.vendor == "azure":
             self.client = AsyncAzureOpenAI(
@@ -55,7 +75,9 @@ class OpenAIChatGPT:
                 f"Using Azure OpenAI with endpoint: {config.azure_endpoint}, api_version: {config.azure_api_version}"
             )
         else:
-            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
+            self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url, default_headers={
+                "api-key": config.api_key,
+            })
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {
@@ -127,7 +149,11 @@ class OpenAIChatGPT:
             }
         )
 
+        # Example usage
+        parser = ThinkParser()
+
         async for chat_completion in response:
+            # self.ten_env.log_info(f"Chat completion: {chat_completion}")
             if len(chat_completion.choices) == 0:
                 continue
             choice = chat_completion.choices[0]
@@ -137,7 +163,19 @@ class OpenAIChatGPT:
 
             # Emit content update event (fire-and-forget)
             if listener and content:
-                listener.emit("content_update", content)
+                prev_state = parser.state
+                is_special_char = parser.process(content)
+
+                if not is_special_char:
+                    # self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
+                    if parser.state == "THINK":
+                        listener.emit("reasoning_update", parser.think_content)
+                    elif parser.state == "NORMAL":
+                        listener.emit("content_update", content)
+
+                if prev_state == "THINK" and parser.state == "NORMAL":
+                    listener.emit("reasoning_update_finish", parser.think_content)
+                    parser.think_content = ""
 
             full_content += content
 

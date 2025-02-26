@@ -180,6 +180,14 @@
                     "extension": "message_collector"
                   }
                 ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
               }
             ]
           },
@@ -411,6 +419,14 @@
                     "extension": "message_collector"
                   }
                 ]
+              },
+              {
+                "name": "content_data",
+                "dest": [
+                  {
+                    "extension": "message_collector"
+                  }
+                ]
               }
             ]
           },
@@ -516,14 +532,14 @@
             "extension_group": "llm",
             "property": {
               "api_key": "${env:OPENAI_REALTIME_API_KEY}",
-              "temperature": 0.9,
-              "model": "gpt-4o-realtime-preview-2024-12-17",
-              "max_tokens": 2048,
-              "voice": "alloy",
+              "enable_storage": false,
+              "history": 10,
               "language": "en-US",
+              "max_tokens": 2048,
+              "model": "gpt-4o-realtime-preview",
               "server_vad": true,
-              "dump": true,
-              "max_history": 10
+              "temperature": 0.9,
+              "voice": "alloy"
             }
           },
           {
@@ -575,6 +591,16 @@
             "audio_frame": [
               {
                 "name": "pcm_frame",
+                "dest": [
+                  {
+                    "extension": "v2v"
+                  }
+                ]
+              }
+            ],
+            "video_frame": [
+              {
+                "name": "video_frame",
                 "dest": [
                   {
                     "extension": "v2v"

@@ -231,6 +231,13 @@ class MessageCollectorExtension(Extension):
                     f"on_data get_property_string {TEXT_DATA_TEXT_FIELD} error: {e}"
                 )
 
+            try:
+                end_of_segment = data.get_property_bool(TEXT_DATA_END_OF_SEGMENT_FIELD)
+            except Exception as e:
+                ten_env.log_warn(
+                    f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
+                )
+
             ten_env.log_info(
                 f"on_data {TEXT_DATA_TEXT_FIELD}: {text}"
             )
@@ -240,7 +247,7 @@ class MessageCollectorExtension(Extension):
 
             # Prepare the main JSON structure without the text field
             base_msg_data = {
-                "is_final": True,
+                "is_final": end_of_segment,
                 "stream_id": stream_id,
                 "message_id": message_id,  # Add message_id to identify the split message
                 "data_type": "raw",

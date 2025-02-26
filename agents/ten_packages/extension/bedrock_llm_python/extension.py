@@ -18,7 +18,7 @@ from ten import (
     CmdResult,
     Data,
 )
-from ten_ai_base import BaseConfig
+from ten_ai_base.config import BaseConfig
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from dataclasses import dataclass
 

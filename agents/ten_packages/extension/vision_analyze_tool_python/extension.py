@@ -16,7 +16,6 @@ from io import BytesIO
 from base64 import b64encode
 
 from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
-from ten_ai_base import AsyncLLMToolBaseExtension
 from ten_ai_base.types import (
     LLMChatCompletionUserMessageParam,
     LLMToolMetadata,
@@ -24,6 +23,7 @@ from ten_ai_base.types import (
     LLMToolResult,
     LLMToolResultLLMResult,
 )
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 
 
 def rgb2base64jpeg(rgb_data, width, height):

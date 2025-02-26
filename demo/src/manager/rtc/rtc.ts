@@ -247,6 +247,12 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               data_type: EMessageDataType.IMAGE,
               text: data.image_url,
             };
+          } else if (type === "reasoning") {
+            textItem = {
+              ...textItem,
+              data_type: EMessageDataType.REASON,
+              text: data.text,
+            };
           }
         }
 
