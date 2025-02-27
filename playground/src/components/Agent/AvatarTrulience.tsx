@@ -73,9 +73,14 @@ export default function Avatar({ audioTrack, localAudioTrack }: AvatarProps) {
     if (trulienceAvatarRef.current) {
 
       if (localAudioTrack) {
-        const stream = new MediaStream([localAudioTrack.getMediaStreamTrack()])
-        //trulienceAvatarRef.current.setLocalMediaStream(null)
+        if (agentConnected) {
+          const stream = new MediaStream([localAudioTrack.getMediaStreamTrack()])
+          trulienceAvatarRef.current.setLocalMediaStream(stream)
+        } else {
+          trulienceAvatarRef.current.setLocalMediaStream(null)
+        }
       }
+
       if (audioTrack && agentConnected) {
         const stream = new MediaStream([audioTrack.getMediaStreamTrack()])
         trulienceAvatarRef.current.setMediaStream(null)
