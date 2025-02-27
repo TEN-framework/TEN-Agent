@@ -36,17 +36,7 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework 仓库](https://github.com/TEN-framework/ten_framework)
 
-
 </div>
-
-<br>
-<h2>🌟 Gemini 多模态实时 API 扩展与 RTC</h2>
-
-![使用案例](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini.gif?raw=true)
-
-[agent.theten.ai](https://agent.theten.ai)
-
-尝试具有**实时视觉**和**实时屏幕共享检测**功能的 **Google Gemini 多模态实时 API**，这是一个即用型扩展，同时还完美集成了**天气查询**和**网络搜索**等强大工具。
 
 <br>
 <h2>TEN Agent 使用场景</h2>
@@ -65,7 +55,7 @@
 
 | 类别 | 要求 |
 |----------|-------------|
-| **Keys** | • [ App ID ](https://console.shengwang.cn) 和 [ App Certificate ](https://console.shengwang.cn)（[注册教程](https://doc.shengwang.cn/doc/console/general/quickstart#%E6%B3%A8%E5%86%8C%E8%B4%A6%E5%8F%B7)） <br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥<br>• [ Deepgram ](https://deepgram.com/) ASR（注册即可获得免费额度）<br>• [ FishAudio ](https://fish.audio/) TTS（注册即可获得免费额度）|
+| **Keys** | • [App ID](https://console.shengwang.cn) 和 [App Certificate](https://console.shengwang.cn)（[注册教程](https://doc.shengwang.cn/doc/console/general/quickstart#%E6%B3%A8%E5%86%8C%E8%B4%A6%E5%8F%B7)） <br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥<br>• [Deepgram](https://deepgram.com/) ASR（注册即可获得免费额度）<br>• [FishAudio](https://fish.audio/) TTS（注册即可获得免费额度）|
 | **安装要求** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **最低系统要求** | • CPU >= 2核<br>• 内存 >= 4 GB |
 
@@ -116,55 +106,61 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ### 后续步骤
 
 #### 1. 创建 `.env` 文件
+
 ```bash
 cp ./.env.example ./.env
 ```
 
 #### 2. 在 `.env` 中设置 Agora 应用 ID 和应用证书
+
 ```bash
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
 ```
 
 #### 3. 启动代理开发容器
+
 ```bash
 docker compose up -d
 ```
 
 #### 4. 进入容器
+
 ```bash
 docker exec -it ten_agent_dev bash
 ```
 
 #### 5. 构建代理
+
 ```bash
 task use
 ```
 
 #### 6. 启动网络服务器
+
 ```bash
 task run
 ```
 
 #### 7. 编辑开发环境设置
+
 在 [localhost:3000](http://localhost:3000) 打开开发环境来配置你的代理。
+
  1. 选择图表类型（如语音代理、实时代理）
  2. 选择对应模块
  3. 选择扩展并配置其 API 密钥设置
 
 ![模块示例](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
-#### 运行 Gemini 实时扩展
-在 [localhost:3000](http://localhost:3000) 打开开发环境。
+<br>
+<h2>部署</h2>
 
- 1. 选择 voice_assistant_realtime 图表
- 2. 选择 Gemini 实时模块
- 3. 选择 v2v 扩展并输入 Gemini API 密钥
+一旦你完成了代理的自定义，你就可以通过创建服务的发布 Docker 镜像来部署。
 
-![Gemini 实时开发环境](https://github.com/TEN-framework/docs/blob/main/assets/gif/gemini-playground.gif?raw=true)
+请参考 [部署指南](https://doc.theten.ai/ten-agent/deployment/deploy_agent_service) 有关部署的详细信息。
 
 <br>
-<h2>TEN Agent 组件</h2>
+<h2>TEN Agent 架构</h2>
 
 ![组件图](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 
@@ -202,4 +198,3 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 <h2>License</h2>
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
-
