@@ -1,0 +1,88 @@
+{
+  "type": "extension",
+  "name": "aliyun_asr",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8"
+    }
+  ],
+  "api": {
+    "property": {
+      "appkey": {
+        "type": "string"
+      },
+      "akid": {
+        "type": "string"
+      },
+      "aksecret": {
+        "type": "string"
+      },
+      "api_url": {
+        "type": "string"
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {}
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "on_user_joined",
+        "property": {
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "on_user_left",
+        "property": {
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "on_connection_failure",
+        "property": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "time": {
+            "type": "int64"
+          },
+          "duration_ms": {
+            "type": "int64"
+          },
+          "language": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "bool"
+          },
+          "stream_id": {
+            "type": "uint32"
+          },
+          "end_of_segment": {
+            "type": "bool"
+          }
+        }
+      }
+    ]
+  }
+}
