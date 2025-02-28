@@ -39,7 +39,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
-import { compatibleTools, ModuleRegistry, ModuleTypeLabels } from "@/common/moduleConfig"
+import { compatibleTools, ModuleRegistry, ModuleTypeLabels, llmModuleRegistry } from "@/common/moduleConfig"
+
+const hasImageModality = (moduleName: string): boolean => {
+    const module = llmModuleRegistry[moduleName];
+    return module?.modalities?.includes("image") ?? false;
+};
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
@@ -138,18 +143,38 @@ export function RemoteModuleCfgSheet() {
                                     const node = nodes.find((n) => n.name === key);
                                     if (node && value && node.addon !== value) {
                                         node.addon = value;
-                                        node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
+                                        const defaultProperty = addonModules.find((module) => module.name === value)?.defaultProperty;
+                                        node.property = {
+                                            ...defaultProperty,
+                                            ...(hasImageModality(value) ? { is_enable_video: true } : {})
+                                        };
 
                                         needUpdate = true;
                                     }
                                 });
 
+                                // Check for Gemini V2V node
                                 const geminiV2VNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => node.addon === "gemini_v2v_python");
                                 if (geminiV2VNode) {
                                     GraphEditor.addOrUpdateConnection(
                                         selectedGraphCopy,
                                         `${agoraRtcNode.name}`,
                                         `${geminiV2VNode.name}`,
+                                        ProtocolLabel.VIDEO_FRAME,
+                                        "video_frame"
+                                    );
+                                    enableRTCVideoSubscribe = true;
+                                }
+
+                                // Check for LLM nodes that accept image input
+                                const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) =>
+                                    isLLM(node.name) && hasImageModality(node.addon || "")
+                                );
+                                if (llmNode) {
+                                    GraphEditor.addOrUpdateConnection(
+                                        selectedGraphCopy,
+                                        `${agoraRtcNode.name}`,
+                                        `${llmNode.name}`,
                                         ProtocolLabel.VIDEO_FRAME,
                                         "video_frame"
                                     );
