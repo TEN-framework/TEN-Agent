@@ -18,7 +18,6 @@ class OpenAIChatGPTConfig(BaseConfig):
     max_tokens: int = 512
     seed: int = random.randint(0, 10000)
     proxy_url: str = ""
-    greeting: str = "Hello, how can I help you today?"
     max_memory_length: int = 10
     vendor: str = "openai"
     azure_endpoint: str = ""

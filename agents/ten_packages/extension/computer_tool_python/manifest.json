@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "computer_tool_python",
-  "version": "0.4.2",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.4.2"
+      "version": "0.8"
     }
   ],
   "package": {
@@ -49,9 +49,6 @@
       "prompt": {
         "type": "string"
       },
-      "greeting": {
-        "type": "string"
-      },
       "proxy_url": {
         "type": "string"
       },
@@ -71,45 +68,13 @@
     "cmd_out": [
       {
         "name": "tool_register",
-        "property": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "parameters": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "description",
-          "parameters"
-        ],
-        "result": {
-          "property": {
-            "response": {
-              "type": "string"
-            }
-          }
-        }
+        "property": {}
       }
     ],
     "cmd_in": [
       {
         "name": "tool_call",
-        "property": {
-          "name": {
-            "type": "string"
-          },
-          "args": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ]
+        "property": {}
       }
     ],
     "video_frame_in": [

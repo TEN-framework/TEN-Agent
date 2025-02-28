@@ -16,8 +16,6 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-    SheetFooter,
-    SheetClose,
 } from "@/components/ui/sheet"
 import {
     Form,
@@ -39,7 +37,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
-import { compatibleTools, ModuleRegistry, ModuleTypeLabels } from "@/common/moduleConfig"
+import { compatibleTools, ModuleRegistry, ModuleTypeLabels, toolModuleRegistry } from "@/common/moduleConfig"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
@@ -186,7 +184,7 @@ export function RemoteModuleCfgSheet() {
                                             // Create or update connections
                                             const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                             if (llmNode) {
-                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
+                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
                                             }
                                         }
                                     });
