@@ -143,12 +143,7 @@ export function RemoteModuleCfgSheet() {
                                     const node = nodes.find((n) => n.name === key);
                                     if (node && value && node.addon !== value) {
                                         node.addon = value;
-                                        const defaultProperty = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                        node.property = {
-                                            ...defaultProperty,
-                                            ...(hasImageModality(value) ? { is_enable_video: true } : {})
-                                        };
-
+                                        node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
                                         needUpdate = true;
                                     }
                                 });
