@@ -11,6 +11,7 @@ export namespace ModuleRegistry {
         name: string;
         type: ModuleType;
         label: string;
+        modalities?: string[];
     }
 
     export type NonToolModuleType = Exclude<ModuleType, ModuleType.TOOL>
@@ -65,6 +66,7 @@ export const llmModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "bedrock_llm_python",
         type: ModuleRegistry.ModuleType.LLM,
         label: "Bedrock LLM",
+        modalities: ["image", "text"],
     },
 }
 
