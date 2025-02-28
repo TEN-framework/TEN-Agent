@@ -1,0 +1,24 @@
+{
+  "type": "extension",
+  "name": "py_init_extension_cpp",
+  "version": "0.6.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.6.0"
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.6.0"
+    }
+  ],
+  "api": {},
+  "supports": [
+    {
+      "os": "linux",
+      "arch": "x64"
+    }
+  ]
+}
