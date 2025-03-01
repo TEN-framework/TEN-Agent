@@ -88,7 +88,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
         await super().on_stop(async_ten_env)
-        self.reasoning_text_queue.put_nowait(None)
 
     async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_deinit")
