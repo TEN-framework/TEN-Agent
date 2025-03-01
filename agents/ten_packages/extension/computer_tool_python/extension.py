@@ -111,7 +111,7 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
 
         # Mandatory properties
         if not self.config.api_key:
-            ten_env.log_info(f"API key is missing, exiting on_start")
+            ten_env.log_info("API key is missing, exiting on_start")
             return
         
         self.openai_chatgpt = OpenAIChatGPT(ten_env, self.config)   
@@ -128,9 +128,6 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
         audio_frame_name = audio_frame.get_name()
         ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
 
-        # TODO: process audio frame
-        pass
-
     async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
         video_frame_name = video_frame.get_name()
         ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
@@ -139,7 +136,7 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
         self.image_width = video_frame.get_width()
         self.image_height = video_frame.get_height()
 
-    def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
+    def get_tool_metadata(self, _: AsyncTenEnv) -> list[LLMToolMetadata]:
         return [
             LLMToolMetadata(
                 name=OPEN_WEBSITE_TOOL_NAME,

@@ -84,9 +84,9 @@ class OpenAIChatGPT:
                 return response.parsed
             elif response.refusal:
                 # handle refusal
-                raise Exception(f"Refusal: {response.refusal}")
+                raise RuntimeError(f"Refusal: {response.refusal}")
         except Exception as e:
-            raise Exception(f"CreateChatCompletionStructured failed, err: {e}")
+            raise RuntimeError(f"CreateChatCompletionStructured failed, err: {e}") from e
 
     async def get_chat_completions_stream(self, messages, tools = None, listener = None):
         req = {
@@ -111,7 +111,7 @@ class OpenAIChatGPT:
         try:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
-            raise Exception(f"CreateChatCompletionStream failed, err: {e}")
+            raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
         
         full_content = ""
 
