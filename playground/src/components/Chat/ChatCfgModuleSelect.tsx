@@ -37,14 +37,9 @@ import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
-import { compatibleTools, ModuleRegistry, ModuleTypeLabels, llmModuleRegistry } from "@/common/moduleConfig"
-
-const hasImageModality = (moduleName: string): boolean => {
-    const module = llmModuleRegistry[moduleName];
-    return module?.modalities?.includes("image") ?? false;
-};
+import { compatibleTools, ModuleRegistry, ModuleTypeLabels, moduleRegistry } from "@/common/moduleConfig"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
@@ -148,28 +143,30 @@ export function RemoteModuleCfgSheet() {
                                     }
                                 });
 
-                                // Check for Gemini V2V node
-                                const geminiV2VNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => node.addon === "gemini_v2v_python");
-                                if (geminiV2VNode) {
-                                    GraphEditor.addOrUpdateConnection(
-                                        selectedGraphCopy,
-                                        `${agoraRtcNode.name}`,
-                                        `${geminiV2VNode.name}`,
-                                        ProtocolLabel.VIDEO_FRAME,
-                                        "video_frame"
-                                    );
-                                    enableRTCVideoSubscribe = true;
-                                }
+                                const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
+                                    const module = moduleRegistry[node.addon]
+                                    if (!module) {
+                                        return false
+                                    }
 
-                                // Check for LLM nodes that accept image input
-                                const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) =>
-                                    isLLM(node.name) && hasImageModality(node.addon || "")
-                                );
-                                if (llmNode) {
+                                    if (module.type === ModuleRegistry.ModuleType.LLM) {
+                                        const llmModule = module as ModuleRegistry.LLMModule
+                                        return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
+
+                                    if (module.type === ModuleRegistry.ModuleType.V2V) {
+                                        const v2vModule = module as ModuleRegistry.V2VModule
+                                        return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
+
+                                    return false
+                                })
+
+                                if (reasoningNodesWithVisualSupport) {
                                     GraphEditor.addOrUpdateConnection(
                                         selectedGraphCopy,
                                         `${agoraRtcNode.name}`,
-                                        `${llmNode.name}`,
+                                        `${reasoningNodesWithVisualSupport.name}`,
                                         ProtocolLabel.VIDEO_FRAME,
                                         "video_frame"
                                     );
