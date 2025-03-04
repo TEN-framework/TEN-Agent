@@ -15,7 +15,6 @@ export namespace ModuleRegistry {
 
     export type NonToolModuleType = Exclude<ModuleType, ModuleType.TOOL>
     export type NonToolModule = Module & { type: NonToolModuleType };
-    export type ToolModule = Module & { type: ModuleType.TOOL };
     export enum Modalities {
         Video = "video",
         Audio = "audio",
@@ -27,6 +26,9 @@ export namespace ModuleRegistry {
     export interface V2VModuleOptions {
         inputModalities: Modalities[]
     }
+    export interface ToolModuleOptions {
+        outputContentText?: boolean
+    }
     // Extending Module to define LLMModule with options
     export interface LLMModule extends Module {
         type: ModuleType.LLM; // Ensuring it's specific to LLM
@@ -36,9 +38,9 @@ export namespace ModuleRegistry {
         type: ModuleType.V2V,
         options: LLMModuleOptions
     }
-    export type ToolModule = Module & { type: ModuleType.TOOL, options: ToolModuleOpts };
-    export interface ToolModuleOpts {
-        outputContentText?: boolean
+    export interface ToolModule extends Module {
+        type: ModuleType.TOOL,
+        options: ToolModuleOptions
     }
 }
 
