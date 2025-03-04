@@ -36,6 +36,10 @@ export namespace ModuleRegistry {
         type: ModuleType.V2V,
         options: LLMModuleOptions
     }
+    export type ToolModule = Module & { type: ModuleType.TOOL, options: ToolModuleOpts };
+    export interface ToolModuleOpts {
+        outputContentText?: boolean
+    }
 }
 
 
@@ -157,26 +161,37 @@ export const toolModuleRegistry: Record<string, ModuleRegistry.ToolModule> = {
         name: "vision_analyze_tool_python",
         type: ModuleRegistry.ModuleType.TOOL,
         label: "Vision Analyze Tool",
+        options: {}
     },
     weatherapi_tool_python: {
         name: "weatherapi_tool_python",
         type: ModuleRegistry.ModuleType.TOOL,
         label: "WeatherAPI Tool",
+        options: {}
     },
     bingsearch_tool_python: {
         name: "bingsearch_tool_python",
         type: ModuleRegistry.ModuleType.TOOL,
         label: "BingSearch Tool",
+        options: {}
     },
     vision_tool_python: {
         name: "vision_tool_python",
         type: ModuleRegistry.ModuleType.TOOL,
         label: "Vision Tool",
+        options: {}
     },
     openai_image_generate_tool: {
         name: "openai_image_generate_tool",
         type: ModuleRegistry.ModuleType.TOOL,
         label: "OpenAI Image Generate Tool",
+        options: { outputContentText: true }
+    },
+    computer_tool_python: {
+        name: "computer_tool_python",
+        type: ModuleRegistry.ModuleType.TOOL,
+        label: "Computer Tool",
+        options: { outputContentText: true }
     },
 }
 
@@ -188,8 +203,8 @@ export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
 }
 
 export const compatibleTools: Record<string, string[]> = {
-    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
-    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
-    gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
-    glm_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool"],
+    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    glm_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
 }

@@ -258,6 +258,13 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               data_type: EMessageDataType.REASON,
               text: data.text,
             };
+          } else if (type === "action") {
+            const { action, data: actionData } = data
+            if (action === "browse_website") {
+              console.log("Opening website", actionData.url)
+              window.open(actionData.url, "_blank")
+              return
+            }
           }
         }
 

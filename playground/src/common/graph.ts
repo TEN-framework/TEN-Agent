@@ -1,3 +1,5 @@
+import { ModuleRegistry } from "./moduleConfig"
+
 export namespace AddonDef {
   export type AttributeType =
     | "string"
@@ -508,7 +510,7 @@ class GraphEditor {
   /**
  * Link a tool to an LLM node by creating the appropriate connections.
  */
-  static linkTool(graph: Graph, llmNode: Node, toolNode: Node): void {
+  static linkTool(graph: Graph, llmNode: Node, toolNode: Node, tool: ModuleRegistry.ToolModule): void {
     // Create the connection from the LLM node to the tool node
     GraphEditor.addOrUpdateConnection(
       graph,
@@ -537,6 +539,17 @@ class GraphEditor {
         GraphConnProtocol.VIDEO_FRAME,
         "video_frame"
       );
+    }
+
+    const messageCollector = GraphEditor.findNodeByPredicate(graph, ((node) => node.addon.includes("message_collector")))
+    if (tool.options.outputContentText && messageCollector) {
+      GraphEditor.addOrUpdateConnection(
+        graph,
+        `${toolNode.name}`,
+        `${messageCollector.name}`,
+        GraphConnProtocol.DATA,
+        "content_data"
+      )
     }
   }
 
