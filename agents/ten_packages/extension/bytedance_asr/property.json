@@ -1,0 +1,6 @@
+{
+    "appid": "${env:BYTEDANCE_ASR_APPID}",
+    "token": "${env:BYTEDANCE_ASR_TOKEN}",
+    "api_url": "wss://openspeech.bytedance.com/api/v2/asr",
+    "cluster": "volcengine_streaming_common"
+}
