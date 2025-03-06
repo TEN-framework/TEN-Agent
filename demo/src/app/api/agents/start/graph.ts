@@ -247,6 +247,20 @@ export const getGraphProperties = (
                 "lang_code": language,
             }
         }
+    } else if (graphName == "deepseek_r1") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "llm": {
+                "prompt": prompt,
+                "greeting": combined_greeting,
+                "model": "DeepSeek-R1",
+            },
+            "tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     }
 
 

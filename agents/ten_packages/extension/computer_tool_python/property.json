@@ -1,0 +1,10 @@
+{
+    "base_url": "",
+    "api_key": "${env:OPENAI_API_KEY}",
+    "frequency_penalty": 0.9,
+    "model": "gpt-4o",
+    "max_tokens": 512,
+    "prompt": "",
+    "proxy_url": "${env:OPENAI_PROXY_URL}",
+    "max_memory_length": 10
+}

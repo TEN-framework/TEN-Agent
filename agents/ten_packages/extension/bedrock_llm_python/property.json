@@ -11,5 +11,5 @@
     "greeting": "TEN Agent connected. I am nova, How can I help you today?",
     "max_memory_length": 10,
     "is_memory_enabled": false,
-    "is_enable_video": false
+    "is_enable_video": true
 }

@@ -66,7 +66,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
   [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
 
-TEN offers a great support to make the realtime interactive epxerience even better on other LLM platform as well, check out docs for more.
+TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
 
 <br>
 <h2>TEN Agent + Gemini Multimodal Live API</h2>
@@ -119,7 +119,7 @@ Describe a topic and ask TEN Agent to tell you a story while also generating ima
 
 | Category | Requirements |
 |----------|-------------|
-| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)(free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [FishAudio](https://fish.audio/) TTS (free credits available with signup)|
+| **Keys** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) and [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) (free minutes every month) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (any LLM that is compatible with OpenAI)<br>• [Deepgram](https://deepgram.com/) ASR (free credits available with signup)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (free credits available with signup)|
 | **Installation** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
 | **Minimum System Requirements** | • CPU >= 2 Core<br>• RAM >= 4 GB |
 
@@ -185,7 +185,14 @@ Open the playground at [localhost:3000](http://localhost:3000) to configure your
 Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [documentation](https://doc.theten.ai/ten-agent/overview).
 
 <br>
-<h2>TEN Agent Components</h2>
+<h2>Deployment</h2>
+
+Once you have customized your agent (either by using the playground or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
+
+Read the [Deployment Guide](https://doc.theten.ai/ten-agent/deployment/deploy_agent_service) for detailed information about deployment.
+
+<br>
+<h2>TEN Agent Architecture</h2>
 
 ![Components Diagram](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 

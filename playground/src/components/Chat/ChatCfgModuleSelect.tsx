@@ -16,8 +16,6 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-    SheetFooter,
-    SheetClose,
 } from "@/components/ui/sheet"
 import {
     Form,
@@ -37,9 +35,9 @@ import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
 import { isLLM } from "@/common"
-import { compatibleTools, ModuleRegistry, ModuleTypeLabels } from "@/common/moduleConfig"
+import { compatibleTools, ModuleRegistry, ModuleTypeLabels, moduleRegistry, toolModuleRegistry } from "@/common/moduleConfig"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
@@ -139,17 +137,34 @@ export function RemoteModuleCfgSheet() {
                                     if (node && value && node.addon !== value) {
                                         node.addon = value;
                                         node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-
                                         needUpdate = true;
                                     }
                                 });
 
-                                const geminiV2VNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => node.addon === "gemini_v2v_python");
-                                if (geminiV2VNode) {
+                                const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
+                                    const module = moduleRegistry[node.addon]
+                                    if (!module) {
+                                        return false
+                                    }
+
+                                    if (module.type === ModuleRegistry.ModuleType.LLM) {
+                                        const llmModule = module as ModuleRegistry.LLMModule
+                                        return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
+
+                                    if (module.type === ModuleRegistry.ModuleType.V2V) {
+                                        const v2vModule = module as ModuleRegistry.V2VModule
+                                        return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
+
+                                    return false
+                                })
+
+                                if (reasoningNodesWithVisualSupport) {
                                     GraphEditor.addOrUpdateConnection(
                                         selectedGraphCopy,
                                         `${agoraRtcNode.name}`,
-                                        `${geminiV2VNode.name}`,
+                                        `${reasoningNodesWithVisualSupport.name}`,
                                         ProtocolLabel.VIDEO_FRAME,
                                         "video_frame"
                                     );
@@ -186,7 +201,7 @@ export function RemoteModuleCfgSheet() {
                                             // Create or update connections
                                             const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                             if (llmNode) {
-                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode);
+                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
                                             }
                                         }
                                     });

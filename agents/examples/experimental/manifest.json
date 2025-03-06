@@ -11,12 +11,12 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "=0.11.4"
+      "version": "=0.12.0"
     },
     {
       "type": "extension",
       "name": "agora_sess_ctrl",
-      "version": "=0.4.2"
+      "version": "=0.4.4"
     },
     {
       "type": "system",
@@ -26,17 +26,17 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.2"
+      "version": "0.4.1"
     },
     {
       "type": "extension",
       "name": "azure_tts",
-      "version": "=0.8.0"
+      "version": "=0.8.1"
     },
     {
       "type": "extension",
       "name": "agora_rtm",
-      "version": "=0.3.0"
+      "version": "=0.8.1"
     },
     {
       "type": "extension",
@@ -71,7 +71,7 @@
     {
       "type": "extension",
       "name": "http_server_python",
-      "version": "=0.1.0"
+      "version": "=0.10.1"
     },
     {
       "type": "extension",

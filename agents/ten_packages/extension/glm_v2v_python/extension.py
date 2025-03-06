@@ -7,6 +7,7 @@
 #
 import asyncio
 import base64
+import io
 import json
 from enum import Enum
 import traceback
@@ -14,6 +15,7 @@ import time
 import numpy as np
 from datetime import datetime
 from typing import Iterable
+from pydub import AudioSegment
 
 from ten import (
     AudioFrame,
@@ -45,6 +47,7 @@ from ten_ai_base.types import (
 from ten_ai_base.llm import AsyncLLMBaseExtension
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
+    AudioFormats,
     ItemCreate,
     SessionCreated,
     ItemCreated,
@@ -67,7 +70,6 @@ from .realtime.struct import (
     ResponseFunctionCallArgumentsDone,
     ErrorMessage,
     ItemDelete,
-    ItemTruncate,
     SessionUpdate,
     SessionUpdateParams,
     InputAudioTranscription,
@@ -88,36 +90,31 @@ class Role(str, Enum):
 
 
 @dataclass
-class OpenAIRealtimeConfig(BaseConfig):
-    base_uri: str = "wss://api.openai.com"
+class GLMRealtimeConfig(BaseConfig):
+    base_uri: str = "wss://open.bigmodel.cn"
     api_key: str = ""
-    path: str = "/v1/realtime"
-    model: str = "gpt-4o-realtime-preview"
-    language: str = "en-US"
+    path: str = "/api/paas/v4/realtime"
     prompt: str = ""
     temperature: float = 0.5
     max_tokens: int = 1024
-    voice: str = "alloy"
     server_vad: bool = True
     audio_out: bool = True
     input_transcript: bool = True
     sample_rate: int = 24000
 
-    vendor: str = ""
     stream_id: int = 0
     dump: bool = False
-    greeting: str = ""
     max_history: int = 20
     enable_storage: bool = False
+    greeting: str = ""
+    language: str = "en-US"
 
     def build_ctx(self) -> dict:
         return {
-            "language": self.language,
-            "model": self.model,
         }
 
 
-class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
+class GLMRealtimeExtension(AsyncLLMBaseExtension):
 
     def __init__(self, name: str):
         super().__init__(name)
@@ -126,7 +123,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         self.session = None
         self.session_id = None
 
-        self.config: OpenAIRealtimeConfig = None
+        self.config: GLMRealtimeConfig = None
         self.stopped: bool = False
         self.connected: bool = False
         self.buffer: bytearray = b""
@@ -143,10 +140,10 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         self.connect_times = []
         self.first_token_times = []
 
-        self.buff: bytearray = b""
         self.transcript: str = ""
         self.ctx: dict = {}
         self.input_end = time.time()
+        self.input_audio_queue = asyncio.Queue()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
@@ -158,8 +155,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         self.ten_env = ten_env
 
         self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self._on_process_audio())
 
-        self.config = await OpenAIRealtimeConfig.create_async(ten_env=ten_env)
+        self.config = await GLMRealtimeConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
 
         if not self.config.api_key:
@@ -186,15 +184,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.memory.on(EVENT_MEMORY_APPENDED, self._on_memory_appended)
 
             self.ctx = self.config.build_ctx()
-            self.ctx["greeting"] = self.config.greeting
 
             self.conn = RealtimeApiConnection(
                 ten_env=ten_env,
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                model=self.config.model,
-                vendor=self.config.vendor,
             )
             ten_env.log_info("Finish init client")
 
@@ -207,6 +202,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         await super().on_stop(ten_env)
         ten_env.log_info("on_stop")
 
+        self.input_audio_queue.put_nowait(None)
         self.stopped = True
 
     async def on_audio_frame(self, _: AsyncTenEnv, audio_frame: AudioFrame) -> None:
@@ -219,14 +215,13 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 self.remote_stream_id = stream_id
 
             frame_buf = audio_frame.get_buf()
-            self._dump_audio_if_need(frame_buf, Role.User)
+            self.input_audio_queue.put_nowait(frame_buf)
 
-            await self._on_audio(frame_buf)
             if not self.config.server_vad:
                 self.input_end = time.time()
         except Exception as e:
             traceback.print_exc()
-            self.ten_env.log_error(f"OpenAIV2VExtension on audio frame failed {e}")
+            self.ten_env.log_error(f"GLMV2VExtension on audio frame failed {e}")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
@@ -260,6 +255,22 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         pass
 
+    async def _on_process_audio(self) -> None:
+        while True:
+            try:
+                audio_frame = await self.input_audio_queue.get()
+
+                if audio_frame is None:
+                    break
+
+                self._dump_audio_if_need(audio_frame, Role.User)
+                if self.connected:
+                    wav_buff = self.convert_to_wav_in_memory(audio_frame)
+                    await self.conn.send_audio_data(wav_buff)
+            except Exception as e:
+                traceback.print_exc()
+                self.ten_env.log_error(f"Error processing audio frame {e}")
+
     async def _loop(self):
         def get_time_ms() -> int:
             current_time = datetime.now()
@@ -271,7 +282,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.connect_times.append(time.time() - start_time)
             item_id = ""  # For truncate
             response_id = ""
-            content_index = 0
+            # content_index = 0
             relative_start_ms = get_time_ms()
             flushed = set()
 
@@ -331,7 +342,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 {
                                     "role": "user",
                                     "content": message.transcript,
-                                    "id": message.item_id,
+                                    # "id": message.item_id,
                                 }
                             )
                         case ItemInputAudioTranscriptionFailed():
@@ -351,48 +362,54 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On response done {msg_resp_id} {status} {message.response.usage}"
                             )
+
+                            # workaround as GLM does not have responseAudioTranscriptDone
+                            self.transcript = ""
+                            self._send_transcript("", Role.Assistant, True)
+
                             if message.response.usage:
                                 pass
                                 # await self._update_usage(message.response.usage)
                         case ResponseAudioTranscriptDelta():
                             self.ten_env.log_info(
-                                f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
+                                f"On response transcript delta {message.output_index} {message.content_index} {message.delta}"
                             )
                             if message.response_id in flushed:
                                 self.ten_env.log_warn(
-                                    f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
+                                    f"On flushed transcript delta {message.output_index} {message.content_index} {message.delta}"
                                 )
                                 continue
                             self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseTextDelta():
                             self.ten_env.log_info(
-                                f"On response text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
+                                f"On response text delta {message.output_index} {message.content_index} {message.delta}"
                             )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                                )
-                                continue
-                            if item_id != message.item_id:
-                                item_id = message.item_id
-                                self.first_token_times.append(
-                                    time.time() - self.input_end
-                                )
+                            # if message.response_id in flushed:
+                            #     self.ten_env.log_warn(
+                            #         f"On flushed text delta {message.output_index} {message.content_index} {message.delta}"
+                            #     )
+                            #     continue
+                            # if item_id != message.item_id:
+                            #     item_id = message.item_id
+                            #     self.first_token_times.append(
+                            #         time.time() - self.input_end
+                            #     )
                             self._send_transcript(message.delta, Role.Assistant, False)
                         case ResponseAudioTranscriptDone():
+                            # this is not triggering by GLM
                             self.ten_env.log_info(
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}"
                             )
                             if message.response_id in flushed:
                                 self.ten_env.log_warn(
-                                    f"On flushed transcript done {message.response_id}"
+                                    "On flushed transcript done"
                                 )
                                 continue
                             self.memory.put(
                                 {
                                     "role": "assistant",
                                     "content": message.transcript,
-                                    "id": message.item_id,
+                                    # "id": message.item_id,
                                 }
                             )
                             self.transcript = ""
@@ -401,11 +418,11 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On response text done {message.output_index} {message.content_index} {message.text}"
                             )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed text done {message.response_id}"
-                                )
-                                continue
+                            # if message.response_id in flushed:
+                            #     self.ten_env.log_warn(
+                            #         f"On flushed text done {message.response_id}"
+                            #     )
+                            #     continue
                             self.completion_times.append(time.time() - self.input_end)
                             self.transcript = ""
                             self._send_transcript("", Role.Assistant, True)
@@ -416,17 +433,17 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 f"Output item added {message.output_index} {message.item}"
                             )
                         case ResponseAudioDelta():
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}"
-                                )
-                                continue
-                            if item_id != message.item_id:
-                                item_id = message.item_id
-                                self.first_token_times.append(
-                                    time.time() - self.input_end
-                                )
-                            content_index = message.content_index
+                            # if message.response_id in flushed:
+                            #     self.ten_env.log_warn(
+                            #         f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}"
+                            #     )
+                            #     continue
+                            # if item_id != message.item_id:
+                            #     item_id = message.item_id
+                            #     self.first_token_times.append(
+                            #         time.time() - self.input_end
+                            #     )
+                            # content_index = message.content_index
                             await self._on_audio_delta(message.delta)
                         case ResponseAudioDone():
                             self.completion_times.append(time.time() - self.input_end)
@@ -435,14 +452,14 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On server listening, in response {response_id}, last item {item_id}"
                             )
                             # Tuncate the on-going audio stream
-                            end_ms = get_time_ms() - relative_start_ms
-                            if item_id:
-                                truncate = ItemTruncate(
-                                    item_id=item_id,
-                                    content_index=content_index,
-                                    audio_end_ms=end_ms,
-                                )
-                                await self.conn.send_request(truncate)
+                            # end_ms = get_time_ms() - relative_start_ms
+                            # if item_id:
+                            #     truncate = ItemTruncate(
+                            #         item_id=item_id,
+                            #         content_index=content_index,
+                            #         audio_end_ms=end_ms,
+                            #     )
+                            #     await self.conn.send_request(truncate)
                             if self.config.server_vad:
                                 await self._flush()
                             if response_id and self.transcript:
@@ -460,12 +477,12 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On server stop listening, {message.audio_end_ms}, relative {relative_start_ms}"
                             )
                         case ResponseFunctionCallArgumentsDone():
-                            tool_call_id = message.call_id
+                            # tool_call_id = message.call_id
                             name = message.name
                             arguments = message.arguments
                             self.ten_env.log_info(f"need to call func {name}")
                             self.loop.create_task(
-                                self._handle_tool_call(tool_call_id, name, arguments)
+                                self._handle_tool_call(name, arguments)
                             )
                         case ErrorMessage():
                             self.ten_env.log_error(
@@ -496,8 +513,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
                 base_uri=self.config.base_uri,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                model=self.config.model,
-                vendor=self.config.vendor,
             )
 
             self.loop.create_task(self._loop())
@@ -525,12 +540,31 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             self.ten_env.log_error(f"Error send append_context data {message} {e}")
 
     # Direction: IN
-    async def _on_audio(self, buff: bytearray):
-        self.buff += buff
-        # Buffer audio
-        if self.connected and len(self.buff) >= self.audio_len_threshold:
-            await self.conn.send_audio_data(self.buff)
-            self.buff = b""
+    def convert_to_wav_in_memory(self, buff: bytearray) -> bytes:
+        """
+        Converts the accumulated PCM data to WAV format in-memory.
+        Returns the WAV data as bytes.
+        """
+        # Convert PCM data to numpy array of int16 type
+        pcm_data = np.frombuffer(buff, dtype=np.int16)
+
+        # Use pydub to create an AudioSegment
+        audio_segment = AudioSegment(
+            pcm_data.tobytes(), 
+            frame_rate=24000,
+            sample_width=2, 
+            channels=1
+        )
+
+        # Create an in-memory stream to store the WAV file
+        memory_stream = io.BytesIO()
+
+        # Export the AudioSegment to the in-memory stream as WAV
+        audio_segment.export(memory_stream, format="wav")
+        
+        # Return the WAV data as bytes
+        wav_bytes = memory_stream.getvalue()
+        return wav_bytes
 
     async def _update_session(self) -> None:
         tools = []
@@ -570,13 +604,14 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
         su = SessionUpdate(
             session=SessionUpdateParams(
                 instructions=prompt,
-                model=self.config.model,
-                tool_choice="auto" if self.available_tools else "none",
+                input_audio_format=AudioFormats.WAV24,
+                output_audio_format=AudioFormats.PCM,
                 tools=tools,
             )
         )
         if self.config.audio_out:
-            su.session.voice = self.config.voice
+            # su.session.voice = self.config.voice
+            pass
         else:
             su.session.modalities = ["text"]
 
@@ -681,9 +716,9 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             dump_file.write(buf)
 
     async def _handle_tool_call(
-        self, tool_call_id: str, name: str, arguments: str
+        self, name: str, arguments: str
     ) -> None:
-        self.ten_env.log_info(f"_handle_tool_call {tool_call_id} {name} {arguments}")
+        self.ten_env.log_info(f"_handle_tool_call {name} {arguments}")
         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
         cmd.set_property_string("name", name)
         cmd.set_property_from_json("arguments", arguments)
@@ -691,7 +726,6 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
         tool_response = ItemCreate(
             item=FunctionCallOutputItemParam(
-                call_id=tool_call_id,
                 output='{"success":false}',
             )
         )
@@ -704,7 +738,7 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
             tool_response.item.output = json.dumps(
                 self._convert_to_content_parts(result_content)
             )
-            self.ten_env.log_info(f"tool_result: {tool_call_id} {tool_result}")
+            self.ten_env.log_info(f"tool_result: {tool_result}")
         else:
             self.ten_env.log_error("Tool call failed")
 
@@ -751,18 +785,19 @@ class OpenAIRealtimeExtension(AsyncLLMBaseExtension):
 
     async def _greeting(self) -> None:
         if self.connected and self.users_count == 1:
+            # somehow it's not working
             text = self._greeting_text()
             if self.config.greeting:
                 text = "Say '" + self.config.greeting + "' to me."
             self.ten_env.log_info(f"send greeting {text}")
-            await self.conn.send_request(
-                ItemCreate(
-                    item=UserMessageItemParam(
-                        content=[{"type": ContentType.InputText, "text": text}]
-                    )
-                )
-            )
-            await self.conn.send_request(ResponseCreate())
+            # await self.conn.send_request(
+            #     ItemCreate(
+            #         item=UserMessageItemParam(
+            #             content=[{"type": ContentType.InputText, "text": text}]
+            #         )
+            #     )
+            # )
+            # await self.conn.send_request(ResponseCreate())
 
     async def _flush(self) -> None:
         try:

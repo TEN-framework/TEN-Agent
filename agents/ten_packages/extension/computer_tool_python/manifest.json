@@ -1,0 +1,87 @@
+{
+  "type": "extension",
+  "name": "computer_tool_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "frequency_penalty": {
+        "type": "float64"
+      },
+      "presence_penalty": {
+        "type": "float64"
+      },
+      "temperature": {
+        "type": "float64"
+      },
+      "top_p": {
+        "type": "float64"
+      },
+      "model": {
+        "type": "string"
+      },
+      "max_tokens": {
+        "type": "int64"
+      },
+      "base_url": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "proxy_url": {
+        "type": "string"
+      },
+      "max_memory_length": {
+        "type": "int64"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "azure_endpoint": {
+        "type": "string"
+      },
+      "azure_api_version": {
+        "type": "string"
+      }
+    },
+    "cmd_out": [
+      {
+        "name": "tool_register",
+        "property": {}
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "tool_call",
+        "property": {}
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "video_frame",
+        "property": {}
+      }
+    ]
+  }
+}
