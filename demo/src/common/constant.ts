@@ -63,6 +63,10 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
+    label: "Voice Agent with QWQ-32B Reasoning",
+    value: "qwq_32b",
+  },
+  {
     label: "Voice Agent with DeepSeek R1 Reasoning",
     value: "deepseek_r1",
   },

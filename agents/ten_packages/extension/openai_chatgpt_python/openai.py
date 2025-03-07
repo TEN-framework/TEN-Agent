@@ -7,6 +7,7 @@
 #
 from collections import defaultdict
 from dataclasses import dataclass
+from enum import Enum
 import random
 import requests
 from openai import AsyncOpenAI, AsyncAzureOpenAI
@@ -39,6 +40,10 @@ class OpenAIChatGPTConfig(BaseConfig):
     azure_endpoint: str = ""
     azure_api_version: str = ""
 
+
+class ReasoningMode(str, Enum):
+    ModeV1= "v1"
+
 class ThinkParser:
     def __init__(self):
         self.state = 'NORMAL'  # States: 'NORMAL', 'THINK'
@@ -56,6 +61,18 @@ class ThinkParser:
             if self.state == "THINK":
                 self.think_content += new_chars
         return False
+    
+    def process_by_reasoning_content(self, reasoning_content):
+        state_changed = False
+        if reasoning_content:
+            if self.state == 'NORMAL':
+                self.state = 'THINK'
+                state_changed = True
+            self.think_content += reasoning_content
+        elif self.state == 'THINK':
+            self.state = 'NORMAL'
+            state_changed = True
+        return state_changed
         
 
 class OpenAIChatGPT:
@@ -77,6 +94,7 @@ class OpenAIChatGPT:
         else:
             self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url, default_headers={
                 "api-key": config.api_key,
+                "Authorization": f"Bearer {config.api_key}"
             })
         self.session = requests.Session()
         if config.proxy_url:
@@ -151,6 +169,7 @@ class OpenAIChatGPT:
 
         # Example usage
         parser = ThinkParser()
+        reasoning_mode = None
 
         async for chat_completion in response:
             # self.ten_env.log_info(f"Chat completion: {chat_completion}")
@@ -160,13 +179,22 @@ class OpenAIChatGPT:
             delta = choice.delta
 
             content = delta.content if delta and delta.content else ""
+            reasoning_content = delta.reasoning_content if delta and hasattr(delta, "reasoning_content") and delta.reasoning_content else ""
+
+            if reasoning_mode is None and reasoning_content is not None:
+                reasoning_mode = ReasoningMode.ModeV1
 
             # Emit content update event (fire-and-forget)
-            if listener and content:
+            if listener and (content or reasoning_mode == ReasoningMode.ModeV1):
                 prev_state = parser.state
-                is_special_char = parser.process(content)
 
-                if not is_special_char:
+                if reasoning_mode == ReasoningMode.ModeV1:
+                    self.ten_env.log_info("process_by_reasoning_content")
+                    think_state_changed = parser.process_by_reasoning_content(reasoning_content)
+                else:
+                    think_state_changed = parser.process(content)
+
+                if not think_state_changed:
                     # self.ten_env.log_info(f"state: {parser.state}, content: {content}, think: {parser.think_content}")
                     if parser.state == "THINK":
                         listener.emit("reasoning_update", parser.think_content)
