@@ -9,6 +9,8 @@ CPU="x64"
 # debug, release
 BUILD_TYPE="release"
 
+PIP_INSTALL_CMD=${PIP_INSTALL_CMD:-"uv pip install --system"}
+
 build_cxx_extensions() {
   local app_dir=$1
 
@@ -53,14 +55,14 @@ install_python_requirements() {
   local app_dir=$1
 
   if [[ -f "requirements.txt" ]]; then
-    pip install -r requirements.txt
+    ${PIP_INSTALL_CMD} install -r requirements.txt
   fi
 
   # traverse the ten_packages/extension directory to find the requirements.txt
   if [[ -d "ten_packages/extension" ]]; then
     for extension in ten_packages/extension/*; do
       if [[ -f "$extension/requirements.txt" ]]; then
-        pip install -r $extension/requirements.txt
+        ${PIP_INSTALL_CMD} -r $extension/requirements.txt
       fi
     done
   fi
@@ -69,7 +71,7 @@ install_python_requirements() {
   if [[ -d "ten_packages/system" ]]; then
     for extension in ten_packages/system/*; do
       if [[ -f "$extension/requirements.txt" ]]; then
-        pip install -r $extension/requirements.txt
+        ${PIP_INSTALL_CMD} -r $extension/requirements.txt
       fi
     done
   fi
