@@ -27,16 +27,15 @@ export default function RTCCard(props: { className?: string }) {
 
   const dispatch = useAppDispatch()
   const options = useAppSelector((state) => state.global.options)
-  const voiceType = useAppSelector((state) => state.global.voiceType)
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const trulienceSettings = useAppSelector((state) => state.global.trulienceSettings)
   const { userId, channel } = options
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>()
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
   const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
-  const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
-  const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
+  const useTrulienceAvatar = trulienceSettings.enabled
+  const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
 
   const isCompactLayout = useIsCompactLayout();
 
@@ -134,7 +133,7 @@ export default function RTCCard(props: { className?: string }) {
   return (
     <div className={cn("flex h-full flex-col min-h-0", className)}>
       {/* Scrollable top region (Avatar or ChatCard) */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="min-h-0 overflow-y-auto">
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">

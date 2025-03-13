@@ -23,10 +23,11 @@ export default function Home() {
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab
   );
+  const trulienceSettings = useAppSelector((state) => state.global.trulienceSettings);
 
   const isCompactLayout = useIsCompactLayout();
-  const useTrulienceAvatar = Boolean(process.env.NEXT_PUBLIC_trulienceAvatarId)
-  const avatarInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
+  const useTrulienceAvatar = trulienceSettings.enabled;
+  const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
 
@@ -60,7 +61,7 @@ export default function Home() {
     <AuthInitializer>
       <div className="relative mx-auto flex flex-1 min-h-screen flex-col md:h-screen">
         <Header className="h-[60px]" />
-        <Action className="h-[48px]" />
+        <Action />
         <div className={cn(
           "mx-2 mb-2 flex h-full max-h-[calc(100vh-108px-24px)] flex-col md:flex-row md:gap-2 flex-1",
           {

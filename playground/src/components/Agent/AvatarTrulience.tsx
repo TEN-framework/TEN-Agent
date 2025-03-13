@@ -14,6 +14,7 @@ interface AvatarProps {
 
 export default function Avatar({ audioTrack, localAudioTrack }: AvatarProps) {
   const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const trulienceSettings = useAppSelector((state) => state.global.trulienceSettings)
   const trulienceAvatarRef = useRef<TrulienceAvatar>(null)
 
   // Track loading progress
@@ -31,7 +32,7 @@ export default function Avatar({ audioTrack, localAudioTrack }: AvatarProps) {
       const urlParams = new URLSearchParams(window.location.search)
       const avatarIdFromURL = urlParams.get("avatarId")
       setFinalAvatarId(
-        avatarIdFromURL || process.env.NEXT_PUBLIC_trulienceAvatarId || ""
+        avatarIdFromURL || trulienceSettings.avatarId || ""
       )
     }
   }, [])
@@ -57,10 +58,10 @@ export default function Avatar({ audioTrack, localAudioTrack }: AvatarProps) {
     if (!finalAvatarId) return null
     return (
       <TrulienceAvatar
-        url={process.env.NEXT_PUBLIC_trulienceSDK}
+        url={trulienceSettings.trulienceSDK}
         ref={trulienceAvatarRef}
         avatarId={finalAvatarId}
-        token={process.env.NEXT_PUBLIC_trulienceAvatarToken}
+        token={trulienceSettings.avatarToken}
         eventCallbacks={eventCallbacks}
         width="100%"
         height="100%"

@@ -17,9 +17,10 @@ import {
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { RemotePropertyCfgSheet} from "@/components/Chat/ChatCfgPropertySelect";
+import { RemotePropertyCfgSheet } from "@/components/Chat/ChatCfgPropertySelect";
 import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
+import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
 
@@ -120,53 +121,57 @@ export default function Action(props: { className?: string }) {
         <div className="hidden md:block">
           <span className="text-sm font-bold">Description</span>
           <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">
-  A Realtime Conversational AI Agent powered by TEN
-</span>
+            A Realtime Conversational AI Agent powered by TEN
+          </span>
 
         </div>
 
-        <Tabs
-          defaultValue={mobileActiveTab}
-          className="w-[400px] md:hidden"
-          onValueChange={onChangeMobileActiveTab}
-        >
-          <TabsList>
-            {Object.values(EMobileActiveTab).map((tab) => (
-              <TabsTrigger key={tab} value={tab} className="w-24 text-sm">
-                {MOBILE_ACTIVE_TAB_MAP[tab]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-          <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-2">
-            <RemoteGraphSelect />
-            {
-              isEditModeOn ? (
-                <>
-                  <RemoteModuleCfgSheet />
-                  <RemotePropertyCfgSheet />
-                </>
-              ) : null
-            }
-          </div>
-        {/* -- Action Button */}
-        <div className="ml-auto flex items-center gap-2">
-          <LoadingButton
-            onClick={onClickConnect}
-            variant={!agentConnected ? "default" : "destructive"}
-            size="sm"
-            disabled={graphName === "" && !agentConnected }
-            className="w-fit min-w-24"
-            loading={loading}
-            svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
+        <div className="flex w-full flex-col md:flex-row md:items-center justify-between md:justify-end">
+          {/* -- Tabs Section */}
+          <Tabs
+            defaultValue={mobileActiveTab}
+            className="md:hidden w-full md:flex-row"
+            onValueChange={onChangeMobileActiveTab}
           >
-            {loading
-              ? "Connecting"
-              : !agentConnected
-                ? "Connect"
-                : "Disconnect"}
-          </LoadingButton>
+            <TabsList className="flex justify-center md:justify-start">
+              {Object.values(EMobileActiveTab).map((tab) => (
+                <TabsTrigger key={tab} value={tab} className="w-24 text-sm">
+                  {MOBILE_ACTIVE_TAB_MAP[tab]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {/* -- Graph Select Part */}
+          <div className="flex flex-wrap items-center justify-between w-full md:w-auto gap-2 mt-2 md:mt-0">
+            <RemoteGraphSelect />
+            {isEditModeOn && (
+              <>
+                <TrulienceCfgSheet />
+                <RemoteModuleCfgSheet />
+                <RemotePropertyCfgSheet />
+              </>
+            )}
+
+            {/* -- Action Button */}
+            <div className="ml-auto flex items-center gap-2">
+              <LoadingButton
+                onClick={onClickConnect}
+                variant={!agentConnected ? "default" : "destructive"}
+                size="sm"
+                disabled={graphName === "" && !agentConnected}
+                className="w-fit min-w-24"
+                loading={loading}
+                svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
+              >
+                {loading
+                  ? "Connecting"
+                  : !agentConnected
+                    ? "Connect"
+                    : "Disconnect"}
+              </LoadingButton>
+            </div>
+          </div>
         </div>
       </div>
     </>

@@ -19,6 +19,15 @@ export interface IAgentSettings {
   greeting: string;
 }
 
+export interface ITrulienceSettings {
+  enabled: boolean;
+  avatarToken: string;
+  avatarId: string;
+  avatarDesktopLargeWindow: boolean;
+  animationURL: string;
+  trulienceSDK: string;
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",

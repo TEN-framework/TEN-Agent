@@ -4,6 +4,7 @@ import {
   LanguageOptionItem,
   VoiceOptionItem,
   GraphOptionItem,
+  ITrulienceSettings,
 } from "@/types";
 export const GITHUB_URL = "https://github.com/TEN-framework/TEN-Agent";
 export const OPTIONS_KEY = "__options__";
@@ -131,3 +132,13 @@ export const isLLM = (extensionName: string) => {
 }
 
 export const isEditModeOn = process.env.NEXT_PUBLIC_EDIT_GRAPH_MODE === "true";
+
+export const TRULIENCE_SETTINGS_KEY = "__trulience__";
+export const DEFAULT_TRULIENCE_OPTIONS: ITrulienceSettings = {
+  enabled: false,
+  avatarId: "",
+  avatarToken: "",
+  avatarDesktopLargeWindow: false,
+  animationURL: "https://trulience.com",
+  trulienceSDK: "https://trulience.com/sdk/trulience.sdk.js",
+};

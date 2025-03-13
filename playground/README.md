@@ -38,15 +38,3 @@ pnpm install
 # run
 pnpm dev
 ```
-
-## Avatars
-
-### Trulience
-Add the following or equivalent lines to client .env     
-
-```bash
-NEXT_PUBLIC_trulienceSDK=https://trulience.com/sdk/trulience.sdk.js
-NEXT_PUBLIC_trulienceAvatarToken=
-NEXT_PUBLIC_trulienceAvatarId=8848447098800980663
-NEXT_PUBLIC_trulienceAnimationURL=https://trulience.com
-```
