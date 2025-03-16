@@ -45,11 +45,18 @@ tasks:
     cmds:
       - tman designer
 
+  run-playground:
+    desc: run playground
+    dir: ./playground
+    cmds:
+      - npm run dev
+
   run:
     desc: run servers
     deps:
       - task: run-server
       - task: run-gd-server
+      - task: run-playground
 
   build-agent:
     desc: build agent
