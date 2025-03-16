@@ -54,7 +54,7 @@ tasks:
   run:
     desc: run servers
     deps:
-      - task: run-server
+      # - task: run-server
       - task: run-gd-server
       - task: run-playground
 
