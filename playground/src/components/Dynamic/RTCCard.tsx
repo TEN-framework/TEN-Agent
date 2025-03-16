@@ -133,7 +133,7 @@ export default function RTCCard(props: { className?: string }) {
   return (
     <div className={cn("flex h-full flex-col min-h-0", className)}>
       {/* Scrollable top region (Avatar or ChatCard) */}
-      <div className="min-h-0 overflow-y-auto">
+      <div className="min-h-0 overflow-y-auto z-10">
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">

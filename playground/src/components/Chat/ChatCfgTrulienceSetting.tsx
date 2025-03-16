@@ -60,9 +60,9 @@ export function TrulienceCfgSheet() {
                         }}
                         onUpdate={async (data) => {
                             if (data.enable_trulience_avatar === true) {
-                                if (!data.trulience_avatar_id || !data.trulience_avatar_token) {
+                                if (!data.trulience_avatar_id) {
                                     toast.error("Trulience Settings", {
-                                        description: `Please provide Trulience Avatar ID and Token`,
+                                        description: `Please provide Trulience Avatar ID`,
                                     })
                                     return
                                 }

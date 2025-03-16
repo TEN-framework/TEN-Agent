@@ -29,15 +29,12 @@ export default function Home() {
   const useTrulienceAvatar = trulienceSettings.enabled;
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
-  const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
 
   React.useEffect(() => {
     const { rtcManager } = require("../manager/rtc/rtc");
     rtcManager.on("remoteUserChanged", onRemoteUserChanged);
-    rtcManager.on("localTracksChanged", onLocalTracksChanged)
     return () => {
       rtcManager.off("remoteUserChanged", onRemoteUserChanged);
-      rtcManager.off("localTracksChanged", onLocalTracksChanged);
     };
   }, []);
 
@@ -48,13 +45,6 @@ export default function Home() {
     if (user.audioTrack) {
       setRemoteUser(user)
     } 
-  }
-
-  const onLocalTracksChanged = (tracks: IUserTracks) => {
-    const { audioTrack } = tracks
-    if (audioTrack) {
-      setAudioTrack(audioTrack)
-    }
   }
 
   return (
@@ -96,7 +86,7 @@ export default function Home() {
                 ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
               }
             )}>
-              <Avatar localAudioTrack={audioTrack} audioTrack={remoteuser?.audioTrack} />
+              <Avatar audioTrack={remoteuser?.audioTrack} />
             </div>
           )}
 
