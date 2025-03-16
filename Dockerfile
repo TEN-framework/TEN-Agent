@@ -12,7 +12,7 @@ COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 RUN task clean && task use AGENT=${USE_AGENT} && task install-tools && task lint && \
     cd agents && ./scripts/package.sh
 
-RUN cd playground && npm i
+RUN task build-playground
 
 EXPOSE 8080
 

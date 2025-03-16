@@ -71,6 +71,12 @@ tasks:
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
+  build-playground:
+    desc: build playground
+    dir: ./playground
+    cmds:
+      - npm i
+
   clean-agents:
     desc: clean up agents
     dir: ./agents
