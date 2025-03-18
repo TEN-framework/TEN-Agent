@@ -134,6 +134,11 @@ export const ttsModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "polly_tts",
         type: ModuleRegistry.ModuleType.TTS,
         label: "Polly TTS",
+    },
+    neuphonic_tts: {
+        name: "neuphonic_tts",
+        type: ModuleRegistry.ModuleType.TTS,
+        label: "Neuphonic TTS",
     }
 }
 
