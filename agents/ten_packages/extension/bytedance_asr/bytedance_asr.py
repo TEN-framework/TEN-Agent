@@ -107,14 +107,10 @@ def parse_response(res):
     header_extensions 扩展头(大小等于 8 * 4 * (header_size - 1) )
     payload 类似与http 请求体
     """
-    protocol_version = res[0] >> 4
     header_size = res[0] & 0x0f
     message_type = res[1] >> 4
-    message_type_specific_flags = res[1] & 0x0f
     serialization_method = res[2] >> 4
     message_compression = res[2] & 0x0f
-    reserved = res[3]
-    header_extensions = res[4:header_size * 4]
     payload = res[header_size * 4:]
     result = {}
     payload_msg = None

@@ -102,7 +102,7 @@ class AliyunASRExtension(AsyncExtension):
         self.ten_env.log_info("start and listen aliyun_asr")
 
         def on_start(message, *args):
-            self.ten_env.log_info(f"aliyun_asr event callback on_start: {message}")
+            self.ten_env.log_info(f"aliyun_asr event callback on_start: {message} {args}")
             self.connected = True
 
         def on_close(*args):
@@ -115,7 +115,7 @@ class AliyunASRExtension(AsyncExtension):
 
         def on_message(result, *args):
             if not result:
-                self.ten_env.log_warn("Received empty result.")
+                self.ten_env.log_warn("Received empty result. args: {args}")
                 return
 
             try:
@@ -143,7 +143,7 @@ class AliyunASRExtension(AsyncExtension):
                 self.ten_env.log_error(f"Error processing message: {e}")
 
         def on_error(message, *args):
-            self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
+            self.ten_env.log_error(f"aliyun_asr event callback on_error: {message} {args}")
 
         import nls
         token = nls.token.getToken(self.config.akid, self.config.aksecret)
