@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType } from "@/common"
+import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType, useIsCompactLayout } from "@/common"
 import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
 import {
@@ -14,8 +14,11 @@ import {
 } from "@/store/reducers/global"
 import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect"
 import AgentView from "@/components/Agent/View"
+import Avatar from "@/components/Agent/AvatarTrulience"
 import MicrophoneBlock from "@/components/Agent/Microphone"
 import VideoBlock from "@/components/Agent/Camera"
+import dynamic from "next/dynamic"
+import ChatCard from "@/components/Chat/ChatCard"
 
 let hasInit: boolean = false
 
@@ -24,14 +27,21 @@ export default function RTCCard(props: { className?: string }) {
 
   const dispatch = useAppDispatch()
   const options = useAppSelector((state) => state.global.options)
-  const voiceType = useAppSelector((state) => state.global.voiceType)
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const trulienceSettings = useAppSelector((state) => state.global.trulienceSettings)
   const { userId, channel } = options
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>()
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
   const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
   const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
+  const useTrulienceAvatar = trulienceSettings.enabled
+  const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
+
+  const isCompactLayout = useIsCompactLayout();
+
+  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
+    ssr: false,
+  });
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -85,7 +95,13 @@ export default function RTCCard(props: { className?: string }) {
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user)
-    setRemoteUser(user)
+    if (useTrulienceAvatar) {
+      // trulience SDK will play audio in synch with mouth
+      user.audioTrack?.stop();
+    }
+    if (user.audioTrack) {
+      setRemoteUser(user)
+    } 
   }
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
@@ -115,29 +131,35 @@ export default function RTCCard(props: { className?: string }) {
   }
 
   return (
-    <>
-      <div className={cn("flex-shrink-0", "overflow-y-auto", className)}>
-        <div className="flex h-full w-full flex-col">
-          {/* -- Agent */}
-          <div className="w-full">
-            <div className="flex w-full items-center justify-between p-2">
-              <h2 className="mb-2 text-xl font-semibold">Audio & Video</h2>
+    <div className={cn("flex h-full flex-col min-h-0", className)}>
+      {/* Scrollable top region (Avatar or ChatCard) */}
+      <div className="min-h-0 overflow-y-auto z-10">
+        {useTrulienceAvatar ? (
+          !avatarInLargeWindow ? (
+            <div className="h-60 w-full p-1">
+              <Avatar localAudioTrack={audioTrack} audioTrack={remoteuser?.audioTrack} />
             </div>
-            <AgentView audioTrack={remoteuser?.audioTrack} />
-          </div>
-
-          {/* -- You */}
-          <div className="w-full space-y-2 px-2">
-            <MicrophoneBlock audioTrack={audioTrack} />
-            <VideoBlock
-              cameraTrack={videoTrack}
-              screenTrack={screenTrack}
-              videoSourceType={videoSourceType}
-              onVideoSourceChange={onVideoSourceTypeChange}
+          ) : (
+            !isCompactLayout &&
+            <ChatCard
+              className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
             />
-          </div>
-        </div>
+          )
+        ) : (
+          <AgentView  audioTrack={remoteuser?.audioTrack} />
+        )}
       </div>
-    </>
-  )
+
+      {/* Bottom region for microphone and video blocks */}
+      <div className="w-full space-y-2 px-2 py-2">
+        <MicrophoneBlock audioTrack={audioTrack} />
+        <VideoBlock
+          cameraTrack={videoTrack}
+          screenTrack={screenTrack}
+          videoSourceType={videoSourceType}
+          onVideoSourceChange={onVideoSourceTypeChange}
+        />
+      </div>
+    </div>
+  );
 }

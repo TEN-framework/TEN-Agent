@@ -3,13 +3,15 @@ import {
   IChatItem,
   Language,
   VoiceType,
+  ITrulienceSettings,
 } from "@/types";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   EMobileActiveTab,
   DEFAULT_OPTIONS,
   COLOR_LIST,
-  isEditModeOn
+  isEditModeOn,
+  DEFAULT_TRULIENCE_OPTIONS
 } from "@/common/constant";
 import {
   apiReloadPackage,
@@ -21,6 +23,7 @@ import {
 } from "@/common/request"
 import {
   setOptionsToLocal,
+  setTrulienceSettingsToLocal,
 } from "@/common/storage"
 import { AddonDef, Graph } from "@/common/graph";
 
@@ -38,6 +41,7 @@ export interface InitialState {
   graphMap: Record<string, Graph>;
   addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
+  trulienceSettings: ITrulienceSettings;
 }
 
 const getInitialState = (): InitialState => {
@@ -55,6 +59,7 @@ const getInitialState = (): InitialState => {
     graphMap: {},
     addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
+    trulienceSettings: DEFAULT_TRULIENCE_OPTIONS,
   };
 };
 
@@ -65,6 +70,10 @@ export const globalSlice = createSlice({
     setOptions: (state, action: PayloadAction<Partial<IOptions>>) => {
       state.options = { ...state.options, ...action.payload };
       setOptionsToLocal(state.options);
+    },
+    setTrulienceSettings: (state, action: PayloadAction<ITrulienceSettings>) => {
+      state.trulienceSettings = { ...state.trulienceSettings, ...action.payload };
+      setTrulienceSettingsToLocal(state.trulienceSettings);
     },
     setThemeColor: (state, action: PayloadAction<string>) => {
       state.themeColor = action.payload;
@@ -251,6 +260,7 @@ export const {
   setMobileActiveTab,
   setGraph,
   setAddonModules,
+  setTrulienceSettings,
 } = globalSlice.actions;
 
 export {
