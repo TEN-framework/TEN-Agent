@@ -101,8 +101,8 @@ class AliyunASRExtension(AsyncExtension):
     async def _start_listen(self) -> None:
         self.ten_env.log_info("start and listen aliyun_asr")
 
-        def on_start(message, *args):
-            self.ten_env.log_info(f"aliyun_asr event callback on_start: {message} {args}")
+        def on_start(message, *_):
+            self.ten_env.log_info(f"aliyun_asr event callback on_start: {message}")
             self.connected = True
 
         def on_close(*args):
@@ -113,9 +113,9 @@ class AliyunASRExtension(AsyncExtension):
                     "aliyun_asr connection closed unexpectedly. Reconnecting..."
                 )
 
-        def on_message(result, *args):
+        def on_message(result, *_):
             if not result:
-                self.ten_env.log_warn("Received empty result. args: {args}")
+                self.ten_env.log_warn("Received empty result.")
                 return
 
             try:
@@ -142,8 +142,8 @@ class AliyunASRExtension(AsyncExtension):
             except Exception as e:
                 self.ten_env.log_error(f"Error processing message: {e}")
 
-        def on_error(message, *args):
-            self.ten_env.log_error(f"aliyun_asr event callback on_error: {message} {args}")
+        def on_error(message, *_):
+            self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
 
         import nls
         token = nls.token.getToken(self.config.akid, self.config.aksecret)
