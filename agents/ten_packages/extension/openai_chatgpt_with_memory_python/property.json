@@ -1,0 +1,13 @@
+{
+    "base_url": "",
+    "api_key": "${env:OPENAI_API_KEY}",
+    "frequency_penalty": 0.9,
+    "model": "${env:OPENAI_MODEL}",
+    "max_tokens": 512,
+    "prompt": "你是一个具有长期记忆能力的智能助手，能够记住并利用过去的对话内容。当用户提到过去讨论过的内容时，你应该能够回忆起相关信息并保持对话的连贯性。以友好、自然的方式回应，避免机械式回复。",
+    "proxy_url": "${env:OPENAI_PROXY_URL}",
+    "greeting": "你好！我是带有长期记忆的TEN Agent。我能记住我们之间的对话，有什么我能帮助你的吗？",
+    "max_memory_length": 15,
+    "qdrant_host": "qdrant",
+    "qdrant_port": 6333
+}

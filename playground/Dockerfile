@@ -1,6 +1,6 @@
 FROM node:22-alpine AS base
 
-ARG EDIT_GRAPH_MODE=false
+ARG EDIT_GRAPH_MODE=true
 
 # 1. Install dependencies only when needed
 FROM base AS deps

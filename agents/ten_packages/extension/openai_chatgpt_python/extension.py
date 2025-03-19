@@ -205,6 +205,8 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                     ]
             self.memory_cache = self.memory_cache + [{"role": "assistant", "content": ""}]
 
+            async_ten_env.log_info(f"for memory_cache: [{self.memory_cache}]")
+
             tools = None
             if not no_tool and len(self.available_tools) > 0:
                 tools = []

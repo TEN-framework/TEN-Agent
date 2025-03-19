@@ -100,10 +100,10 @@ class VolcengineASRExtension(AsyncExtension):
             seg_duration = self.config.sample_rate * 2 * self.config.channels * 120 / 1000
             if self.client:
                 if len(self.frame_buff) >= seg_duration:
-                    self.ten_env.log_info(f"send frame_buf:{len(self.frame_buff)}")
+                    # self.ten_env.log_info(f"send frame_buf:{len(self.frame_buff)}")
                     await self.client.send(bytes(self.frame_buff[:]))
                     self.frame_buff.clear()
-                    self.ten_env.log_info(f"send frame_buf over:{len(self.frame_buff)}")
+                    # self.ten_env.log_info(f"send frame_buf over:{len(self.frame_buff)}")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_stop")

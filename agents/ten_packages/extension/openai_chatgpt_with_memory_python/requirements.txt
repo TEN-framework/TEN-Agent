@@ -1,0 +1,5 @@
+openai
+numpy
+requests[socks]
+pillow
+mem0ai==0.1.67

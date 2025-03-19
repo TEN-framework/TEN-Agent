@@ -55,6 +55,11 @@
     },
     {
       "type": "extension",
+      "name": "openai_chatgpt_with_memory_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
       "name": "fish_audio_tts",
       "version": "=0.1.0"
     },

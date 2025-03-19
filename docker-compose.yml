@@ -18,8 +18,8 @@ services:
     networks:
       - ten_agent_network
   ten_agent_playground:
-    image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-80-g5967f0b
-    # image: ghcr.io/ten-framework/ten_agent_playground:test_01100302
+    # image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-80-g5967f0b
+    image: ghcr.io/ten-framework/ten_agent_playground:test_03190948
     container_name: ten_agent_playground
     restart: always
     ports:
@@ -39,6 +39,17 @@ services:
       - ten_agent_network
     environment:
       - AGENT_SERVER_URL=http://ten_agent_dev:8080
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: always
+    ports:
+      - "6333:6333" # HTTP API 端口
+      - "6334:6334" # gRPC API 端口
+    volumes:
+      - ~/.mem0/qdrant_storage:/qdrant/storage:z
+    networks:
+      - ten_agent_network
   # ten_graph_designer:
   #   image: ghcr.io/ten-framework/ten_graph_designer:4cc33b8
   #   container_name: ten_graph_designer

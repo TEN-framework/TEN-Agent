@@ -78,6 +78,12 @@ export const llmModuleRegistry: Record<string, ModuleRegistry.LLMModule> = {
         label: "OpenAI ChatGPT",
         options: { inputModalities: [ModuleRegistry.Modalities.Text] }
     },
+    openai_chatgpt_with_memory_python: {
+        name: "openai_chatgpt_with_memory_python",
+        type: ModuleRegistry.ModuleType.LLM,
+        label: "OpenAI ChatGPT With Memory",
+        options: { inputModalities: [ModuleRegistry.Modalities.Text] }
+    },
     dify_python: {
         name: "dify_python",
         type: ModuleRegistry.ModuleType.LLM,
@@ -216,6 +222,7 @@ export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
 
 export const compatibleTools: Record<string, string[]> = {
     openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    openai_chatgpt_with_memory_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
     openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
     gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
     glm_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
