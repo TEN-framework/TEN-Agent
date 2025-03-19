@@ -1,0 +1,5 @@
+{
+    "api_key": "${env:NEUPHONIC_API_KEY}",
+    "lang_code": "en",
+    "sample_rate": 16000
+}
