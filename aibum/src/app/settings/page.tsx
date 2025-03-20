@@ -4,28 +4,42 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { getOptionsFromLocal, setOptionsToLocal } from '@/common/storage';
+import { VALID_USERS, isValidUser, getUserId } from '@/common/constants';
 
 export default function Settings() {
   const router = useRouter();
-  const [userId, setUserId] = useState('');
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const options = getOptionsFromLocal();
-    if (options.userId) {
-      setUserId(options.userId);
+    if (options.username) {
+      setUsername(options.username);
     }
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (userId.trim()) {
-      const options = getOptionsFromLocal();
-      setOptionsToLocal({
-        ...options,
-        userId: userId.trim()
-      });
-      router.back();
+    const trimmedUsername = username.trim();
+
+    if (!trimmedUsername) {
+      setError('用户名不能为空');
+      return;
     }
+
+    if (!isValidUser(trimmedUsername)) {
+      setError('无效的用户名，请使用以下用户名之一：' + Object.keys(VALID_USERS).join(', '));
+      return;
+    }
+
+    const userId = getUserId(trimmedUsername);
+    const options = getOptionsFromLocal();
+    setOptionsToLocal({
+      ...options,
+      username: trimmedUsername,
+      userId: userId
+    });
+    router.back();
   };
 
   return (
@@ -46,20 +60,28 @@ export default function Settings() {
         <div className="rounded-lg bg-white p-6 shadow-md">
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="userId" className="mb-2 block text-sm font-medium text-gray-700">
-                用户 ID
+              <label htmlFor="username" className="mb-2 block text-sm font-medium text-gray-700">
+                用户名
               </label>
               <input
                 type="text"
-                id="userId"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                id="username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setError(''); // 清除错误信息
+                }}
                 className="w-full rounded-lg border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
-                placeholder="请输入用户 ID"
+                placeholder="请输入用户名"
                 required
               />
+              {error && (
+                <p className="mt-1 text-sm text-red-500">
+                  {error}
+                </p>
+              )}
               <p className="mt-1 text-sm text-gray-500">
-                请输入一个唯一的用户 ID，这将用于语音对话的识别
+                请输入有效的用户名，用于语音对话的识别
               </p>
             </div>
             <button

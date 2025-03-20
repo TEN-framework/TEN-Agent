@@ -314,7 +314,7 @@
               "api_key": "${env:OPENAI_API_KEY}",
               "base_url": "",
               "frequency_penalty": 0.9,
-              "greeting": "你好，我是台湾小何",
+              "greeting": "你好，我是林晓",
               "max_memory_length": 10,
               "max_tokens": 512,
               "model": "${env:OPENAI_MODEL}",

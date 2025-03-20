@@ -420,7 +420,7 @@ export default function RTCComponent({
       const startResponse = await apiStartService({
         channel: options.channel,
         userId: userIdNum,
-        graphName: 'voice_assistant',
+        graphName: 'voice_assistant_with_memory',
         language: 'zh-CN',
         voiceType: 'female'
       });
