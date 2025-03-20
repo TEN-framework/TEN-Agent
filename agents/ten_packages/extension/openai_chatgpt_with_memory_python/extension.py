@@ -74,6 +74,7 @@ class OpenAIChatGPTWithMemoryExtension(AsyncLLMBaseExtension):
         await super().on_start(async_ten_env)
 
         self.config = await OpenAIChatGPTWithMemoryConfig.create_async(ten_env=async_ten_env)
+        async_ten_env.log_info(f"OpenAIChatGPTWithMemoryConfig:{self.config}")
 
         # Mandatory properties
         if not self.config.api_key:
@@ -86,7 +87,7 @@ class OpenAIChatGPTWithMemoryExtension(AsyncLLMBaseExtension):
             async_ten_env.log_info(
                 f"initialized with config: {self.config}"
             )
-            user_id = "pudgeli"
+            user_id = self.config.user_id
             # 初始化记忆管理器 - 使用AsyncMemoryWrapper替代MemoryManager
             mem_config = MemoryConfig(
                 vector_store=VectorStoreConfig(
@@ -217,25 +218,12 @@ class OpenAIChatGPTWithMemoryExtension(AsyncLLMBaseExtension):
                 self.last_user_message = user_message
                 if isinstance(user_message, str) and user_message:
                     relevant_memories = await self.memory_manager.search_memories(user_message, limit=self.config.max_memory_length)
-                    async_ten_env.log_info(f"Found {len(relevant_memories)} relevant memories")
-                    # 遍历并打印每条相关记忆的详细信息
-                    for i, entry in enumerate(relevant_memories):
-                        memory_id = entry.get('id', f'未知_{i}')
-                        memory_text = entry.get('memory', '无内容')
-                        memory_score = entry.get('score', 0)
-                        async_ten_env.log_info(f"{'='*40}")
-                        async_ten_env.log_info(f"记忆 ID: {memory_id}")
-                        async_ten_env.log_info(f"记忆内容: {memory_text}")
-                        async_ten_env.log_info(f"相关度分数: {memory_score:.4f}")
-                        if 'metadata' in entry:
-                            async_ten_env.log_info(f"元数据: {entry['metadata']}")
 
             async_ten_env.log_info(f"relevant_memories: {relevant_memories}")
             # 如果找到相关记忆，添加到系统提示中
             memory_context = ""
             if relevant_memories:
                 memory_context = await self.memory_manager.format_context(relevant_memories)
-                async_ten_env.log_info(f"Memory context: {memory_context}")
             
             # 将记忆上下文添加到第一条消息中（如果是系统消息）
             system_prompt = self.config.prompt

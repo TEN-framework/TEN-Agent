@@ -332,12 +332,12 @@
             "property": {
               "app_id": "${env:VOLCENGINE_APP_ID}",
               "token": "${env:VOLCENGINE_TOKEN}",
-              "cluster": "volcano_mega",
+              "cluster": "volcano_tts",
               "pitch_ratio": 1,
               "request_timeout_seconds": 30,
               "sample_rate": 24000,
               "speed_ratio": 1.1,
-              "timbre": "S_hk32y8311",
+              "timbre": "zh_female_wanwanxiaohe_moon_bigtts",
               "volumn_ratio": 1
             }
           },

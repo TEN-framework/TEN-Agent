@@ -90,6 +90,8 @@ class AsyncMemory:
                     self.ten_env.log_info(f"记忆内容: {memory_text[:100]}..." if len(memory_text) > 100 else f"记忆内容: {memory_text}")
                     self.ten_env.log_info(f"相关度分数: {memory_score:.4f}")
                     self.ten_env.log_info(f"用户: {entry.get('user_id', 'N/A')}")
+                    self.ten_env.log_info(f"创建时间: {entry.get('created_at', 'N/A')}")
+                    self.ten_env.log_info(f"更新时间: {entry.get('updated_at', 'N/A')}")
                     if 'metadata' in entry:
                         self.ten_env.log_info(f"元数据: {entry['metadata']}")
                 self.ten_env.log_info(f"{'='*40}")

@@ -557,6 +557,23 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	for _, graph := range newGraphs {
 		graphMap, _ := graph.(map[string]interface{})
 		graphMap["auto_start"] = true
+
+		// 在找到匹配的图后，设置 RemoteStreamId 到 llm 组件的 user_id
+		if nodes, ok := graphMap["nodes"].([]interface{}); ok {
+			for _, node := range nodes {
+				nodeMap, _ := node.(map[string]interface{})
+				if nodeName, ok := nodeMap["name"].(string); ok && nodeName == "llm" {
+					properties, ok := nodeMap["property"].(map[string]interface{})
+					if !ok {
+						properties = make(map[string]interface{})
+						nodeMap["property"] = properties
+					}
+					// 将 RemoteStreamId 转换为字符串并设置为 user_id
+					properties["user_id"] = fmt.Sprintf("%d", req.RemoteStreamId)
+					slog.Info("Set user_id for llm component", "user_id", req.RemoteStreamId, "requestId", req.RequestId, logTag)
+				}
+			}
+		}
 	}
 
 	// Set additional properties to property.json

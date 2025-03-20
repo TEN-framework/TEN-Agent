@@ -41,6 +41,7 @@ class OpenAIChatGPTWithMemoryConfig(BaseConfig):
     # 向量数据库配置
     qdrant_host: str = "qdrant"
     qdrant_port: int = 6333
+    user_id: str = ""
 
 class ThinkParser:
     def __init__(self):
