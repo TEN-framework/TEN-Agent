@@ -1,9 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import AudioVisualizer from '@/components/AudioVisualizer';
+import { useMultibandTrackVolume } from '@/common/hooks';
+import { IMicrophoneAudioTrack } from 'agora-rtc-sdk-ng';
+import { getOptionsFromLocal, setOptionsToLocal } from '@/common/storage';
+import { VALID_USERS, isValidUser, getUserId } from '@/common/constants';
 
 // 动态导入 RTCComponent，但不显示加载状态
 const RTCComponent = dynamic(() => import('@/components/RTCComponent'), {
@@ -17,8 +22,20 @@ export default function Home() {
   const [showRTC, setShowRTC] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [isAudioActive, setIsAudioActive] = useState(false);
   const [isDynamicVideoReady, setIsDynamicVideoReady] = useState(false);
+  const [remoteAudioTrack, setRemoteAudioTrack] = useState<IMicrophoneAudioTrack | undefined>();
+  const { frequencyBands, isActive } = useMultibandTrackVolume(remoteAudioTrack, 12);
+  const [showSettings, setShowSettings] = useState(false);
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
+
+  // 初始化用户设置
+  useEffect(() => {
+    const options = getOptionsFromLocal();
+    if (options.username) {
+      setUsername(options.username);
+    }
+  }, []);
 
   // 初始化视频
   useEffect(() => {
@@ -27,62 +44,55 @@ export default function Home() {
       try {
         // 预加载静态视频
         if (staticVideoRef.current) {
-          staticVideoRef.current.load();
-          staticVideoRef.current.loop = true;
+          const staticVideo = staticVideoRef.current;
+          staticVideo.load();
+          staticVideo.loop = true;
+          staticVideo.muted = true;
+          staticVideo.playsInline = true;
           // 默认显示静态视频
-          staticVideoRef.current.style.display = 'block';
-          await staticVideoRef.current.play().catch(e => {
-            console.error('静态视频播放失败:', e);
-            document.addEventListener('click', () => {
-              staticVideoRef.current?.play().catch(e => console.error('再次尝试播放静态视频失败:', e));
-            }, { once: true });
-          });
+          staticVideo.style.display = 'block';
+
+          // 立即尝试播放静态视频
+          const playStaticVideo = async () => {
+            try {
+              await staticVideo.play();
+            } catch (e) {
+              console.error('静态视频播放失败:', e);
+              // 如果自动播放失败，在下一帧重试
+              requestAnimationFrame(playStaticVideo);
+            }
+          };
+          playStaticVideo();
         }
 
         // 预加载动态视频
         if (dynamicVideoRef.current) {
-          // 监听动态视频的加载事件
-          dynamicVideoRef.current.addEventListener('loadeddata', () => {
-            console.log('[视频] 动态视频数据已加载');
-          });
+          const dynamicVideo = dynamicVideoRef.current;
+          dynamicVideo.load();
+          dynamicVideo.loop = true;
+          dynamicVideo.muted = true;
+          dynamicVideo.playsInline = true;
+          dynamicVideo.volume = 0;
+          // 默认隐藏动态视频
+          dynamicVideo.style.display = 'none';
 
-          dynamicVideoRef.current.addEventListener('canplay', () => {
+          // 监听动态视频的加载事件
+          const handleCanPlay = () => {
             console.log('[视频] 动态视频可以播放');
             setIsDynamicVideoReady(true);
-          });
+            // 预播放一帧然后暂停，确保视频已缓冲
+            dynamicVideo.play().then(() => {
+              dynamicVideo.pause();
+              dynamicVideo.currentTime = 0;
+            }).catch(console.error);
+            // 移除事件监听器，确保只触发一次
+            dynamicVideo.removeEventListener('canplay', handleCanPlay);
+          };
 
-          // 设置视频属性
-          dynamicVideoRef.current.loop = true;
-          // 默认隐藏动态视频，但保持在DOM中以便预加载
-          dynamicVideoRef.current.style.display = 'none';
-
-          // 开始加载视频
-          dynamicVideoRef.current.load();
-
-          // 尝试预播放视频
-          try {
-            // 设置音量为0，避免任何声音泄漏
-            dynamicVideoRef.current.volume = 0;
-            // 预播放视频
-            await dynamicVideoRef.current.play();
-            console.log('[视频] 动态视频开始预播放');
-
-            // 播放一小段后暂停，确保视频已经缓冲
-            setTimeout(() => {
-              if (dynamicVideoRef.current) {
-                // 暂停视频但保持已加载状态
-                dynamicVideoRef.current.pause();
-                // 重置播放位置到开始
-                dynamicVideoRef.current.currentTime = 0;
-                console.log('[视频] 动态视频预加载完成');
-                setIsDynamicVideoReady(true);
-              }
-            }, 1000); // 增加预播放时间，确保视频充分缓冲
-          } catch (e) {
-            console.error('动态视频预播放失败:', e);
-            // 即使预播放失败，也标记为准备就绪，后续会在用户交互时尝试播放
-            setIsDynamicVideoReady(true);
-          }
+          dynamicVideo.addEventListener('canplay', handleCanPlay);
+          return () => {
+            dynamicVideo.removeEventListener('canplay', handleCanPlay);
+          };
         }
       } catch (error) {
         console.error('视频初始化失败:', error);
@@ -90,117 +100,74 @@ export default function Home() {
     };
 
     loadVideos();
-
-    // 添加视频播放结束事件监听
-    const handleStaticVideoEnded = () => {
-      if (staticVideoRef.current && staticVideoRef.current.style.display === 'block') {
-        staticVideoRef.current.play().catch(e => console.error('静态视频循环播放失败:', e));
-      }
-    };
-
-    const handleDynamicVideoEnded = () => {
-      if (dynamicVideoRef.current && dynamicVideoRef.current.style.display === 'block') {
-        dynamicVideoRef.current.play().catch(e => console.error('动态视频循环播放失败:', e));
-      }
-    };
-
-    staticVideoRef.current?.addEventListener('ended', handleStaticVideoEnded);
-    dynamicVideoRef.current?.addEventListener('ended', handleDynamicVideoEnded);
-
-    // 添加用户交互事件，确保视频可以播放
-    const handleUserInteraction = () => {
-      if (dynamicVideoRef.current && dynamicVideoRef.current.paused) {
-        dynamicVideoRef.current.play()
-          .then(() => {
-            dynamicVideoRef.current!.pause();
-            dynamicVideoRef.current!.currentTime = 0;
-            setIsDynamicVideoReady(true);
-            console.log('[视频] 用户交互后动态视频已准备就绪');
-          })
-          .catch(e => console.error('用户交互后动态视频播放失败:', e));
-      }
-    };
-
-    document.addEventListener('click', handleUserInteraction, { once: true });
-
-    return () => {
-      staticVideoRef.current?.removeEventListener('ended', handleStaticVideoEnded);
-      dynamicVideoRef.current?.removeEventListener('ended', handleDynamicVideoEnded);
-      document.removeEventListener('click', handleUserInteraction);
-    };
   }, []);
 
   // 根据音频活跃状态切换视频
   useEffect(() => {
-    if (!staticVideoRef.current || !dynamicVideoRef.current) return;
-    if (!isDynamicVideoReady && isAudioActive) {
-      console.log('[视频] 动态视频尚未准备好，等待中...');
-      return; // 如果动态视频未准备好，不进行切换
-    }
+    if (!staticVideoRef.current || !dynamicVideoRef.current || !isDynamicVideoReady) return;
 
-    console.log('音频活跃状态变化，当前状态:', isAudioActive);
+    const staticVideo = staticVideoRef.current;
+    const dynamicVideo = dynamicVideoRef.current;
 
-    if (isAudioActive) {
-      // 有声音时显示动态视频，隐藏静态视频
-      staticVideoRef.current.style.display = 'none';
-      dynamicVideoRef.current.style.display = 'block';
-
-      // 确保动态视频正在播放
-      if (dynamicVideoRef.current.paused) {
-        // 重置播放位置，确保从头开始播放
-        dynamicVideoRef.current.currentTime = 0;
-        dynamicVideoRef.current.play().catch(e => {
-          console.error('动态视频播放失败:', e);
-          // 如果自动播放失败，尝试在用户下一次交互时播放
-          const playOnInteraction = () => {
-            dynamicVideoRef.current?.play().catch(e => console.error('交互后动态视频播放失败:', e));
-            document.removeEventListener('click', playOnInteraction);
-          };
-          document.addEventListener('click', playOnInteraction, { once: true });
+    const playVideo = async (targetVideo: HTMLVideoElement, currentVideo: HTMLVideoElement) => {
+      try {
+        // 同步播放进度
+        targetVideo.currentTime = currentVideo.currentTime;
+        // 确保目标视频已暂停
+        targetVideo.pause();
+        // 设置显示状态
+        targetVideo.style.display = 'block';
+        currentVideo.style.display = 'none';
+        // 开始播放目标视频
+        await targetVideo.play().catch(e => {
+          console.error('视频播放失败:', e);
+          // 如果播放失败，在下一帧重试
+          requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
         });
+      } catch (e) {
+        console.error('视频切换失败:', e);
+        requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
       }
+    };
+
+    if (isActive) {
+      playVideo(dynamicVideo, staticVideo);
     } else {
-      // 无声音时显示静态视频，隐藏动态视频
-      staticVideoRef.current.style.display = 'block';
-      dynamicVideoRef.current.style.display = 'none';
-
-      // 确保静态视频正在播放
-      if (staticVideoRef.current.paused) {
-        staticVideoRef.current.play().catch(e => {
-          console.error('静态视频播放失败:', e);
-          // 如果自动播放失败，尝试在用户下一次交互时播放
-          const playOnInteraction = () => {
-            staticVideoRef.current?.play().catch(e => console.error('交互后静态视频播放失败:', e));
-            document.removeEventListener('click', playOnInteraction);
-          };
-          document.addEventListener('click', playOnInteraction, { once: true });
-        });
-      }
+      playVideo(staticVideo, dynamicVideo);
     }
-  }, [isAudioActive, isDynamicVideoReady]);
-
-  // 处理音频活跃状态变化
-  const handleAudioActiveChange = (active: boolean) => {
-    console.log('收到音频活跃状态变化:', active);
-    setIsAudioActive(active);
-  };
+  }, [isActive, isDynamicVideoReady]);
 
   // 处理开始对话
   const handleStartChat = () => {
+    if (!username) {
+      setShowSettings(true);
+      return;
+    }
     setIsConnecting(true);
     setShowRTC(true);
+  };
 
-    // 确保动态视频已准备就绪
-    if (dynamicVideoRef.current && !isDynamicVideoReady) {
-      dynamicVideoRef.current.play()
-        .then(() => {
-          dynamicVideoRef.current!.pause();
-          dynamicVideoRef.current!.currentTime = 0;
-          setIsDynamicVideoReady(true);
-          console.log('[视频] 用户点击后动态视频已准备就绪');
-        })
-        .catch(e => console.error('用户点击后动态视频准备失败:', e));
+  // 处理设置提交
+  const handleSettingsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      setError('用户名不能为空');
+      return;
     }
+    if (!isValidUser(trimmedUsername)) {
+      setError('无效的用户名');
+      return;
+    }
+    const userId = getUserId(trimmedUsername);
+    const options = getOptionsFromLocal();
+    setOptionsToLocal({
+      ...options,
+      username: trimmedUsername,
+      userId: userId
+    });
+    setError('');
+    setShowSettings(false);
   };
 
   return (
@@ -234,9 +201,39 @@ export default function Home() {
           />
 
           {/* 配置按钮 */}
-          <Link href="/settings" className="absolute top-4 right-4 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors z-20">
-            <Cog6ToothIcon className="w-6 h-6 text-gray-800" />
-          </Link>
+          {!isConnected && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="absolute top-4 right-4 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors z-20"
+            >
+              <Cog6ToothIcon className="w-6 h-6 text-gray-800" />
+            </button>
+          )}
+          {isConnected && (
+            <div className="absolute top-4 right-4 p-2 bg-gray-400 rounded-full shadow-lg cursor-not-allowed z-20">
+              <Cog6ToothIcon className="w-6 h-6 text-gray-600" />
+            </div>
+          )}
+
+          {/* 音频可视化器 */}
+          {isConnected && (
+            <div className="absolute bottom-[150px] left-1/2 transform -translate-x-1/2 z-20 w-full px-4">
+              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-4">
+                <div className="text-white text-center text-xl font-medium">Euvola</div>
+                <div className="h-[80px] flex items-center justify-center mt-2">
+                  <AudioVisualizer
+                    type="agent"
+                    frequencies={frequencyBands}
+                    barWidth={6}
+                    minBarHeight={6}
+                    maxBarHeight={56}
+                    borderRadius={2}
+                    gap={6}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 开始对话按钮 */}
           <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20">
@@ -261,13 +258,52 @@ export default function Home() {
               isConnected={isConnected}
               onConnectingChange={setIsConnecting}
               onConnectedChange={setIsConnected}
-              onAudioActiveChange={handleAudioActiveChange}
+              onAudioTrackChange={setRemoteAudioTrack}
             />
           )}
         </div>
 
         {/* 手机底部按钮 */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[120px] h-[4px] bg-gray-300 rounded-full"></div>
+
+        {/* 设置弹框 */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-[90%] max-w-md p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">设置</h2>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+              <form onSubmit={handleSettingsSubmit}>
+                <div className="mb-4">
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    用户 ID
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="请输入用户 ID"
+                  />
+                  {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  确定
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

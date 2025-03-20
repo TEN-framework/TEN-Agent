@@ -2,8 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'TEN-Agent Web',
-  description: 'TEN-Agent Web Interface',
+  title: 'Aibum',
+  description: 'AI companion',
 }
 
 export default function RootLayout({

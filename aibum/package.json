@@ -15,10 +15,12 @@
     "agora-rtm-sdk": "^2.2.1",
     "autoprefixer": "^10.4.17",
     "axios": "^1.8.3",
+    "clsx": "^2.1.1",
     "next": "14.1.0",
     "postcss": "^8.4.35",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "tailwind-merge": "^3.0.2",
     "tailwindcss": "^3.4.1"
   },
   "devDependencies": {

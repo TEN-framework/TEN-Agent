@@ -24,4 +24,24 @@ export const genRandomString = (length: number = 10) => {
 
 export const getRandomChannel = (number = 6) => {
   return "ten_agent_" + genRandomString(number)
-} 
+}
+
+
+export const normalizeFrequencies = (frequencies: Float32Array) => {
+  const normalizeDb = (value: number) => {
+    const minDb = -100;
+    const maxDb = -10;
+    let db = 1 - (Math.max(minDb, Math.min(maxDb, value)) * -1) / 100;
+    db = Math.sqrt(db);
+
+    return db;
+  };
+
+  // Normalize all frequency values
+  return frequencies.map((value) => {
+    if (value === -Infinity) {
+      return 0;
+    }
+    return normalizeDb(value);
+  });
+};

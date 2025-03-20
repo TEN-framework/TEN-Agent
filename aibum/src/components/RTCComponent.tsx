@@ -5,14 +5,15 @@ import { IMicrophoneAudioTrack, IRemoteAudioTrack } from 'agora-rtc-sdk-ng';
 import { apiStartService, apiStopService, apiPing } from '@/common/request';
 import { getOptionsFromLocal, setOptionsToLocal } from '@/common/storage';
 import { getRandomChannel } from '@/common/utils';
-import { rtcManager, IRtcUser, IUserTracks, IChatItem } from '@/manager';
+import { rtcManager, IRtcUser, IUserTracks } from '@/manager';
+import { IChatItem } from "@/types";
 
 interface RTCComponentProps {
   isConnecting: boolean;
   isConnected: boolean;
   onConnectingChange: (connecting: boolean) => void;
   onConnectedChange: (connected: boolean) => void;
-  onAudioActiveChange?: (active: boolean) => void; // 新增音频活跃状态回调
+  onAudioTrackChange: (track: IMicrophoneAudioTrack | undefined) => void;
 }
 
 export default function RTCComponent({
@@ -20,7 +21,7 @@ export default function RTCComponent({
   isConnected,
   onConnectingChange,
   onConnectedChange,
-  onAudioActiveChange
+  onAudioTrackChange
 }: RTCComponentProps) {
   // 本地状态
   const [audioTrack, setAudioTrack] = useState<IMicrophoneAudioTrack>();
@@ -28,10 +29,6 @@ export default function RTCComponent({
   const [hasInit, setHasInit] = useState(false);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [chatMessages, setChatMessages] = useState<IChatItem[]>([]);
-  const [isAudioActive, setIsAudioActive] = useState(false);
-  const audioCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastVolumeRef = useRef<number>(0);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初始化监听器
   useEffect(() => {
@@ -58,119 +55,26 @@ export default function RTCComponent({
       // 停止ping
       stopPing();
 
-      // 停止音频检测
-      stopAudioCheck();
     };
   }, [hasInit]);
-
-  // 监听音频活跃状态变化，通知父组件
-  useEffect(() => {
-    if (onAudioActiveChange) {
-      onAudioActiveChange(isAudioActive);
-    }
-  }, [isAudioActive, onAudioActiveChange]);
-
-  // 监听远程音频轨道，开始检测音量
-  useEffect(() => {
-    if (remoteUser?.audioTrack) {
-      startAudioCheck(remoteUser.audioTrack);
-    } else {
-      stopAudioCheck();
-      setIsAudioActive(false);
-    }
-
-    return () => {
-      stopAudioCheck();
-    };
-  }, [remoteUser?.audioTrack]);
-
-  // 开始检测音频活跃度
-  const startAudioCheck = (track: IRemoteAudioTrack) => {
-    // 先停止之前的检测
-    stopAudioCheck();
-
-    console.log('[RTC] 开始音频活跃度检测');
-
-    // 设置音量检测间隔
-    audioCheckIntervalRef.current = setInterval(() => {
-      const volume = track.getVolumeLevel();
-      lastVolumeRef.current = volume;
-
-
-      // 音量大于阈值时认为有声音
-      if (volume > 0.05) {
-        // 清除之前的静音超时
-        if (silenceTimeoutRef.current) {
-          clearTimeout(silenceTimeoutRef.current);
-          silenceTimeoutRef.current = null;
-        }
-
-        // 设置为活跃状态
-        if (!isAudioActive) {
-          setIsAudioActive(true);
-        }
-      } else {
-        // 如果当前音量很小，设置一个延迟，避免短暂的静音导致状态频繁切换
-        if (!silenceTimeoutRef.current) {
-          silenceTimeoutRef.current = setTimeout(() => {
-            console.log('[RTC] 检测到音频静音');
-            setIsAudioActive(false);
-            silenceTimeoutRef.current = null;
-          }, 200); // 0.5秒后如果仍然没有声音，则设置为非活跃状态
-        }
-      }
-    }, 100); // 每100ms检测一次，提高检测频率
-  };
-
-  // 停止音频检测
-  const stopAudioCheck = () => {
-    if (audioCheckIntervalRef.current) {
-      clearInterval(audioCheckIntervalRef.current);
-      audioCheckIntervalRef.current = null;
-    }
-
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-
-    // 确保在停止检测时将音频状态设置为非活跃
-    if (isAudioActive) {
-      console.log('[RTC] 停止音频检测，设置为非活跃状态');
-      setIsAudioActive(false);
-    }
-  };
 
   // 本地轨道变化处理函数
   const onLocalTracksChanged = (tracks: IUserTracks) => {
     console.log('本地轨道变化:', tracks);
-    const { audioTrack: newAudioTrack } = tracks;
-    if (newAudioTrack) {
-      setAudioTrack(newAudioTrack);
+    const { audioTrack } = tracks;
+    if (audioTrack) {
+      setAudioTrack(audioTrack);
     }
   };
 
   // 远程用户变化处理函数
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log('远程用户变化:', user);
-    setRemoteUser(user);
-
-    // 播放远程音频
-    if (user.audioTrack && !user.audioTrack.isPlaying) {
-      console.log('[RTC] 开始播放远程音频');
+    if (user.audioTrack) {
       user.audioTrack.play();
-
-      // 监听音频轨道的播放状态
-      user.audioTrack.on('first-frame-decoded', () => {
-        console.log('[RTC] 远程音频首帧解码成功');
-      });
-
-      // 注意：Agora SDK 的音频轨道没有 'audio-track-ended' 事件
-      // 我们将依靠音量检测来判断音频是否结束
-    } else if (!user.audioTrack && isAudioActive) {
-      // 如果没有音频轨道但状态仍为活跃，则重置状态
-      console.log('[RTC] 远程用户没有音频轨道，设置为非活跃状态');
-      setIsAudioActive(false);
+      onAudioTrackChange?.(user.audioTrack);
+    } else {
+      onAudioTrackChange?.(undefined);
     }
   };
 
@@ -181,29 +85,6 @@ export default function RTCComponent({
     // 只有当消息是完整的时才添加到聊天记录中
     // 注意：rtcManager已经确保了只有完整的消息才会触发textChanged事件
     setChatMessages(prev => [...prev, textItem]);
-
-    // 当收到新消息时，如果是代理发送的消息，也触发一次音频活跃状态
-    // 这有助于在音频检测不够灵敏时，通过文本消息来辅助判断
-    if (textItem.type === 'agent' && !textItem.isFinal) {
-      console.log('[RTC] 收到代理消息，触发音频活跃状态');
-      setIsAudioActive(true);
-
-      // 如果有静音超时，清除它
-      if (silenceTimeoutRef.current) {
-        clearTimeout(silenceTimeoutRef.current);
-        silenceTimeoutRef.current = null;
-      }
-    } else if (textItem.type === 'agent' && textItem.isFinal) {
-      // 如果是最终消息，设置一个延迟后将状态设置为非活跃
-      // 这是为了处理音频可能在文本之后结束的情况
-      setTimeout(() => {
-        // 只有在没有检测到音量的情况下才设置为非活跃
-        if (lastVolumeRef.current <= 0.05) {
-          console.log('[RTC] 代理最终消息后检测静音，设置为非活跃状态');
-          setIsAudioActive(false);
-        }
-      }, 1000);
-    }
   };
 
   /**
@@ -311,9 +192,6 @@ export default function RTCComponent({
     setHasInit(false);
     // 清空聊天消息
     setChatMessages([]);
-    // 重置音频状态
-    setIsAudioActive(false);
-    stopAudioCheck();
   };
 
   // 当 isConnecting 变为 true 时自动开始连接
@@ -369,7 +247,7 @@ export default function RTCComponent({
 
     if (!options.userId) {
       console.log('未找到 userId');
-      alert('请先在设置页面设置用户 ID');
+      alert('请先设置用户 ID');
       onConnectingChange(false);
       return;
     }

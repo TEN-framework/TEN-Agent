@@ -28,7 +28,7 @@ export default function Settings() {
     }
 
     if (!isValidUser(trimmedUsername)) {
-      setError('无效的用户名，请使用以下用户名之一：' + Object.keys(VALID_USERS).join(', '));
+      setError('无效的用户名');
       return;
     }
 
