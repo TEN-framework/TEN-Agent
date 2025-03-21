@@ -48,7 +48,10 @@
 
 </details>
 
-Build engaging AI avatars with TEN Agent using [Trulience's](https://trulience.com) diverse collection of free avatar options.
+Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
+
+1. Follow the README to finish setting up and running the playground locally
+2. Enter the avatar ID you get from [Trulience](https://trulience.com)
 
 <br>
 
