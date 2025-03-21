@@ -50,6 +50,17 @@ services:
       - ~/.mem0/qdrant_storage:/qdrant/storage:z
     networks:
       - ten_agent_network
+  aibum_playground:
+    # image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-80-g5967f0b
+    image: ghcr.io/ten-framework/aibum:test_03210123
+    container_name: aibum_playground
+    restart: always
+    ports:
+      - "3001:3000"
+    networks:
+      - ten_agent_network
+    environment:
+      - AGENT_SERVER_URL=http://ten_agent_dev:8080
   # ten_graph_designer:
   #   image: ghcr.io/ten-framework/ten_graph_designer:4cc33b8
   #   container_name: ten_graph_designer
