@@ -50,8 +50,8 @@
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
-1. Follow the README to finish setting up and running the playground locally
-2. Enter the avatar ID you get from [Trulience](https://trulience.com)
+1. Follow the README to finish setting up and running the Playground in localhost:3000
+2. Enter the avatar ID and [token](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid) you get from [Trulience](https://trulience.com)
 
 <br>
 
