@@ -34,14 +34,32 @@
 </div>
 
 <br>
-<h2>✨ TEN Agent + Deepseek</h2>
+<h2>✨ TEN Agent + Trulience</h2>
+
+<details>
+  <summary><kbd>TEN Agent + Trulience</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![TEN Agent with Trulience](https://github.com/TEN-framework/docs/blob/main/assets/gif/ten-trulience.gif?raw=true)
+
+  </picture>
+
+</details>
+
+Build engaging AI avatars with TEN Agent using [Trulience's](https://trulience.com) diverse collection of free avatar options.
+
+<br>
+
+<h2>TEN Agent + Deepseek</h2>
 
 [TEN Agent + Deepseek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
 <br>
-<h2>✨ TEN Agent + ESP32</h2>
+<h2>TEN Agent + ESP32</h2>
 
 [TEN Agent ESP32 Client](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
 
