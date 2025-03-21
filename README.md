@@ -36,7 +36,7 @@
 <br>
 <h2>✨ TEN Agent + Trulience</h2>
 
-<details>
+<details open>
   <summary><kbd>TEN Agent + Trulience</kbd></summary>
 
   <br>
