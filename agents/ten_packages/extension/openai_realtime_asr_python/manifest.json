@@ -1,0 +1,174 @@
+{
+  "type": "extension",
+  "name": "openai_realtime_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "realtime/**.tent",
+      "realtime/**.py"
+    ]
+  },
+  "api": {
+    "property": {
+      "base_uri": {
+        "type": "string"
+      },
+      "api_key": {
+        "type": "string"
+      },
+      "path": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "language": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "temperature": {
+        "type": "float32"
+      },
+      "max_tokens": {
+        "type": "int32"
+      },
+      "voice": {
+        "type": "string"
+      },
+      "server_vad": {
+        "type": "bool"
+      },
+      "audio_out": {
+        "type": "bool"
+      },
+      "input_transcript": {
+        "type": "bool"
+      },
+      "sample_rate": {
+        "type": "int32"
+      },
+      "vendor": {
+        "type": "string"
+      },
+      "stream_id": {
+        "type": "int32"
+      },
+      "dump": {
+        "type": "bool"
+      },
+      "greeting": {
+        "type": "string"
+      },
+      "max_history": {
+        "type": "int32"
+      },
+      "enable_storage": {
+        "type": "bool"
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "stream_id": {
+            "type": "int64"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "name": "append",
+        "property": {
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "tool_register",
+        "property": {
+          "tool": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "parameters"
+            ]
+          }
+        },
+        "result": {
+          "property": {
+            "response": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      },
+      {
+        "name": "tool_call",
+        "property": {
+          "name": {
+            "type": "string"
+          },
+          "args": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}
