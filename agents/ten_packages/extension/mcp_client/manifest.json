@@ -1,0 +1,30 @@
+{
+  "type": "extension",
+  "name": "mcp_client",
+  "version": "0.8.18",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8.18"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "url": {
+        "type": "string"
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
