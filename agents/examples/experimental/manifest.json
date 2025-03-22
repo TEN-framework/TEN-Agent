@@ -71,7 +71,7 @@
     {
       "type": "extension",
       "name": "http_server_python",
-      "version": "=0.10.1"
+      "version": "=0.10.2"
     },
     {
       "type": "extension",
