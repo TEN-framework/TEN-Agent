@@ -8,25 +8,31 @@ from pydantic import BaseModel
 from base64 import b64encode
 from io import BytesIO
 from typing import Any, Dict
-from ten_ai_base.const import CONTENT_DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT
+from ten_ai_base.const import (
+    CONTENT_DATA_OUT_NAME,
+    DATA_OUT_PROPERTY_END_OF_SEGMENT,
+    DATA_OUT_PROPERTY_TEXT,
+)
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult, LLMToolResultLLMResult
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResult,
+    LLMToolResultLLMResult,
+)
 from .openai import OpenAIChatGPT, OpenAIChatGPTConfig
 
 from PIL import Image
-from ten import (
-    AsyncTenEnv,
-    AudioFrame,
-    VideoFrame,
-    Data
-)
+from ten import AsyncTenEnv, AudioFrame, VideoFrame, Data
 
 OPEN_WEBSITE_TOOL_NAME = "open_website"
 OPEN_WEBSITE_TOOL_DESCRIPTION = "Open a website with given site name"
 
+
 class WebsiteEvent(BaseModel):
     website_name: str
     website_url: str
+
 
 def rgb2base64jpeg(rgb_data, width, height):
     # Convert the RGB image to a PIL Image
@@ -85,12 +91,13 @@ def resize_image_keep_aspect(image, max_size=512):
 
     return resized_image
 
+
 class ComputerToolExtension(AsyncLLMToolBaseExtension):
-    
+
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.openai_chatgpt = None
-        self.config = None 
+        self.config = None
         self.loop = None
         self.memory = []
         self.max_memory_length = 10
@@ -113,8 +120,8 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
         if not self.config.api_key:
             ten_env.log_info("API key is missing, exiting on_start")
             return
-        
-        self.openai_chatgpt = OpenAIChatGPT(ten_env, self.config)   
+
+        self.openai_chatgpt = OpenAIChatGPT(ten_env, self.config)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
@@ -124,11 +131,15 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_deinit")
         await super().on_deinit(ten_env)
 
-    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
         audio_frame_name = audio_frame.get_name()
         ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
 
-    async def on_video_frame(self, ten_env: AsyncTenEnv, video_frame: VideoFrame) -> None:
+    async def on_video_frame(
+        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
+    ) -> None:
         video_frame_name = video_frame.get_name()
         ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
 
@@ -154,11 +165,13 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
                         description="The url of the given website, get based on name",
                         required=True,
                     ),
-                ]
+                ],
             ),
         ]
 
-    async def run_tool(self, ten_env: AsyncTenEnv, name: str, args: dict) -> LLMToolResult:
+    async def run_tool(
+        self, ten_env: AsyncTenEnv, name: str, args: dict
+    ) -> LLMToolResult:
         if name == OPEN_WEBSITE_TOOL_NAME:
             site_name = args.get("name")
             site_url = args.get("url")
@@ -169,28 +182,23 @@ class ComputerToolExtension(AsyncLLMToolBaseExtension):
                 content=json.dumps(result),
             )
 
-    async def _open_website(self, site_name: str, site_url: str, ten_env: AsyncTenEnv) -> Any:
-        await self._send_data(ten_env, "browse_website", {"name": site_name, "url": site_url})
+    async def _open_website(
+        self, site_name: str, site_url: str, ten_env: AsyncTenEnv
+    ) -> Any:
+        await self._send_data(
+            ten_env, "browse_website", {"name": site_name, "url": site_url}
+        )
         return {"result": "success"}
 
     async def _send_data(self, ten_env: AsyncTenEnv, action: str, data: Dict[str, Any]):
         try:
-            action_data = json.dumps({
-                "type": "action",
-                "data": {
-                    "action": action,
-                    "data": data
-                }
-            })
+            action_data = json.dumps(
+                {"type": "action", "data": {"action": action, "data": data}}
+            )
 
             output_data = Data.create(CONTENT_DATA_OUT_NAME)
-            output_data.set_property_string(
-                DATA_OUT_PROPERTY_TEXT,
-                action_data
-            )
-            output_data.set_property_bool(
-                DATA_OUT_PROPERTY_END_OF_SEGMENT, True
-            )
+            output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, action_data)
+            output_data.set_property_bool(DATA_OUT_PROPERTY_END_OF_SEGMENT, True)
             await ten_env.send_data(output_data)
         except Exception as err:
             ten_env.log_warn(f"send data error {err}")

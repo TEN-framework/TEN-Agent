@@ -158,7 +158,6 @@ class MessageCollectorExtension(Extension):
         stream_id = 0
         end_of_segment = False
 
-
         # Add the raw data type if the data is raw text data
         if data.get_name() == "text_data":
             try:
@@ -215,11 +214,14 @@ class MessageCollectorExtension(Extension):
                 "text": text,
             }
 
-
             try:
-                chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
+                chunks = _text_to_base64_chunks(
+                    ten_env, json.dumps(base_msg_data), message_id
+                )
                 for chunk in chunks:
-                    asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
+                    asyncio.run_coroutine_threadsafe(
+                        self._queue_message(chunk), self.loop
+                    )
 
             except Exception as e:
                 ten_env.log_warn(f"on_data new_data error: {e}")
@@ -238,9 +240,7 @@ class MessageCollectorExtension(Extension):
                     f"on_data get_property_bool {TEXT_DATA_END_OF_SEGMENT_FIELD} error: {e}"
                 )
 
-            ten_env.log_info(
-                f"on_data {TEXT_DATA_TEXT_FIELD}: {text}"
-            )
+            ten_env.log_info(f"on_data {TEXT_DATA_TEXT_FIELD}: {text}")
 
             # Generate a unique message ID for this batch of parts
             message_id = str(uuid.uuid4())[:8]
@@ -255,11 +255,14 @@ class MessageCollectorExtension(Extension):
                 "text": text,
             }
 
-
             try:
-                chunks = _text_to_base64_chunks(ten_env, json.dumps(base_msg_data), message_id)
+                chunks = _text_to_base64_chunks(
+                    ten_env, json.dumps(base_msg_data), message_id
+                )
                 for chunk in chunks:
-                    asyncio.run_coroutine_threadsafe(self._queue_message(chunk), self.loop)
+                    asyncio.run_coroutine_threadsafe(
+                        self._queue_message(chunk), self.loop
+                    )
 
             except Exception as e:
                 ten_env.log_warn(f"on_data new_data error: {e}")

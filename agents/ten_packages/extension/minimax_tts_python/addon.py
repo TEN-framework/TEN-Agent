@@ -15,5 +15,6 @@ class MinimaxTTSExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import MinimaxTTSExtension
+
         ten_env.log_info("MinimaxTTSExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(MinimaxTTSExtension(name), context)

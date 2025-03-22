@@ -374,7 +374,9 @@ class Model:
             response = self.get_client().query_collection_data_with_options(
                 query_collection_data_request, runtime
             )
-            self.ten_env.log_debug(f"query_collection response code: {response.status_code}")
+            self.ten_env.log_debug(
+                f"query_collection response code: {response.status_code}"
+            )
             return response, None
         except Exception as e:
             self.ten_env.log_error(f"Error: {e}")
@@ -421,7 +423,9 @@ class Model:
             response = await self.get_client().query_collection_data_with_options_async(
                 query_collection_data_request, runtime
             )
-            self.ten_env.log_debug(f"query_collection response code: {response.status_code}")
+            self.ten_env.log_debug(
+                f"query_collection response code: {response.status_code}"
+            )
             return response, None
         except Exception as e:
             self.ten_env.log_error(f"Error: {e}")

@@ -24,13 +24,18 @@ class NeuphonicTTSConfig(BaseConfig):
     encoding: Literal["pcm_linear", "pcm_mulaw"] = "pcm_linear"
     request_timeout_seconds: int = 10
 
+
 class NeuphonicTTS:
     def __init__(self, config: NeuphonicTTSConfig) -> None:
         self.config = config
         self.client = Neuphonic(api_key=config.api_key)
 
-    def text_to_speech_stream(self, text: str) -> AsyncIterator[APIResponse[TTSResponse]]:
-        sse_client = self.client.tts.AsyncSSEClient(timeout=self.config.request_timeout_seconds)
+    def text_to_speech_stream(
+        self, text: str
+    ) -> AsyncIterator[APIResponse[TTSResponse]]:
+        sse_client = self.client.tts.AsyncSSEClient(
+            timeout=self.config.request_timeout_seconds
+        )
         tts_config = TTSConfig(
             lang_code=self.config.lang_code,
             sampling_rate=self.config.sample_rate,

@@ -17,5 +17,6 @@ class OpenAIChatGPTExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import OpenAIChatGPTExtension
+
         ten_env.log_info("OpenAIChatGPTExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(OpenAIChatGPTExtension(name), context)

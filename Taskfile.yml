@@ -118,3 +118,30 @@ tasks:
     dotenv: ['.env']
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
+
+  format:
+    desc: format code
+    cmds:
+      - task: black-format
+
+  black-format:
+    desc: format python code with black
+    internal: true
+    cmds:
+      - black . {{ .CLI_ARGS }}
+
+  check:
+    desc: check code
+    cmds:
+      - task: format-check
+
+  format-check:
+    desc: check code formatting
+    cmds:
+      - task: black-format-check
+
+  black-format-check:
+    desc: check code formatting with black
+    internal: true
+    cmds:
+      - black --check . {{ .CLI_ARGS }}

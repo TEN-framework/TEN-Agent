@@ -17,5 +17,6 @@ class BingSearchToolExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import BingSearchToolExtension
+
         ten_env.log_info("BingSearchToolExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(BingSearchToolExtension(name), context)

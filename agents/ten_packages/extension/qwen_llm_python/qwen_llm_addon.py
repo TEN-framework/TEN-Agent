@@ -19,4 +19,3 @@ class QWenLLMExtensionAddon(Addon):
 
         ten.log_info("on_create_instance")
         ten.on_create_instance_done(QWenLLMExtension(addon_name), context)
-

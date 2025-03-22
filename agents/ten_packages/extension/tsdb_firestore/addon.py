@@ -17,5 +17,6 @@ class TSDBFirestoreExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import TSDBFirestoreExtension
+
         ten_env.log_info("TSDBFirestoreExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(TSDBFirestoreExtension(name), context)

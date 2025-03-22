@@ -7,11 +7,18 @@ import aiohttp
 from ten import AsyncTenEnv
 
 from typing import Any, AsyncGenerator
-from .struct import InputAudioBufferAppend, ClientToServerMessage, ServerToClientMessage, parse_server_message, to_json
+from .struct import (
+    InputAudioBufferAppend,
+    ClientToServerMessage,
+    ServerToClientMessage,
+    parse_server_message,
+    to_json,
+)
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
 VENDOR_AZURE = "azure"
+
 
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
@@ -40,7 +47,7 @@ class RealtimeApiConnection:
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
         vendor: str = "",
-        verbose: bool = False
+        verbose: bool = False,
     ):
         self.ten_env = ten_env
         self.vendor = vendor
@@ -100,7 +107,9 @@ class RealtimeApiConnection:
                         self.ten_env.log_info(f"<- {smart_str(msg.data)}")
                     yield self.handle_server_message(msg.data)
                 elif msg.type == aiohttp.WSMsgType.ERROR:
-                    self.ten_env.log_error("Error during receive: %s", self.websocket.exception())
+                    self.ten_env.log_error(
+                        "Error during receive: %s", self.websocket.exception()
+                    )
                     break
         except asyncio.CancelledError:
             self.ten_env.log_info("Receive messages task cancelled")

@@ -17,6 +17,6 @@ class MessageCollectorExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import MessageCollectorExtension
+
         ten_env.log_info("on_create_instance")
-        ten_env.on_create_instance_done(
-            MessageCollectorExtension(name), context)
+        ten_env.on_create_instance_done(MessageCollectorExtension(name), context)

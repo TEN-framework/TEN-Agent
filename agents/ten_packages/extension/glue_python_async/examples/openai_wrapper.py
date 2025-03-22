@@ -15,50 +15,58 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 import asyncio
 
 # Set up logging
-logging.config.dictConfig({
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+logging.config.dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            },
         },
-    },
-    "handlers": {
-        "file": {
-            "level": "DEBUG",
-            "formatter": "default",
-            "class": "logging.FileHandler",
-            "filename": "example.log",
+        "handlers": {
+            "file": {
+                "level": "DEBUG",
+                "formatter": "default",
+                "class": "logging.FileHandler",
+                "filename": "example.log",
+            },
         },
-    },
-    "loggers": {
-        "": {
-            "handlers": ["file"],
-            "level": "DEBUG",
-            "propagate": True,
+        "loggers": {
+            "": {
+                "handlers": ["file"],
+                "level": "DEBUG",
+                "propagate": True,
+            },
         },
-    },
-})
+    }
+)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Chat Completion API",
-              description="API for streaming chat completions with support for text, image, and audio content",
-              version="1.0.0")
+app = FastAPI(
+    title="Chat Completion API",
+    description="API for streaming chat completions with support for text, image, and audio content",
+    version="1.0.0",
+)
 
 # Set your OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 class TextContent(BaseModel):
     type: str = "text"
     text: str
 
+
 class ImageContent(BaseModel):
     type: str = "image"
     image_url: HttpUrl
 
+
 class AudioContent(BaseModel):
     type: str = "input_audio"
     input_audio: Dict[str, str]
+
 
 class ToolFunction(BaseModel):
     name: str
@@ -66,25 +74,31 @@ class ToolFunction(BaseModel):
     parameters: Optional[Dict]
     strict: bool = False
 
+
 class Tool(BaseModel):
     type: str = "function"
     function: ToolFunction
+
 
 class ToolChoice(BaseModel):
     type: str = "function"
     function: Optional[Dict]
 
+
 class ResponseFormat(BaseModel):
     type: str = "json_schema"
     json_schema: Optional[Dict[str, str]]
+
 
 class SystemMessage(BaseModel):
     role: str = "system"
     content: Union[str, List[str]]
 
+
 class UserMessage(BaseModel):
     role: str = "user"
     content: Union[str, List[Union[TextContent, ImageContent, AudioContent]]]
+
 
 class AssistantMessage(BaseModel):
     role: str = "assistant"
@@ -92,10 +106,12 @@ class AssistantMessage(BaseModel):
     audio: Optional[Dict[str, str]] = None
     tool_calls: Optional[List[Dict]] = None
 
+
 class ToolMessage(BaseModel):
     role: str = "tool"
     content: Union[str, List[str]]
     tool_call_id: str
+
 
 class ChatCompletionRequest(BaseModel):
     context: Optional[Dict] = None
@@ -110,17 +126,20 @@ class ChatCompletionRequest(BaseModel):
     stream: bool = True
     stream_options: Optional[Dict] = None
 
-'''
+
+"""
 {'messages': [{'role': 'user', 'content': 'Hello. Hello. Hello.'}, {'role': 'user', 'content': 'Unprocessedable.'}], 'tools': [], 'tools_choice': 'none', 'model': 'gpt-3.5-turbo', 'stream': True}
-'''
+"""
 
 security = HTTPBearer()
+
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     if token != os.getenv("API_TOKEN"):
         logger.warning("Invalid or missing token")
         raise HTTPException(status_code=403, detail="Invalid or missing token")
+
 
 @app.post("/chat/completions", dependencies=[Depends(verify_token)])
 async def create_chat_completion(request: ChatCompletionRequest, req: Request):
@@ -130,15 +149,18 @@ async def create_chat_completion(request: ChatCompletionRequest, req: Request):
         response = await client.chat.completions.create(
             model=request.model,
             messages=request.messages,  # Directly use request messages
-            tool_choice=request.tool_choice if request.tools and request.tool_choice else None,
+            tool_choice=(
+                request.tool_choice if request.tools and request.tool_choice else None
+            ),
             tools=request.tools if request.tools else None,
             # modalities=request.modalities,
             response_format=request.response_format,
             stream=request.stream,
-            stream_options=request.stream_options
+            stream_options=request.stream_options,
         )
 
         if request.stream:
+
             async def generate():
                 try:
                     async for chunk in response:
@@ -157,10 +179,11 @@ async def create_chat_completion(request: ChatCompletionRequest, req: Request):
         logger.info("Request was cancelled")
         raise HTTPException(status_code=499, detail="Request was cancelled")
     except Exception as e:
-        traceback_str = ''.join(traceback.format_tb(e.__traceback__))
+        traceback_str = "".join(traceback.format_tb(e.__traceback__))
         error_message = f"{str(e)}\n{traceback_str}"
         logger.error(error_message)
         raise HTTPException(status_code=500, detail=error_message)
+
 
 if __name__ == "__main__":
     import uvicorn
@@ -168,7 +191,7 @@ if __name__ == "__main__":
     from fastapi import Depends
     import traceback
 
-    '''
+    """
     http_proxy = os.getenv("HTTP_PROXY")
     https_proxy = os.getenv("HTTPS_PROXY")
 
@@ -178,6 +201,6 @@ if __name__ == "__main__":
             "https": https_proxy
         }
         openai.proxy = proxies
-    '''
+    """
 
     uvicorn.run(app, host="0.0.0.0", port=8000)

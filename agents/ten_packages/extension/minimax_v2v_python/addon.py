@@ -14,5 +14,6 @@ from ten import (
 class MinimaxV2VExtensionAddon(Addon):
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import MinimaxV2VExtension
+
         ten_env.log_info("on_create_instance")
         ten_env.on_create_instance_done(MinimaxV2VExtension(name), context)

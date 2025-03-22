@@ -14,6 +14,6 @@ def parse_sentence(sentence: str, content: str):
         sentence += char
 
         if is_punctuation(char):
-            return sentence, content[i + 1:], True
+            return sentence, content[i + 1 :], True
 
     return sentence, "", False

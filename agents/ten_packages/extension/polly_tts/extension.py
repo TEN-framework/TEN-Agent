@@ -51,7 +51,9 @@ class PollyTTSExtension(AsyncTTSBaseExtension):
         self, ten_env: AsyncTenEnv, input_text: str, end_of_segment: bool
     ) -> None:
         try:
-            data = self.client.text_to_speech_stream(ten_env, input_text, end_of_segment)
+            data = self.client.text_to_speech_stream(
+                ten_env, input_text, end_of_segment
+            )
             async for frame in data:
                 await self.send_audio_out(
                     ten_env, frame, sample_rate=self.client.config.sample_rate

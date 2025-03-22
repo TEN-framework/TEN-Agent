@@ -13,7 +13,13 @@ from typing import Iterable
 import uuid
 
 from ten.async_ten_env import AsyncTenEnv
-from ten_ai_base.const import CMD_PROPERTY_RESULT, CMD_TOOL_CALL, CONTENT_DATA_OUT_NAME, DATA_OUT_PROPERTY_END_OF_SEGMENT, DATA_OUT_PROPERTY_TEXT
+from ten_ai_base.const import (
+    CMD_PROPERTY_RESULT,
+    CMD_TOOL_CALL,
+    CONTENT_DATA_OUT_NAME,
+    DATA_OUT_PROPERTY_END_OF_SEGMENT,
+    DATA_OUT_PROPERTY_TEXT,
+)
 from ten_ai_base.helper import (
     AsyncEventEmitter,
     get_property_bool,
@@ -203,7 +209,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                     self.memory_cache = self.memory_cache + [
                         message,
                     ]
-            self.memory_cache = self.memory_cache + [{"role": "assistant", "content": ""}]
+            self.memory_cache = self.memory_cache + [
+                {"role": "assistant", "content": ""}
+            ]
 
             tools = None
             if not no_tool and len(self.available_tools) > 0:
@@ -244,7 +252,6 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
 
                             async_ten_env.log_info(f"tool_result: {tool_result}")
 
-                            
                             if tool_result["type"] == "llmresult":
                                 result_content = tool_result["content"]
                                 if isinstance(result_content, str):
@@ -258,7 +265,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                                         "tool_call_id": tool_call["id"],
                                     }
                                     await self.queue_input_item(
-                                        True, messages=[tool_message, new_message], no_tool=True
+                                        True,
+                                        messages=[tool_message, new_message],
+                                        no_tool=True,
                                     )
                                 else:
                                     async_ten_env.log_error(
@@ -305,8 +314,9 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
                 ts = int(time.time() * 1000)
                 if ts - self.last_reasoning_ts >= 200:
                     self.last_reasoning_ts = ts
-                    self.send_reasoning_text_output(async_ten_env, message_id, think, False)
-
+                    self.send_reasoning_text_output(
+                        async_ten_env, message_id, think, False
+                    )
 
             async def handle_reasoning_update_finish(think: str):
                 self.last_reasoning_ts = int(time.time() * 1000)
@@ -403,17 +413,20 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
         self.memory.append(message)
 
     def send_reasoning_text_output(
-        self, async_ten_env: AsyncTenEnv, msg_id:str, sentence: str, end_of_segment: bool
+        self,
+        async_ten_env: AsyncTenEnv,
+        msg_id: str,
+        sentence: str,
+        end_of_segment: bool,
     ):
         try:
             output_data = Data.create(CONTENT_DATA_OUT_NAME)
-            output_data.set_property_string(DATA_OUT_PROPERTY_TEXT, json.dumps({
-                "id":msg_id,
-                "data": {
-                    "text": sentence
-                },
-                "type": "reasoning"
-            }))
+            output_data.set_property_string(
+                DATA_OUT_PROPERTY_TEXT,
+                json.dumps(
+                    {"id": msg_id, "data": {"text": sentence}, "type": "reasoning"}
+                ),
+            )
             output_data.set_property_bool(
                 DATA_OUT_PROPERTY_END_OF_SEGMENT, end_of_segment
             )
@@ -423,4 +436,5 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             # )
         except Exception:
             async_ten_env.log_warn(
-                f"send sentence [{sentence}] failed, err: {traceback.format_exc()}")
+                f"send sentence [{sentence}] failed, err: {traceback.format_exc()}"
+            )
