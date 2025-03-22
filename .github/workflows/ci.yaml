@@ -36,6 +36,10 @@ jobs:
           git config --global --add safe.directory $(pwd)
           task use AGENT=${{ matrix.agent }}
 
+      - name: Run format check
+        run: |
+          task check
+
       - name: Run tests
         run: |
           task test -- -s -v
