@@ -269,4 +269,3 @@ class LlamaIndexExtension(Extension):
     def get_outdated_ts(self):
         with self.outdate_ts_lock:
             return self.outdate_ts
-
