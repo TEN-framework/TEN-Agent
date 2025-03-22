@@ -40,10 +40,11 @@ jobs:
         run: |
           task check
 
-      - name: Run tests
-        run: |
-          task test -- -s -v
 
       - name: Run lint
         run: |
           task lint
+
+      - name: Run tests
+        run: |
+          task test -- -s -v
