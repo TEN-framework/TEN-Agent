@@ -40,8 +40,7 @@
 
 #### Table of Contents
 
-- [🚀 Getting Started](#-getting-started--join-our-community)
-- [👥 Joining TEN Community](#-getting-started--join-our-community)
+- [👋 Getting Started & Join TEN Community](#-getting-started--join-our-community)
 - [✨ Features](#-features)
   - [`1` Ten Agent + Trulience](#1-chain-of-thought)
   - [`2` Ten Agent + Deepseek](#2-branching-conversations)
@@ -69,12 +68,11 @@
 
 </details>
 
-## Getting Started
+## 👋 Getting Started & Join TEN Community
 
-We are a group of e/acc design-engineers, hoping to provide modern design components and tools for AIGC.
-By adopting the Bootstrapping approach, we aim to provide developers and users with a more open, transparent, and user-friendly product ecosystem.
+TEN Framework is a powerful platform for building and deploying sophisticated AI agents. Our framework enables multimodal interactions, visual recognition, and seamless integration with various AI services.
 
-Whether for users or professional developers, LobeHub will be your AI Agent playground. Please be aware that LobeChat is currently under active development, and feedback is welcome for any [issues][issues-link] encountered.
+Whether you're a developer or user, TEN Agent provides the tools you need to harness AI capabilities. We welcome your feedback and contributions in our [GitHub repository](https://github.com/ten-framework/ten-agent/issues).
 
 | [![][discord-shield-badge]][discord-link] | Join our Discord community! This is where you can connect with developers and other enthusiastic users of LobeHub. |
 
@@ -85,7 +83,7 @@ Whether for users or professional developers, LobeHub will be your AI Agent play
 >
 > **Star Us**, You will receive all release notifications from GitHub without any delay \~ ⭐️
 
-[![][image-star]][github-stars-link]
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
 <details>
   <summary><kbd>Star History</kbd></summary>
