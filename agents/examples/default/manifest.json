@@ -147,6 +147,11 @@
       "type": "extension",
       "name": "computer_tool_python",
       "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "heygen_avatar_python",
+      "version": "=0.1.0"
     }
   ]
 }
