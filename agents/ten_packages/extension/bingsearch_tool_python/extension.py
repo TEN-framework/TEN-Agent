@@ -61,8 +61,10 @@ DEFAULT_BING_SEARCH_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search"
 #  2. https://learn.microsoft.com/en-us/bing/search-apis/bing-custom-search/overview
 #  3. https://azure.microsoft.com/en-in/updates/bing-search-apis-will-transition-from-azure-cognitive-services-to-azure-marketplace-on-31-october-2023/
 
+
 class BingSearchToolConfig(BaseConfig):
     api_key: str = ""
+
 
 class BingSearchToolExtension(AsyncLLMToolBaseExtension):
 
@@ -145,7 +147,9 @@ class BingSearchToolExtension(AsyncLLMToolBaseExtension):
             ten_env.log_debug("Initializing new session")
             self.session = aiohttp.ClientSession()
 
-    async def _bing_search_results(self, ten_env: AsyncTenEnv, search_term: str, count: int) -> List[dict]:
+    async def _bing_search_results(
+        self, ten_env: AsyncTenEnv, search_term: str, count: int
+    ) -> List[dict]:
         await self._initialize_session(ten_env)
         headers = {"Ocp-Apim-Subscription-Key": self.config.api_key}
         params = {

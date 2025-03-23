@@ -16,15 +16,18 @@ class AudioFormats(str, Enum):
     G711_ULAW = "g711_ulaw"
     G711_ALAW = "g711_alaw"
 
+
 class ItemType(str, Enum):
     Message = "message"
     FunctionCall = "function_call"
     FunctionCallOutput = "function_call_output"
 
+
 class MessageRole(str, Enum):
     System = "system"
     User = "user"
     Assistant = "assistant"
+
 
 class ContentType(str, Enum):
     InputText = "input_text"
@@ -32,17 +35,23 @@ class ContentType(str, Enum):
     Text = "text"
     Audio = "audio"
 
+
 class ChatMode(str, Enum):
     VideoPassive = "video_passive"
     Audio = "audio"
+
 
 @dataclass
 class FunctionToolChoice:
     name: str  # Name of the function
     type: str = "function"  # Fixed value for type
 
+
 # ToolChoice can be either a literal string or FunctionToolChoice
-ToolChoice = Union[str, FunctionToolChoice]  # "none", "auto", "required", or FunctionToolChoice
+ToolChoice = Union[
+    str, FunctionToolChoice
+]  # "none", "auto", "required", or FunctionToolChoice
+
 
 @dataclass
 class RealtimeError:
@@ -52,22 +61,31 @@ class RealtimeError:
     param: Optional[str] = None  # Optional parameter related to the error
     event_id: Optional[str] = None  # Optional event ID for tracing
 
+
 @dataclass
 class InputAudioTranscription:
     model: str = "whisper-1"  # Default transcription model is "whisper-1"
 
+
 @dataclass
 class ServerVADUpdateParams:
     threshold: Optional[float] = None  # Threshold for voice activity detection
-    prefix_padding_ms: Optional[int] = None  # Amount of padding before the voice starts (in milliseconds)
-    silence_duration_ms: Optional[int] = None  # Duration of silence before considering speech stopped (in milliseconds)
+    prefix_padding_ms: Optional[int] = (
+        None  # Amount of padding before the voice starts (in milliseconds)
+    )
+    silence_duration_ms: Optional[int] = (
+        None  # Duration of silence before considering speech stopped (in milliseconds)
+    )
     type: str = "server_vad"  # Fixed value for VAD type
 
 
 @dataclass
 class BetaFieldsParams:
-    chat_mode: ChatMode = ChatMode.Audio  # Chat mode for the session, defaulting to "audio"
+    chat_mode: ChatMode = (
+        ChatMode.Audio
+    )  # Chat mode for the session, defaulting to "audio"
     tts_source: Optional[str] = "e2e"  # Source of the TTS audio
+
 
 @dataclass
 class Session:
@@ -75,17 +93,33 @@ class Session:
     model: str  # The model associated with the session (e.g., "gpt-3")
     # expires_at: int  # Expiration time of the session in seconds since the epoch (UNIX timestamp)
     object: str = "realtime.session"  # Fixed value indicating the object type
-    modalities: Set[str] = field(default_factory=lambda: {"text", "audio"})  # Set of allowed modalities (e.g., "text", "audio")
+    modalities: Set[str] = field(
+        default_factory=lambda: {"text", "audio"}
+    )  # Set of allowed modalities (e.g., "text", "audio")
     instructions: Optional[str] = None  # Instructions or guidance for the session
-    turn_detection: Optional[ServerVADUpdateParams] = None  # Voice activity detection (VAD) settings
-    input_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for input (e.g., "pcm16")
-    output_audio_format: AudioFormats = AudioFormats.PCM  # Audio format for output (e.g., "pcm16")
-    input_audio_transcription: Optional[InputAudioTranscription] = None  # Audio transcription model settings (e.g., "whisper-1")
-    tools: List[Dict[str, Union[str, Any]]] = field(default_factory=list)  # List of tools available during the session
-    tool_choice: Literal["auto", "none", "required"] = "auto"  # How tools should be used in the session
+    turn_detection: Optional[ServerVADUpdateParams] = (
+        None  # Voice activity detection (VAD) settings
+    )
+    input_audio_format: AudioFormats = (
+        AudioFormats.PCM
+    )  # Audio format for input (e.g., "pcm16")
+    output_audio_format: AudioFormats = (
+        AudioFormats.PCM
+    )  # Audio format for output (e.g., "pcm16")
+    input_audio_transcription: Optional[InputAudioTranscription] = (
+        None  # Audio transcription model settings (e.g., "whisper-1")
+    )
+    tools: List[Dict[str, Union[str, Any]]] = field(
+        default_factory=list
+    )  # List of tools available during the session
+    tool_choice: Literal["auto", "none", "required"] = (
+        "auto"  # How tools should be used in the session
+    )
     temperature: float = 0.8  # Temperature setting for model creativity
-    max_response_output_tokens: Union[int, Literal["inf"]] = "inf"  # Maximum number of tokens in the response, or "inf" for unlimited
-    
+    max_response_output_tokens: Union[int, Literal["inf"]] = (
+        "inf"  # Maximum number of tokens in the response, or "inf" for unlimited
+    )
+
 
 @dataclass
 class SessionUpdateParams:
@@ -93,15 +127,25 @@ class SessionUpdateParams:
     # modalities: Optional[Set[str]] = None  # Set of allowed modalities (e.g., "text", "audio")
     instructions: Optional[str] = None  # Optional instructions string
     # voice: Optional[Voices] = None  # Voice selection, can be `None` or from `Voices` Enum
-    turn_detection: ServerVADUpdateParams = field(default_factory=ServerVADUpdateParams)  # VAD update parameters
-    input_audio_format: Optional[AudioFormats] = None  # Input audio format from `AudioFormats` Enum
-    output_audio_format: Optional[AudioFormats] = None  # Output audio format from `AudioFormats` Enum
+    turn_detection: ServerVADUpdateParams = field(
+        default_factory=ServerVADUpdateParams
+    )  # VAD update parameters
+    input_audio_format: Optional[AudioFormats] = (
+        None  # Input audio format from `AudioFormats` Enum
+    )
+    output_audio_format: Optional[AudioFormats] = (
+        None  # Output audio format from `AudioFormats` Enum
+    )
     # input_audio_transcription: Optional[InputAudioTranscription] = None  # Optional transcription model
-    tools: Optional[List[Dict[str, Union[str, any]]]] = None  # List of tools (e.g., dictionaries)
+    tools: Optional[List[Dict[str, Union[str, any]]]] = (
+        None  # List of tools (e.g., dictionaries)
+    )
     # tool_choice: Optional[ToolChoice] = None  # ToolChoice, either string or `FunctionToolChoice`
     # temperature: Optional[float] = None  # Optional temperature for response generation
     # max_response_output_tokens: Optional[Union[int, str]] = None  # Max response tokens, "inf" for infinite
-    beta_fields: BetaFieldsParams = field(default_factory=BetaFieldsParams)  # Beta fields for additional settings
+    beta_fields: BetaFieldsParams = field(
+        default_factory=BetaFieldsParams
+    )  # Beta fields for additional settings
 
 
 # Define individual message item param types
@@ -113,6 +157,7 @@ class SystemMessageItemParam:
     type: str = "message"
     role: str = "system"
 
+
 @dataclass
 class UserMessageItemParam:
     content: List[dict]  # Similarly, content can be more specific
@@ -121,6 +166,7 @@ class UserMessageItemParam:
     type: str = "message"
     role: str = "user"
 
+
 @dataclass
 class AssistantMessageItemParam:
     content: List[dict]  # Content structure here depends on your schema
@@ -128,6 +174,7 @@ class AssistantMessageItemParam:
     status: Optional[str] = None
     type: str = "message"
     role: str = "assistant"
+
 
 @dataclass
 class FunctionCallItemParam:
@@ -138,6 +185,7 @@ class FunctionCallItemParam:
     id: Optional[str] = None
     status: Optional[str] = None
 
+
 @dataclass
 class FunctionCallOutputItemParam:
     # call_id: str
@@ -145,13 +193,14 @@ class FunctionCallOutputItemParam:
     id: Optional[str] = None
     type: str = "function_call_output"
 
+
 # Union of all possible item types
 ItemParam = Union[
     SystemMessageItemParam,
     UserMessageItemParam,
     AssistantMessageItemParam,
     FunctionCallItemParam,
-    FunctionCallOutputItemParam
+    FunctionCallOutputItemParam,
 ]
 
 
@@ -181,8 +230,12 @@ class EventType(str, Enum):
     ITEM_CREATED = "conversation.item.created"
     ITEM_DELETED = "conversation.item.deleted"
     ITEM_TRUNCATED = "conversation.item.truncated"
-    ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED = "conversation.item.input_audio_transcription.completed"
-    ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED = "conversation.item.input_audio_transcription.failed"
+    ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED = (
+        "conversation.item.input_audio_transcription.completed"
+    )
+    ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED = (
+        "conversation.item.input_audio_transcription.failed"
+    )
 
     RESPONSE_CREATED = "response.created"
     RESPONSE_CANCELLED = "response.cancelled"
@@ -200,6 +253,7 @@ class EventType(str, Enum):
     RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = "response.function_call_arguments.delta"
     RESPONSE_FUNCTION_CALL_ARGUMENTS_DONE = "response.function_call_arguments.done"
     RATE_LIMITS_UPDATED = "rate_limits.updated"
+
 
 # Base class for all ServerToClientMessages
 @dataclass
@@ -276,7 +330,10 @@ class ItemDeleted(ServerToClientMessage):
 # ResponseStatus could be a string or an enum, depending on your schema
 
 # Enum or Literal for ResponseStatus (could be more extensive)
-ResponseStatus = Union[str, Literal["in_progress", "completed", "cancelled", "incomplete", "failed"]]
+ResponseStatus = Union[
+    str, Literal["in_progress", "completed", "cancelled", "incomplete", "failed"]
+]
+
 
 # Define status detail classes
 @dataclass
@@ -284,24 +341,33 @@ class ResponseCancelledDetails:
     reason: str  # e.g., "turn_detected", "client_cancelled"
     type: str = "cancelled"
 
+
 @dataclass
 class ResponseIncompleteDetails:
     reason: str  # e.g., "max_output_tokens", "content_filter"
     type: str = "incomplete"
 
+
 @dataclass
 class ResponseError:
     type: str  # The type of the error, e.g., "validation_error", "server_error"
     message: str  # The error message describing what went wrong
-    code: Optional[str] = None  # Optional error code, e.g., HTTP status code, API error code
+    code: Optional[str] = (
+        None  # Optional error code, e.g., HTTP status code, API error code
+    )
+
 
 @dataclass
 class ResponseFailedDetails:
     error: ResponseError  # Assuming ResponseError is already defined
     type: str = "failed"
 
+
 # Union of possible status details
-ResponseStatusDetails = Union[ResponseCancelledDetails, ResponseIncompleteDetails, ResponseFailedDetails]
+ResponseStatusDetails = Union[
+    ResponseCancelledDetails, ResponseIncompleteDetails, ResponseFailedDetails
+]
+
 
 # Define Usage class to handle token usage
 @dataclass
@@ -310,10 +376,12 @@ class InputTokenDetails:
     text_tokens: int
     audio_tokens: int
 
+
 @dataclass
 class OutputTokenDetails:
     text_tokens: int
     audio_tokens: int
+
 
 @dataclass
 class Usage:
@@ -323,17 +391,21 @@ class Usage:
     input_token_details: InputTokenDetails
     output_token_details: OutputTokenDetails
 
+
 # The Response dataclass definition
 @dataclass
 class Response:
     id: str  # Unique ID for the response
-    output: List[ItemParam] = field(default_factory=list)  # List of items in the response
+    output: List[ItemParam] = field(
+        default_factory=list
+    )  # List of items in the response
     object: str = "realtime.response"  # Fixed value for object type
     status: ResponseStatus = "in_progress"  # Status of the response
-    status_details: Optional[ResponseStatusDetails] = None  # Additional details based on status
+    status_details: Optional[ResponseStatusDetails] = (
+        None  # Additional details based on status
+    )
     usage: Optional[Usage] = None  # Token usage information
     metadata: Optional[Dict[str, Any]] = None  # Additional metadata for the response
-
 
 
 @dataclass
@@ -421,6 +493,7 @@ class RateLimitDetails:
     remaining: int  # The number of requests remaining in the current time window
     reset_seconds: float  # The number of seconds until the rate limit resets
 
+
 @dataclass
 class RateLimitsUpdated(ServerToClientMessage):
     rate_limits: List[RateLimitDetails]
@@ -431,8 +504,11 @@ class RateLimitsUpdated(ServerToClientMessage):
 class ResponseOutputItemAdded(ServerToClientMessage):
     response_id: str  # The ID of the response
     output_index: int  # Index of the output item in the response
-    item: Union[ItemParam, None]  # The added item (can be a message, function call, etc.)
+    item: Union[
+        ItemParam, None
+    ]  # The added item (can be a message, function call, etc.)
     type: str = EventType.RESPONSE_OUTPUT_ITEM_ADDED  # Fixed event type
+
 
 @dataclass
 class ResponseContentPartAdded(ServerToClientMessage):
@@ -441,8 +517,9 @@ class ResponseContentPartAdded(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The added content part
-    content: Union[ItemParam, None] = None # The added content part for azure
+    content: Union[ItemParam, None] = None  # The added content part for azure
     type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
+
 
 @dataclass
 class ResponseContentPartDone(ServerToClientMessage):
@@ -451,8 +528,9 @@ class ResponseContentPartDone(ServerToClientMessage):
     output_index: int  # Index of the output item in the response
     content_index: int  # Index of the content part in the output
     part: Union[ItemParam, None]  # The content part that was completed
-    content: Union[ItemParam, None] = None # The added content part for azure
+    content: Union[ItemParam, None] = None  # The added content part for azure
     type: str = EventType.RESPONSE_CONTENT_PART_ADDED  # Fixed event type
+
 
 @dataclass
 class ResponseOutputItemDone(ServerToClientMessage):
@@ -461,17 +539,20 @@ class ResponseOutputItemDone(ServerToClientMessage):
     item: Union[ItemParam, None]  # The output item that was completed
     type: str = EventType.RESPONSE_OUTPUT_ITEM_DONE  # Fixed event type
 
+
 @dataclass
 class ItemInputAudioTranscriptionCompleted(ServerToClientMessage):
     content_index: int  # Index of the content part that was transcribed
     transcript: str  # The transcribed text
     type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED  # Fixed event type
 
+
 @dataclass
 class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
     content_index: int  # Index of the content part that failed to transcribe
     error: ResponseError  # Error details explaining the failure
     type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED  # Fixed event type
+
 
 # Union of all server-to-client message types
 ServerToClientMessages = Union[
@@ -501,9 +582,8 @@ ServerToClientMessages = Union[
     ResponseContentPartDone,
     ResponseOutputItemDone,
     ItemInputAudioTranscriptionCompleted,
-    ItemInputAudioTranscriptionFailed
+    ItemInputAudioTranscriptionFailed,
 ]
-
 
 
 # Base class for all ClientToServerMessages
@@ -515,7 +595,10 @@ class ClientToServerMessage:
 @dataclass
 class InputAudioBufferAppend(ClientToServerMessage):
     audio: Optional[str] = field(default=None)
-    type: str = EventType.INPUT_AUDIO_BUFFER_APPEND  # Default argument (has a default value)
+    type: str = (
+        EventType.INPUT_AUDIO_BUFFER_APPEND
+    )  # Default argument (has a default value)
+
 
 @dataclass
 class InputAudioBufferCommit(ClientToServerMessage):
@@ -529,7 +612,9 @@ class InputAudioBufferClear(ClientToServerMessage):
 
 @dataclass
 class ItemCreate(ClientToServerMessage):
-    item: Optional[ItemParam] = field(default=None)  # Assuming `ItemParam` is already defined
+    item: Optional[ItemParam] = field(
+        default=None
+    )  # Assuming `ItemParam` is already defined
     type: str = EventType.ITEM_CREATE
     previous_item_id: Optional[str] = None
 
@@ -546,34 +631,49 @@ class ItemTruncate(ClientToServerMessage):
 class ItemDelete(ClientToServerMessage):
     item_id: Optional[str] = field(default=None)
     type: str = EventType.ITEM_DELETE
-    
+
+
 @dataclass
 class ResponseCreateParams:
-    commit: bool = True  # Whether the generated messages should be appended to the conversation
+    commit: bool = (
+        True  # Whether the generated messages should be appended to the conversation
+    )
     cancel_previous: bool = True  # Whether to cancel the previous pending generation
-    append_input_items: Optional[List[ItemParam]] = None  # Messages to append before response generation
-    input_items: Optional[List[ItemParam]] = None  # Initial messages to use for generation
+    append_input_items: Optional[List[ItemParam]] = (
+        None  # Messages to append before response generation
+    )
+    input_items: Optional[List[ItemParam]] = (
+        None  # Initial messages to use for generation
+    )
     modalities: Optional[Set[str]] = None  # Allowed modalities (e.g., "text", "audio")
     instructions: Optional[str] = None  # Instructions or guidance for the model
     # voice: Optional[Voices] = None  # Voice setting for audio output
     output_audio_format: Optional[AudioFormats] = None  # Format for the audio output
     tools: Optional[List[Dict[str, Any]]] = None  # Tools available for this response
-    tool_choice: Optional[ToolChoice] = None  # How to choose the tool ("auto", "required", etc.)
+    tool_choice: Optional[ToolChoice] = (
+        None  # How to choose the tool ("auto", "required", etc.)
+    )
     temperature: Optional[float] = None  # The randomness of the model's responses
-    max_response_output_tokens: Optional[Union[int, str]] = None  # Max number of tokens for the output, "inf" for infinite
+    max_response_output_tokens: Optional[Union[int, str]] = (
+        None  # Max number of tokens for the output, "inf" for infinite
+    )
 
 
 @dataclass
 class ResponseCreate(ClientToServerMessage):
     type: str = EventType.RESPONSE_CREATE
-    response: Optional[ResponseCreateParams] = None  # Assuming `ResponseCreateParams` is defined
+    response: Optional[ResponseCreateParams] = (
+        None  # Assuming `ResponseCreateParams` is defined
+    )
 
 
 @dataclass
 class ResponseCancel(ClientToServerMessage):
     type: str = EventType.RESPONSE_CANCEL
 
+
 DEFAULT_CONVERSATION = "default"
+
 
 @dataclass
 class UpdateConversationConfig(ClientToServerMessage):
@@ -592,7 +692,9 @@ class UpdateConversationConfig(ClientToServerMessage):
 
 @dataclass
 class SessionUpdate(ClientToServerMessage):
-    session: Optional[SessionUpdateParams] = field(default=None)  # Assuming `SessionUpdateParams` is defined
+    session: Optional[SessionUpdateParams] = field(
+        default=None
+    )  # Assuming `SessionUpdateParams` is defined
     type: str = EventType.SESSION_UPDATE
 
 
@@ -607,8 +709,9 @@ ClientToServerMessages = Union[
     ResponseCreate,
     ResponseCancel,
     UpdateConversationConfig,
-    SessionUpdate
+    SessionUpdate,
 ]
+
 
 def from_dict(data_class, data):
     """Recursively convert a dictionary to a dataclass instance."""
@@ -616,15 +719,18 @@ def from_dict(data_class, data):
         fieldtypes = {f.name: f.type for f in data_class.__dataclass_fields__.values()}
         # Filter out keys that are not in the dataclass fields
         valid_data = {f: data[f] for f in fieldtypes if f in data}
-        return data_class(**{f: from_dict(fieldtypes[f], valid_data[f]) for f in valid_data})
+        return data_class(
+            **{f: from_dict(fieldtypes[f], valid_data[f]) for f in valid_data}
+        )
     elif isinstance(data, list):  # Handle lists of nested dataclass objects
         return [from_dict(data_class.__args__[0], item) for item in data]
     else:  # For primitive types (str, int, float, etc.), return the value as-is
         return data
 
+
 def parse_client_message(unparsed_string: str) -> ClientToServerMessage:
     data = json.loads(unparsed_string)
-    
+
     # Dynamically select the correct message class based on the `type` field, using from_dict
     if data["type"] == EventType.INPUT_AUDIO_BUFFER_APPEND:
         return from_dict(InputAudioBufferAppend, data)
@@ -646,12 +752,13 @@ def parse_client_message(unparsed_string: str) -> ClientToServerMessage:
         return from_dict(UpdateConversationConfig, data)
     elif data["type"] == EventType.SESSION_UPDATE:
         return from_dict(SessionUpdate, data)
-    
+
     raise ValueError(f"Unknown message type: {data['type']}")
 
 
 # Assuming all necessary classes and enums (EventType, ServerToClientMessages, etc.) are imported
 # Here’s how you can dynamically parse a server-to-client message based on the `type` field:
+
 
 def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     data = json.loads(unparsed_string)
@@ -713,7 +820,10 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
         return from_dict(ItemInputAudioTranscriptionFailed, data)
 
     raise ValueError(f"Unknown message type: {data['type']}")
-    
+
+
 def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
     # ignore none value
-    return json.dumps(asdict(obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}))
+    return json.dumps(
+        asdict(obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None})
+    )
