@@ -11,8 +11,6 @@
 
 [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
-<a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2FTEN-Agent | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten-agent?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten-agent/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten-agent?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten-agent/network/?WT.mc_id=academic-105485-koreyst)
 [![GitHub stars](https://img.shields.io/github/stars/TEN-framework/ten-agent?style=social&label=Star)](https://GitHub.com/TEN-framework/ten-agent/stargazers/?WT.mc_id=academic-105485-koreyst)
@@ -31,7 +29,71 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
+<a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2FTEN-Agent | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 </div>
+
+<br>
+
+<details open>
+  <summary><kbd>Table of Contents</kbd></summary>
+
+#### Table of Contents
+
+- [Getting Started](#-getting-started--join-our-community)
+- [Joining TEN Community](#-getting-started--join-our-community)
+- [Features](#-features)
+  - [`1` Ten Agent + Trulience](#1-chain-of-thought)
+  - [`2` Ten Agent + Deepseek](#2-branching-conversations)
+  - [`3` Ten Agent + ESP32](#3-artifacts-support)
+  - [`4` Ten Agent + Dify](#4-file-upload-knowledge-base)
+  - [`5` Ten Agent + Gemini Multimodal Live API](#5-multi-model-service-provider-support)
+  - [`6` Ten Agent + Storyteller + Image Generator](#6-local-large-language-model-llm-support)
+  - [`7` Model Visual Recognition](#7-model-visual-recognition)
+- [TEN Agent Usecases](#ten-agent-usecases)
+- [Ready to use Extensions](#ready-to-use-extensions)
+- [TEN Agent Playground](#ready-to-use-extensions)
+- [TEN Agent Demo](#ready-to-use-extensions)
+- [Deployment](#deployment)
+- [TEN Agent Architecture](#deployment)
+  - [`A` Deploying with Vercel, Zeabur , Sealos or Alibaba Cloud](#a-deploying-with-vercel-zeabur--sealos-or-alibaba-cloud)
+  - [`B` Deploying with Docker](#b-deploying-with-docker)
+  - [Environment Variable](#environment-variable)
+- [Ecosystem](#-ecosystem)
+- [️Local Development](#️-local-development)
+- [Contributing](#-contributing)
+
+####
+
+<br/>
+
+</details>
+
+## Getting Started
+
+We are a group of e/acc design-engineers, hoping to provide modern design components and tools for AIGC.
+By adopting the Bootstrapping approach, we aim to provide developers and users with a more open, transparent, and user-friendly product ecosystem.
+
+Whether for users or professional developers, LobeHub will be your AI Agent playground. Please be aware that LobeChat is currently under active development, and feedback is welcome for any [issues][issues-link] encountered.
+
+| [![][discord-shield-badge]][discord-link] | Join our Discord community! This is where you can connect with developers and other enthusiastic users of LobeHub. |
+
+| [![][vercel-shield-badge]][vercel-link]   | No installation or registration necessary! Visit our website to experience it firsthand.                           |
+| :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
+
+> \[!IMPORTANT]
+>
+> **Star Us**, You will receive all release notifications from GitHub without any delay \~ ⭐️
+
+[![][image-star]][github-stars-link]
+
+<details>
+  <summary><kbd>Star History</kbd></summary>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=lobehub%2Flobe-chat&theme=dark&type=Date">
+    <img width="100%" src="https://api.star-history.com/svg?repos=lobehub%2Flobe-chat&type=Date">
+  </picture>
+</details>
 
 <br>
 <h2>✨ TEN Agent + Trulience</h2>
