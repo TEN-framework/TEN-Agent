@@ -49,7 +49,7 @@ tasks:
     desc: run playground
     dir: ./playground
     cmds:
-      - source ~/.bashrc && npm run dev
+      - . $NVM_DIR/nvm.sh && npm run dev
 
   run:
     desc: run servers
