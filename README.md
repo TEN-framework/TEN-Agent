@@ -40,9 +40,9 @@
 
 #### Table of Contents
 
-- [Getting Started](#-getting-started--join-our-community)
-- [Joining TEN Community](#-getting-started--join-our-community)
-- [Features](#-features)
+- [🚀 Getting Started](#-getting-started--join-our-community)
+- [👥 Joining TEN Community](#-getting-started--join-our-community)
+- [✨ Features](#-features)
   - [`1` Ten Agent + Trulience](#1-chain-of-thought)
   - [`2` Ten Agent + Deepseek](#2-branching-conversations)
   - [`3` Ten Agent + ESP32](#3-artifacts-support)
@@ -50,18 +50,18 @@
   - [`5` Ten Agent + Gemini Multimodal Live API](#5-multi-model-service-provider-support)
   - [`6` Ten Agent + Storyteller + Image Generator](#6-local-large-language-model-llm-support)
   - [`7` Model Visual Recognition](#7-model-visual-recognition)
-- [TEN Agent Usecases](#ten-agent-usecases)
-- [Ready to use Extensions](#ready-to-use-extensions)
-- [TEN Agent Playground](#ready-to-use-extensions)
-- [TEN Agent Demo](#ready-to-use-extensions)
-- [Deployment](#deployment)
-- [TEN Agent Architecture](#deployment)
-  - [`A` Deploying with Vercel, Zeabur , Sealos or Alibaba Cloud](#a-deploying-with-vercel-zeabur--sealos-or-alibaba-cloud)
-  - [`B` Deploying with Docker](#b-deploying-with-docker)
-  - [Environment Variable](#environment-variable)
-- [Ecosystem](#-ecosystem)
-- [️Local Development](#️-local-development)
-- [Contributing](#-contributing)
+- [💡 TEN Agent Usecases](#ten-agent-usecases)
+- [🔌 Ready to use Extensions](#ready-to-use-extensions)
+- [🎮 TEN Agent Playground](#ready-to-use-extensions)
+- [🎥 TEN Agent Demo](#ready-to-use-extensions)
+- [🛠️ Deployment](#deployment)
+- [🏗️ TEN Agent Architecture](#deployment)
+  - [`A` 🌩️ Deploying with Vercel, Zeabur , Sealos or Alibaba Cloud](#a-deploying-with-vercel-zeabur--sealos-or-alibaba-cloud)
+  - [`B` 🐳 Deploying with Docker](#b-deploying-with-docker)
+  - [⚙️ Environment Variable](#environment-variable)
+- [🌍 Ecosystem](#-ecosystem)
+- [💻 Local Development](#️-local-development)
+- [🤝 Contributing](#-contributing)
 
 ####
 
