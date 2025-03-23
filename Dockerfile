@@ -24,7 +24,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | P
 RUN . $NVM_DIR/nvm.sh && nvm install node
 
 
-RUN task build-playground
+RUN . $NVM_DIR/nvm.sh && task build-playground
 
 EXPOSE 8080
 
