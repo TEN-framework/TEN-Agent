@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "heygen_avatar_python",
-  "version": "0.8.18",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
