@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Cog6ToothIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import AudioVisualizer from '@/components/AudioVisualizer';
 import { useMultibandTrackVolume } from '@/common/hooks';
@@ -59,7 +58,7 @@ export default function Home() {
             } catch (e) {
               console.error('静态视频播放失败:', e);
               // 如果自动播放失败，在下一帧重试
-              requestAnimationFrame(playStaticVideo);
+              // requestAnimationFrame(playStaticVideo);
             }
           };
           playStaticVideo();
@@ -122,11 +121,11 @@ export default function Home() {
         await targetVideo.play().catch(e => {
           console.error('视频播放失败:', e);
           // 如果播放失败，在下一帧重试
-          requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
+          // requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
         });
       } catch (e) {
         console.error('视频切换失败:', e);
-        requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
+        // requestAnimationFrame(() => playVideo(targetVideo, currentVideo));
       }
     };
 
