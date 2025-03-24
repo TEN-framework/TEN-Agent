@@ -22,9 +22,17 @@ from ten import AsyncTenEnv
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("HeyGenMinimal")
 
+
 class HeyGenRecorder:
-    #def __init__(self, api_key, avatar_name, output_dir, wav_file):
-    def __init__(self, api_key, avatar_name, ten_env: AsyncTenEnv, video_queue: asyncio.Queue, audio_queue: asyncio.Queue[bytes]):
+    # def __init__(self, api_key, avatar_name, output_dir, wav_file):
+    def __init__(
+        self,
+        api_key,
+        avatar_name,
+        ten_env: AsyncTenEnv,
+        video_queue: asyncio.Queue,
+        audio_queue: asyncio.Queue[bytes],
+    ):
         self.api_key = api_key
         self.avatar_name = avatar_name
         self.ten_env = ten_env
@@ -66,7 +74,7 @@ class HeyGenRecorder:
         url = "https://api.heygen.com/v1/streaming.new"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {token}",
         }
         payload = {
             "avatar_name": self.avatar_name,
@@ -75,7 +83,7 @@ class HeyGenRecorder:
             "version": "v2",
             "video_encoding": "H264",
             "source": "sdk",
-            "disable_idle_timeout": False
+            "disable_idle_timeout": False,
         }
 
         resp = requests.post(url, headers=headers, json=payload)
@@ -92,7 +100,10 @@ class HeyGenRecorder:
     def start_streaming_session(self, token):
         """Tell HeyGen to begin the streaming session."""
         url = "https://api.heygen.com/v1/streaming.start"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
         payload = {"session_id": self.session_id}
         resp = requests.post(url, headers=headers, json=payload)
         data = resp.json()
@@ -161,12 +172,17 @@ class HeyGenRecorder:
 
     async def record(self, livekit_url, livekit_token):
         """Connect to LiveKit, subscribe to audio/video, and record until Ctrl-C."""
+
         # Define track subscription callbacks
         @self.room.on("track_subscribed")
         def when_track_subscribed(track, pub, participant):
             if track.kind == rtc.TrackKind.KIND_AUDIO:
                 logger.info("Subscribed to audio track.")
-                asyncio.create_task(self.handle_audio(rtc.AudioStream(track, sample_rate=16000, num_channels= 1)))
+                asyncio.create_task(
+                    self.handle_audio(
+                        rtc.AudioStream(track, sample_rate=16000, num_channels=1)
+                    )
+                )
             elif track.kind == rtc.TrackKind.KIND_VIDEO:
                 logger.info("Subscribed to video track.")
                 # Request I420
@@ -203,7 +219,7 @@ class HeyGenRecorder:
         """Append raw int16 samples to .pcm file."""
         async for frame_evt in audio_stream:
             samples = np.array(frame_evt.frame.data, dtype=np.int16)
-            #logger.info(f"audio frame audio num_channels  {frame_evt.frame.num_channels} sample_rate {frame_evt.frame.sample_rate}")
+            # logger.info(f"audio frame audio num_channels  {frame_evt.frame.num_channels} sample_rate {frame_evt.frame.sample_rate}")
             await self.audio_queue.put(samples.tobytes())
         # with open(self.pcm_path, 'ab') as pcm:
         #     async for frame_evt in audio_stream:
