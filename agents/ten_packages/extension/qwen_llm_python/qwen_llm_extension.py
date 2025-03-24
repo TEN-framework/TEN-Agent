@@ -131,7 +131,9 @@ class QWenLLMExtension(Extension):
             total = self.stream_chat(ten, ts, messages, None)
             callback(total, True)  # callback once until full answer returned
 
-    def stream_chat(self, ten: TenEnv, ts: datetime.time, messages: List[Any], callback):
+    def stream_chat(
+        self, ten: TenEnv, ts: datetime.time, messages: List[Any], callback
+    ):
         ten.log_info(f"before stream_chat call {messages} {ts}")
 
         if self.need_interrupt(ts):
@@ -163,7 +165,7 @@ class QWenLLMExtension(Extension):
                 m = self.sentence_expr.match(partial)
                 if m is not None:
                     sentence = m.group(0)
-                    partial = partial[m.end(0):]
+                    partial = partial[m.end(0) :]
                     if callback is not None:
                         callback(sentence, False)
 
