@@ -100,16 +100,18 @@ class BytedanceASRExtension(AsyncExtension):
         self.ten_env.log_info("start and listen bytedance_asr")
 
         async def on_message(result):
-            if not result or 'text' not in result[0] or 'utterances' not in result[0]:
+            if not result or "text" not in result[0] or "utterances" not in result[0]:
                 self.ten_env.log_warn("Received malformed result.")
                 return
 
-            sentence = result[0]['text']
+            sentence = result[0]["text"]
 
             if len(sentence) == 0:
                 return
 
-            is_final = result[0]['utterances'][0].get('definite', False)  # Use get to avoid KeyError
+            is_final = result[0]["utterances"][0].get(
+                "definite", False
+            )  # Use get to avoid KeyError
             self.ten_env.log_info(
                 f"bytedance_asr got sentence: [{sentence}], is_final: {is_final}, stream_id: {self.stream_id}"
             )
