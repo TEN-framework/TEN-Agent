@@ -182,7 +182,6 @@ class TranscriptionSessionUpdateParams:
         threshold=0.5,
         prefix_padding_ms=300,
         silence_duration_ms=500,
-        create_response=True
     )
     input_audio_noise_reduction: Optional[InputAudioNoiseReduction] = None
     include: Optional[List[str]] = None
@@ -270,6 +269,7 @@ class EventType(str, Enum):
     ITEM_DELETED = "conversation.item.deleted"
     ITEM_TRUNCATED = "conversation.item.truncated"
     ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED = "conversation.item.input_audio_transcription.completed"
+    ITEM_INPUT_AUDIO_TRANSCRIPTION_DELTA = "conversation.item.input_audio_transcription.delta"
     ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED = "conversation.item.input_audio_transcription.failed"
 
     RESPONSE_CREATED = "response.created"
@@ -575,6 +575,13 @@ class ItemInputAudioTranscriptionCompleted(ServerToClientMessage):
     type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED  # Fixed event type
 
 @dataclass
+class ItemInputAudioTranscriptionDelta(ServerToClientMessage):
+    item_id: str
+    content_index: int
+    delta: str
+    type: str = EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_DELTA
+
+@dataclass
 class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
     item_id: str  # The ID of the item for which transcription failed
     content_index: int  # Index of the content part that failed to transcribe
@@ -585,6 +592,7 @@ class ItemInputAudioTranscriptionFailed(ServerToClientMessage):
 ServerToClientMessages = Union[
     ErrorMessage,
     SessionCreated,
+    TranscriptionSessionCreated,
     SessionUpdated,
     InputAudioBufferCommitted,
     InputAudioBufferCleared,
@@ -609,6 +617,7 @@ ServerToClientMessages = Union[
     ResponseContentPartDone,
     ResponseOutputItemDone,
     ItemInputAudioTranscriptionCompleted,
+    ItemInputAudioTranscriptionDelta,
     ItemInputAudioTranscriptionFailed
 ]
 
@@ -706,7 +715,7 @@ class SessionUpdate(ClientToServerMessage):
 @dataclass
 class TranscriptionSessionUpdate(ClientToServerMessage):
     session: Optional[TranscriptionSessionUpdateParams] = field(default=None)  # Assuming `TranscriptionSessionUpdateParams` is defined
-    type: str = EventType.SESSION_UPDATE
+    type: str = EventType.TRANSCRIPTION_SESSION_UPDATE
 
 
 # Union of all client-to-server message types
@@ -824,6 +833,8 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
         return from_dict(ResponseOutputItemDone, data)
     elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_COMPLETED:
         return from_dict(ItemInputAudioTranscriptionCompleted, data)
+    elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_DELTA:
+        return from_dict(ItemInputAudioTranscriptionDelta, data)
     elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_FAILED:
         return from_dict(ItemInputAudioTranscriptionFailed, data)
 

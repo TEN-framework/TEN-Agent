@@ -46,6 +46,7 @@ from ten_ai_base.llm import AsyncLLMBaseExtension
 from .realtime.connection import RealtimeApiConnection
 from .realtime.struct import (
     ItemCreate,
+    ItemInputAudioTranscriptionDelta,
     SessionCreated,
     ItemCreated,
     TranscriptionSession,
@@ -292,37 +293,6 @@ class OpenAIRealtimeASRExtension(AsyncLLMBaseExtension):
                             self.session = message.session
                             await self._update_session()
 
-                            # history = self.memory.get()
-                            # for h in history:
-                            #     if h["role"] == "user":
-                            #         await self.conn.send_request(
-                            #             ItemCreate(
-                            #                 item=UserMessageItemParam(
-                            #                     content=[
-                            #                         {
-                            #                             "type": ContentType.InputText,
-                            #                             "text": h["content"],
-                            #                         }
-                            #                     ]
-                            #                 )
-                            #             )
-                            #         )
-                            #     elif h["role"] == "assistant":
-                            #         await self.conn.send_request(
-                            #             ItemCreate(
-                            #                 item=AssistantMessageItemParam(
-                            #                     content=[
-                            #                         {
-                            #                             "type": ContentType.InputText,
-                            #                             "text": h["content"],
-                            #                         }
-                            #                     ]
-                            #                 )
-                            #             )
-                            #         )
-                            # self.ten_env.log_info(f"Finish send history {history}")
-                            # self.memory.clear()
-
                             if not self.connected:
                                 self.connected = True
                                 # await self._greeting()
@@ -330,14 +300,14 @@ class OpenAIRealtimeASRExtension(AsyncLLMBaseExtension):
                             self.ten_env.log_info(
                                 f"On request transcript {message.transcript}"
                             )
-                            self._send_transcript(message.transcript, Role.User, True)
-                            self.memory.put(
-                                {
-                                    "role": "user",
-                                    "content": message.transcript,
-                                    "id": message.item_id,
-                                }
+                            self.transcript = ""
+                            self._send_transcript("", Role.User, True)
+                        case ItemInputAudioTranscriptionDelta():
+                            self.ten_env.log_info(
+                                f"On request transcript {message.delta}"
                             )
+                            self.transcript += message.delta
+                            self._send_transcript(self.transcript, Role.User, False)
                         case ItemInputAudioTranscriptionFailed():
                             self.ten_env.log_warn(
                                 f"On request transcript failed {message.item_id} {message.error}"
@@ -358,82 +328,12 @@ class OpenAIRealtimeASRExtension(AsyncLLMBaseExtension):
                             if message.response.usage:
                                 pass
                                 # await self._update_usage(message.response.usage)
-                        case ResponseAudioTranscriptDelta():
-                            self.ten_env.log_info(
-                                f"On response transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                            )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed transcript delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                                )
-                                continue
-                            self._send_transcript(message.delta, Role.Assistant, False)
-                        case ResponseTextDelta():
-                            self.ten_env.log_info(
-                                f"On response text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                            )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed text delta {message.response_id} {message.output_index} {message.content_index} {message.delta}"
-                                )
-                                continue
-                            if item_id != message.item_id:
-                                item_id = message.item_id
-                                self.first_token_times.append(
-                                    time.time() - self.input_end
-                                )
-                            self._send_transcript(message.delta, Role.Assistant, False)
-                        case ResponseAudioTranscriptDone():
-                            self.ten_env.log_info(
-                                f"On response transcript done {message.output_index} {message.content_index} {message.transcript}"
-                            )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed transcript done {message.response_id}"
-                                )
-                                continue
-                            self.memory.put(
-                                {
-                                    "role": "assistant",
-                                    "content": message.transcript,
-                                    "id": message.item_id,
-                                }
-                            )
-                            self.transcript = ""
-                            self._send_transcript("", Role.Assistant, True)
-                        case ResponseTextDone():
-                            self.ten_env.log_info(
-                                f"On response text done {message.output_index} {message.content_index} {message.text}"
-                            )
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed text done {message.response_id}"
-                                )
-                                continue
-                            self.completion_times.append(time.time() - self.input_end)
-                            self.transcript = ""
-                            self._send_transcript("", Role.Assistant, True)
                         case ResponseOutputItemDone():
                             self.ten_env.log_info(f"Output item done {message.item}")
                         case ResponseOutputItemAdded():
                             self.ten_env.log_info(
                                 f"Output item added {message.output_index} {message.item}"
                             )
-                        case ResponseAudioDelta():
-                            if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    f"On flushed audio delta {message.response_id} {message.item_id} {message.content_index}"
-                                )
-                                continue
-                            if item_id != message.item_id:
-                                item_id = message.item_id
-                                self.first_token_times.append(
-                                    time.time() - self.input_end
-                                )
-                            content_index = message.content_index
-                            await self._on_audio_delta(message.delta)
-                        case ResponseAudioDone():
-                            self.completion_times.append(time.time() - self.input_end)
                         case InputAudioBufferSpeechStarted():
                             self.ten_env.log_info(
                                 f"On server listening, in response {response_id}, last item {item_id}"
@@ -574,7 +474,7 @@ class OpenAIRealtimeASRExtension(AsyncLLMBaseExtension):
         su = TranscriptionSessionUpdate(
             session=TranscriptionSessionUpdateParams(
                 input_audio_transcription=InputAudioTranscription(
-                    model="gpt-4o-transcribe-latest",
+                    model="gpt-4o-transcribe",
                     prompt="",
                     language="en",
                 )
@@ -654,6 +554,7 @@ class OpenAIRealtimeASRExtension(AsyncLLMBaseExtension):
                 d = Data.create("text_data")
                 d.set_property_string("text", sentence)
                 d.set_property_bool("end_of_segment", is_final)
+                d.set_property_bool("is_final", is_final)
                 d.set_property_string("role", role)
                 d.set_property_int("stream_id", stream_id)
                 ten_env.log_info(

@@ -189,7 +189,7 @@ class OpenAIChatGPT:
                 prev_state = parser.state
 
                 if reasoning_mode == ReasoningMode.ModeV1:
-                    self.ten_env.log_info("process_by_reasoning_content")
+                    # self.ten_env.log_info("process_by_reasoning_content")
                     think_state_changed = parser.process_by_reasoning_content(reasoning_content)
                 else:
                     think_state_changed = parser.process(content)
