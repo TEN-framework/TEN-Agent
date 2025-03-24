@@ -122,23 +122,25 @@ class AliyunASRExtension(AsyncExtension):
                 # Parse the JSON string once
                 result_data = json.loads(result)  # Assuming result is a JSON string
 
-                if 'payload' not in result_data:
+                if "payload" not in result_data:
                     self.ten_env.log_warn("Received malformed result.")
                     return
 
-                sentence = result_data.get('payload', {}).get('result', '')
+                sentence = result_data.get("payload", {}).get("result", "")
 
                 if len(sentence) == 0:
                     return
 
-                is_final = result_data.get('header', {}).get('name') == 'SentenceEnd'
+                is_final = result_data.get("header", {}).get("name") == "SentenceEnd"
                 self.ten_env.log_info(
                     f"aliyun_asr got sentence: [{sentence}], is_final: {is_final}, stream_id: {self.stream_id}"
                 )
 
-                self.loop.create_task(self._send_text(
-                    text=sentence, is_final=is_final, stream_id=self.stream_id
-                ))
+                self.loop.create_task(
+                    self._send_text(
+                        text=sentence, is_final=is_final, stream_id=self.stream_id
+                    )
+                )
             except Exception as e:
                 self.ten_env.log_error(f"Error processing message: {e}")
 
@@ -146,6 +148,7 @@ class AliyunASRExtension(AsyncExtension):
             self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
 
         import nls
+
         token = nls.token.getToken(self.config.akid, self.config.aksecret)
         self.client = nls.NlsSpeechTranscriber(
             url=self.config.api_url,
@@ -158,7 +161,7 @@ class AliyunASRExtension(AsyncExtension):
             on_completed=on_message,
             on_error=on_error,
             on_close=on_close,
-            callback_args=[]
+            callback_args=[],
         )
 
         # connect to websocket
@@ -166,7 +169,7 @@ class AliyunASRExtension(AsyncExtension):
             aformat="pcm",
             enable_intermediate_result=True,
             enable_punctuation_prediction=True,
-            enable_inverse_text_normalization=True
+            enable_inverse_text_normalization=True,
         )
 
     async def _send_text(self, text: str, is_final: bool, stream_id: str) -> None:
