@@ -109,6 +109,11 @@ static void __on_user_mute_video(connection_id_t conn_id, uint32_t uid, bool mut
 }
 #endif //#ifndef CONFIG_AUDIO_ONLY
 
+void __on_stream_message(connection_id_t conn_id, uint32_t uid, int stream_id, const char* data, size_t length, uint64_t sent_ts)
+{
+  // printf("[conn-%lu] stream message: uid=%lu stream_id=%d length=%zu\n", conn_id, uid, stream_id, length);
+}
+
 
 static void app_init_event_handler(agora_rtc_event_handler_t *event_handler)
 {
@@ -130,6 +135,7 @@ static void app_init_event_handler(agora_rtc_event_handler_t *event_handler)
   event_handler->on_key_frame_gen_req      = __on_key_frame_gen_req;
   event_handler->on_video_data             = __on_video_data;
 #endif
+  event_handler->on_stream_message         = __on_stream_message;
   event_handler->on_error                  = __on_error;
 }
 
