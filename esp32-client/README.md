@@ -18,6 +18,7 @@ This is an RTC Client SDK & Demo running on Espressif ESP32-S3 Korvo V3 developm
 │   │       ├── libagora-cjson.a
 │   │       ├── libahpl.a
 │   │       ├── librtsa.a
+|   ├── esp32-camera                           esp32-camera component submodule
 ├── main                                        LLM Demo code
 │   ├── ai_agent.h
 │   ├── app_config.h
@@ -45,6 +46,16 @@ This example currently supports the `ESP32-S3-Korvo-2 V3` development board only
 
 ## Compilation and Download
 
+### esp32-camera
+
+To compile and run this example, you need the esp32-camera component.
+The component has been added as a submodule in the `components/esp32-camera` directory.
+Run the following command to clone the submodule:
+
+```bash
+git submodule update --init --recursive
+```
+
 ### Agora IOT SDK
 
 To compile and run this example, you need the Agora IoT SDK.
@@ -63,6 +74,7 @@ tar -xvf agora_iot_sdk.tar
 This example supports IDF tag v[5.2.3] and later versions, with the default set to IDF tag v[5.2.3] (commit id: c9763f62dd00c887a1a8fafe388db868a7e44069).
 
 To select the correct IDF branch, run the following commands:
+
 ```bash
 cd $IDF_PATH
 git checkout v5.2.3
@@ -75,6 +87,7 @@ This example supports ADF v2.7 tag (commit id: 9cf556de500019bb79f3bb84c821fda37
 #### Applying the IDF Patch
 
 A patch must be applied to IDF. Use the following command:
+
 ```bash
 export ADF_PATH=~/esp/esp-adf
 cd $IDF_PATH
@@ -84,6 +97,7 @@ git apply $ADF_PATH/idf_patches/idf_v5.2_freertos.patch
 #### Compiling the Firmware
 
 Copy the example project directory (esp32-client) to the `~/esp` directory and run the following commands:
+
 ```bash
 $ . $HOME/esp/esp-idf/export.sh
 $ cd ~/esp/esp32-client
@@ -159,7 +173,6 @@ Once flashing is complete, the example will run automatically. After the device 
 **Note:**  
 Ensure at least one speaker is connected to the development board.
 
-
 ### Configure your own agent
 
 Let's walk you through creating your own user and device accounts.
@@ -169,18 +182,17 @@ Let's walk you through creating your own user and device accounts.
 1. Open the `app_config.h` file in the project.
 2. Modify `TENAI_AGENT_URL` to the URL of your TEN-Agent server (usually the 8080 port service).
 3. Modify `AI_AGENT_CHANNEL_NAME` to a unique channel name.
-4. If you have your Ten-Agent configured for `openai_v2v` graph working, you should be good to go.
+4. If you have your Ten-Agent configured for `openai_v2v` or `gemini_v2v` (depending on the graph macro (`CONFIG_GRAPH_OPENAI` or `CONFIG_GRAPH_GEMINI`) you set in `app_config.h`) graph working, you should be good to go. Currently `openai_v2v` does not support image input, while `gemini_v2v` does.
 5. If you want to use other graphs, you can modify how request is constructed in `ai_agent.c` file the `_build_start_json` method.
 6. Recompile and flash the firmware.
 
-#### Demo: Real-time Voice Dialogue with Large Model AiAgent
+#### Demo: Real-time Voice Dialogue with Large Model AI Agent
 
 1. Press the `SET` button to start the large model.
 2. Press the `MUTE` button to stop the large model.
 3. Press the `VOL+` button to increase volume (increments of 10, up to a maximum of 100).
 4. Press the `VOL-` button to decrease volume (decrements of 10, down to a minimum of 0).
 5. After the device boots up, it will automatically connect to the RTC channel associated with the generated APPID. Press the `SET` button to initiate real-time voice dialogue; press the `MUTE` button to stop it.
-
 
 ## About Agora
 
