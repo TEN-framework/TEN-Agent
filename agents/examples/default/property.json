@@ -1372,6 +1372,7 @@
               "remote_stream_id": 123,
               "subscribe_audio": true,
               "publish_audio": true,
+              "publish_video": true,
               "publish_data": true,
               "enable_agora_asr": false,
               "agora_asr_vendor_name": "microsoft",

@@ -32,9 +32,10 @@ class HeygenAvatarExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
         self.config = None
+        self.input_audio_queue = asyncio.Queue()
         self.audio_queue = asyncio.Queue[bytes]()
         self.video_queue = asyncio.Queue()
-        self.leftover_bytes = b""
+        self.recorder: HeyGenRecorder = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -42,29 +43,34 @@ class HeygenAvatarExtension(AsyncExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
 
-        self.config = await HeygenAvatarConfig.create_async(ten_env)
+        try:
+            self.config = await HeygenAvatarConfig.create_async(ten_env)
 
-        recorder = HeyGenRecorder(
-            self.config.api_key,
-            self.config.avatar_name,
-            ten_env=ten_env,
-            audio_queue=self.audio_queue,
-            video_queue=self.video_queue,
-        )
+            recorder = HeyGenRecorder(
+                self.config.api_key,
+                self.config.avatar_name,
+                ten_env=ten_env,
+                audio_queue=self.audio_queue,
+                video_queue=self.video_queue,
+            )
+            self.recorder = recorder
 
-        asyncio.create_task(self._loop_audio_sender(ten_env))
-        asyncio.create_task(self._loop_video_sender(ten_env))
+            asyncio.create_task(self._loop_audio_sender(ten_env))
+            asyncio.create_task(self._loop_video_sender(ten_env))
+            asyncio.create_task(self._loop_input_audio_sender(ten_env))
 
-        # 1) Get the HeyGen token
-        token = recorder.get_heygen_token()
-        # 2) Create a streaming session => get LiveKit URL/token
-        lk_url, lk_token = recorder.create_streaming_session(token)
-        # 3) Start session
-        recorder.start_streaming_session(token)
-        # 4) Connect to WebSocket to feed audio
-        recorder.connect_to_websocket()
-        # 5) Enter indefinite recording loop
-        await recorder.record(lk_url, lk_token)
+            # 1) Get the HeyGen token
+            token = recorder.get_heygen_token()
+            # 2) Create a streaming session => get LiveKit URL/token
+            lk_url, lk_token = recorder.create_streaming_session(token)
+            # 3) Start session
+            recorder.start_streaming_session(token)
+            # 4) Connect to WebSocket to feed audio
+            recorder.connect_to_websocket()
+            # 5) Enter indefinite recording loop
+            await recorder.record(lk_url, lk_token)
+        except Exception as e:
+            ten_env.log_error(f"error on_start, {traceback.format_exc()}")
 
     async def _loop_video_sender(self, ten_env: AsyncTenEnv):
         while True:
@@ -76,44 +82,12 @@ class HeygenAvatarExtension(AsyncExtension):
             audio_frame = await self.audio_queue.get()
             await self.send_audio_out(ten_env, audio_frame)
 
-    async def send_audio_out(
-        self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions
-    ) -> None:
-        """End sending audio out."""
-        sample_rate = args.get("sample_rate", 16000)
-        bytes_per_sample = args.get("bytes_per_sample", 2)
-        number_of_channels = args.get("number_of_channels", 1)
-        try:
-            # Combine leftover bytes with new audio data
-            combined_data = self.leftover_bytes + audio_data
+    async def _loop_input_audio_sender(self, ten_env: AsyncTenEnv):
+        while True:
+            audio_frame = await self.input_audio_queue.get()
 
-            # Check if combined_data length is odd
-            if len(combined_data) % (bytes_per_sample * number_of_channels) != 0:
-                # Save the last incomplete frame
-                valid_length = len(combined_data) - (
-                    len(combined_data) % (bytes_per_sample * number_of_channels)
-                )
-                self.leftover_bytes = combined_data[valid_length:]
-                combined_data = combined_data[:valid_length]
-            else:
-                self.leftover_bytes = b""
-
-            if combined_data:
-                f = AudioFrame.create("pcm_frame")
-                f.set_sample_rate(sample_rate)
-                f.set_bytes_per_sample(bytes_per_sample)
-                f.set_number_of_channels(number_of_channels)
-                f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-                f.set_samples_per_channel(
-                    len(combined_data) // (bytes_per_sample * number_of_channels)
-                )
-                f.alloc_buf(len(combined_data))
-                buff = f.lock_buf()
-                buff[:] = combined_data
-                f.unlock_buf(buff)
-                await ten_env.send_audio_frame(f)
-        except Exception as e:
-            ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
+            if self.recorder is not None:
+                await self.recorder.send_audio(audio_frame)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
@@ -145,8 +119,8 @@ class HeygenAvatarExtension(AsyncExtension):
         audio_frame_name = audio_frame.get_name()
         ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
 
-        # TODO: process audio frame
-        pass
+        frame_buf = audio_frame.get_buf()
+        self.input_audio_queue.put_nowait(frame_buf)
 
     async def on_video_frame(
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame

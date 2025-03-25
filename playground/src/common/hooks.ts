@@ -1,6 +1,6 @@
 "use client";
 
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
 import { deepMerge, normalizeFrequencies } from "./utils";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { AppDispatch, AppStore, RootState } from "../store";
@@ -17,7 +17,7 @@ export const useAppSelector = useSelector.withTypes<RootState>();
 export const useAppStore = useStore.withTypes<AppStore>();
 
 export const useMultibandTrackVolume = (
-  track?: IMicrophoneAudioTrack | MediaStreamTrack,
+  track?: IMicrophoneAudioTrack | IRemoteAudioTrack | MediaStreamTrack,
   bands: number = 5,
   loPass: number = 100,
   hiPass: number = 600

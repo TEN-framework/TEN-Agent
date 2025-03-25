@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import React from "react";
 import { IRtcUser, IUserTracks } from "@/manager";
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { IAgoraRTCRemoteUser, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
@@ -28,7 +28,7 @@ export default function Home() {
   const isCompactLayout = useIsCompactLayout();
   const useTrulienceAvatar = trulienceSettings.enabled;
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
-  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
+  const [remoteuser, setRemoteUser] = React.useState<IAgoraRTCRemoteUser>()
 
   React.useEffect(() => {
     const { rtcManager } = require("../manager/rtc/rtc");
@@ -38,13 +38,13 @@ export default function Home() {
     };
   }, []);
 
-  const onRemoteUserChanged = (user: IRtcUser) => {
+  const onRemoteUserChanged = (user: IAgoraRTCRemoteUser) => {
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
     }
     if (user.audioTrack) {
       setRemoteUser(user)
-    } 
+    }
   }
 
   return (
