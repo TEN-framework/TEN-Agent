@@ -3,7 +3,12 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from ten_ai_base.types import LLMChatCompletionContentPartImageParam, LLMToolMetadata, LLMToolResult, LLMToolResultRequery
+from ten_ai_base.types import (
+    LLMChatCompletionContentPartImageParam,
+    LLMToolMetadata,
+    LLMToolResult,
+    LLMToolResultRequery,
+)
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 from ten import (
     AudioFrame,

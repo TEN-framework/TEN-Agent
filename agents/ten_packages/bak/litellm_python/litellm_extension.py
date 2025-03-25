@@ -51,7 +51,12 @@ class LiteLLMExtension(Extension):
         # Prepare configuration
         litellm_config = LiteLLMConfig.default_config()
 
-        for key in [PROPERTY_API_KEY, PROPERTY_GREETING, PROPERTY_MODEL, PROPERTY_PROMPT]:
+        for key in [
+            PROPERTY_API_KEY,
+            PROPERTY_GREETING,
+            PROPERTY_MODEL,
+            PROPERTY_PROMPT,
+        ]:
             try:
                 val = ten.get_property_string(key)
                 if val:
@@ -59,7 +64,12 @@ class LiteLLMExtension(Extension):
             except Exception as e:
                 logger.warning(f"get_property_string optional {key} failed, err: {e}")
 
-        for key in [PROPERTY_FREQUENCY_PENALTY, PROPERTY_PRESENCE_PENALTY, PROPERTY_TEMPERATURE, PROPERTY_TOP_P]:
+        for key in [
+            PROPERTY_FREQUENCY_PENALTY,
+            PROPERTY_PRESENCE_PENALTY,
+            PROPERTY_TEMPERATURE,
+            PROPERTY_TOP_P,
+        ]:
             try:
                 litellm_config.key = float(ten.get_property_float(key))
             except Exception as e:
@@ -73,15 +83,21 @@ class LiteLLMExtension(Extension):
 
         # Create LiteLLM instance
         self.litellm = LiteLLM(litellm_config)
-        logger.info(f"newLiteLLM succeed with max_tokens: {litellm_config.max_tokens}, model: {litellm_config.model}")
+        logger.info(
+            f"newLiteLLM succeed with max_tokens: {litellm_config.max_tokens}, model: {litellm_config.model}"
+        )
 
         # Send greeting if available
         greeting = ten.get_property_string(PROPERTY_GREETING)
         if greeting:
             try:
                 output_data = Data.create("text_data")
-                output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting)
-                output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True)
+                output_data.set_property_string(
+                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT, greeting
+                )
+                output_data.set_property_bool(
+                    DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
+                )
                 ten.send_data(output_data)
                 logger.info(f"greeting [{greeting}] sent")
             except Exception as e:
@@ -133,7 +149,9 @@ class LiteLLMExtension(Extension):
                 logger.info("ignore non-final input")
                 return
         except Exception as e:
-            logger.error(f"on_data get_property_bool {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {e}")
+            logger.error(
+                f"on_data get_property_bool {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {e}"
+            )
             return
 
         # Get input text
@@ -144,7 +162,9 @@ class LiteLLMExtension(Extension):
                 return
             logger.info(f"on_data input text: [{input_text}]")
         except Exception as e:
-            logger.error(f"on_data get_property_string {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {e}")
+            logger.error(
+                f"on_data get_property_string {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {e}"
+            )
             return
 
         # Prepare memory
@@ -154,12 +174,16 @@ class LiteLLMExtension(Extension):
 
         def chat_completions_stream_worker(start_time, input_text, memory):
             try:
-                logger.info(f"chat_completions_stream_worker for input text: [{input_text}] memory: {memory}")
+                logger.info(
+                    f"chat_completions_stream_worker for input text: [{input_text}] memory: {memory}"
+                )
 
                 # Get result from AI
                 resp = self.litellm.get_chat_completions_stream(memory)
                 if resp is None:
-                    logger.info(f"chat_completions_stream_worker for input text: [{input_text}] failed")
+                    logger.info(
+                        f"chat_completions_stream_worker for input text: [{input_text}] failed"
+                    )
                     return
 
                 sentence = ""
@@ -168,10 +192,15 @@ class LiteLLMExtension(Extension):
 
                 for chat_completions in resp:
                     if start_time < self.outdate_ts:
-                        logger.info(f"chat_completions_stream_worker recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}")
+                        logger.info(
+                            f"chat_completions_stream_worker recv interrupt and flushing for input text: [{input_text}], startTs: {start_time}, outdateTs: {self.outdate_ts}"
+                        )
                         break
 
-                    if (len(chat_completions.choices) > 0 and chat_completions.choices[0].delta.content is not None):
+                    if (
+                        len(chat_completions.choices) > 0
+                        and chat_completions.choices[0].delta.content is not None
+                    ):
                         content = chat_completions.choices[0].delta.content
                     else:
                         content = ""
@@ -179,29 +208,43 @@ class LiteLLMExtension(Extension):
                     full_content += content
 
                     while True:
-                        sentence, content, sentence_is_final = parse_sentence(sentence, content)
+                        sentence, content, sentence_is_final = parse_sentence(
+                            sentence, content
+                        )
 
                         if len(sentence) == 0 or not sentence_is_final:
                             logger.info(f"sentence {sentence} is empty or not final")
                             break
 
-                        logger.info(f"chat_completions_stream_worker recv for input text: [{input_text}] got sentence: [{sentence}]")
+                        logger.info(
+                            f"chat_completions_stream_worker recv for input text: [{input_text}] got sentence: [{sentence}]"
+                        )
 
                         # send sentence
                         try:
                             output_data = Data.create("text_data")
-                            output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
-                            output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False)
+                            output_data.set_property_string(
+                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+                            )
+                            output_data.set_property_bool(
+                                DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, False
+                            )
                             ten.send_data(output_data)
-                            logger.info(f"chat_completions_stream_worker recv for input text: [{input_text}] sent sentence [{sentence}]")
+                            logger.info(
+                                f"chat_completions_stream_worker recv for input text: [{input_text}] sent sentence [{sentence}]"
+                            )
                         except Exception as e:
-                            logger.error(f"chat_completions_stream_worker recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {e}")
+                            logger.error(
+                                f"chat_completions_stream_worker recv for input text: [{input_text}] send sentence [{sentence}] failed, err: {e}"
+                            )
                             break
 
                         sentence = ""
                         if not first_sentence_sent:
                             first_sentence_sent = True
-                            logger.info(f"chat_completions_stream_worker recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_micro_ts() - start_time}ms")
+                            logger.info(
+                                f"chat_completions_stream_worker recv for input text: [{input_text}] first sentence sent, first_sentence_latency {get_micro_ts() - start_time}ms"
+                            )
 
                 # remember response as assistant content in memory
                 memory.append({"role": "assistant", "content": full_content})
@@ -209,15 +252,25 @@ class LiteLLMExtension(Extension):
                 # send end of segment
                 try:
                     output_data = Data.create("text_data")
-                    output_data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence)
-                    output_data.set_property_bool(DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True)
+                    output_data.set_property_string(
+                        DATA_OUT_TEXT_DATA_PROPERTY_TEXT, sentence
+                    )
+                    output_data.set_property_bool(
+                        DATA_OUT_TEXT_DATA_PROPERTY_TEXT_END_OF_SEGMENT, True
+                    )
                     ten.send_data(output_data)
-                    logger.info(f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] sent")
+                    logger.info(
+                        f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] sent"
+                    )
                 except Exception as e:
-                    logger.error(f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {e}")
+                    logger.error(
+                        f"chat_completions_stream_worker for input text: [{input_text}] end of segment with sentence [{sentence}] send failed, err: {e}"
+                    )
 
             except Exception as e:
-                logger.error(f"chat_completions_stream_worker for input text: [{input_text}] failed, err: {e}")
+                logger.error(
+                    f"chat_completions_stream_worker for input text: [{input_text}] failed, err: {e}"
+                )
 
         # Start thread to request and read responses from LiteLLM
         start_time = get_micro_ts()

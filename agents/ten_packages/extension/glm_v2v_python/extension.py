@@ -110,8 +110,7 @@ class GLMRealtimeConfig(BaseConfig):
     language: str = "en-US"
 
     def build_ctx(self) -> dict:
-        return {
-        }
+        return {}
 
 
 class GLMRealtimeExtension(AsyncLLMBaseExtension):
@@ -401,9 +400,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
                                 f"On response transcript done {message.output_index} {message.content_index} {message.transcript}"
                             )
                             if message.response_id in flushed:
-                                self.ten_env.log_warn(
-                                    "On flushed transcript done"
-                                )
+                                self.ten_env.log_warn("On flushed transcript done")
                                 continue
                             self.memory.put(
                                 {
@@ -550,10 +547,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
 
         # Use pydub to create an AudioSegment
         audio_segment = AudioSegment(
-            pcm_data.tobytes(), 
-            frame_rate=24000,
-            sample_width=2, 
-            channels=1
+            pcm_data.tobytes(), frame_rate=24000, sample_width=2, channels=1
         )
 
         # Create an in-memory stream to store the WAV file
@@ -561,7 +555,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
 
         # Export the AudioSegment to the in-memory stream as WAV
         audio_segment.export(memory_stream, format="wav")
-        
+
         # Return the WAV data as bytes
         wav_bytes = memory_stream.getvalue()
         return wav_bytes
@@ -715,9 +709,7 @@ class GLMRealtimeExtension(AsyncLLMBaseExtension):
         with open("{}_{}.pcm".format(role, self.channel_name), "ab") as dump_file:
             dump_file.write(buf)
 
-    async def _handle_tool_call(
-        self, name: str, arguments: str
-    ) -> None:
+    async def _handle_tool_call(self, name: str, arguments: str) -> None:
         self.ten_env.log_info(f"_handle_tool_call {name} {arguments}")
         cmd: Cmd = Cmd.create(CMD_TOOL_CALL)
         cmd.set_property_string("name", name)

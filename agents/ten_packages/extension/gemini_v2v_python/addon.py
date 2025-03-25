@@ -17,5 +17,6 @@ class GeminiRealtimeExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import GeminiRealtimeExtension
+
         ten_env.log_info("GeminiRealtimeExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(GeminiRealtimeExtension(name), context)

@@ -17,5 +17,6 @@ class FashionAIExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import FashionAIExtension
+
         ten_env.log_info("FashionAIExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(FashionAIExtension(name), context)

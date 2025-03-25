@@ -4,4 +4,3 @@
 # See the LICENSE file for more information.
 #
 from . import addon
-

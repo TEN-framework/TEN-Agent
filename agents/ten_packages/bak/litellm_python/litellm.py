@@ -4,18 +4,20 @@ from typing import Dict, List, Optional
 
 
 class LiteLLMConfig:
-    def __init__(self,
-                 api_key: str,
-                 base_url: str,
-                 frequency_penalty: float,
-                 max_tokens: int,
-                 model: str,
-                 presence_penalty: float,
-                 prompt: str,
-                 provider: str,
-                 temperature: float,
-                 top_p: float,
-                 seed: Optional[int] = None,):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        frequency_penalty: float,
+        max_tokens: int,
+        model: str,
+        presence_penalty: float,
+        prompt: str,
+        provider: str,
+        temperature: float,
+        top_p: float,
+        seed: Optional[int] = None,
+    ):
         self.api_key = api_key
         self.base_url = base_url
         self.frequency_penalty = frequency_penalty
@@ -41,7 +43,7 @@ class LiteLLMConfig:
             provider="",
             seed=random.randint(0, 10000),
             temperature=0.1,
-            top_p=1.0
+            top_p=1.0,
         )
 
 

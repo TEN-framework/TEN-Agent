@@ -21,7 +21,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.4.17
+      image: ghcr.io/ten-framework/ten_agent_build:0.5.0
     strategy:
       matrix:
         agent: [agents/examples/default, agents/examples/demo, agents/examples/experimental]
@@ -36,10 +36,15 @@ jobs:
           git config --global --add safe.directory $(pwd)
           task use AGENT=${{ matrix.agent }}
 
+      - name: Run format check
+        run: |
+          task check
+
+
+      - name: Run lint
+        run: |
+          task lint
+
       - name: Run tests
         run: |
           task test -- -s -v
-
-      # - name: Run lint
-      #   run: |
-      #     task lint
