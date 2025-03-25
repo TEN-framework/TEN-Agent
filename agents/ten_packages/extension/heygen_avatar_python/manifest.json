@@ -17,7 +17,16 @@
       "README.md"
     ]
   },
-  "api": {},
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "avatar_name": {
+        "type": "string"
+      }
+    }
+  },
   "scripts": {
     "test": "tests/bin/start"
   }
