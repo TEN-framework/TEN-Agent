@@ -25,7 +25,7 @@ from dataclasses import dataclass
 @dataclass
 class HeygenAvatarConfig(BaseConfig):
     api_key: str = ""
-    avatar_name: str = "Wayne_20240711"
+    avatar_name: str = ""
 
 
 class HeygenAvatarExtension(AsyncExtension):

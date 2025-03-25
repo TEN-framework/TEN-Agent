@@ -162,7 +162,7 @@ class HeyGenRecorder:
 
         try:
             # Assume frame_buf contains 44.1kHz PCM audio
-            original_rate = 44100
+            original_rate = 48000
             target_rate = 24000
             decimation_factor = original_rate / target_rate
 
