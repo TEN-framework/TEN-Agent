@@ -26,7 +26,6 @@ logger = logging.getLogger("HeyGenMinimal")
 
 
 class HeyGenRecorder:
-    # def __init__(self, api_key, avatar_name, output_dir, wav_file):
     def __init__(
         self,
         api_key,
@@ -38,11 +37,7 @@ class HeyGenRecorder:
         self.api_key = api_key
         self.avatar_name = avatar_name
         self.ten_env = ten_env
-        # self.output_dir = output_dir
-        # self.wav_file = wav_file
-        # os.makedirs(self.output_dir, exist_ok=True)
 
-        # Will be filled in once we create a streaming session
         self.session_id = None
         self.realtime_endpoint = None
         self.ws = None
@@ -50,12 +45,10 @@ class HeyGenRecorder:
         self.audio_queue = audio_queue
         self.leftover_bytes = b""
 
-        # We'll store recorded raw audio in a single .pcm file
-        # ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # self.pcm_path = os.path.join(self.output_dir, f"{avatar_name}_{ts}.pcm")
-
-        # Keep a handle to the LiveKit Room so we can disconnect on exit
         self.room = rtc.Room()
+
+        # Timer to send agent.speak_end after 500 ms of no new agent.speak
+        self.speak_end_timer = None
 
     def get_heygen_token(self):
         """Get a HeyGen token for streaming."""
@@ -63,7 +56,6 @@ class HeyGenRecorder:
         resp = requests.post(url, headers={"x-api-key": self.api_key})
         data = resp.json()
 
-        # Only fail if HTTP != 200 or data["error"] is a non-null value
         if resp.status_code != 200 or data.get("error"):
             raise Exception(f"Failed to get HeyGen token: {data}")
 
@@ -115,7 +107,7 @@ class HeyGenRecorder:
             raise Exception(f"Failed to start streaming session: {data}")
 
     def connect_to_websocket(self):
-        """Open a WebSocket to send user WAV audio to HeyGen."""
+        """Open a WebSocket to send user audio to HeyGen."""
         if not self.realtime_endpoint:
             raise Exception("No realtime_endpoint in session data.")
 
@@ -123,7 +115,6 @@ class HeyGenRecorder:
         self.ws = websocket.create_connection(self.realtime_endpoint, timeout=5)
         self.ten_env.log_info("WebSocket connected.")
 
-        # Continuously read in a background thread so we don't fill up WS buffers
         self.ws.settimeout(1.0)
 
         def read_thread():
@@ -141,44 +132,65 @@ class HeyGenRecorder:
         t = threading.Thread(target=read_thread, daemon=True)
         t.start()
 
+    def _schedule_speak_end(self):
+        """Schedule sending `agent.speak_end` 500ms from now, cancelling any previous timer."""
+        if self.speak_end_timer is not None:
+            self.speak_end_timer.cancel()
+
+        def do_speak_end():
+            try:
+                end_evt_id = str(uuid.uuid4())
+                self.ws.send(json.dumps({"type": "agent.speak_end", "event_id": end_evt_id}))
+                self.ten_env.log_info("Sent agent.speak_end.")
+            except Exception as e:
+                logger.error(f"Error sending agent.speak_end: {e}")
+            finally:
+                self.speak_end_timer = None
+
+        self.speak_end_timer = threading.Timer(0.5, do_speak_end)
+        self.speak_end_timer.daemon = True
+        self.speak_end_timer.start()
+
     async def send_audio(self, frame_buf: bytearray):
-        #     """Send WAV audio (already correct format) in chunks to HeyGen."""
+        """Send WAV audio downsampled from 44.1kHz to 24kHz in chunks to HeyGen.
+        Uses naive decimation by discarding samples (nearest-neighbor approach).
+        Then schedules sending agent.speak_end if there's no new audio for 500ms.
+        """
         if not self.ws:
             logger.error("No WebSocket to send audio.")
             return
 
-        # self.ten_env.log_info(f"Sending audio from {self.wav_file}")
-        #     try:
-        #         with wave.open(self.wav_file, 'rb') as wf:
-        #             sr = wf.getframerate()
-        #             ch = wf.getnchannels()
-        #             sw = wf.getsampwidth()
-        #             chunk_samples = int(sr * 0.5)
-        #             chunk_bytes = chunk_samples * ch * sw
-        #             raw_audio = wf.readframes(wf.getnframes())
-
         try:
-            # offset = 0
-            # while offset < len(frame_buf):
-            #     chunk = frame_buf[offset : offset + chunk_bytes]
-            #     offset += chunk_bytes
-            # self._dump_audio_if_need(frame_buf)
+            # Assume frame_buf contains 44.1kHz PCM audio
+            original_rate = 44100
+            target_rate = 24000
+            decimation_factor = original_rate / target_rate
+
+            audio_data = np.frombuffer(frame_buf, dtype=np.int16)
+            if len(audio_data) == 0:
+                return
+
+            indices = np.round(np.arange(0, len(audio_data), decimation_factor)).astype(int)
+            indices = indices[indices < len(audio_data)]
+            downsampled_audio = audio_data[indices]
+
+            downsampled_frame_buf = downsampled_audio.tobytes()
+
             evt_id = str(uuid.uuid4())
-            audio_b64 = base64.b64encode(frame_buf).decode("utf-8")
+            audio_b64 = base64.b64encode(downsampled_frame_buf).decode("utf-8")
             msg = {"type": "agent.speak", "audio": audio_b64, "event_id": evt_id}
             self.ws.send(json.dumps(msg))
+            #self.ten_env.log_info("Sent agent.speak.")
 
-            # After sending all chunks, signal speak_end
-            # end_evt_id = str(uuid.uuid4())
-            # self.ws.send(json.dumps({"type": "agent.speak_end", "event_id": end_evt_id}))
-            # self.ten_env.log_info("Sent agent.speak_end.")
+            # Schedule agent.speak_end for 500ms from now
+            self._schedule_speak_end()
+
         except Exception as e:
             logger.error(f"Error sending audio: {e}")
 
     async def record(self, livekit_url, livekit_token):
-        """Connect to LiveKit, subscribe to audio/video, and record until Ctrl-C."""
+        """Connect to LiveKit, subscribe to audio/video."""
 
-        # Define track subscription callbacks
         @self.room.on("track_subscribed")
         def when_track_subscribed(track, pub, participant):
             if track.kind == rtc.TrackKind.KIND_AUDIO:
@@ -190,32 +202,11 @@ class HeyGenRecorder:
                 )
             elif track.kind == rtc.TrackKind.KIND_VIDEO:
                 self.ten_env.log_info("Subscribed to video track.")
-                # Request I420
                 vs = rtc.VideoStream(track, format=rtc.VideoBufferType.I420)
                 asyncio.create_task(self.handle_video(vs))
 
-        # Connect to LiveKit
         await self.room.connect(livekit_url, livekit_token)
         self.ten_env.log_info("Connected to LiveKit. Starting track subscriptions...")
-
-        # Send the user's WAV audio in a separate thread
-        # audio_thread = threading.Thread(target=self.send_audio, daemon=True)
-        # audio_thread.start()
-
-        # # Run forever, or until KeyboardInterrupt
-        # self.ten_env.log_info("Recording indefinitely; press Ctrl-C to stop.")
-        # try:
-        #     while True:
-        #         await asyncio.sleep(1)
-        # except asyncio.CancelledError:
-        #     # If we ever explicitly cancel, just exit
-        #     pass
-        # except KeyboardInterrupt:
-        #     self.ten_env.log_info("KeyboardInterrupt received. Exiting...")
-        # finally:
-        #     # Disconnect from LiveKit
-        #     await self.room.disconnect()
-        #     self.ten_env.log_info("Disconnected from LiveKit.")
 
     async def disconnect(self):
         await self.room.disconnect()
@@ -228,21 +219,14 @@ class HeyGenRecorder:
         """Append raw int16 samples to .pcm file."""
         async for frame_evt in audio_stream:
             samples = np.array(frame_evt.frame.data, dtype=np.int16)
-            # self.ten_env.log_info(f"audio frame audio num_channels  {frame_evt.frame.num_channels} sample_rate {frame_evt.frame.sample_rate}")
-            bytes = samples.tobytes()
-            # self._dump_audio_if_need(bytes)
+            bytes_data = samples.tobytes()
             await self.send_audio_out(
                 self.ten_env,
-                bytes,
+                bytes_data,
                 sample_rate=16000,
                 bytes_per_sample=2,
                 number_of_channels=1,
             )
-        # with open(self.pcm_path, 'ab') as pcm:
-        #     async for frame_evt in audio_stream:
-        #         samples = np.array(frame_evt.frame.data, dtype=np.int16)
-        #         #self.ten_env.log_info(f"audio frame audio num_channels  {frame_evt.frame.num_channels} sample_rate {frame_evt.frame.sample_rate}")
-        #         pcm.write(samples.tobytes())
 
     async def handle_video(self, video_stream: rtc.VideoStream):
         """Write each I420 frame to a .yuv file with timestamp."""
@@ -257,30 +241,20 @@ class HeyGenRecorder:
             buff[:] = buffer.data
             frame.unlock_buf(buff)
             await self.ten_env.send_video_frame(frame)
-        # async for frame_evt in video_stream:
-        #     buffer = frame_evt.frame
-        #     ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        #     yuv_path = os.path.join(self.output_dir, f"frame_{ts}.yuv")
-        #     with open(yuv_path, 'wb') as f:
-        #         f.write(buffer.data)
 
     async def send_audio_out(
         self, ten_env: AsyncTenEnv, audio_data: bytes, **args: TTSPcmOptions
     ) -> None:
-        """End sending audio out."""
+        """Send audio frames along to ten_env."""
         sample_rate = args.get("sample_rate", 16000)
         bytes_per_sample = args.get("bytes_per_sample", 2)
         number_of_channels = args.get("number_of_channels", 1)
         try:
-            # Combine leftover bytes with new audio data
             combined_data = self.leftover_bytes + audio_data
 
-            # Check if combined_data length is odd
-            if len(combined_data) % (bytes_per_sample * number_of_channels) != 0:
-                # Save the last incomplete frame
-                valid_length = len(combined_data) - (
-                    len(combined_data) % (bytes_per_sample * number_of_channels)
-                )
+            frame_size = bytes_per_sample * number_of_channels
+            if len(combined_data) % frame_size != 0:
+                valid_length = len(combined_data) - (len(combined_data) % frame_size)
                 self.leftover_bytes = combined_data[valid_length:]
                 combined_data = combined_data[:valid_length]
             else:
@@ -292,9 +266,7 @@ class HeyGenRecorder:
                 f.set_bytes_per_sample(bytes_per_sample)
                 f.set_number_of_channels(number_of_channels)
                 f.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
-                f.set_samples_per_channel(
-                    len(combined_data) // (bytes_per_sample * number_of_channels)
-                )
+                f.set_samples_per_channel(len(combined_data) // frame_size)
                 f.alloc_buf(len(combined_data))
                 buff = f.lock_buf()
                 buff[:] = combined_data
@@ -302,38 +274,3 @@ class HeyGenRecorder:
                 await ten_env.send_audio_frame(f)
         except Exception as e:
             ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")
-
-
-# async def main():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("--api-key", required=True)
-#     parser.add_argument("--avatar-name", default="Wayne_20240711")
-#     parser.add_argument("--output-dir", default="recordings")
-#     parser.add_argument("--wav-file", default="input.wav")
-#     args = parser.parse_args()
-
-#     recorder = HeyGenRecorder(
-#         args.api_key,
-#         args.avatar_name,
-#         args.output_dir,
-#         args.wav_file
-#     )
-
-#     # 1) Get the HeyGen token
-#     token = recorder.get_heygen_token()
-#     # 2) Create a streaming session => get LiveKit URL/token
-#     lk_url, lk_token = recorder.create_streaming_session(token)
-#     # 3) Start session
-#     recorder.start_streaming_session(token)
-#     # 4) Connect to WebSocket to feed audio
-#     recorder.connect_to_websocket()
-#     # 5) Enter indefinite recording loop
-#     await recorder.record(lk_url, lk_token)
-
-
-# if __name__ == "__main__":
-#     # This is the modern approach: no DeprecationWarning, no manual loop creation.
-#     try:
-#         asyncio.run(main())
-#     except KeyboardInterrupt:
-#         self.ten_env.log_info("Stopped by user (Ctrl-C).")
