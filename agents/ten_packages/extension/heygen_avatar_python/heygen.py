@@ -140,7 +140,9 @@ class HeyGenRecorder:
         def do_speak_end():
             try:
                 end_evt_id = str(uuid.uuid4())
-                self.ws.send(json.dumps({"type": "agent.speak_end", "event_id": end_evt_id}))
+                self.ws.send(
+                    json.dumps({"type": "agent.speak_end", "event_id": end_evt_id})
+                )
                 self.ten_env.log_info("Sent agent.speak_end.")
             except Exception as e:
                 logger.error(f"Error sending agent.speak_end: {e}")
@@ -170,7 +172,9 @@ class HeyGenRecorder:
             if len(audio_data) == 0:
                 return
 
-            indices = np.round(np.arange(0, len(audio_data), decimation_factor)).astype(int)
+            indices = np.round(np.arange(0, len(audio_data), decimation_factor)).astype(
+                int
+            )
             indices = indices[indices < len(audio_data)]
             downsampled_audio = audio_data[indices]
 
@@ -180,7 +184,7 @@ class HeyGenRecorder:
             audio_b64 = base64.b64encode(downsampled_frame_buf).decode("utf-8")
             msg = {"type": "agent.speak", "audio": audio_b64, "event_id": evt_id}
             self.ws.send(json.dumps(msg))
-            #self.ten_env.log_info("Sent agent.speak.")
+            # self.ten_env.log_info("Sent agent.speak.")
 
             # Schedule agent.speak_end for 500ms from now
             self._schedule_speak_end()
