@@ -150,7 +150,12 @@
     },
     {
       "type": "extension",
-      "name": "openai_tts_python",
+      "name": "computer_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "neuphonic_tts",
       "version": "=0.1.0"
     }
   ]
