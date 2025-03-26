@@ -28,8 +28,8 @@ export default function Home() {
 
   const isCompactLayout = useIsCompactLayout();
   const useTrulienceAvatar = trulienceSettings.enabled;
-  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
+  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true" && (!useTrulienceAvatar);
   const [remoteuser, setRemoteUser] = React.useState<IAgoraRTCRemoteUser>()
 
   React.useEffect(() => {

@@ -36,7 +36,7 @@ export default function RTCCard(props: { className?: string }) {
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
   const useTrulienceAvatar = trulienceSettings.enabled
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
-  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
+  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true" && (!useTrulienceAvatar);
   const isCompactLayout = useIsCompactLayout();
 
   const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
