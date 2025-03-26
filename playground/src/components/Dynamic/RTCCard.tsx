@@ -36,7 +36,7 @@ export default function RTCCard(props: { className?: string }) {
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
   const useTrulienceAvatar = trulienceSettings.enabled
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
-
+  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true";
   const isCompactLayout = useIsCompactLayout();
 
   const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
@@ -146,7 +146,16 @@ export default function RTCCard(props: { className?: string }) {
             />
           )
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+          !agentViewInLargeWindow ? (
+            <div className="h-60 w-full p-1">
+              <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+            </div>
+          ) : (
+            !isCompactLayout &&
+            <ChatCard
+              className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
+            />
+          )
         )}
       </div>
 
