@@ -20,7 +20,7 @@ class OpenAITTS:
         self.config = config
         self.openai = AsyncOpenAI()
 
-    async def get(self, ten_env: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
+    async def get(self, _: AsyncTenEnv, text: str) -> AsyncIterator[bytes]:
         async with self.openai.audio.speech.with_streaming_response.create(
             model=self.config.model,
             voice=self.config.voice,
