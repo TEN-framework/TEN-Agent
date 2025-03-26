@@ -8,6 +8,7 @@
 [![已关闭的问题](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-agent%20is%3Aclosed&label=issues%20closed&labelColor=green&color=green)](https://github.com/TEN-framework/ten-agent/issues)
 [![欢迎 PR](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-agent/pulls)
 [![GitHub 许可证](https://img.shields.io/badge/License-Apache_2.0-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-agent/blob/main/LICENSE)
+[![WeChat](https://img.shields.io/badge/WeChat-WeChat_Group-%2307C160?logo=wechat)](https://github.com/TEN-framework/ten-agent/discussions/170)
 
 [![Discord TEN 社区](https://dcbadge.vercel.app/api/server/VnPftUzAMJ)](https://discord.gg/VnPftUzAMJ)
 
@@ -151,6 +152,40 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 对于 Apple Silicon Mac，在 Docker 设置中取消选中“使用 Rosetta 进行 x86/amd64 仿真”。注意：这可能会导致 ARM 上的构建时间较慢，但在部署到 x64 服务器时性能将正常。
 
 ![Docker 设置](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+<br>
+
+#### 设置国内代理
+
+如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。如果遇到更多问题，请参考 [问题排查](../troubleshooting/troubleshooting-cn.md)。
+
+```bash
+# 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
+# export 的有效期为一个 session
+export https_proxy=http://127.0.0.1:<port> 
+export http_proxy=http://127.0.0.1:<port>
+export all_proxy=socks5://127.0.0.1:<port>
+
+# Docker
+export https_proxy=http://host.docker.internal:<port>
+export http_proxy=http://host.docker.internal:<port>
+export all_proxy=http://host.docker.internal:<port>
+
+# tman 镜像设置
+mkdir -p ~/.tman && echo '{
+  "registry": {
+    "default": {
+      "index": "https://registry-ten.rtcdeveloper.cn/api/ten-cloud-store/v1/packages"
+    }
+  }
+}' > ~/.tman/config.json
+
+# GO 代理设置
+export GOPROXY=https://goproxy.cn,direct
+
+# pip 代理设置, 此设置需要先安装 pip
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
 
 <br>
 
