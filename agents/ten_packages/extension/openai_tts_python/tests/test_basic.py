@@ -31,5 +31,5 @@ class ExtensionTesterBasic(ExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
-    tester.set_test_mode_single("minimax_tts_python")
+    tester.set_test_mode_single("openai_tts_python")
     tester.run()
