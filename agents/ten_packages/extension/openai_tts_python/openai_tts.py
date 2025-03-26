@@ -15,7 +15,7 @@ class OpenAITTSConfig(BaseConfig):
     model: str = "gpt-4o-mini-tts"
     voice: str = "coral"
     instructions: str = "Speak in a cheerful and positive tone."
-    response_format="pcm"
+    response_format = "pcm"
 
 
 class OpenAITTS:
