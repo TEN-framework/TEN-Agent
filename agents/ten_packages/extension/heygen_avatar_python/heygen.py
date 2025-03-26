@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 
-import os
-import time
-import argparse
 import logging
 import json
 import traceback
-import wave
 import base64
 import uuid
 import asyncio
 import threading
 import requests
-from datetime import datetime
 import numpy as np
 import websocket
 
@@ -53,15 +48,15 @@ class HeyGenRecorder:
     def get_heygen_token(self):
         """Get a HeyGen token for streaming."""
         url = "https://api.heygen.com/v1/streaming.create_token"
-        resp = requests.post(url, headers={"x-api-key": self.api_key})
+        resp = requests.post(url, headers={"x-api-key": self.api_key}, timeout=10)
         data = resp.json()
 
         if resp.status_code != 200 or data.get("error"):
-            raise Exception(f"Failed to get HeyGen token: {data}")
+            raise RuntimeError(f"Failed to get HeyGen token: {data}")
 
         token = data["data"].get("token")
         if not token:
-            raise Exception(f"No token in response: {data}")
+            raise RuntimeError(f"No token in response: {data}")
         return token
 
     def create_streaming_session(self, token):
@@ -81,10 +76,10 @@ class HeyGenRecorder:
             "disable_idle_timeout": False,
         }
 
-        resp = requests.post(url, headers=headers, json=payload)
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
         data = resp.json()
         if resp.status_code != 200 or data.get("code") != 100:
-            raise Exception(f"Failed to create streaming session: {data}")
+            raise RuntimeError(f"Failed to create streaming session: {data}")
 
         session_data = data["data"]
         self.session_id = session_data["session_id"]
@@ -101,15 +96,15 @@ class HeyGenRecorder:
             "Authorization": f"Bearer {token}",
         }
         payload = {"session_id": self.session_id}
-        resp = requests.post(url, headers=headers, json=payload)
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
         data = resp.json()
         if resp.status_code != 200 or data.get("code") != 100:
-            raise Exception(f"Failed to start streaming session: {data}")
+            raise RuntimeError(f"Failed to start streaming session: {data}")
 
     def connect_to_websocket(self):
         """Open a WebSocket to send user audio to HeyGen."""
         if not self.realtime_endpoint:
-            raise Exception("No realtime_endpoint in session data.")
+            raise RuntimeError("No realtime_endpoint in session data.")
 
         self.ten_env.log_info(f"Connecting to {self.realtime_endpoint}")
         self.ws = websocket.create_connection(self.realtime_endpoint, timeout=5)
@@ -196,7 +191,7 @@ class HeyGenRecorder:
         """Connect to LiveKit, subscribe to audio/video."""
 
         @self.room.on("track_subscribed")
-        def when_track_subscribed(track, pub, participant):
+        def when_track_subscribed(track):
             if track.kind == rtc.TrackKind.KIND_AUDIO:
                 self.ten_env.log_info("Subscribed to audio track.")
                 asyncio.create_task(
@@ -276,5 +271,5 @@ class HeyGenRecorder:
                 buff[:] = combined_data
                 f.unlock_buf(buff)
                 await ten_env.send_audio_frame(f)
-        except Exception as e:
+        except Exception:
             ten_env.log_error(f"error send audio frame, {traceback.format_exc()}")

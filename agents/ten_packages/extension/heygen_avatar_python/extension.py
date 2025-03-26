@@ -7,7 +7,6 @@ import asyncio
 import traceback
 from ten import (
     AudioFrame,
-    AudioFrameDataFmt,
     VideoFrame,
     AsyncExtension,
     AsyncTenEnv,
@@ -17,7 +16,6 @@ from ten import (
     Data,
 )
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import TTSPcmOptions
 from .heygen import HeyGenRecorder
 from dataclasses import dataclass
 
@@ -55,8 +53,6 @@ class HeygenAvatarExtension(AsyncExtension):
             )
             self.recorder = recorder
 
-            asyncio.create_task(self._loop_audio_sender(ten_env))
-            asyncio.create_task(self._loop_video_sender(ten_env))
             asyncio.create_task(self._loop_input_audio_sender(ten_env))
 
             # 1) Get the HeyGen token
@@ -69,20 +65,10 @@ class HeygenAvatarExtension(AsyncExtension):
             recorder.connect_to_websocket()
             # 5) Enter indefinite recording loop
             await recorder.record(lk_url, lk_token)
-        except Exception as e:
+        except Exception:
             ten_env.log_error(f"error on_start, {traceback.format_exc()}")
 
-    async def _loop_video_sender(self, ten_env: AsyncTenEnv):
-        while True:
-            video_frame = await self.video_queue.get()
-            # await ten_env.send_video_frame(video_frame)
-
-    async def _loop_audio_sender(self, ten_env: AsyncTenEnv):
-        while True:
-            audio_frame = await self.audio_queue.get()
-            await self.send_audio_out(ten_env, audio_frame)
-
-    async def _loop_input_audio_sender(self, ten_env: AsyncTenEnv):
+    async def _loop_input_audio_sender(self, _: AsyncTenEnv):
         while True:
             audio_frame = await self.input_audio_queue.get()
 
@@ -110,9 +96,6 @@ class HeygenAvatarExtension(AsyncExtension):
         data_name = data.get_name()
         ten_env.log_debug("on_data name {}".format(data_name))
 
-        # TODO: process data
-        pass
-
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
@@ -127,6 +110,3 @@ class HeygenAvatarExtension(AsyncExtension):
     ) -> None:
         video_frame_name = video_frame.get_name()
         ten_env.log_debug("on_video_frame name {}".format(video_frame_name))
-
-        # TODO: process video frame
-        pass
