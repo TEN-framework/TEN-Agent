@@ -1,7 +1,4 @@
-import asyncio
 from dataclasses import dataclass
-import aiohttp
-import json
 from datetime import datetime
 from typing import AsyncIterator
 from openai import AsyncOpenAI
