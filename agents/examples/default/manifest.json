@@ -162,6 +162,6 @@
       "type": "extension",
       "name": "openai_realtime_asr_python",
       "version": "=0.1.0"
-    },
+    }
   ]
 }
