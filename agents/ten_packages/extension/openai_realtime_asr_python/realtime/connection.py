@@ -7,11 +7,16 @@ import aiohttp
 from ten import AsyncTenEnv
 
 from typing import Any, AsyncGenerator
-from .struct import InputAudioBufferAppend, ClientToServerMessage, ServerToClientMessage, parse_server_message, to_json
-
-DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
+from .struct import (
+    InputAudioBufferAppend,
+    ClientToServerMessage,
+    ServerToClientMessage,
+    parse_server_message,
+    to_json,
+)
 
 VENDOR_AZURE = "azure"
+
 
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
@@ -38,14 +43,11 @@ class RealtimeApiConnection:
         base_uri: str,
         api_key: str | None = None,
         path: str = "/v1/realtime",
-        model: str = DEFAULT_VIRTUAL_MODEL,
-        vendor: str = "",
-        verbose: bool = False
+        verbose: bool = False,
     ):
         self.ten_env = ten_env
-        self.vendor = vendor
         self.url = f"{base_uri}{path}"
-        self.url += f"?intent=transcription"
+        self.url += "?intent=transcription"
 
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.websocket: aiohttp.ClientWebSocketResponse | None = None
@@ -62,12 +64,8 @@ class RealtimeApiConnection:
 
     async def connect(self):
         headers = {}
-        auth = None
-        if self.vendor == VENDOR_AZURE:
-            headers = {"api-key": self.api_key}
-        elif not self.vendor:
-            auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            headers = {"OpenAI-Beta": "realtime=v1"}
+        auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
+        headers = {"OpenAI-Beta": "realtime=v1"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
@@ -99,7 +97,9 @@ class RealtimeApiConnection:
                         self.ten_env.log_info(f"<- {smart_str(msg.data)}")
                     yield self.handle_server_message(msg.data)
                 elif msg.type == aiohttp.WSMsgType.ERROR:
-                    self.ten_env.log_error("Error during receive: %s", self.websocket.exception())
+                    self.ten_env.log_error(
+                        "Error during receive: %s", self.websocket.exception()
+                    )
                     break
         except asyncio.CancelledError:
             self.ten_env.log_info("Receive messages task cancelled")
