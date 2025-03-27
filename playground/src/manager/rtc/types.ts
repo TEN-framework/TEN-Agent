@@ -14,7 +14,7 @@ export interface IRtcUser extends IUserTracks {
 }
 
 export interface RtcEvents {
-  remoteUserChanged: (user: IRtcUser) => void
+  remoteUserChanged: (user: IAgoraRTCRemoteUser) => void
   localTracksChanged: (tracks: IUserTracks) => void
   networkQuality: (quality: NetworkQuality) => void
   textChanged: (text: IChatItem) => void

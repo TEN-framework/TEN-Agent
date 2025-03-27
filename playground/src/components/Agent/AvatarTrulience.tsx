@@ -3,14 +3,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useAppSelector } from "@/common"
 import { TrulienceAvatar } from "trulience-sdk"
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng"
 import { Maximize, Minimize } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Progress, ProgressIndicator } from "../ui/progress";
 
 interface AvatarProps {
-  audioTrack?: IMicrophoneAudioTrack,
+  audioTrack?: IRemoteAudioTrack,
   localAudioTrack?: IMicrophoneAudioTrack
 }
 
@@ -126,11 +126,11 @@ export default function Avatar({ audioTrack }: AvatarProps) {
               // https://gist.github.com/domske/b66047671c780a238b51c51ffde8d3a0
               transform: "translateZ(0)",
             }}
-            value={loadProgress*100}
+            value={loadProgress * 100}
           >
             <ProgressIndicator
               className="ease-[cubic-bezier(0.65, 0, 0.35, 1)] size-full bg-white transition-transform duration-[660ms]"
-              style={{ transform: `translateX(-${100 - loadProgress*100}%)` }}
+              style={{ transform: `translateX(-${100 - loadProgress * 100}%)` }}
             />
           </Progress>
         </div>

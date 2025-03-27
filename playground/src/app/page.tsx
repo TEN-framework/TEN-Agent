@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import React from "react";
 import { IRtcUser, IUserTracks } from "@/manager";
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { IAgoraRTCRemoteUser, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import AgentView from "@/components/Agent/View";
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,
@@ -28,7 +29,8 @@ export default function Home() {
   const isCompactLayout = useIsCompactLayout();
   const useTrulienceAvatar = trulienceSettings.enabled;
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
-  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
+  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true" && (!useTrulienceAvatar);
+  const [remoteuser, setRemoteUser] = React.useState<IAgoraRTCRemoteUser>()
 
   React.useEffect(() => {
     const { rtcManager } = require("../manager/rtc/rtc");
@@ -38,13 +40,13 @@ export default function Home() {
     };
   }, []);
 
-  const onRemoteUserChanged = (user: IRtcUser) => {
+  const onRemoteUserChanged = (user: IAgoraRTCRemoteUser) => {
     if (useTrulienceAvatar) {
       user.audioTrack?.stop();
     }
     if (user.audioTrack) {
       setRemoteUser(user)
-    } 
+    }
   }
 
   return (
@@ -67,7 +69,7 @@ export default function Home() {
             )}
           />
 
-          {(!useTrulienceAvatar || isCompactLayout || !avatarInLargeWindow) && (
+          {(!agentViewInLargeWindow) && (!useTrulienceAvatar || isCompactLayout || !avatarInLargeWindow) && (
             <DynamicChatCard
               className={cn(
                 "m-0 w-full rounded-b-lg bg-[#181a1d] md:rounded-lg flex-auto",
@@ -89,6 +91,19 @@ export default function Home() {
               <Avatar audioTrack={remoteuser?.audioTrack} />
             </div>
           )}
+
+          {(agentViewInLargeWindow) && (
+            <div className={cn(
+              "w-full",
+              {
+                ["h-60 flex-auto p-1 bg-[#181a1d]"]: isCompactLayout,
+                ["hidden md:block"]: mobileActiveTab === EMobileActiveTab.CHAT,
+              }
+            )}>
+              <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+            </div>
+          )}
+
 
         </div>
       </div>
