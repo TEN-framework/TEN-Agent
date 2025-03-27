@@ -150,7 +150,7 @@
     },
     {
       "type": "extension",
-      "name": "computer_tool_python",
+      "name": "openai_tts_python",
       "version": "=0.1.0"
     },
     {
