@@ -144,6 +144,11 @@ export const ttsModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "neuphonic_tts",
         type: ModuleRegistry.ModuleType.TTS,
         label: "Neuphonic TTS",
+    },
+    openai_tts_python: {
+        name: "openai_tts_python",
+        type: ModuleRegistry.ModuleType.TTS,
+        label: "OpenAI TTS",
     }
 }
 
