@@ -107,7 +107,7 @@ class TTSClient:
         header = {"Authorization": f"Bearer; {self.config.token}"}
         self.websocket = await websockets.connect(
             self.config.api_url,
-            extra_headers=header,
+            additional_headers=header,
             ping_interval=None,
             close_timeout=1,  # Fast close, as the `flush` cmd will close the connection.
         )
