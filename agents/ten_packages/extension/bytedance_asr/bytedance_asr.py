@@ -208,7 +208,7 @@ class AsrWsClient:
         elif self.auth_method == "signature":
             header = self.signature_auth(full_client_request)
         self.websocket = await websockets.connect(
-            self.ws_url, extra_headers=header, max_size=1000000000
+            self.ws_url, additional_headers=header, max_size=1000000000
         )
 
         # 发送 full client request
