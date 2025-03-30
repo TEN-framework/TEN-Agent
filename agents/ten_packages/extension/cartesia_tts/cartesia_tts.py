@@ -39,7 +39,10 @@ class CartesiaTTS:
                 "encoding": "pcm_s16le",
                 "sample_rate": self.config.sample_rate,
             },
-            stream=True,
             transcript=text,
-            voice_id=self.config.voice_id,
+            voice={
+                # Using the voice_id to specify the voice for TTS
+                # This is a placeholder for the actual voice specifier
+                "id": self.config.voice_id
+            }
         )

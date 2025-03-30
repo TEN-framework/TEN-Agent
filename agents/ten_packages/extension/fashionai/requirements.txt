@@ -1,1 +1,1 @@
-websockets
+websockets>=14.0
