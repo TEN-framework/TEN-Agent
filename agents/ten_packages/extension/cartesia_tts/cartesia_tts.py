@@ -40,9 +40,5 @@ class CartesiaTTS:
                 "sample_rate": self.config.sample_rate,
             },
             transcript=text,
-            voice={
-                # Using the voice_id to specify the voice for TTS
-                # This is a placeholder for the actual voice specifier
-                "id": self.config.voice_id
-            }
+            voice={"id": self.config.voice_id},
         )
