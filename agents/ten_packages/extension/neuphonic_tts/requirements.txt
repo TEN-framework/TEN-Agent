@@ -1,2 +1,3 @@
-# TODO: fix websockets>=14.0
-#pyneuphonic~=1.5.13
+# TODO: fix websockets>=14.0 since pyneuphonic currently only supports websockets==13
+pyneuphonic~=1.5.13
+websockets>=14.0
