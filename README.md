@@ -284,30 +284,61 @@ Before we get started, be sure to star our repository and get instant notificati
 
 ![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
 
-<br>
+<!-- <br>
 <h2>Join Community</h2>
 
 - [Discord](https://discord.gg/VnPftUzAMJ): Ideal for sharing your applications and engaging with the community.
 - [GitHub Discussion](https://github.com/TEN-framework/ten-agent/discussions): Perfect for providing feedback and asking questions.
 - [GitHub Issues](https://github.com/TEN-framework/ten-agent/issues): Best for reporting bugs and proposing new features. Refer to our [contribution guidelines](./docs/code-of-conduct/contributing.md) for more details.
-- [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community.
+- [X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5): Great for sharing your agents and interacting with the community. -->
 
 <br>
 <h2>Star History</h2>
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ten-framework/ten-agent&type=Date)](https://star-history.com/#ten-framework/ten-agent&Date)
 
+### ⭐️ TEN Ecosystem
+
+| [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br/><br/>![][ten-framework-shield] | ![][ten-framework-banner] |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
+| [**🎙️ TEN Agent**][ten-agent-link]<br/>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br/><br/>![][ten-agent-shield]                                                                           | ![][ten-agent-banner] |
+| [**🎨 TMAN Designer**][tman-designer-link] `coming soon`<br/>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br/><br/>![][tman-designer-shield]                 | ![][tman-designer-banner] |
+| [**📒 TEN Docs**][ten-docs-link]<br/>Automation tool for the ai i18n translation proces. It supports features such as automatic splitting of large files, incremental updates, and customization options for markdown translation.<br/><br/>![][ten-docs-shield]                       | ![][ten-docs-banner]   |
+
+### 🤝 Contributing
+
+We welcome all forms of open-source collaboration! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas - your contributions help advance personalized AI tools. Check out our GitHub Issues and Projects to find ways to contribute and show your skills. Together, we can build something amazing! 🤝✨
+
  <br>
  <h2>Code Contributors</h2>
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
-<br>
-<h2>Contribution Guidelines</h2>
+### Contribution Guidelines
 
 Contributions are welcome! Please read the [contribution guidelines](./docs/code-of-conduct/contributing.md) first.
 
-<br>
-<h2>License</h2>
+### License
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+This project is [Apache 2.0](LICENSE) licensed.
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+[ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=black&style=flat-square&logo=github
+[ten-agent-shield]: https://img.shields.io/github/stars/ten-framework/ten-agent?color=ffcb47&labelColor=black&style=flat-square&logo=github
+[tman-designer-shield]: https://img.shields.io/github/stars/ten-framework/ten_ai_base?color=ffcb47&labelColor=black&style=flat-square&logo=github
+[ten-docs-shield]: https://img.shields.io/github/stars/ten-framework/docs?color=ffcb47&labelColor=black&style=flat-square&logo=github
+
+[ten-framework-link]: https://github.com/ten-framework/ten_framework
+[ten-agent-link]: https://github.com/ten-framework/ten-agent
+[tman-designer-link]: https://github.com/ten-framework/tman-designer
+[ten-docs-link]: https://docs.theten.ai
+
+[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/1.jpg?raw=true
+[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
+[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
+[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/2.jpg?raw=true
