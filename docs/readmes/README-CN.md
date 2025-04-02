@@ -139,11 +139,11 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 ### 先决条件
 
-| 类别             | 要求                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **密钥**         | • Agora [应用 ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) 和 [应用证书](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何兼容 OpenAI 的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册可获得免费积分）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册可获得免费积分） |
-| **安装**         | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                   |
-| **最低系统要求** | • CPU >= 2 核<br>• 内存 >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 类别 | 要求 |
+| --- | --- |
+| **密钥** | • 声网 [APP ID](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service) 和 声网 [APP 证书](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何兼容 OpenAI 的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册可获得免费积分）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册可获得免费积分） |
+| **安装** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **最低系统要求** | • CPU >= 2 核<br>• 内存 >= 4 GB |
 
 <br>
 
@@ -240,9 +240,9 @@ task run
 
 在 [localhost:3000](http://localhost:3000) 打开 Playground 以配置您的代理。
 
-1.  选择图类型（例如语音代理、实时代理）
-2.  选择相应的模块
-3.  选择扩展并配置其 API 密钥设置
+1. 选择图类型（例如语音代理、实时代理）
+2. 选择相应的模块
+3. 选择扩展并配置其 API 密钥设置
 
 ![模块示例](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
