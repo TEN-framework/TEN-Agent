@@ -139,11 +139,19 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 ### 先决条件
 
-| 类别             | 要求                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **密钥**         | • Agora [应用 ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) 和 [应用证书](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何兼容 OpenAI 的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册可获得免费积分）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册可获得免费积分） |
-| **安装**         | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                   |
-| **最低系统要求** | • CPU >= 2 核<br>• 内存 >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 类别 | 要求 |
+|----------|-------------|
+| **Keys** | • [App ID](https://console.shengwang.cn) 和 [App Certificate](https://console.shengwang.cn)（[注册教程](https://doc.shengwang.cn/doc/console/general/quickstart#%E6%B3%A8%E5%86%8C%E8%B4%A6%E5%8F%B7)） <br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥<br>• [Deepgram](https://deepgram.com/) ASR（注册即可获得免费额度）<br>• [FishAudio](https://fish.audio/) TTS（注册即可获得免费额度）|
+| **安装要求** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
+| **最低系统要求** | • CPU >= 2核<br>• 内存 >= 4 GB |
+
+<br>
+
+### macOS: Apple Silicon 上的 Docker 设置
+
+对于 Apple Silicon Mac，请在 Docker 设置中取消勾选"使用 Rosetta 进行 x86/amd64 模拟"。注意：这可能会导致 ARM 上的构建时间较慢，但部署到 x64 服务器时性能将恢复正常。
+
+![Docker 设置](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
 
 <br>
 
