@@ -155,6 +155,14 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 <br>
 
+### macOS：Apple Silicon 上的 Docker 设置
+
+对于 Apple Silicon Mac，在 Docker 设置中取消选中“使用 Rosetta 进行 x86/amd64 仿真”。注意：这可能会导致 ARM 上的构建时间较慢，但在部署到 x64 服务器时性能将正常。
+
+![Docker 设置](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true)
+
+<br>
+
 #### 设置国内代理
 
 如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。如果遇到更多问题，请参考 [问题排查](../troubleshooting/troubleshooting-cn.md)。
