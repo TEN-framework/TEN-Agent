@@ -1,2 +1,2 @@
-deepgram-sdk==3.7.5
-websockets==13.1
+deepgram-sdk==3.9.0
+websockets~=14.0

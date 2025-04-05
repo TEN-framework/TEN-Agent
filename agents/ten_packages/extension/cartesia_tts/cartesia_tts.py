@@ -39,7 +39,6 @@ class CartesiaTTS:
                 "encoding": "pcm_s16le",
                 "sample_rate": self.config.sample_rate,
             },
-            stream=True,
             transcript=text,
-            voice_id=self.config.voice_id,
+            voice={"id": self.config.voice_id},
         )
