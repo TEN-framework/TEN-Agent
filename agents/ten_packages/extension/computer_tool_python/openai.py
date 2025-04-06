@@ -5,12 +5,17 @@ from ten_ai_base.config import BaseConfig
 from dataclasses import dataclass
 from ten.async_ten_env import AsyncTenEnv
 
+
 @dataclass
 class OpenAIChatGPTConfig(BaseConfig):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
-    model: str = "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
-    prompt: str = "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
+    model: str = (
+        "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
+    )
+    prompt: str = (
+        "You are a voice assistant who talks in a conversational way and can chat with me like my friends. I will speak to you in English or Chinese, and you will answer in the corrected and improved version of my text with the language I use. Don’t talk like a robot, instead I would like you to talk like a real human with emotions. I will use your answer for text-to-speech, so don’t return me any meaningless characters. I want you to be helpful, when I’m asking you for advice, give me precise, practical and useful advice instead of being vague. When giving me a list of options, express the options in a narrative way instead of bullet points."
+    )
     frequency_penalty: float = 0.9
     presence_penalty: float = 0.9
     top_p: float = 1.0
@@ -36,19 +41,17 @@ class OpenAIChatGPTConfig(BaseConfig):
             temperature=0.1,
             max_tokens=512,
             seed=random.randint(0, 10000),
-            proxy_url=""
+            proxy_url="",
         )
-    
+
 
 class OpenAIChatGPT:
     client = None
-    def __init__(self, ten_env:AsyncTenEnv, config: OpenAIChatGPTConfig):
+
+    def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
         ten_env.log_info(f"apikey {config.api_key}, base_url {config.base_url}")
-        self.client = AsyncOpenAI(
-            api_key=config.api_key,
-            base_url=config.base_url
-        )
+        self.client = AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
         self.session = requests.Session()
         if config.proxy_url:
             proxies = {
@@ -60,7 +63,7 @@ class OpenAIChatGPT:
 
     async def get_chat_completions_structured(self, messages, response_format):
         req = {
-            "model":"gpt-4o-2024-08-06",
+            "model": "gpt-4o-2024-08-06",
             "messages": [
                 {
                     "role": "system",
@@ -86,9 +89,11 @@ class OpenAIChatGPT:
                 # handle refusal
                 raise RuntimeError(f"Refusal: {response.refusal}")
         except Exception as e:
-            raise RuntimeError(f"CreateChatCompletionStructured failed, err: {e}") from e
+            raise RuntimeError(
+                f"CreateChatCompletionStructured failed, err: {e}"
+            ) from e
 
-    async def get_chat_completions_stream(self, messages, tools = None, listener = None):
+    async def get_chat_completions_stream(self, messages, tools=None, listener=None):
         req = {
             "model": self.config.model,
             "messages": [
@@ -112,7 +117,7 @@ class OpenAIChatGPT:
             response = await self.client.chat.completions.create(**req)
         except Exception as e:
             raise RuntimeError(f"CreateChatCompletionStream failed, err: {e}") from e
-        
+
         full_content = ""
 
         async for chat_completion in response:
@@ -121,7 +126,7 @@ class OpenAIChatGPT:
             content = delta.content if delta and delta.content else ""
             # Emit content update event (fire-and-forget)
             if listener and content:
-                listener.emit('content_update', content)
+                listener.emit("content_update", content)
 
             full_content += content
             # Check for tool calls
@@ -129,8 +134,8 @@ class OpenAIChatGPT:
                 for tool_call in delta.tool_calls:
                     # Emit tool call event (fire-and-forget)
                     if listener:
-                        listener.emit('tool_call', tool_call)
+                        listener.emit("tool_call", tool_call)
 
         # Emit content finished event after the loop completes
         if listener:
-            listener.emit('content_finished', full_content)
+            listener.emit("content_finished", full_content)

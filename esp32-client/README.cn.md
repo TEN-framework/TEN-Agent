@@ -18,6 +18,7 @@
 │   │       ├── libagora-cjson.a
 │   │       ├── libahpl.a
 │   │       ├── librtsa.a
+|   ├── esp32-camera                           esp32-camera component submodule
 ├── main                                        LLM Demo code
 │   ├── ai_agent.h
 │   ├── app_config.h
@@ -45,6 +46,14 @@
 
 ## 编译和下载
 
+### esp32-camera
+
+编译运行本示例需要 esp32-camera 组件。该组件已作为子模块添加到 `components/esp32-camera` 目录中。请运行以下命令克隆子模块：
+
+```bash
+git submodule update --init --recursive
+```
+
 ### Agora IOT SDK
 
 编译运行本示例需要 Agora IoT SDK。Agora IoT SDK 可以在 [这里](https://rte-store.s3.amazonaws.com/agora_iot_sdk.tar) 下载。
@@ -62,6 +71,7 @@ tar -xvf agora_iot_sdk.tar
 本例程支持 IDF tag v[5.2.3] 及以后的，例程默认使用 IDF tag v[5.2.3] (commit id: c9763f62dd00c887a1a8fafe388db868a7e44069)。
 
 选择 IDF 分支的方法，如下所示：
+
 ```bash
 cd $IDF_PATH
 git checkout v5.2.3
@@ -74,6 +84,7 @@ git submodule update --init --recursive
 #### 打上 IDF 补丁
 
 本例程还需给 IDF 合入1个 patch， 合入命令如下：
+
 ```bash
 export ADF_PATH=~/esp/esp-adf
 cd $IDF_PATH
@@ -83,6 +94,7 @@ git apply $ADF_PATH/idf_patches/idf_v5.2_freertos.patch
 #### 编译固件
 
 将本例程(esp32-client)目录拷贝至 ~/esp 目录下。请运行如下命令：
+
 ```bash
 $ . $HOME/esp/esp-idf/export.sh
 $ cd ~/esp/esp32-client
@@ -109,6 +121,7 @@ https://docs.espressif.com/projects/esp-adf/zh_CN/latest/get-started/index.html#
 方法一.系统设置中将ADF_PATH添加到环境变量
 E:\esp32s3\Espressif\frameworks\esp-adf
 方法二.命令行中将ADF_PATH添加到环境变量
+
 ```bash
 $ setx ADF_PATH Espressif/frameworks/esp-adf
 ```
@@ -116,6 +129,7 @@ $ setx ADF_PATH Espressif/frameworks/esp-adf
 注意：ADF_PATH环境变量设置后，重启ESP-IDF 5.2 PowerShell生效
 
 本例程还需给 IDF 合入1个 patch， 合入命令如下：
+
 ```bash
 cd $IDF_PATH
 git apply $ADF_PATH/idf_patches/idf_v5.2_freertos.patch
@@ -137,6 +151,7 @@ $ idf.py build
 ### 下载固件
 
 请运行如下命令：
+
 ```bash
 $ idf.py -p /dev/ttyUSB0 flash monitor
 ```
@@ -158,7 +173,7 @@ $ idf.py -p /dev/ttyUSB0 flash monitor
 1. 请在 `app_config.h` 文件中配置你自己的 AI Agent。
 2. 修改 `TENAI_AGENT_URL` 为你自己的 TEN-Agent 服务器 URL (一般为你通过 `task run` 启动的8080服务)。
 3. 修改 `AI_AGENT_CHANNEL_NAME` 为你自己的 AI Agent Channel 名称。
-4. 如果你之前就配置过 `openai_v2v` graph，那在配置好服务器URL后，你就可以开始体验了。
+4. 如果你之前就在TEN-Agent配置过 `openai_v2v` 或 `gemini_v2v` (取决于你在`app_config.h`中配置的宏定义(`CONFIG_GRAPH_OPENAI` 或 `CONFIG_GRAPH_GEMINI`)) 的graph， 你可以直接请求使用。`openai_v2v` 目前不支持图像输入，`gemini_v2v` 支持图像输入。
 5. 如果你没有配置过 `openai_v2v` graph 或者想使用其他 graph，你需要在 `ai_agent.c` 的 `_build_start_json` 函数中修改启动的相关参数。
 6. 重新编译后烧录到芯片上。
 

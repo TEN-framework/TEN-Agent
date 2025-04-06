@@ -109,7 +109,7 @@ class PollyTTS:
         Cancel ongoing TTS operation
         """
         try:
-            if hasattr(self, 'audio_stream') and self.audio_stream:
+            if hasattr(self, "audio_stream") and self.audio_stream:
                 self.audio_stream.close()
                 self.audio_stream = None
                 ten_env.log_debug("TTS cancelled successfully")

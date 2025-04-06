@@ -23,9 +23,9 @@
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
 <a href="https://github.com/ten-framework/ten-agent/blob/main/docs/readmes/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
-[Documentation](https://doc.theten.ai/ten-agent/overview)
+[Documentation](https://doc.theten.ai/docs/ten_agent/overview)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-[Getting Started](https://doc.theten.ai/ten-agent/getting_started)
+[Getting Started](https://doc.theten.ai/docs/ten_agent/getting_started)
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 [TEN Framework Repository](https://github.com/TEN-framework/ten_framework)
 
@@ -143,9 +143,9 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 </details>
 
-  [TEN Agent + Dify](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)  
 
-  [TEN Agent + Coze](https://doc.theten.ai/ten-agent/quickstart-1/use-cases/run_va/run_coze)  
+  [TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)  
 
 TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
 
@@ -263,14 +263,14 @@ Open the playground at [localhost:3000](http://localhost:3000) to configure your
 
 ![Module Example](https://github.com/TEN-framework/docs/blob/main/assets/gif/module-example.gif?raw=true)
 
-Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [documentation](https://doc.theten.ai/ten-agent/overview).
+Now, we have successfully set up the playground. This is just the beginning of TEN Agent. There are many different ways to explore and utilize TEN Agent. To learn more, please refer to the [documentation](https://doc.theten.ai/docs/ten_agent/overview).
 
 <br>
 <h2>Deployment</h2>
 
 Once you have customized your agent (either by using the playground or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
 
-Read the [Deployment Guide](https://doc.theten.ai/ten-agent/deployment/deploy_agent_service) for detailed information about deployment.
+Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_agent/deploy_agent_service) for detailed information about deployment.
 
 <br>
 <h2>TEN Agent Architecture</h2>

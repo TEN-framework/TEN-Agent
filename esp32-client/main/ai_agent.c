@@ -271,9 +271,13 @@ static char *_build_start_json(void)
 
     cJSON *custom_llm = cJSON_CreateObject();
     cJSON_AddItemToObject(properties, "v2v", custom_llm);   //v2v object
+
+#if defined(CONFIG_GRAPH_OPENAI)
     cJSON_AddItemToObject(custom_llm, "model", cJSON_CreateString(V2V_MODEL));
     cJSON_AddItemToObject(custom_llm, "voice", cJSON_CreateString(VOICE));
     cJSON_AddItemToObject(custom_llm, "language", cJSON_CreateString(LANGUAGE));
+#endif
+
     cJSON_AddItemToObject(custom_llm, "greeting", cJSON_CreateString(GREETING));
     cJSON_AddItemToObject(custom_llm, "prompt", cJSON_CreateString(PROMPT));
 
