@@ -353,9 +353,10 @@ Now, we have successfully set up the playground. This is just the beginning of T
 
 #### 🅱️ Run Playground in Codespace(no docker)
 
-[![][https://github.com/codespaces/badge.svg]](https://codespaces.new/ten-framework/ten-agent)
-
 GitHub offers free Codespace for each repository, you can run the playground in Codespace without using Docker.Also, the speed of Codespace is much faster than localhost.
+
+[codespaces-shield]: <https://github.com/codespaces/badge.svg>
+[![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
 
 Check out [this guide](https://doc.theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) for more details.
 
