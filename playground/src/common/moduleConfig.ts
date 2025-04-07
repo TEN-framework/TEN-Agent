@@ -63,6 +63,11 @@ export const sttModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "transcribe_asr_python",
         type: ModuleRegistry.ModuleType.STT,
         label: "Transcribe STT",
+    },
+    openai_realtime_asr_python: {
+        name: "openai_realtime_asr_python",
+        type: ModuleRegistry.ModuleType.STT,
+        label: "OpenAI Realtime ASR",
     }
 }
 
