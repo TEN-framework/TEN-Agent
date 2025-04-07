@@ -464,5 +464,3 @@ _即将推出..._
 [ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
 [tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
 [ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/2.jpg?raw=true
-
-</rewritten_file>
