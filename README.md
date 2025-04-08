@@ -50,12 +50,12 @@
   - [6️⃣ Ten Agent + Dify](#6️⃣-ten-agent--dify)
   - [7️⃣ Ten Agent + Coze](#7️⃣-ten-agent--coze)
 - [💡 TEN Agent Usecases](#-ten-agent-usecases)
-- [🔌 Ready to use Extensions](#-ready-to-use-extensions)
-- [🎮 TEN Agent Playground](#-ten-agent-playground)
+- [🧩 Ready to use Extensions](#-ready-to-use-extensions)
+- [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️️🅰 Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱 Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
-- [🎥 Run Agent Demo](#-ten-agent-demo)
-- [️🛳️ Deployment](#️-deployment)
+- [↪️ Run Agent Demo](#-ten-agent-demo)
+- [🛳️ Self Hosting](#️-self-hosting)
   - [🅰 Deploying with Docker](#🅰️-deploying-with-docker)
   - [🅱 Deploying with other services](#🅱️-deploying-with-other-services)
 - [🏗️ TEN Agent Architecture](#️-ten-agent-architecture)
@@ -246,7 +246,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 <br>
 
-## 🔌 Ready-to-use Extensions
+## 🧩 Ready-to-use Extensions
 
 ![Ready-to-use Extensions](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
@@ -258,7 +258,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 <br>
 
-## 🎮 TEN Agent Playground
+## 🛝 TEN Agent Playground
 
 #### 🅰️ Run Playground in localhost
 
@@ -277,8 +277,6 @@ TEN offers a great support to make the realtime interactive experience even bett
 > **macOS: Docker setting on Apple Silicon**
 >
 > Uncheck "Use Rosetta for x86/amd64 emulation" in Docker settings, it may result in slower build times on ARM, but performance will be normal when deployed to x64 servers.
-
-<!-- ![Docker Setting](https://github.com/TEN-framework/docs/blob/main/assets/gif/docker_setting.gif?raw=true) -->
 
 <br>
 
@@ -357,6 +355,9 @@ Now, we have successfully set up the playground. This is just the beginning of T
 
 GitHub offers free Codespace for each repository, you can run the playground in Codespace without using Docker.Also, the speed of Codespace is much faster than localhost.
 
+[codespaces-shield]: <https://github.com/codespaces/badge.svg>
+[![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
+
 Check out [this guide](https://doc.theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) for more details.
 
 <div align="right">
@@ -367,7 +368,7 @@ Check out [this guide](https://doc.theten.ai/docs/ten_agent/setup_development_en
 
 <br>
 
-## 🎥 TEN Agent Demo
+## ↪️ TEN Agent Demo
 
 Playground and Demo server different purposes, in a nut shell, think it as Playground is for you to customize you agent, and Demo is for you to deploy your agent.
 
@@ -380,7 +381,7 @@ Check out [this guide](https://doc.theten.ai/docs/ten_agent/demo) for more detai
 
 <br>
 
-## 🛳️ Deployment
+## 🛳️ Self Hosting
 
 #### 🅰️ Deploying with Docker
 
@@ -390,7 +391,7 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 <br>
 
-#### 🅱️ Deploying with other services
+#### 🅱️ Deploying with other cloud services
 
 *coming soon...*
 
