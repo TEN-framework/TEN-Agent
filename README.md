@@ -54,9 +54,9 @@
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️️🅰 Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱 Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
-- [↪️ Run Agent Demo](#-ten-agent-demo)
+- [👀 Run Agent Demo](#-ten-agent-demo)
 - [🛳️ Self Hosting](#️-self-hosting)
-  - [🅰 Deploying with Docker](#🅰️-deploying-with-docker)
+  - [🅰 Deploying with Docker](#🅰️--deploying-with-docker)
   - [🅱 Deploying with other services](#🅱️-deploying-with-other-services)
 - [🏗️ TEN Agent Architecture](#️-ten-agent-architecture)
 - [🌍 TEN Framework Ecosystem](#-ten-framework-ecosystem)
@@ -74,9 +74,9 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 | Community Channel | Purpose |
 |------------------|----------|
-| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | Join our Discord community to connect with developers, share projects and get help |
-| [![Follow on X](https://img.shields.io/badge/@TenFramework-658_Followers-07C160?logo=x&labelColor=blue&color=white)](https://twitter.com/intent/follow?screen_name=TenFramework) | Follow TEN Framework on X for updates and announcements |
-|[![WeChat](https://img.shields.io/badge/TEN_Framework-1K+_members-%2307C160?logo=wechat&labelColor=darkgreen&color=white)](https://github.com/TEN-framework/ten-agent/discussions/170) | Join our WeChat group for Chinese community discussions |
+| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | Join our Discord community to connect with developers |
+| [![Follow on X](https://img.shields.io/badge/TenFramework-692_Followers-07C160?logo=x&labelColor=blue&color=gray)](https://twitter.com/intent/follow?screen_name=TenFramework) | Follow TEN Framework on X for updates and announcements |
+|[![WeChat](https://img.shields.io/badge/TEN_Framework-1K+_members-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | Join our WeChat group for Chinese community discussions |
 
 <br>
 
@@ -224,7 +224,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
   [TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)  
 
-TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
+TEN seamlessly integrates with Coze platform to enhance real-time interactive experiences. Check out our documentation to learn how to leverage these powerful integrations.
 
 <div align="right">
 
@@ -368,7 +368,7 @@ Check out [this guide](https://doc.theten.ai/docs/ten_agent/setup_development_en
 
 <br>
 
-## ↪️ TEN Agent Demo
+## 👀 TEN Agent Demo
 
 Playground and Demo server different purposes, in a nut shell, think it as Playground is for you to customize you agent, and Demo is for you to deploy your agent.
 
@@ -383,7 +383,7 @@ Check out [this guide](https://doc.theten.ai/docs/ten_agent/demo) for more detai
 
 ## 🛳️ Self Hosting
 
-#### 🅰️ Deploying with Docker
+#### 🅰️ 🐳 Deploying with Docker
 
 Once you have customized your agent (either by using the playground or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
 
@@ -433,7 +433,7 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 ## 🤝 Contributing
 
-We welcome all forms of open-source collaboration! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas - your contributions help advance personalized AI tools. Check out our GitHub Issues and Projects to find ways to contribute and show your skills. Together, we can build something amazing! 🤝✨
+We welcome all forms of open-source collaboration! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas - your contributions help advance personalized AI tools. Check out our GitHub Issues and Projects to find ways to contribute and show your skills. Together, we can build something amazing!
 
 ### Code Contributors
 
