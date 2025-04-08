@@ -1,0 +1,65 @@
+{
+  "type": "extension",
+  "name": "speechmatics_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.8"
+    }
+  ],
+  "api": {
+    "property": {
+      "key": {
+        "type": "string"
+      },
+      "sample_rate": {
+        "type": "int64"
+      },
+      "language": {
+        "type": "string"
+      },
+      "chunk_ms": {
+        "type": "int64"
+      },
+      "uri": {
+        "type": "string"
+      },
+      "max_delay": {
+        "type": "float64"
+      },
+      "max_delay_mode": {
+        "type": "string"
+      },
+      "encoding": {
+        "type": "string"
+      },
+      "enable_partials": {
+        "type": "bool"
+      },
+      "enable_word_final_mode": {
+        "type": "bool"
+      },
+      "dump": {
+        "type": "bool"
+      },
+      "dump_path": {
+        "type": "string"
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {}
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {}
+      }
+    ],
+    "cmd_in": []
+  }
+}
