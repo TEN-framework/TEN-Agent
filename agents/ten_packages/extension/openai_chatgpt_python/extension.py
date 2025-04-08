@@ -393,6 +393,10 @@ class OpenAIChatGPTExtension(AsyncLLMBaseExtension):
             }
             if param.required:
                 json_dict["function"]["parameters"]["required"].append(param.name)
+            if param.type == "array":
+                json_dict["function"]["parameters"]["properties"][param.name][
+                    "items"
+                ] = param.items
 
         return json_dict
 

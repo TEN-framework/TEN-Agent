@@ -1,4 +1,4 @@
-# mcp_client
+# mcp_client_python
 
 <!-- brief introduction for the extension -->
 

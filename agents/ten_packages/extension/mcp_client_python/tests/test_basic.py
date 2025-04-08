@@ -48,5 +48,5 @@ class ExtensionTesterBasic(ExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
-    tester.set_test_mode_single("mcp_client")
+    tester.set_test_mode_single("mcp_client_python")
     tester.run()

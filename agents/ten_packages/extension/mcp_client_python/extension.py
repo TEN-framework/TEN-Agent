@@ -3,8 +3,6 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import json
-
 from ten import AsyncTenEnv, Cmd
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.types import (
@@ -43,6 +41,9 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
         self.session: ClientSession = None
         self.available_tools: list[LLMToolMetadata] = []
 
+        self._streams_context = None
+        self._session_context = None
+
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
 
@@ -53,7 +54,9 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
         ten_env.log_info(f"config: {self.config}")
         if self.config.url:
             self._streams_context = sse_client(url=self.config.url)
+            # pylint: disable=no-member
             streams = await self._streams_context.__aenter__()
+            # pylint: enable=no-member
 
             self._session_context = ClientSession(*streams)
             self.session: ClientSession = await self._session_context.__aenter__()
@@ -73,16 +76,20 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
                     ].items():
                         required = param_name in tool.inputSchema.get("required", [])
                         param_type = param_schema.get("type", "string")
+                        param_items = param_schema.get("items", {"type": "string"})
                         description = param_schema.get("title", param_name)
 
-                        parameters.append(
-                            LLMToolMetadataParameter(
-                                name=param_name,
-                                type=param_type,
-                                description=description,
-                                required=required,
-                            )
+                        param = LLMToolMetadataParameter(
+                            name=param_name,
+                            type=param_type,
+                            description=description,
+                            required=required,
                         )
+
+                        if param_type == "array":
+                            param.items = param_items
+
+                        parameters.append(param)
 
                 self.available_tools.append(
                     LLMToolMetadata(
@@ -101,7 +108,9 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
         if self._session_context:
             await self._session_context.__aexit__(None, None, None)
         if self._streams_context:
+            # pylint: disable=no-member
             await self._streams_context.__aexit__(None, None, None)
+            # pylint: enable=no-member
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
