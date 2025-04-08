@@ -50,14 +50,14 @@
   - [6️⃣ Ten Agent + Dify](#6️⃣-ten-agent--dify)
   - [7️⃣ Ten Agent + Coze](#7️⃣-ten-agent--coze)
 - [💡 TEN Agent 用例](#-ten-agent-用例)
-- [🔌 现成可用的扩展](#-现成可用的扩展)
+- [🧩 现成可用的扩展](#-现成可用的扩展)
 - [🎮 TEN Agent Playground](#-ten-agent-playground)
   - [️️🅰 在 `localhost` 运行 Playground](#🅰️-在-localhost-运行-playground)
   - [️🅱 在 Codespace 运行 Playground(无需 docker)](#🅱️-在-codespace-运行-playgroundno-docker)
-- [🎥 运行 Agent Demo](#-ten-agent-demo)
-- [️🛳️ 部署](#️-部署)
-  - [🅰 使用 Docker 部署](#🅰️-使用-docker-部署)
-  - [🅱 使用其他服务部署](#🅱️-使用其他服务部署)
+- [↪️ TEN Agent Demo](#️-ten-agent-demo)
+- [🛳️ 自托管](#️-自托管)
+  - [🅰️ 使用 Docker 部署](#🅰️-使用-docker-部署)
+  - [🅱️ 使用其他服务部署](#🅱️-使用其他服务部署)
 - [🏗️ TEN Agent 架构](#️-ten-agent-架构)
 - [🌍 TEN Framework 生态系统](#-ten-framework-生态系统)
 - [🤝 贡献](#-贡献)
@@ -246,7 +246,7 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 <br>
 
-## 🔌 现成可用的扩展
+## 🧩 现成可用的扩展
 
 ![现成的扩展](https://github.com/TEN-framework/docs/blob/main/assets/jpg/extensions.jpg?raw=true)
 
@@ -357,6 +357,10 @@ task run
 
 GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运行 Playground 而无需使用 Docker。此外，Codespace 的速度比本地主机快得多。
 
+[codespaces-shield]: https://github.com/codespaces/badge.svg
+
+[![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
+
 查看 [此指南](https://doc.theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace) 了解更多详情。
 
 <div align="right">
@@ -367,7 +371,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 <br>
 
-## 🎥 TEN Agent Demo
+## ↪️ TEN Agent Demo
 
 Playground 和 Demo 服务于不同的目的，简而言之，可以将 Playground 视为自定义代理的工具，而 Demo 则是部署代理的工具。
 
@@ -381,7 +385,7 @@ Playground 和 Demo 服务于不同的目的，简而言之，可以将 Playgrou
 
 <br>
 
-## 🛳️ 部署
+## 🛳️ 自托管
 
 #### 🅰️ 使用 Docker 部署
 
