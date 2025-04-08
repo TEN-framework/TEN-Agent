@@ -251,8 +251,11 @@ class OpenAIChatGPT:
                             tool_calls_dict[tool_call.index]["type"] = tool_call.type
                 except Exception as e:
                     import traceback
+
                     traceback.print_exc()
-                    self.ten_env.log_error(f"Error processing tool call: {e} {tool_calls_dict}")
+                    self.ten_env.log_error(
+                        f"Error processing tool call: {e} {tool_calls_dict}"
+                    )
 
         # Convert the dictionary to a list
         tool_calls_list = list(tool_calls_dict.values())

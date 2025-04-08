@@ -39,9 +39,7 @@ class ExtensionTesterBasic(ExtensionTester):
         ten_env.log_debug("send hello_world")
         ten_env.send_cmd(
             new_cmd,
-            lambda ten_env, result, error: self.check_hello(
-                ten_env, result, error
-            ),
+            lambda ten_env, result, error: self.check_hello(ten_env, result, error),
         )
 
         ten_env.log_debug("tester on_start_done")

@@ -5,12 +5,14 @@
 #
 import json
 
-from ten import (
-    AsyncTenEnv,
-    Cmd
-)
+from ten import AsyncTenEnv, Cmd
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter, LLMToolResult, LLMToolResultLLMResult
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResult,
+    LLMToolResultLLMResult,
+)
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 from dataclasses import dataclass
 
@@ -27,9 +29,11 @@ TOOL_REGISTER_PROPERTY_DESCRIPTON = "description"
 TOOL_REGISTER_PROPERTY_PARAMETERS = "parameters"
 TOOL_CALLBACK = "callback"
 
+
 @dataclass
 class MCPClientConfig(BaseConfig):
     url: str = ""
+
 
 class MCPClientExtension(AsyncLLMToolBaseExtension):
     def __init__(self, name: str) -> None:
@@ -58,29 +62,35 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
             await self.session.initialize()
 
             response = await self.session.list_tools()
-            
+
             ten_env.log_info(f"Connected to server with tools: {response}")
             # Convert JSON Schema parameters to LLMToolMetadataParameter format
             for tool in response.tools:
                 parameters = []
                 if "properties" in tool.inputSchema:
-                    for param_name, param_schema in tool.inputSchema["properties"].items():
+                    for param_name, param_schema in tool.inputSchema[
+                        "properties"
+                    ].items():
                         required = param_name in tool.inputSchema.get("required", [])
                         param_type = param_schema.get("type", "string")
                         description = param_schema.get("title", param_name)
-                        
-                        parameters.append(LLMToolMetadataParameter(
-                            name=param_name,
-                            type=param_type, 
-                            description=description,
-                            required=required
-                        ))
-                
-                self.available_tools.append(LLMToolMetadata(
-                    name=tool.name,
-                    description=tool.description or "",
-                    parameters=parameters
-                ))
+
+                        parameters.append(
+                            LLMToolMetadataParameter(
+                                name=param_name,
+                                type=param_type,
+                                description=description,
+                                required=required,
+                            )
+                        )
+
+                self.available_tools.append(
+                    LLMToolMetadata(
+                        name=tool.name,
+                        description=tool.description or "",
+                        parameters=parameters,
+                    )
+                )
             await super().on_start(ten_env)
 
         self.ten_env = ten_env
@@ -95,16 +105,16 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
-    
+
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         return self.available_tools
-    
+
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
         await super().on_cmd(ten_env, cmd)
-    
+
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict
     ) -> LLMToolResult | None:
@@ -118,4 +128,3 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
             type="llmresult",
             content=result.model_dump_json(),
         )
-    
