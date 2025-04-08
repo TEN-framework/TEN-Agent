@@ -1,0 +1,52 @@
+{
+  "type": "app",
+  "name": "agent_huggingface",
+  "version": "0.8.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.8"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.12.0"
+    },
+    {
+      "type": "system",
+      "name": "azure_speech_sdk",
+      "version": "1.38.0"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.4.1"
+    },
+    {
+      "type": "extension",
+      "name": "azure_tts",
+      "version": "=0.8.1"
+    },
+    {
+      "type": "extension",
+      "name": "openai_chatgpt_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "weatherapi_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "interrupt_detector_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector",
+      "version": "=0.1.0"
+    }
+  ]
+}

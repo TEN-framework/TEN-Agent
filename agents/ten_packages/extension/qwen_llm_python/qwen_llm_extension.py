@@ -86,7 +86,7 @@ class QWenLLMExtension(Extension):
 
         messages = self.get_messages()
         messages.append({"role": "user", "content": input_text})
-        total = self.stream_chat(ts, messages, callback)
+        total = self.stream_chat(ten, ts, messages, callback)
         self.on_msg("user", input_text)
         if len(total) > 0:
             self.on_msg("assistant", total)
@@ -126,17 +126,18 @@ class QWenLLMExtension(Extension):
             ten.log_warn("stream property not found, default to False")
 
         if stream:
-            self.stream_chat(ts, messages, callback)
+            self.stream_chat(ten, ts, messages, callback)
         else:
-            total = self.stream_chat(ts, messages, None)
+            total = self.stream_chat(ten, ts, messages, None)
             callback(total, True)  # callback once until full answer returned
 
-    def stream_chat(self, ts: datetime.time, messages: List[Any], callback):
-        ten = self.ten
+    def stream_chat(
+        self, ten: TenEnv, ts: datetime.time, messages: List[Any], callback
+    ):
         ten.log_info(f"before stream_chat call {messages} {ts}")
 
         if self.need_interrupt(ts):
-            ten.log_warn("out of date, %s, %s", self.get_outdate_ts(), ts)
+            ten.log_warn(f"out of date, {self.get_outdate_ts()}, {ts}")
             return
 
         responses = dashscope.Generation.call(
@@ -151,7 +152,7 @@ class QWenLLMExtension(Extension):
         partial = ""
         for response in responses:
             if self.need_interrupt(ts):
-                ten.log_warn("out of date, %s, %s", self.get_outdate_ts(), ts)
+                ten.log_warn(f"out of date, {self.get_outdate_ts()}, {ts}")
                 partial = ""  # discard not sent
                 break
             if response.status_code == HTTPStatus.OK:
@@ -237,7 +238,7 @@ class QWenLLMExtension(Extension):
             return
 
         ts = datetime.now()
-        ten.log_info("on data %s, %s", input_text, ts)
+        ten.log_info(f"on data {input_text}, {ts}")
         self.queue.put((input_text, ts))
 
     def async_handle(self, ten: TenEnv):

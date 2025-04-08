@@ -46,6 +46,9 @@
 #include "common.h"
 #include "rtc_proc.h"
 
+#ifndef CONFIG_AUDIO_ONLY
+#include "video_proc.h"
+#endif
 
 app_t g_app = {
   .b_call_session_started = false,
@@ -222,6 +225,10 @@ int app_main(void)
     usleep(200 * 1000);
   }
   printf("~~~~~agora_rtc_join_channel success~~~~\r\n");
+
+#ifndef CONFIG_AUDIO_ONLY
+    start_video_proc();
+#endif
 
   printf("Agora: Press [SET] key to join the Ai Agent ...\n");
 

@@ -1,0 +1,2 @@
+pyneuphonic~=1.8.0
+websockets~=14.0

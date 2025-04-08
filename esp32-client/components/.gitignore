@@ -1,0 +1,3 @@
+agora_iot_sdk/*
+!agora_iot_sdk/.gitkeep
+esp32-camera/*

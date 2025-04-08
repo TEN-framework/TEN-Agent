@@ -26,12 +26,15 @@ class OpenAIImageGenerateToolConfig(BaseConfig):
     azure_endpoint: str = ""
     azure_api_version: str = ""
 
+
 class OpenAIImageGenerateClient:
     client = None
 
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIImageGenerateToolConfig):
         self.config = config
-        ten_env.log_info(f"OpenAIImageGenerateClient initialized with config: {config.api_key}")
+        ten_env.log_info(
+            f"OpenAIImageGenerateClient initialized with config: {config.api_key}"
+        )
         if self.config.vendor == "azure":
             self.client = AsyncAzureOpenAI(
                 api_key=config.api_key,
@@ -52,7 +55,6 @@ class OpenAIImageGenerateClient:
             ten_env.log_info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
-
 
     async def generate_images(self, prompt: str) -> str:
         req = {
