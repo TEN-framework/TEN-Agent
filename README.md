@@ -54,13 +54,13 @@
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️️🅰 Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱 Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
-- [👀 Run Agent Demo](#-ten-agent-demo)
+- [👀 TEN Agent Demo](#-ten-agent-demo)
 - [🛳️ Self Hosting](#️-self-hosting)
   - [🅰 Deploying with Docker](#🅰️--deploying-with-docker)
   - [🅱 Deploying with other services](#🅱️-deploying-with-other-services)
 - [🏗️ TEN Agent Architecture](#️-ten-agent-architecture)
 - [🌍 TEN Framework Ecosystem](#-ten-framework-ecosystem)
-- [🤝 Contributing](#-contributing)
+- [🥰 Contributing](#-contributing)
 
 <br/>
 
@@ -154,7 +154,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 ### 4️⃣ TEN Agent + Gemini Multimodal Live API
 
-Try **Google Gemini Multimodal Live API** with **realtime vision** and **realtime screenshare detection** capabilities, it is a ready-to-use extension, along with powerful tools like **Weather Check** and **Web Search** integrated perfectly into TEN Agent.
+Try Google Gemini Multimodal Live API with realtime vision and realtime screenshare detection capabilities, it is a ready-to-use extension, along with powerful tools like Weather Check and Web Search integrated perfectly into TEN Agent.
 
 <details>
   <summary><kbd>Gemini 2.0 Multimodal Live API</kbd></summary>
@@ -405,6 +405,17 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 ## 🏗️ TEN Agent Architecture
 
+1️⃣ **TEN Agent App**: Core application that manages extensions and data flow based on graph configuration
+
+2️⃣ **Dev Server**: `port:49480`- local server for development purposes.
+
+3️⃣ **Web Server**: `port:8080`- Golang server handling HTTP requests and agent process management
+
+4️⃣ **Front-end UI**:
+
+- `port:3000` Playground - To customize and test your agent configurations.
+- `port:3002` Demo - To deploy your agent without module picker.
+
 ![Components Diagram](https://github.com/TEN-framework/docs/blob/main/assets/jpg/diagram.jpg?raw=true)
 
 <div align="right">
@@ -431,9 +442,21 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 <br>
 
-## 🤝 Contributing
+## 🥰 Contributing
 
 We welcome all forms of open-source collaboration! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas - your contributions help advance personalized AI tools. Check out our GitHub Issues and Projects to find ways to contribute and show your skills. Together, we can build something amazing!
+
+<br>
+
+> \[!TIP]
+>
+> **Welcome all kinds of contributions** 🙏
+>
+> Join us in building TEN better! Every contribution makes a difference, from code to documentation. Share your TEN Agent projects on social media with to inspire others!
+>
+> Connect with TEN maintainer [@cyfyifanchen](https://github.com/cyfyifanchen) on GitHub and [@elliotchen100](https://x.com/elliotchen100) on 𝕏 for project updates, discussions and collaboration opportunities.
+
+<br>
 
 ### Code Contributors
 
