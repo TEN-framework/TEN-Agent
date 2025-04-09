@@ -54,7 +54,7 @@
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
   - [️️🅰 Run Playground in `localhost`](#🅰️-run-playground-in-localhost)
   - [️🅱 Run Playground in Codespace(no docker)](#🅱️-run-playground-in-codespaceno-docker)
-- [👀 Run Agent Demo](#-ten-agent-demo)
+- [👀 TEN Agent Demo](#-ten-agent-demo)
 - [🛳️ Self Hosting](#️-self-hosting)
   - [🅰 Deploying with Docker](#🅰️--deploying-with-docker)
   - [🅱 Deploying with other services](#🅱️-deploying-with-other-services)
