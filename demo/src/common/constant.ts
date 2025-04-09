@@ -63,6 +63,10 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
 ]
 export const GRAPH_OPTIONS: GraphOptionItem[] = [
   {
+    label: "Voice Agent with Llama4",
+    value: "va_llama4",
+  },
+  {
     label: "Voice Agent with QWQ-32B Reasoning",
     value: "qwq_32b",
   },
