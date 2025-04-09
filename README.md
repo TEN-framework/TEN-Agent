@@ -110,7 +110,14 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ### 1️⃣ 🔥 TEN Agent + MCP
 
-TEN Agent supports MCP server now,run Playground and simply paste in any MCP server from [mcp.io](https://mcp.so), you can now talk to TEN Agent with any MCP server.
+TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabilities. To get started:
+
+1. Open the Module Picker in Playground
+2. Add the MCP server tool for LLM integration
+3. Choose any MCP server from [mcp.so](https://mcp.so) and paste its URL
+4. Start conversing with TEN Agent powered by your chosen MCP server
+
+This integration allows you to leverage MCP's diverse servers offerings while maintaining TEN Agent's powerful conversational abilities.
 
 </details>
 
