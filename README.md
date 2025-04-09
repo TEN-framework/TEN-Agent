@@ -42,7 +42,8 @@
 
 - [👋 Getting Started & Join TEN Community](#-getting-started--join-ten-community)
 - [✨ Features](#-features)
-  - [1️⃣ Ten Agent + Trulience](#1️⃣--ten-agent--trulience)
+  - [1️⃣ TEN Agent + MCP](#1️⃣--ten-agent--mcp)
+  - [1️⃣ Ten Agent + Trulience](#1️⃣-ten-agent--trulience)
   - [2️⃣ Ten Agent + Deepseek](#2️⃣-ten-agent--deepseek)
   - [3️⃣ Ten Agent + ESP32](#3️⃣-ten-agent--esp32)
   - [4️⃣ Ten Agent + Gemini Multimodal Live API](#4️⃣-ten-agent--gemini-multimodal-live-api)
@@ -107,14 +108,20 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ## ✨ Features
 
-### 1️⃣ 🔥 Ten Agent + Trulience
+### 1️⃣ 🔥 TEN Agent + MCP
+
+TEN Agent supports MCP now,run Playground and simply paste in a MCP server from [mcp.io](https://mcp.so), then it will work.
+
+<br>
+
+### 1️⃣ TEN Agent + Trulience
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
 1. Follow the README to finish setting up and running the Playground in `localhost:3000`
 2. Enter the avatar ID and [token](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid) you get from [Trulience](https://trulience.com)
 
-<details open>
+<details>
   <summary><kbd>TEN Agent + Trulience</kbd></summary>
 
   <br>
@@ -454,7 +461,7 @@ We welcome all forms of open-source collaboration! Whether you're fixing bugs, a
 >
 > Join us in building TEN better! Every contribution makes a difference, from code to documentation. Share your TEN Agent projects on social media with to inspire others!
 >
-> Connect with TEN maintainer [@cyfyifanchen](https://github.com/cyfyifanchen) on GitHub and [@elliotchen100](https://x.com/elliotchen100) on 𝕏 for project updates, discussions and collaboration opportunities.
+> Connect with TEN maintainer [@elliotchen100](https://x.com/elliotchen100) on 𝕏 or [@cyfyifanchen](https://github.com/cyfyifanchen) on GitHub for project updates, discussions and collaboration opportunities.
 
 <br>
 
