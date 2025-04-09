@@ -42,14 +42,14 @@
 
 - [👋 Getting Started & Join TEN Community](#-getting-started--join-ten-community)
 - [✨ Features](#-features)
-  - [1️⃣ TEN Agent + MCP](#1️⃣--ten-agent--mcp)
-  - [1️⃣ Ten Agent + Trulience](#1️⃣-ten-agent--trulience)
-  - [2️⃣ Ten Agent + Deepseek](#2️⃣-ten-agent--deepseek)
-  - [3️⃣ Ten Agent + ESP32](#3️⃣-ten-agent--esp32)
-  - [4️⃣ Ten Agent + Gemini Multimodal Live API](#4️⃣-ten-agent--gemini-multimodal-live-api)
-  - [5️⃣ Ten Agent + Storyteller + Image Generator](#5️⃣-ten-agent--storyteller--image-generator)
-  - [6️⃣ Ten Agent + Dify](#6️⃣-ten-agent--dify)
-  - [7️⃣ Ten Agent + Coze](#7️⃣-ten-agent--coze)
+  - [1️⃣ 🔥 TEN Agent + MCP](#1️⃣--ten-agent--mcp)
+  - [2️⃣ TEN Agent + Trulience](#2️⃣-ten-agent--trulience)
+  - [3️⃣ TEN Agent + Deepseek](#3️⃣-ten-agent--deepseek)
+  - [4️⃣ TEN Agent + ESP32](#4️⃣-ten-agent--esp32)
+  - [5️⃣ TEN Agent + Gemini Multimodal Live API](#5️⃣-ten-agent--gemini-multimodal-live-api)
+  - [6️⃣ TEN Agent + Storyteller + Image Generator](#6️⃣-ten-agent--storyteller--image-generator)
+  - [7️⃣ TEN Agent + Dify](#7️⃣-ten-agent--dify)
+  - [8️⃣ TEN Agent + Coze](#8️⃣-ten-agent--coze)
 - [💡 TEN Agent Usecases](#-ten-agent-usecases)
 - [🧩 Ready to use Extensions](#-ready-to-use-extensions)
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
@@ -110,11 +110,19 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ### 1️⃣ 🔥 TEN Agent + MCP
 
-TEN Agent supports MCP now,run Playground and simply paste in a MCP server from [mcp.io](https://mcp.so), then it will work.
+TEN Agent supports MCP server now,run Playground and simply paste in any MCP server from [mcp.io](https://mcp.so), you can now talk to TEN Agent with any MCP server.
+
+</details>
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
 
 <br>
 
-### 1️⃣ TEN Agent + Trulience
+### 2️⃣ TEN Agent + Trulience
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
@@ -139,7 +147,7 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 
 </div>
 
-### 2️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
+### 3️⃣ TEN Agent + DeepSeek
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
@@ -149,7 +157,7 @@ TEN is a very versatile framework. That said, TEN Agent is compatible with DeepS
 
 </div>
 
-### 3️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
+### 4️⃣ TEN Agent + ESP32
 
 TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
 
@@ -159,7 +167,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 </div>
 
-### 4️⃣ TEN Agent + Gemini Multimodal Live API
+### 5️⃣ TEN Agent + Gemini Multimodal Live API
 
 Try Google Gemini Multimodal Live API with realtime vision and realtime screenshare detection capabilities, it is a ready-to-use extension, along with powerful tools like Weather Check and Web Search integrated perfectly into TEN Agent.
 
@@ -181,7 +189,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 </div>
 
-### 5️⃣ TEN Agent + Storyteller + Image Generator
+### 6️⃣ TEN Agent + Storyteller + Image Generator
 
 Describe a topic and ask TEN Agent to tell you a story while also generating images of the story to provide a more immersive experience for kids.
 
@@ -203,7 +211,7 @@ Describe a topic and ask TEN Agent to tell you a story while also generating ima
 
 </div>
 
-### 6️⃣ TEN Agent + Dify
+### 7️⃣ TEN Agent + Dify
 
   [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)  
 
@@ -227,7 +235,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 </div>
 
-### 7️⃣ TEN Agent + Coze
+### 8️⃣ TEN Agent + Coze
 
   [TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)  
 
