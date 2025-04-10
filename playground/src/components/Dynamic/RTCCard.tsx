@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import { IAgoraRTCRemoteUser, ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType, useIsCompactLayout } from "@/common"
 import { ITextItem, EMessageType, IChatItem } from "@/types"
 import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
@@ -32,11 +32,11 @@ export default function RTCCard(props: { className?: string }) {
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>()
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
   const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
-  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
+  const [remoteuser, setRemoteUser] = React.useState<IAgoraRTCRemoteUser>()
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
   const useTrulienceAvatar = trulienceSettings.enabled
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
-
+  const agentViewInLargeWindow = process.env.NEXT_PUBLIC_AVATAR_DESKTOP_LARGE_WINDOW?.toLowerCase() === "true" && (!useTrulienceAvatar);
   const isCompactLayout = useIsCompactLayout();
 
   const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
@@ -93,7 +93,7 @@ export default function RTCCard(props: { className?: string }) {
     hasInit = false
   }
 
-  const onRemoteUserChanged = (user: IRtcUser) => {
+  const onRemoteUserChanged = (user: IAgoraRTCRemoteUser) => {
     console.log("[rtc] onRemoteUserChanged", user)
     if (useTrulienceAvatar) {
       // trulience SDK will play audio in synch with mouth
@@ -101,7 +101,7 @@ export default function RTCCard(props: { className?: string }) {
     }
     if (user.audioTrack) {
       setRemoteUser(user)
-    } 
+    }
   }
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
@@ -146,7 +146,16 @@ export default function RTCCard(props: { className?: string }) {
             />
           )
         ) : (
-          <AgentView  audioTrack={remoteuser?.audioTrack} />
+          !agentViewInLargeWindow ? (
+            <div className="h-60 w-full p-1">
+              <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+            </div>
+          ) : (
+            !isCompactLayout &&
+            <ChatCard
+              className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
+            />
+          )
         )}
       </div>
 
