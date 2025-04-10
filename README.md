@@ -154,7 +154,7 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 
 </div>
 
-### 3️⃣ TEN Agent + DeepSeek
+### 3️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
@@ -164,7 +164,7 @@ TEN is a very versatile framework. That said, TEN Agent is compatible with DeepS
 
 </div>
 
-### 4️⃣ TEN Agent + ESP32
+### 4️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
 
 TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
 
