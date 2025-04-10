@@ -19,24 +19,12 @@
               "subscribe_audio": true,
               "publish_audio": true,
               "publish_data": true,
-              "enable_agora_asr": false,
+              "enable_agora_asr": true,
               "agora_asr_vendor_name": "microsoft",
               "agora_asr_language": "en-US",
               "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
               "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
               "agora_asr_session_control_file_path": "session_control.conf"
-            }
-          },
-          {
-            "type": "extension",
-            "name": "stt",
-            "addon": "deepgram_asr_python",
-            "extension_group": "stt",
-            "property": {
-              "api_key": "${env:DEEPGRAM_API_KEY}",
-              "language": "en-US",
-              "model": "nova-2",
-              "sample_rate": 16000
             }
           },
           {
@@ -120,19 +108,6 @@
                 ]
               }
             ],
-            "audio_frame": [
-              {
-                "name": "pcm_frame",
-                "dest": [
-                  {
-                    "extension": "stt"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "extension": "stt",
             "data": [
               {
                 "name": "text_data",
