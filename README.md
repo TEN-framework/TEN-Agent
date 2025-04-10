@@ -114,7 +114,7 @@ TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabili
 
 1. Open the Module Picker in Playground
 2. Add the MCP server tool for LLM integration
-3. Choose any MCP server from [mcp.so](https://mcp.so) and paste its URL
+3. Paste a URL from your MCP server in the extension
 4. Start a realtime conversation with TEN Agent
 
 This integration allows you to leverage MCP's diverse servers offerings while maintaining TEN Agent's powerful conversational abilities.
@@ -133,7 +133,7 @@ This integration allows you to leverage MCP's diverse servers offerings while ma
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
-1. Follow the README to finish setting up and running the Playground in `localhost:3000`
+1. Follow the README to finish setting up and running the Playground
 2. Enter the avatar ID and [token](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid) you get from [Trulience](https://trulience.com)
 
 <details>
