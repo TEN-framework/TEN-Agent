@@ -275,6 +275,19 @@ export const getGraphProperties = (
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
             }
         }
+    } else if (graphName == "va_llama4") {
+        return {
+            "agora_rtc": {
+                "agora_asr_language": language,
+            },
+            "llm": {
+                "prompt": prompt,
+                "greeting": combined_greeting,
+            },
+            "tts": {
+                "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
+            }
+        }
     }
 
 
