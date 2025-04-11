@@ -42,6 +42,7 @@
 
 - [👋 Getting Started & Join TEN Community](#-getting-started--join-ten-community)
 - [✨ Features](#-features)
+  - [1️⃣ 🆕 TEN Agent + Llama 4](#1️⃣--ten-agent--llama-4)
   - [1️⃣ 🔥 TEN Agent + MCP](#1️⃣--ten-agent--mcp)
   - [2️⃣ TEN Agent + Trulience](#2️⃣-ten-agent--trulience)
   - [3️⃣ TEN Agent + Deepseek](#3️⃣-ten-agent--deepseek)
@@ -89,7 +90,7 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 <br>
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/new/star-us.gif?raw=true)
 
 <details>
   <summary><kbd>Star History</kbd></summary>
@@ -108,6 +109,28 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ## ✨ Features
 
+### 1️⃣ 🆕 TEN Agent + Llama 4
+
+TEN Agent now integrates with Llama 4, Meta's latest large language model. You can easily enable Llama 4 capabilities by adding it as an extension in your agent configuration. This brings state-of-the-art language understanding and generation to your TEN Agent applications.
+
+<details>
+  <summary><kbd>TEN Agent + Llama 4</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![TEN Agent with Llama 4](https://github.com/TEN-framework/docs/blob/main/assets/new/ten-llama4.jpg?raw=true)
+
+  </picture>
+
+</details>
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
 ### 1️⃣ 🔥 TEN Agent + MCP
 
 TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabilities. To get started:
@@ -118,6 +141,16 @@ TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabili
 4. Start a realtime conversation with TEN Agent
 
 This integration allows you to leverage MCP's diverse servers offerings while maintaining TEN Agent's powerful conversational abilities.
+
+<details>
+  <summary><kbd>TEN Agent + Llama 4</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![TEN Agent with Llama 4](https://github.com/TEN-framework/docs/blob/main/assets/new/ten-llama4.jpg?raw=true)
+
+  </picture>
 
 </details>
 
@@ -220,7 +253,7 @@ Describe a topic and ask TEN Agent to tell you a story while also generating ima
 
 ### 7️⃣ TEN Agent + Dify
 
-  [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)  
 
 TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
 
@@ -508,7 +541,7 @@ This project is [Apache 2.0](LICENSE) licensed.
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 [ten-agent-link]: https://github.com/ten-framework/ten-agent
 
-[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/1.jpg?raw=true
-[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
-[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
-[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/2.jpg?raw=true
+[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-portal.jpg?raw=true
+[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-agent.jpg?raw=true
+[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/tman-designer.jpg?raw=true
+[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-doc.jpg?raw=true
