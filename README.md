@@ -542,7 +542,7 @@ This project is [Apache 2.0](LICENSE) licensed.
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 [ten-agent-link]: https://github.com/ten-framework/ten-agent
 
-[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-portal.jpg?raw=true
-[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-agent.jpg?raw=true
-[tman-designer-banner]: ./ten-agent.jpeg
-[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-doc.jpg?raw=true
+[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-portal.jpeg?raw=true
+[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-agent.jpeg?raw=true
+[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/tman-manager.jpeg?raw=true
+[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-doc.jpeg?raw=true
