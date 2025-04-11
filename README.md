@@ -483,11 +483,12 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 ## 🌍 TEN Framework Ecosystem
 
-| [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br/><br/>![][ten-framework-shield] | ![][ten-framework-banner] |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
-| [**🎙️ TEN Agent**][ten-agent-link]<br/>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br/><br/>![][ten-agent-shield]                                                                           | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** `alpha`<br/>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br/><br/>![][tman-designer-shield]                 | ![][tman-designer-banner] |
-| **📒 TEN Portal**<br/>The official site of TEN framework, it has documentation, blog and showcases.<br/><br/>![][ten-docs-shield]                       | ![][ten-docs-banner]   |
+| Project | Preview |
+|---------|---------|
+| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner] |
+| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield] | ![][tman-designer-banner] |
+| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield] | ![][ten-docs-banner] |
 
 <div align="right">
 
@@ -543,5 +544,5 @@ This project is [Apache 2.0](LICENSE) licensed.
 
 [ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-portal.jpg?raw=true
 [ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-agent.jpg?raw=true
-[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/tman-designer.jpg?raw=true
+[tman-designer-banner]: ./ten-agent.jpeg
 [ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-doc.jpg?raw=true
