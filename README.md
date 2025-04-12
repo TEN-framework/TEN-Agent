@@ -42,14 +42,15 @@
 
 - [👋 Getting Started & Join TEN Community](#-getting-started--join-ten-community)
 - [✨ Features](#-features)
-  - [1️⃣ 🔥 TEN Agent + MCP](#1️⃣--ten-agent--mcp)
-  - [2️⃣ TEN Agent + Trulience](#2️⃣-ten-agent--trulience)
-  - [3️⃣ TEN Agent + Deepseek](#3️⃣-ten-agent--deepseek)
-  - [4️⃣ TEN Agent + ESP32](#4️⃣-ten-agent--esp32)
-  - [5️⃣ TEN Agent + Gemini Multimodal Live API](#5️⃣-ten-agent--gemini-multimodal-live-api)
-  - [6️⃣ TEN Agent + Storyteller + Image Generator](#6️⃣-ten-agent--storyteller--image-generator)
-  - [7️⃣ TEN Agent + Dify](#7️⃣-ten-agent--dify)
-  - [8️⃣ TEN Agent + Coze](#8️⃣-ten-agent--coze)
+  - [1️⃣ 🆕 TEN Agent + Llama 4](#1️⃣--ten-agent--llama-4)
+  - [2️⃣ 🔥 TEN Agent + MCP](#2️⃣--ten-agent--mcp)
+  - [3️⃣ TEN Agent + Trulience](#3️⃣-ten-agent--trulience)
+  - [4️⃣ TEN Agent + Deepseek](#4️⃣-ten-agent--deepseek)
+  - [5️⃣ TEN Agent + ESP32](#5️⃣-ten-agent--esp32)
+  - [6️⃣ TEN Agent + Gemini Multimodal Live API](#6️⃣-ten-agent--gemini-multimodal-live-api)
+  - [7️⃣ TEN Agent + Storyteller + Image Generator](#7️⃣-ten-agent--storyteller--image-generator)
+  - [8️⃣ TEN Agent + Dify](#8️⃣-ten-agent--dify)
+  - [9️⃣ TEN Agent + Coze](#9️⃣-ten-agent--coze)
 - [💡 TEN Agent Usecases](#-ten-agent-usecases)
 - [🧩 Ready to use Extensions](#-ready-to-use-extensions)
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
@@ -89,7 +90,7 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 <br>
 
-![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/gif/star_us_2.gif?raw=true)
+![TEN star us gif](https://github.com/TEN-framework/docs/blob/main/assets/new/star-us.gif?raw=true)
 
 <details>
   <summary><kbd>Star History</kbd></summary>
@@ -108,7 +109,29 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ## ✨ Features
 
-### 1️⃣ 🔥 TEN Agent + MCP
+### 1️⃣ 🆕 TEN Agent + Llama 4
+
+TEN Agent now integrates with Llama 4, Meta's latest large language model. With no setup or waiting required, you can simply start a real-time conversation with TEN Agent.
+
+<details>
+  <summary><kbd>TEN Agent + Llama 4</kbd></summary>
+
+  <br>
+  <picture>
+
+  ![TEN Agent with Llama 4](https://github.com/TEN-framework/docs/blob/main/assets/new/ten-llama4.jpg?raw=true)
+
+  </picture>
+
+</details>
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+### 2️⃣ 🔥 TEN Agent + MCP
 
 TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabilities. To get started:
 
@@ -119,8 +142,6 @@ TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabili
 
 This integration allows you to leverage MCP's diverse servers offerings while maintaining TEN Agent's powerful conversational abilities.
 
-</details>
-
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -129,7 +150,7 @@ This integration allows you to leverage MCP's diverse servers offerings while ma
 
 <br>
 
-### 2️⃣ TEN Agent + Trulience
+### 3️⃣ TEN Agent + Trulience
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
@@ -154,7 +175,7 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 
 </div>
 
-### 3️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
+### 4️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
@@ -164,7 +185,7 @@ TEN is a very versatile framework. That said, TEN Agent is compatible with DeepS
 
 </div>
 
-### 4️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
+### 5️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
 
 TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
 
@@ -174,7 +195,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 </div>
 
-### 5️⃣ TEN Agent + Gemini Multimodal Live API
+### 6️⃣ TEN Agent + Gemini Multimodal Live API
 
 Try Google Gemini Multimodal Live API with realtime vision and realtime screenshare detection capabilities, it is a ready-to-use extension, along with powerful tools like Weather Check and Web Search integrated perfectly into TEN Agent.
 
@@ -196,7 +217,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 </div>
 
-### 6️⃣ TEN Agent + Storyteller + Image Generator
+### 7️⃣ TEN Agent + Storyteller + Image Generator
 
 Describe a topic and ask TEN Agent to tell you a story while also generating images of the story to provide a more immersive experience for kids.
 
@@ -218,9 +239,9 @@ Describe a topic and ask TEN Agent to tell you a story while also generating ima
 
 </div>
 
-### 7️⃣ TEN Agent + Dify
+### 8️⃣ TEN Agent + Dify
 
-  [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_dify)  
+  [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)  
 
 TEN offers a great support to make the realtime interactive experience even better on other LLM platform as well, check out docs for more.
 
@@ -242,7 +263,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 </div>
 
-### 8️⃣ TEN Agent + Coze
+### 9️⃣ TEN Agent + Coze
 
   [TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)  
 
@@ -334,7 +355,11 @@ docker exec -it ten_agent_dev bash
 check the `/examples` folder for more examples
 
 ```bash
+# use the default agent
 task use
+
+# or use the demo agent
+task use AGENT=agents/examples/demo
 ```
 
 ##### 6. Start the web server
@@ -450,11 +475,12 @@ Read the [Deployment Guide](https://doc.theten.ai/docs/ten_agent/deployment_ten_
 
 ## 🌍 TEN Framework Ecosystem
 
-| [**🏚️ TEN Framework**][ten-framework-link]<br/>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br/><br/>![][ten-framework-shield] | ![][ten-framework-banner] |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
-| [**🎙️ TEN Agent**][ten-agent-link]<br/>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br/><br/>![][ten-agent-shield]                                                                           | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** `alpha`<br/>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br/><br/>![][tman-designer-shield]                 | ![][tman-designer-banner] |
-| **📒 TEN Portal**<br/>The official site of TEN framework, it has documentation, blog and showcases.<br/><br/>![][ten-docs-shield]                       | ![][ten-docs-banner]   |
+| Project | Preview |
+|---------|---------|
+| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN, a AI agent framework to create various AI agents which supports real-time conversation.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent is a conversational voice AI agent powered by TEN, integrating Deepseek, Gemini, OpenAI, RTC, and hardware like ESP32. It enables realtime AI capabilities like seeing, hearing, and speaking, and is fully compatible with platforms like Dify and Coze.<br><br>![][ten-agent-shield] | ![][ten-agent-banner] |
+| **🎨 TMAN Designer** `alpha`<br>TMAN Designer is low/no code option to make a cool voice agent. With it's easy-to-use workflow UI, you can build things easily. It comes with runtime, dark/light themes, integrated editors and integrated terminals.<br><br>![][tman-designer-shield] | ![][tman-designer-banner] |
+| **📒 TEN Portal**<br>The official site of TEN framework, it has documentation, blog and showcases.<br><br>![][ten-docs-shield] | ![][ten-docs-banner] |
 
 <div align="right">
 
@@ -508,7 +534,7 @@ This project is [Apache 2.0](LICENSE) licensed.
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 [ten-agent-link]: https://github.com/ten-framework/ten-agent
 
-[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/1.jpg?raw=true
-[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/3.jpg?raw=true
-[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/4.jpg?raw=true
-[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/jpg/2.jpg?raw=true
+[ten-framework-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-portal.jpeg?raw=true
+[ten-agent-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-agent.jpeg?raw=true
+[tman-designer-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/tman-manager.jpeg?raw=true
+[ten-docs-banner]: https://github.com/TEN-framework/docs/blob/main/assets/new/ten-doc.jpeg?raw=true
