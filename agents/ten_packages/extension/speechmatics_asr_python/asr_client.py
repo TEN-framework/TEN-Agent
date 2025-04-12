@@ -5,9 +5,8 @@
 #
 
 import asyncio
-from datetime import datetime
 import os
-from typing import List, Optional, Dict, Any
+from typing import List
 from speechmatics.client import WebsocketClient
 from speechmatics.models import (
     AudioSettings,
@@ -64,6 +63,10 @@ class SpeechmaticsASRClient:
                 self.config.dump_path, "speechmatics_asr_in.pcm"
             )
             self.audio_dumper = Dumper(dump_file_path)
+
+        self.audio_settings: AudioSettings | None = None
+        self.transcription_config: TranscriptionConfig | None = None
+        self.client: WebsocketClient | None = None
 
     async def start(self) -> None:
         """Initialize and start the recognition session"""
@@ -188,7 +191,7 @@ class SpeechmaticsASRClient:
         await self.ten_env.send_data(stable_data)
 
     async def _client_run(self):
-        self.ten_env.log_info(f"SpeechmaticsASRClient run start")
+        self.ten_env.log_info("SpeechmaticsASRClient run start")
 
         last_connect_time = 0
         retry_interval = 0.5
@@ -216,7 +219,7 @@ class SpeechmaticsASRClient:
             if self.client_needs_stopping:
                 break
 
-        self.ten_env.log_info(f"SpeechmaticsASRClient run end")
+        self.ten_env.log_info("SpeechmaticsASRClient run end")
 
     async def _internal_drain_mute_pkg(self):
         # we push some silence pkg to the queue
@@ -242,9 +245,9 @@ class SpeechmaticsASRClient:
             text = metadata.get("transcript", "")
             start_ms = metadata.get("start_time", 0) * 1000
             end_ms = metadata.get("end_time", 0) * 1000
-            duration_ms = int(end_ms - start_ms)
+            _duration_ms = int(end_ms - start_ms)
 
-            actual_start_ms = int(
+            _actual_start_ms = int(
                 self.timeline.get_audio_duration_before_time(start_ms)
                 + self.sent_user_audio_duration_ms_before_last_reset
             )
@@ -265,8 +268,8 @@ class SpeechmaticsASRClient:
             if text:
                 start_ms = metadata.get("start_time", 0) * 1000
                 end_ms = metadata.get("end_time", 0) * 1000
-                duration_ms = int(end_ms - start_ms)
-                actual_start_ms = int(
+                _duration_ms = int(end_ms - start_ms)
+                _actual_start_ms = int(
                     self.timeline.get_audio_duration_before_time(start_ms)
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
@@ -298,8 +301,8 @@ class SpeechmaticsASRClient:
                             self.timeline.get_audio_duration_before_time(start_ms)
                             + self.sent_user_audio_duration_ms_before_last_reset
                         )
-                        type = result.get("type", "")
-                        is_punctuation = type == "punctuation"
+                        result_type = result.get("type", "")
+                        is_punctuation = result_type == "punctuation"
 
                         word = SpeechmaticsASRWord(
                             word=text,

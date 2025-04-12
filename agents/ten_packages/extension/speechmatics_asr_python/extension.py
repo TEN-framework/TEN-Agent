@@ -4,8 +4,6 @@
 # See the LICENSE file for more information.
 #
 
-import json
-
 from ten import (
     AsyncExtension,
     AsyncTenEnv,
@@ -32,16 +30,12 @@ class SpeechmaticsASRExtension(AsyncExtension):
         config = await SpeechmaticsASRConfig.create_async(ten_env=ten_env)
         ten_env.log_debug(f"config: {config.to_str(sensitive_handling=True)}")
 
-        if not config.key:
-            ten_env.log_error("get property api_key failed")
-            raise Exception("get property api_key failed")
-
         self.config = config
 
         self.client = SpeechmaticsASRClient(self.config, ten_env)
         await self.client.start()
 
-    async def on_audio_frame(self, ten_env: AsyncTenEnv, frame: AudioFrame) -> None:
+    async def on_audio_frame(self, _ten_env: AsyncTenEnv, frame: AudioFrame) -> None:
         await self.client.recv_audio_frame(frame)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
