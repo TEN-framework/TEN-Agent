@@ -43,14 +43,14 @@
 - [👋 Getting Started & Join TEN Community](#-getting-started--join-ten-community)
 - [✨ Features](#-features)
   - [1️⃣ 🆕 TEN Agent + Llama 4](#1️⃣--ten-agent--llama-4)
-  - [1️⃣ 🔥 TEN Agent + MCP](#1️⃣--ten-agent--mcp)
-  - [2️⃣ TEN Agent + Trulience](#2️⃣-ten-agent--trulience)
-  - [3️⃣ TEN Agent + Deepseek](#3️⃣-ten-agent--deepseek)
-  - [4️⃣ TEN Agent + ESP32](#4️⃣-ten-agent--esp32)
-  - [5️⃣ TEN Agent + Gemini Multimodal Live API](#5️⃣-ten-agent--gemini-multimodal-live-api)
-  - [6️⃣ TEN Agent + Storyteller + Image Generator](#6️⃣-ten-agent--storyteller--image-generator)
-  - [7️⃣ TEN Agent + Dify](#7️⃣-ten-agent--dify)
-  - [8️⃣ TEN Agent + Coze](#8️⃣-ten-agent--coze)
+  - [2️⃣ 🔥 TEN Agent + MCP](#2️⃣--ten-agent--mcp)
+  - [3️⃣ TEN Agent + Trulience](#3️⃣-ten-agent--trulience)
+  - [4️⃣ TEN Agent + Deepseek](#4️⃣-ten-agent--deepseek)
+  - [5️⃣ TEN Agent + ESP32](#5️⃣-ten-agent--esp32)
+  - [6️⃣ TEN Agent + Gemini Multimodal Live API](#6️⃣-ten-agent--gemini-multimodal-live-api)
+  - [7️⃣ TEN Agent + Storyteller + Image Generator](#7️⃣-ten-agent--storyteller--image-generator)
+  - [8️⃣ TEN Agent + Dify](#8️⃣-ten-agent--dify)
+  - [9️⃣ TEN Agent + Coze](#9️⃣-ten-agent--coze)
 - [💡 TEN Agent Usecases](#-ten-agent-usecases)
 - [🧩 Ready to use Extensions](#-ready-to-use-extensions)
 - [🛝 TEN Agent Playground](#-ten-agent-playground)
@@ -111,7 +111,7 @@ TEN Agent is a conversational voice AI agent powered by TEN, integrating **DeepS
 
 ### 1️⃣ 🆕 TEN Agent + Llama 4
 
-TEN Agent now integrates with Llama 4, Meta's latest large language model. You can easily enable Llama 4 capabilities by adding it as an extension in your agent configuration. This brings state-of-the-art language understanding and generation to your TEN Agent applications.
+TEN Agent now integrates with Llama 4, Meta's latest large language model. With no setup or waiting required, you can simply start a real-time conversation with TEN Agent.
 
 <details>
   <summary><kbd>TEN Agent + Llama 4</kbd></summary>
@@ -131,7 +131,7 @@ TEN Agent now integrates with Llama 4, Meta's latest large language model. You c
 
 </div>
 
-### 1️⃣ 🔥 TEN Agent + MCP
+### 2️⃣ 🔥 TEN Agent + MCP
 
 TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabilities. To get started:
 
@@ -142,18 +142,6 @@ TEN Agent now integrates seamlessly with MCP servers, expanding its LLM capabili
 
 This integration allows you to leverage MCP's diverse servers offerings while maintaining TEN Agent's powerful conversational abilities.
 
-<details>
-  <summary><kbd>TEN Agent + Llama 4</kbd></summary>
-
-  <br>
-  <picture>
-
-  ![TEN Agent with Llama 4](https://github.com/TEN-framework/docs/blob/main/assets/new/ten-llama4.jpg?raw=true)
-
-  </picture>
-
-</details>
-
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -162,7 +150,7 @@ This integration allows you to leverage MCP's diverse servers offerings while ma
 
 <br>
 
-### 2️⃣ TEN Agent + Trulience
+### 3️⃣ TEN Agent + Trulience
 
 Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com)'s diverse collection of free avatar options. To get it up and running, you only need 2 steps:
 
@@ -187,7 +175,7 @@ Build engaging AI avatars with TEN Agent using [Trulience](https://trulience.com
 
 </div>
 
-### 3️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
+### 4️⃣ [TEN Agent + DeepSeek](https://ten-framework.medium.com/deepgram-deepseek-fish-audio-build-your-own-voice-assistant-with-ten-agent-d3ee65faabe8)
 
 TEN is a very versatile framework. That said, TEN Agent is compatible with DeepSeek R1, try experiencing realtime conversations with DeepSeek R1!
 
@@ -197,7 +185,7 @@ TEN is a very versatile framework. That said, TEN Agent is compatible with DeepS
 
 </div>
 
-### 4️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
+### 5️⃣ [TEN Agent + ESP32](https://github.com/TEN-framework/TEN-Agent/tree/main/esp32-client)
 
 TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, an excellent way to integrate realtime communication with LLM on hardware.
 
@@ -207,7 +195,7 @@ TEN Agent is now running on the Espressif ESP32-S3 Korvo V3 development board, a
 
 </div>
 
-### 5️⃣ TEN Agent + Gemini Multimodal Live API
+### 6️⃣ TEN Agent + Gemini Multimodal Live API
 
 Try Google Gemini Multimodal Live API with realtime vision and realtime screenshare detection capabilities, it is a ready-to-use extension, along with powerful tools like Weather Check and Web Search integrated perfectly into TEN Agent.
 
@@ -229,7 +217,7 @@ Try Google Gemini Multimodal Live API with realtime vision and realtime screensh
 
 </div>
 
-### 6️⃣ TEN Agent + Storyteller + Image Generator
+### 7️⃣ TEN Agent + Storyteller + Image Generator
 
 Describe a topic and ask TEN Agent to tell you a story while also generating images of the story to provide a more immersive experience for kids.
 
@@ -251,7 +239,7 @@ Describe a topic and ask TEN Agent to tell you a story while also generating ima
 
 </div>
 
-### 7️⃣ TEN Agent + Dify
+### 8️⃣ TEN Agent + Dify
 
   [TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)  
 
@@ -275,7 +263,7 @@ TEN offers a great support to make the realtime interactive experience even bett
 
 </div>
 
-### 8️⃣ TEN Agent + Coze
+### 9️⃣ TEN Agent + Coze
 
   [TEN Agent + Coze](https://doc.theten.ai/docs/ten_agent/quickstart-1/use-cases/run_va/run_coze)  
 
@@ -367,7 +355,11 @@ docker exec -it ten_agent_dev bash
 check the `/examples` folder for more examples
 
 ```bash
+# use the default agent
 task use
+
+# or use the demo agent
+task use AGENT=agents/examples/demo
 ```
 
 ##### 6. Start the web server
