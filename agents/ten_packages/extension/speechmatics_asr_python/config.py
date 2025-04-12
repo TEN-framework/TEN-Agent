@@ -7,8 +7,7 @@
 from typing import List
 from dataclasses import dataclass, field
 import copy
-from ten_ai_base import BaseConfig
-from uap_utils import encrypt
+from ten_ai_base.config import BaseConfig
 
 
 @dataclass

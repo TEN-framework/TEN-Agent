@@ -1,4 +1,4 @@
 {
-  "api_key": "${env:SPEECHMATICS_API_KEY}",
+  "key": "${env:SPEECHMATICS_API_KEY}",
   "sample_rate": 16000
 }
