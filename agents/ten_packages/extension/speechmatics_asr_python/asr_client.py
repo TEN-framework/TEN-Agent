@@ -250,7 +250,11 @@ class SpeechmaticsASRClient:
             )
 
             if text:
-                asyncio.create_task(self._send_asr_result(text=text, is_final=False, stream_id=self.stream_id))
+                asyncio.create_task(
+                    self._send_asr_result(
+                        text=text, is_final=False, stream_id=self.stream_id
+                    )
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error processing transcript: {e}")
 
@@ -267,7 +271,11 @@ class SpeechmaticsASRClient:
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
 
-                asyncio.create_task(self._send_asr_result(text=text, is_final=True, stream_id=self.stream_id))
+                asyncio.create_task(
+                    self._send_asr_result(
+                        text=text, is_final=True, stream_id=self.stream_id
+                    )
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error processing transcript: {e}")
 
@@ -305,7 +313,11 @@ class SpeechmaticsASRClient:
                     sentence = convert_words_to_sentence(self.cache_words, self.config)
                     start_ms = get_sentence_start_ms(self.cache_words)
                     duration_ms = get_sentence_duration_ms(self.cache_words)
-                    asyncio.create_task(self._send_asr_result(text=sentence, is_final=True, stream_id=self.stream_id))
+                    asyncio.create_task(
+                        self._send_asr_result(
+                            text=sentence, is_final=True, stream_id=self.stream_id
+                        )
+                    )
                     self.cache_words = []
 
             # if the transcript is not empty, send it as a partial transcript
@@ -313,7 +325,11 @@ class SpeechmaticsASRClient:
                 sentence = convert_words_to_sentence(self.cache_words, self.config)
                 start_ms = get_sentence_start_ms(self.cache_words)
                 duration_ms = get_sentence_duration_ms(self.cache_words)
-                asyncio.create_task(self._send_asr_result(text=sentence, is_final=False, stream_id=self.stream_id))
+                asyncio.create_task(
+                    self._send_asr_result(
+                        text=sentence, is_final=False, stream_id=self.stream_id
+                    )
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error processing transcript: {e}")
 
@@ -334,4 +350,3 @@ class SpeechmaticsASRClient:
 
     def _handle_audio_event_ended(self, msg):
         self.ten_env.log_info(f"_handle_audio_event_ended, msg: {msg}")
-
