@@ -1,0 +1,5 @@
+numpy
+opencv-python
+requests
+websocket-client
+livekit
