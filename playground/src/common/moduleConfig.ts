@@ -63,6 +63,11 @@ export const sttModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "transcribe_asr_python",
         type: ModuleRegistry.ModuleType.STT,
         label: "Transcribe STT",
+    },
+    speechmatics_asr_python: {
+        name: "speechmatics_asr_python",
+        type: ModuleRegistry.ModuleType.STT,
+        label: "Speechmatics STT",
     }
 }
 
