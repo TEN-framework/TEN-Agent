@@ -63,6 +63,11 @@ export const sttModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "transcribe_asr_python",
         type: ModuleRegistry.ModuleType.STT,
         label: "Transcribe STT",
+    },
+    speechmatics_asr_python: {
+        name: "speechmatics_asr_python",
+        type: ModuleRegistry.ModuleType.STT,
+        label: "Speechmatics STT",
     }
 }
 
@@ -210,6 +215,12 @@ export const toolModuleRegistry: Record<string, ModuleRegistry.ToolModule> = {
         label: "Computer Tool",
         options: { outputContentText: true }
     },
+    mcp_client_python: {
+        name: "mcp_client_python",
+        type: ModuleRegistry.ModuleType.TOOL,
+        label: "MCP Client Tool",
+        options: {}
+    }
 }
 
 export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
@@ -220,8 +231,8 @@ export const moduleRegistry: Record<string, ModuleRegistry.Module> = {
 }
 
 export const compatibleTools: Record<string, string[]> = {
-    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
-    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
+    openai_chatgpt_python: ["vision_tool_python", "weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python", "mcp_client_python"],
+    openai_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python", "mcp_client_python"],
     gemini_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
     glm_v2v_python: ["weatherapi_tool_python", "bingsearch_tool_python", "openai_image_generate_tool", "computer_tool_python"],
 }

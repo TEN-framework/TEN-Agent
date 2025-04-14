@@ -177,7 +177,7 @@ class OpenAIChatGPT:
         reasoning_mode = None
 
         async for chat_completion in response:
-            # self.ten_env.log_info(f"Chat completion: {chat_completion}")
+            self.ten_env.log_info(f"Chat completion: {chat_completion}")
             if len(chat_completion.choices) == 0:
                 continue
             choice = chat_completion.choices[0]
@@ -221,24 +221,41 @@ class OpenAIChatGPT:
             full_content += content
 
             if delta.tool_calls:
-                for tool_call in delta.tool_calls:
-                    if tool_call.id is not None:
-                        tool_calls_dict[tool_call.index]["id"] = tool_call.id
+                try:
+                    for tool_call in delta.tool_calls:
+                        self.ten_env.log_info(f"Tool call: {tool_call}")
+                        if tool_call.index not in tool_calls_dict:
+                            tool_calls_dict[tool_call.index] = {
+                                "id": None,
+                                "function": {"arguments": "", "name": None},
+                                "type": None,
+                            }
 
-                    # If the function name is not None, set it
-                    if tool_call.function.name is not None:
-                        tool_calls_dict[tool_call.index]["function"][
-                            "name"
-                        ] = tool_call.function.name
+                        if tool_call.id:
+                            tool_calls_dict[tool_call.index]["id"] = tool_call.id
 
-                    # Append the arguments
-                    tool_calls_dict[tool_call.index]["function"][
-                        "arguments"
-                    ] += tool_call.function.arguments
+                        # If the function name is not None, set it
+                        if tool_call.function.name:
+                            tool_calls_dict[tool_call.index]["function"][
+                                "name"
+                            ] = tool_call.function.name
 
-                    # If the type is not None, set it
-                    if tool_call.type is not None:
-                        tool_calls_dict[tool_call.index]["type"] = tool_call.type
+                        # Append the arguments if not None
+                        if tool_call.function.arguments:
+                            tool_calls_dict[tool_call.index]["function"][
+                                "arguments"
+                            ] += tool_call.function.arguments
+
+                        # If the type is not None, set it
+                        if tool_call.type:
+                            tool_calls_dict[tool_call.index]["type"] = tool_call.type
+                except Exception as e:
+                    import traceback
+
+                    traceback.print_exc()
+                    self.ten_env.log_error(
+                        f"Error processing tool call: {e} {tool_calls_dict}"
+                    )
 
         # Convert the dictionary to a list
         tool_calls_list = list(tool_calls_dict.values())

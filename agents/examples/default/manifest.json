@@ -157,6 +157,11 @@
       "type": "extension",
       "name": "neuphonic_tts",
       "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "mcp_client_python",
+      "version": "=0.1.0"
     }
   ]
 }
