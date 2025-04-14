@@ -8,7 +8,6 @@ from ten import (
     register_addon_as_extension,
     TenEnv,
 )
-from .extension import DubverseTTSExtension
 
 
 @register_addon_as_extension("dubverse_tts")

@@ -15,6 +15,7 @@ class DubverseTTSExtension(AsyncTTSBaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.config = None
+        self.client = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)

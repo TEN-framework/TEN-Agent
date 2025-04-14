@@ -7,7 +7,6 @@
 #
 import requests
 from dataclasses import dataclass
-from typing import AsyncIterator
 from ten_ai_base.config import BaseConfig
 
 
