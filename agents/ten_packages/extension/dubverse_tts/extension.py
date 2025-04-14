@@ -28,7 +28,7 @@ class DubverseTTSExtension(AsyncTTSBaseExtension):
 
             if not self.config.api_key:
                 raise ValueError("api_key is required")
-            
+
             self.client = DubverseTTS(self.config)
         except Exception:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
@@ -47,7 +47,7 @@ class DubverseTTSExtension(AsyncTTSBaseExtension):
         skip_bytes = 44
         header_skipped = False
         audio_stream = self.client.text_to_speech_stream(input_text)
-        for chunk in audio_stream.iter_content(chunk_size=1024*8):
+        for chunk in audio_stream.iter_content(chunk_size=1024 * 8):
             if not header_skipped:
                 chunk = chunk[skip_bytes:]
                 header_skipped = True

@@ -19,11 +19,11 @@ class DubverseTTSConfig(BaseConfig):
 
 
 class DubverseTTS:
-    def __init__(self, config: 'DubverseTTSConfig') -> None:
+    def __init__(self, config: DubverseTTSConfig) -> None:
         self.config = config
         self.header = {
             "X-API-KEY": self.config.api_key,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         self.session = requests.Session()
         self.session.headers.update(self.header)
@@ -35,12 +35,10 @@ class DubverseTTS:
             "config": {
                 "use_streaming_response": True,
                 "sample_rate": 16000,
-            }
+            },
         }
 
         response = self.session.post(
-            url=self.config.base_url,
-            json=payload,
-            stream=True
+            url=self.config.base_url, json=payload, stream=True
         )
         return response
