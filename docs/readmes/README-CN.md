@@ -282,6 +282,36 @@ TEN 提供了极好的支持，使实时互动体验在其他 LLM 平台上也�
 
 <br>
 
+如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
+
+```bash
+# 如果用的代理软件没有增强模式的话， 建议手动把所有代理协议都打开
+# export 的有效期为一个 session
+export https_proxy=http://127.0.0.1:<port> 
+export http_proxy=http://127.0.0.1:<port>
+export all_proxy=socks5://127.0.0.1:<port>
+
+# Docker
+export https_proxy=http://host.docker.internal:<port>
+export http_proxy=http://host.docker.internal:<port>
+export all_proxy=http://host.docker.internal:<port>
+
+# tman 镜像设置
+mkdir -p ~/.tman && echo '{
+  "registry": {
+    "default": {
+      "index": "https://registry-ten.rtcdeveloper.cn/api/ten-cloud-store/v1/packages"
+    }
+  }
+}' > ~/.tman/config.json
+
+# GO 代理设置
+export GOPROXY=https://goproxy.cn,direct
+
+# pip 代理设置, 此设置需要先安装 pip
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
 #### 步骤 ⓶ - 在虚拟机中构建代理
 
 ##### 1. 克隆仓库并从 `.env.example` 创建 `.env` 文件
