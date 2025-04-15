@@ -1,0 +1,13 @@
+torch<=2.3
+torchaudio
+modelscope
+huggingface
+huggingface_hub
+funasr>=1.1.3
+asr-decoder
+online-fbank
+onnx
+onnxconverter_common
+pysilero
+numpy
+ipython
