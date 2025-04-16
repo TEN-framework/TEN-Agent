@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { AppDispatch, AppStore, RootState } from "../store";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { Node, AddonDef, Graph } from "@/common/graph";
-import { fetchGraphDetails, initializeGraphData, updateGraph } from "@/store/reducers/global";
+import { initializeGraphData } from "@/store/reducers/global";
 import { moduleRegistry, ModuleRegistry, toolModuleRegistry } from "@/common/moduleConfig";
 // import { Grid } from "antd"
 
@@ -146,16 +146,6 @@ const useGraphs = () => {
     await dispatch(initializeGraphData())
   }
 
-  const fetchDetails = async () => {
-    if (selectedGraphId) {
-      await dispatch(fetchGraphDetails(selectedGraphId))
-    }
-  }
-
-  const update = async (graphId: string, updates: Partial<Graph>) => {
-    await dispatch(updateGraph({ graphId, updates })).unwrap()
-  }
-
   const getGraphNodeAddonByName = useCallback(
     (nodeName: string) => {
       if (!selectedGraph) {
@@ -214,8 +204,6 @@ const useGraphs = () => {
 
   return {
     initialize,
-    fetchDetails,
-    update,
     getGraphNodeAddonByName,
     selectedGraph,
     installedAndRegisteredModulesMap,

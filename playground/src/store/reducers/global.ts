@@ -20,12 +20,14 @@ import {
   apiFetchGraphDetails,
   apiUpdateGraph,
   apiSaveProperty,
+  apiLoadApp,
 } from "@/common/request"
 import {
   setOptionsToLocal,
   setTrulienceSettingsToLocal,
 } from "@/common/storage"
 import { AddonDef, Graph } from "@/common/graph";
+import { useAppSelector } from "@/common/hooks";
 
 export interface InitialState {
   options: IOptions;
@@ -37,7 +39,7 @@ export interface InitialState {
   voiceType: VoiceType;
   chatItems: IChatItem[];
   selectedGraphId: string;
-  graphList: string[];
+  graphList: Graph[];
   graphMap: Record<string, Graph>;
   addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
@@ -154,7 +156,7 @@ export const globalSlice = createSlice({
     setSelectedGraphId: (state, action: PayloadAction<string>) => {
       state.selectedGraphId = action.payload;
     },
-    setGraphList: (state, action: PayloadAction<string[]>) => {
+    setGraphList: (state, action: PayloadAction<Graph[]>) => {
       state.graphList = action.payload;
     },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
@@ -172,7 +174,7 @@ export const globalSlice = createSlice({
     },
     setGraph: (state, action: PayloadAction<Graph>) => {
       let graphMap = JSON.parse(JSON.stringify(state.graphMap));
-      graphMap[action.payload.id] = action.payload;
+      graphMap[action.payload.uuid] = action.payload;
       state.graphMap = graphMap;
     },
     setAddonModules: (state, action: PayloadAction<Record<string, any>[]>) => {
@@ -182,9 +184,9 @@ export const globalSlice = createSlice({
 });
 
 // Initialize graph data
-let initializeGraphData:any;
+let initializeGraphData: any;
 // Fetch graph details
-let fetchGraphDetails:any;
+let fetchGraphDetails: any;
 
 if (isEditModeOn) {
   // only for development, below requests depend on dev-server
@@ -192,19 +194,20 @@ if (isEditModeOn) {
     "global/initializeGraphData",
     async (_, { dispatch }) => {
       await apiReloadPackage();
+      await apiLoadApp();
       const [fetchedGraphs, modules] = await Promise.all([
         apiFetchGraphs(),
         apiFetchInstalledAddons(),
       ]);
-      dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+      dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
       dispatch(setAddonModules(modules));
     }
   );
   fetchGraphDetails = createAsyncThunk(
     "global/fetchGraphDetails",
-    async (graphId: string, { dispatch }) => {
-      const graph = await apiFetchGraphDetails(graphId);
-      dispatch(setGraph(graph));
+    async (graph: Graph, { dispatch }) => {
+      const updatedGraph = await apiFetchGraphDetails(graph);
+      dispatch(setGraph(updatedGraph));
     }
   );
 } else {
@@ -212,7 +215,7 @@ if (isEditModeOn) {
     "global/initializeGraphData",
     async (_, { dispatch }) => {
       const fetchedGraphs = await apiFetchGraphs();
-      dispatch(setGraphList(fetchedGraphs.map((graph) => graph.id)));
+      dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
     }
   );
   fetchGraphDetails = createAsyncThunk(
@@ -224,26 +227,26 @@ if (isEditModeOn) {
   );
 }
 
-// Update a graph
-export const updateGraph = createAsyncThunk(
-  "global/updateGraph",
-  async (
-    { graphId, updates }: { graphId: string; updates: Partial<Graph> },
-    { dispatch, rejectWithValue }
-  ) => {
-    try {
-      await apiUpdateGraph(graphId, updates);
-      await apiSaveProperty();
-      const updatedGraph = await apiFetchGraphDetails(graphId);
-      dispatch(setGraph(updatedGraph));
-      return updatedGraph; // Optionally return the updated graph
-    } catch (error: any) {
-      // Handle error gracefully
-      console.error("Error updating graph:", error);
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
+// // Update a graph
+// export const updateGraph = createAsyncThunk(
+//   "global/updateGraph",
+//   async (
+//     { graph, updates }: { graph: Graph; updates: Partial<Graph> },
+//     { dispatch, rejectWithValue }
+//   ) => {
+//     try {
+//       await apiUpdateGraph(graph.uuid, updates);
+//       await apiSaveProperty();
+//       const updatedGraph = await apiFetchGraphDetails(graphMap[graphId]);
+//       dispatch(setGraph(updatedGraph));
+//       return updatedGraph; // Optionally return the updated graph
+//     } catch (error: any) {
+//       // Handle error gracefully
+//       console.error("Error updating graph:", error);
+//       return rejectWithValue(error.response?.data || error.message);
+//     }
+//   }
+// );
 
 export const {
   reset,

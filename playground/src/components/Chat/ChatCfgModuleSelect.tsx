@@ -28,20 +28,21 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppSelector, useGraphs, } from "@/common/hooks"
+import { useAppSelector, useGraphs } from "@/common/hooks"
 import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol, ProtocolLabel } from "@/common/graph"
 import { toast } from "sonner"
-import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
+import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, Trash2Icon, WrenchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
-import { isLLM } from "@/common"
+import { apiAddConnection, apiAddNode, apiGetDefaultProperty, apiRemoveNode, apiReplaceNodeModule, isLLM } from "@/common"
 import { compatibleTools, ModuleRegistry, ModuleTypeLabels, moduleRegistry, toolModuleRegistry } from "@/common/moduleConfig"
+import { fetchGraphDetails } from "@/store/reducers/global"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
+    const { getGraphNodeAddonByName, selectedGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
 
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: { value: string; label: string }[] }> = {};
@@ -118,9 +119,8 @@ export function RemoteModuleCfgSheet() {
                         onUpdate={async (data, tools) => {
                             try {
                                 // Clone the selectedGraph to avoid mutating the original graph
-                                const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
+                                let selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
                                 const nodes = selectedGraphCopy.nodes;
-                                let needUpdate = false;
                                 let enableRTCVideoSubscribe = false;
 
 
@@ -132,63 +132,69 @@ export function RemoteModuleCfgSheet() {
                                 }
 
                                 // Update graph nodes with selected modules
-                                Object.entries(data).forEach(([key, value]) => {
+                                Object.entries(data).forEach(async ([key, value]) => {
                                     const node = nodes.find((n) => n.name === key);
                                     if (node && value && node.addon !== value) {
                                         node.addon = value;
                                         node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                        needUpdate = true;
+                                        // needUpdate = true;
+                                        const defaultProperties = await apiGetDefaultProperty(value)
+                                        await apiReplaceNodeModule(
+                                            selectedGraphCopy.uuid,
+                                            node.name,
+                                            value,
+                                            defaultProperties.property)
+                                        selectedGraphCopy = await fetchGraphDetails(selectedGraphCopy)
                                     }
                                 });
 
-                                const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
-                                    const module = moduleRegistry[node.addon]
-                                    if (!module) {
-                                        return false
-                                    }
+                                // const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
+                                //     const module = moduleRegistry[node.addon]
+                                //     if (!module) {
+                                //         return false
+                                //     }
 
-                                    if (module.type === ModuleRegistry.ModuleType.LLM) {
-                                        const llmModule = module as ModuleRegistry.LLMModule
-                                        return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
-                                    }
+                                //     if (module.type === ModuleRegistry.ModuleType.LLM) {
+                                //         const llmModule = module as ModuleRegistry.LLMModule
+                                //         return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                //     }
 
-                                    if (module.type === ModuleRegistry.ModuleType.V2V) {
-                                        const v2vModule = module as ModuleRegistry.V2VModule
-                                        return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
-                                    }
+                                //     if (module.type === ModuleRegistry.ModuleType.V2V) {
+                                //         const v2vModule = module as ModuleRegistry.V2VModule
+                                //         return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                //     }
 
-                                    return false
-                                })
+                                //     return false
+                                // })
 
-                                if (reasoningNodesWithVisualSupport) {
-                                    GraphEditor.addOrUpdateConnection(
-                                        selectedGraphCopy,
-                                        `${agoraRtcNode.name}`,
-                                        `${reasoningNodesWithVisualSupport.name}`,
-                                        ProtocolLabel.VIDEO_FRAME,
-                                        "video_frame"
-                                    );
-                                    enableRTCVideoSubscribe = true;
-                                }
+                                // if (reasoningNodesWithVisualSupport) {
+                                //     GraphEditor.addOrUpdateConnection(
+                                //         selectedGraphCopy,
+                                //         `${agoraRtcNode.name}`,
+                                //         `${reasoningNodesWithVisualSupport.name}`,
+                                //         ProtocolLabel.VIDEO_FRAME,
+                                //         "video_frame"
+                                //     );
+                                //     enableRTCVideoSubscribe = true;
+                                // }
 
-                                // Identify removed tools and process them
+                                // // Identify removed tools and process them
                                 const currentToolsInGraph = nodes
                                     .filter((node) => installedAndRegisteredToolModules.map((module) => module.name).includes(node.addon))
-                                    .map((node) => node.addon);
+                                const currentToolsNamesInGraph = currentToolsInGraph.map((tool) => tool.name);
 
-                                const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
-                                removedTools.forEach((tool) => {
-                                    GraphEditor.removeNodeAndConnections(selectedGraphCopy, tool);
-                                    needUpdate = true;
-                                });
+                                const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool.addon));
+                                for (const tool of removedTools) {
+                                    await apiRemoveNode(selectedGraphCopy.uuid, tool.name, tool.addon);
+                                }
 
                                 // Process tool modules
                                 if (tools.length > 0) {
-                                    if (!enableRTCVideoSubscribe) {
-                                        enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
-                                    }
-                                    tools.forEach((tool) => {
-                                        if (!currentToolsInGraph.includes(tool)) {
+                                    // if (!enableRTCVideoSubscribe) {
+                                    //     enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
+                                    // }
+                                    for (const tool of tools) {
+                                        if (!currentToolsNamesInGraph.includes(tool)) {
                                             const toolModule = addonModules.find((module) => module.name === tool);
 
                                             if (!toolModule) {
@@ -196,27 +202,44 @@ export function RemoteModuleCfgSheet() {
                                                 return;
                                             }
 
-                                            const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
-
+                                            // const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
+                                            const defaultProperties = await apiGetDefaultProperty(tool)
+                                            await apiAddNode(
+                                                selectedGraphCopy.uuid,
+                                                tool,
+                                                tool,
+                                                defaultProperties.property,
+                                            )
                                             // Create or update connections
                                             const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                             if (llmNode) {
-                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
+                                                // GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
+                                                await apiAddConnection(
+                                                    selectedGraphCopy.uuid,
+                                                    llmNode.name,
+                                                    GraphConnProtocol.CMD,
+                                                    tool,
+                                                    "tool_call"
+                                                )
+                                                await apiAddConnection(
+                                                    selectedGraphCopy.uuid,
+                                                    tool,
+                                                    GraphConnProtocol.CMD,
+                                                    llmNode.name,
+                                                    "tool_register"
+                                                )
                                             }
                                         }
-                                    });
-                                    needUpdate = true;
+                                    }
                                 }
 
-                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
+                                // GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
 
-                                // Perform the update if changes are detected
-                                if (needUpdate) {
-                                    await updateGraph(selectedGraphCopy.id, selectedGraphCopy);
-                                    toast.success("Modules updated", {
-                                        description: `Graph: ${selectedGraphCopy.id}`,
-                                    });
-                                }
+                                await fetchGraphDetails(selectedGraphCopy)
+                                toast.success("Modules updated", {
+                                    description: `Graph: ${selectedGraphCopy.name}`,
+                                });
+                                // }
                             } catch (e: any) {
                                 toast.error(`Failed to update modules: ${e}`);
                             }

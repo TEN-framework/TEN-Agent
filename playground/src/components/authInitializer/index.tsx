@@ -12,8 +12,9 @@ interface AuthInitializerProps {
 const AuthInitializer = (props: AuthInitializerProps) => {
   const { children } = props;
   const dispatch = useAppDispatch()
-  const {initialize} = useGraphs()
+  const { initialize } = useGraphs()
   const selectedGraphId = useAppSelector((state) => state.global.selectedGraphId)
+  const graphList = useAppSelector((state) => state.global.graphList)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,9 +37,13 @@ const AuthInitializer = (props: AuthInitializerProps) => {
 
   useEffect(() => {
     if (selectedGraphId) {
-      dispatch(fetchGraphDetails(selectedGraphId));
+      const graph = graphList.find((g) => g.uuid === selectedGraphId)
+      if (!graph) {
+        return
+      }
+      dispatch(fetchGraphDetails(graph));
     }
-  }, [selectedGraphId, dispatch]); // Automatically fetch details when `selectedGraphId` changes
+  }, [selectedGraphId, graphList, dispatch]); // Automatically fetch details when `selectedGraphId` changes
 
   return children
 }
