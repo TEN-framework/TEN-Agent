@@ -49,6 +49,5 @@ class ExtensionTesterBasic(ExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
-    tester.add_addon_base_dir(str(Path(__file__).resolve().parent.parent))
-    tester.set_test_mode_single("default_async_extension_python")
+    tester.set_test_mode_single("dubverse_tts")
     tester.run()
