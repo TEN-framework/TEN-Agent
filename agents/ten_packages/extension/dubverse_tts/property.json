@@ -1,0 +1,5 @@
+{
+    "api_key": "${env:DUBVERSE_TTS_KEY}",
+    "speaker_no": 184,
+    "base_url": "https://audio.dubverse.ai/api/tts"
+}

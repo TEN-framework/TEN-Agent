@@ -149,6 +149,11 @@ export const ttsModuleRegistry: Record<string, ModuleRegistry.Module> = {
         name: "openai_tts_python",
         type: ModuleRegistry.ModuleType.TTS,
         label: "OpenAI TTS",
+    },
+    dubverse_tts: {
+        name: "dubverse_tts",
+        type: ModuleRegistry.ModuleType.TTS,
+        label: "Dubverse TTS",
     }
 }
 
