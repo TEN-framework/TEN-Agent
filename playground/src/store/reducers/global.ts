@@ -227,26 +227,26 @@ if (isEditModeOn) {
   );
 }
 
-// // Update a graph
-// export const updateGraph = createAsyncThunk(
-//   "global/updateGraph",
-//   async (
-//     { graph, updates }: { graph: Graph; updates: Partial<Graph> },
-//     { dispatch, rejectWithValue }
-//   ) => {
-//     try {
-//       await apiUpdateGraph(graph.uuid, updates);
-//       await apiSaveProperty();
-//       const updatedGraph = await apiFetchGraphDetails(graphMap[graphId]);
-//       dispatch(setGraph(updatedGraph));
-//       return updatedGraph; // Optionally return the updated graph
-//     } catch (error: any) {
-//       // Handle error gracefully
-//       console.error("Error updating graph:", error);
-//       return rejectWithValue(error.response?.data || error.message);
-//     }
-//   }
-// );
+// Update a graph
+export const updateGraph = createAsyncThunk(
+  "global/updateGraph",
+  async (
+    { graph, updates }: { graph: Graph; updates: Partial<Graph> },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      await apiUpdateGraph(graph.uuid, updates);
+      // await apiSaveProperty();
+      const updatedGraph = await apiFetchGraphDetails(graph);
+      dispatch(setGraph(updatedGraph));
+      return updatedGraph; // Optionally return the updated graph
+    } catch (error: any) {
+      // Handle error gracefully
+      console.error("Error updating graph:", error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 export const {
   reset,

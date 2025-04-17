@@ -42,7 +42,7 @@ import { fetchGraphDetails } from "@/store/reducers/global"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { getGraphNodeAddonByName, selectedGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
+    const { getGraphNodeAddonByName, selectedGraph, updateGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
 
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: { value: string; label: string }[] }> = {};
@@ -119,8 +119,9 @@ export function RemoteModuleCfgSheet() {
                         onUpdate={async (data, tools) => {
                             try {
                                 // Clone the selectedGraph to avoid mutating the original graph
-                                let selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
+                                const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph));
                                 const nodes = selectedGraphCopy.nodes;
+                                let needUpdate = false;
                                 let enableRTCVideoSubscribe = false;
 
 
@@ -132,69 +133,63 @@ export function RemoteModuleCfgSheet() {
                                 }
 
                                 // Update graph nodes with selected modules
-                                Object.entries(data).forEach(async ([key, value]) => {
+                                Object.entries(data).forEach(([key, value]) => {
                                     const node = nodes.find((n) => n.name === key);
                                     if (node && value && node.addon !== value) {
                                         node.addon = value;
                                         node.property = addonModules.find((module) => module.name === value)?.defaultProperty;
-                                        // needUpdate = true;
-                                        const defaultProperties = await apiGetDefaultProperty(value)
-                                        await apiReplaceNodeModule(
-                                            selectedGraphCopy.uuid,
-                                            node.name,
-                                            value,
-                                            defaultProperties.property)
-                                        selectedGraphCopy = await fetchGraphDetails(selectedGraphCopy)
+                                        needUpdate = true;
                                     }
                                 });
 
-                                // const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
-                                //     const module = moduleRegistry[node.addon]
-                                //     if (!module) {
-                                //         return false
-                                //     }
+                                const reasoningNodesWithVisualSupport = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => {
+                                    const module = moduleRegistry[node.addon]
+                                    if (!module) {
+                                        return false
+                                    }
 
-                                //     if (module.type === ModuleRegistry.ModuleType.LLM) {
-                                //         const llmModule = module as ModuleRegistry.LLMModule
-                                //         return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
-                                //     }
+                                    if (module.type === ModuleRegistry.ModuleType.LLM) {
+                                        const llmModule = module as ModuleRegistry.LLMModule
+                                        return isLLM(node.name) && llmModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
 
-                                //     if (module.type === ModuleRegistry.ModuleType.V2V) {
-                                //         const v2vModule = module as ModuleRegistry.V2VModule
-                                //         return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
-                                //     }
+                                    if (module.type === ModuleRegistry.ModuleType.V2V) {
+                                        const v2vModule = module as ModuleRegistry.V2VModule
+                                        return isLLM(node.name) && v2vModule.options.inputModalities.includes(ModuleRegistry.Modalities.Video)
+                                    }
 
-                                //     return false
-                                // })
+                                    return false
+                                })
 
-                                // if (reasoningNodesWithVisualSupport) {
-                                //     GraphEditor.addOrUpdateConnection(
-                                //         selectedGraphCopy,
-                                //         `${agoraRtcNode.name}`,
-                                //         `${reasoningNodesWithVisualSupport.name}`,
-                                //         ProtocolLabel.VIDEO_FRAME,
-                                //         "video_frame"
-                                //     );
-                                //     enableRTCVideoSubscribe = true;
-                                // }
+                                if (reasoningNodesWithVisualSupport) {
+                                    GraphEditor.addOrUpdateConnection(
+                                        selectedGraphCopy,
+                                        `${agoraRtcNode.name}`,
+                                        `${reasoningNodesWithVisualSupport.name}`,
+                                        ProtocolLabel.VIDEO_FRAME,
+                                        "video_frame"
+                                    );
+                                    enableRTCVideoSubscribe = true;
+                                }
 
-                                // // Identify removed tools and process them
+                                // Identify removed tools and process them
                                 const currentToolsInGraph = nodes
                                     .filter((node) => installedAndRegisteredToolModules.map((module) => module.name).includes(node.addon))
-                                const currentToolsNamesInGraph = currentToolsInGraph.map((tool) => tool.name);
+                                    .map((node) => node.addon);
 
-                                const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool.addon));
-                                for (const tool of removedTools) {
-                                    await apiRemoveNode(selectedGraphCopy.uuid, tool.name, tool.addon);
-                                }
+                                const removedTools = currentToolsInGraph.filter((tool) => !tools.includes(tool));
+                                removedTools.forEach((tool) => {
+                                    GraphEditor.removeNodeAndConnections(selectedGraphCopy, tool);
+                                    needUpdate = true;
+                                });
 
                                 // Process tool modules
                                 if (tools.length > 0) {
-                                    // if (!enableRTCVideoSubscribe) {
-                                    //     enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
-                                    // }
-                                    for (const tool of tools) {
-                                        if (!currentToolsNamesInGraph.includes(tool)) {
+                                    if (!enableRTCVideoSubscribe) {
+                                        enableRTCVideoSubscribe = tools.some((tool) => tool.includes("vision"))
+                                    }
+                                    tools.forEach((tool) => {
+                                        if (!currentToolsInGraph.includes(tool)) {
                                             const toolModule = addonModules.find((module) => module.name === tool);
 
                                             if (!toolModule) {
@@ -202,44 +197,27 @@ export function RemoteModuleCfgSheet() {
                                                 return;
                                             }
 
-                                            // const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
-                                            const defaultProperties = await apiGetDefaultProperty(tool)
-                                            await apiAddNode(
-                                                selectedGraphCopy.uuid,
-                                                tool,
-                                                tool,
-                                                defaultProperties.property,
-                                            )
+                                            const toolNode = GraphEditor.addNode(selectedGraphCopy, tool, tool, "default", toolModule.defaultProperty)
+
                                             // Create or update connections
                                             const llmNode = GraphEditor.findNodeByPredicate(selectedGraphCopy, (node) => isLLM(node.name));
                                             if (llmNode) {
-                                                // GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
-                                                await apiAddConnection(
-                                                    selectedGraphCopy.uuid,
-                                                    llmNode.name,
-                                                    GraphConnProtocol.CMD,
-                                                    tool,
-                                                    "tool_call"
-                                                )
-                                                await apiAddConnection(
-                                                    selectedGraphCopy.uuid,
-                                                    tool,
-                                                    GraphConnProtocol.CMD,
-                                                    llmNode.name,
-                                                    "tool_register"
-                                                )
+                                                GraphEditor.linkTool(selectedGraphCopy, llmNode, toolNode, toolModuleRegistry[tool]);
                                             }
                                         }
-                                    }
+                                    });
+                                    needUpdate = true;
                                 }
 
-                                // GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
+                                GraphEditor.enableRTCVideoSubscribe(selectedGraphCopy, enableRTCVideoSubscribe);
 
-                                await fetchGraphDetails(selectedGraphCopy)
-                                toast.success("Modules updated", {
-                                    description: `Graph: ${selectedGraphCopy.name}`,
-                                });
-                                // }
+                                // Perform the update if changes are detected
+                                if (needUpdate) {
+                                    await updateGraph(selectedGraph, selectedGraphCopy);
+                                    toast.success("Modules updated", {
+                                        description: `Graph: ${selectedGraphCopy.uuid}`,
+                                    });
+                                }
                             } catch (e: any) {
                                 toast.error(`Failed to update modules: ${e}`);
                             }

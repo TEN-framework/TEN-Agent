@@ -149,6 +149,7 @@ export const apiFetchGraphNodes = async (graphId: string): Promise<Node[]> => {
     addon: node.addon,
     extensionGroup: node.extension_group,
     app: node.app,
+    type: "extension",
     property: node.property || {},
   }))
 }
@@ -318,6 +319,7 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
     payload.nodes = nodes.map((node) => ({
       name: node.name,
       addon: node.addon,
+      type: node.type,
       extension_group: node.extensionGroup,
       app: node.app,
       property: node.property,
@@ -408,7 +410,12 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
     }))
   }
 
-  let resp: any = await axios.put(`/api/dev/v1/graphs/${graphId}`, payload)
+  // let resp: any = await axios.put(`/api/dev/v1/graphs/${graphId}`, payload)
+  let resp: any = await axios.post(`/api/dev/v1/graphs/update`, {
+    graph_id: graphId,
+    nodes: payload.nodes,
+    connections: payload.connections,
+  })
   resp = (resp.data) || {}
   return resp
 }

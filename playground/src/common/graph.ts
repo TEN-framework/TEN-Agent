@@ -64,6 +64,7 @@ type Node = {
   addon: string
   extensionGroup: string
   app: string
+  type: string
   property?: Property
 }
 type Command = {
