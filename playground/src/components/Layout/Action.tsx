@@ -36,6 +36,7 @@ export default function Action(props: { className?: string }) {
   const selectedGraphId = useAppSelector(
     (state) => state.global.selectedGraphId
   );
+  const graphList = useAppSelector((state) => state.global.graphList);
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab
   );
@@ -65,10 +66,19 @@ export default function Action(props: { className?: string }) {
       toast.success("Agent disconnected");
       stopPing();
     } else {
+      const selectedGraph = graphList.find(
+        (graph) => graph.uuid === selectedGraphId
+      );
+      if (!selectedGraph) {
+        toast.error("Please select a graph first");
+        setLoading(false);
+        return;
+      }
+
       const res = await apiStartService({
         channel,
         userId,
-        graphName: selectedGraphId,
+        graphName: selectedGraph.name,
         language,
         voiceType,
       });
