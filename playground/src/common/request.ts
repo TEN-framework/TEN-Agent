@@ -2,6 +2,7 @@ import { genUUID } from "./utils"
 import { Language } from "@/types"
 import axios from "axios"
 import { AddonDef, Connection, Graph, GraphEditor, Node, ProtocolLabel } from "./graph"
+import { isEditModeOn } from "./constant"
 
 interface StartRequestConfig {
   channel: string
@@ -122,14 +123,25 @@ export const apiCheckCompatibleMessages = async (payload: {
 }
 
 export const apiFetchGraphs = async (): Promise<Graph[]> => {
-  let resp: any = await axios.post(`/api/dev/v1/graphs`, {})
-  return resp.data.data.map((graph: any) => ({
-    name: graph.name,
-    uuid: graph.uuid,
-    autoStart: graph.auto_start,
-    nodes: [],
-    connections: [],
-  }))
+  if (isEditModeOn) {
+    let resp: any = await axios.post(`/api/dev/v1/graphs`, {})
+    return resp.data.data.map((graph: any) => ({
+      name: graph.name,
+      uuid: graph.uuid,
+      autoStart: graph.auto_start,
+      nodes: [],
+      connections: [],
+    }))
+  } else {
+    let resp: any = await axios.get(`/api/agents/graphs`)
+    return resp.data.data.map((graph: any) => ({
+      name: graph.name,
+      uuid: graph.uuid,
+      autoStart: graph.auto_start,
+      nodes: [],
+      connections: [],
+    }))
+  }
 }
 
 export const apiLoadApp = async (): Promise<any> => {

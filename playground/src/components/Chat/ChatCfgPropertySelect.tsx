@@ -51,7 +51,7 @@ import { AddonDef, Graph } from "@/common/graph"
 
 export function RemotePropertyCfgSheet() {
   const dispatch = useAppDispatch()
-  const { selectedGraph, update: updateGraph } = useGraphs()
+  const { selectedGraph, updateGraph } = useGraphs()
   const graphName = useAppSelector((state) => state.global.selectedGraphId)
 
   const [selectedExtension, setSelectedExtension] = React.useState<string>("")
@@ -125,7 +125,7 @@ export function RemotePropertyCfgSheet() {
                 }
               }
               if (needUpdate) {
-                await updateGraph(selectedGraphCopy.id, selectedGraphCopy)
+                await updateGraph(selectedGraph, selectedGraphCopy)
                 toast.success("Properties updated", {
                   description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
                 })

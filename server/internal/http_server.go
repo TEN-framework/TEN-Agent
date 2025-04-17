@@ -148,6 +148,7 @@ func (s *HttpServer) handleGraphs(c *gin.Context) {
 		if ok {
 			graphs = append(graphs, map[string]interface{}{
 				"name":       graphMap["name"],
+				"uuid":       graphMap["name"],
 				"auto_start": graphMap["auto_start"],
 			})
 		}
