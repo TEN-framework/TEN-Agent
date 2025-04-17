@@ -18,7 +18,7 @@ services:
     networks:
       - ten_agent_network
   ten_agent_playground:
-    image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-177-g95b98da
+    image: ghcr.io/ten-framework/ten_agent_playground:0.8.0-215-g96eed27
     container_name: ten_agent_playground
     restart: always
     ports:
