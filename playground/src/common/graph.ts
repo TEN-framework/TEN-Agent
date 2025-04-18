@@ -113,7 +113,8 @@ type Connection = {
 }
 
 type Graph = {
-  id: string
+  uuid: string
+  name: string
   autoStart: boolean
   nodes: Node[]
   connections: Connection[]
@@ -148,7 +149,7 @@ class GraphEditor {
   ): Node {
     if (graph.nodes.some((node) => node.name === name)) {
       throw new Error(
-        `Node with name "${name}" already exists in graph "${graph.id}".`,
+        `Node with name "${name}" already exists in graph "${graph.name}".`,
       )
     }
 
@@ -170,7 +171,7 @@ class GraphEditor {
   static removeNode(graph: Graph, nodeName: string): Node {
     const nodeIndex = graph.nodes.findIndex((node) => node.name === nodeName)
     if (nodeIndex === -1) {
-      throw new Error(`Node "${nodeName}" not found in graph "${graph.id}".`)
+      throw new Error(`Node "${nodeName}" not found in graph "${graph.name}".`)
     }
     const node = graph.nodes.splice(nodeIndex, 1)[0]
     return node;
@@ -186,7 +187,7 @@ class GraphEditor {
   ): void {
     const node = graph.nodes.find((node) => node.name === nodeName)
     if (!node) {
-      throw new Error(`Node "${nodeName}" not found in graph "${graph.id}".`)
+      throw new Error(`Node "${nodeName}" not found in graph "${graph.name}".`)
     }
 
     // Update properties (remove property if value is empty)

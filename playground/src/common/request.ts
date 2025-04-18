@@ -1,7 +1,8 @@
 import { genUUID } from "./utils"
 import { Language } from "@/types"
 import axios from "axios"
-import { AddonDef, Connection, Graph, Node } from "./graph"
+import { AddonDef, Connection, Graph, GraphEditor, Node, ProtocolLabel } from "./graph"
+import { isEditModeOn } from "./constant"
 
 interface StartRequestConfig {
   channel: string
@@ -100,7 +101,10 @@ export const apiPing = async (channel: string) => {
 }
 
 export const apiFetchAddonsExtensions = async (): Promise<AddonDef.Module[]> => {
-  let resp: any = await axios.get(`/api/dev/v1/addons/extensions`)
+  // let resp: any = await axios.get(`/api/dev/v1/addons/extensions`)
+  let resp: any = await axios.post(`/api/dev/v1/apps/addons`, {
+    base_dir: "/app/agents"
+  })
   return resp.data.data
 }
 
@@ -119,17 +123,39 @@ export const apiCheckCompatibleMessages = async (payload: {
 }
 
 export const apiFetchGraphs = async (): Promise<Graph[]> => {
-  let resp: any = await axios.get(`/api/agents/graphs`)
-  return resp.data.data.map((graph: any) => ({
-    id: graph.name,
-    autoStart: graph.auto_start,
-    nodes: [],
-    connections: [],
-  }))
+  if (isEditModeOn) {
+    let resp: any = await axios.post(`/api/dev/v1/graphs`, {})
+    return resp.data.data.map((graph: any) => ({
+      name: graph.name,
+      uuid: graph.uuid,
+      autoStart: graph.auto_start,
+      nodes: [],
+      connections: [],
+    }))
+  } else {
+    let resp: any = await axios.get(`/api/agents/graphs`)
+    return resp.data.data.map((graph: any) => ({
+      name: graph.name,
+      uuid: graph.uuid,
+      autoStart: graph.auto_start,
+      nodes: [],
+      connections: [],
+    }))
+  }
+}
+
+export const apiLoadApp = async (): Promise<any> => {
+  let resp: any = await axios.post(`/api/dev/v1/apps/load`, {
+    base_dir: "/app/agents",
+  })
+  return resp.data.data
 }
 
 export const apiFetchGraphNodes = async (graphId: string): Promise<Node[]> => {
-  let resp: any = await axios.get(`/api/dev/v1/graphs/${graphId}/nodes`)
+  // let resp: any = await axios.get(`/api/dev/v1/graphs/${graphId}/nodes`)
+  let resp: any = await axios.post(`/api/dev/v1/graphs/nodes`, {
+    graph_id: graphId,
+  })
   return resp.data.data.map((node: any) => ({
     name: node.name,
     addon: node.addon,
@@ -140,7 +166,10 @@ export const apiFetchGraphNodes = async (graphId: string): Promise<Node[]> => {
 }
 
 export const apiFetchGraphConnections = async (graphId: string): Promise<Connection[]> => {
-  let resp: any = await axios.get(`/api/dev/v1/graphs/${graphId}/connections`)
+  // let resp: any = await axios.get(`/api/dev/v1/graphs/${graphId}/connections`)
+  let resp: any = await axios.post(`/api/dev/v1/graphs/connections`, {
+    graph_id: graphId,
+  })
   return resp.data.data.map(
     (connection: any) => ({
       app: connection.app,
@@ -228,6 +257,65 @@ export const apiFetchGraphConnections = async (graphId: string): Promise<Connect
       })),
     }),
   )
+}
+
+export const apiGetDefaultProperty = async (module: string): Promise<any> => {
+  let resp: any = await axios.post(`/api/dev/v1/extensions/property/get`, {
+    addon_name: module,
+    app_base_dir: "/app/agents",
+  })
+  return resp.data.data
+}
+
+export const apiAddNode = async (graphId: string, name: string, module: string, properties: Record<string, any>) => {
+  let resp: any = await axios.post(`/api/dev/v1/graphs/nodes/add`, {
+    graph_id: graphId,
+    name,
+    addon: module,
+    property: properties
+  })
+  return resp.data.data
+}
+
+export const apiReplaceNodeModule = async (graphId: string, name: string, module: string, properties: Record<string, any>) => {
+  let resp: any = await axios.post(`/api/dev/v1/graphs/nodes/replace`, {
+    graph_id: graphId,
+    name,
+    addon: module,
+    property: properties
+  })
+  return resp.data.data
+}
+
+export const apiRemoveNode = async (graphId: string, name: string, module: string) => {
+  let resp: any = await axios.post(`/api/dev/v1/graphs/nodes/delete`, {
+    graph_id: graphId,
+    name,
+    addon: module,
+  })
+  return resp.data.data
+}
+
+export const apiAddConnection = async (graphId: string, srcExtension: string, msgType: ProtocolLabel, msgName: string, dest_extension: string) => {
+  let resp: any = await axios.post(`/api/dev/v1/graphs/connections/add`, {
+    graph_id: graphId,
+    src_extension: srcExtension,
+    msg_type: msgType,
+    msg_name: msgName,
+    dest_extension: dest_extension
+  })
+  return resp.data.data
+}
+
+export const apiRemoveConnection = async (graphId: string, srcExtension: string, msgType: ProtocolLabel, msgName: string, dest_extension: string) => {
+  let resp: any = await axios.post(`/api/dev/v1/graphs/connections/delete`, {
+    graph_id: graphId,
+    src_extension: srcExtension,
+    msg_type: msgType,
+    msg_name: msgName,
+    dest_extension: dest_extension
+  })
+  return resp.data.data
 }
 
 export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) => {
@@ -332,7 +420,12 @@ export const apiUpdateGraph = async (graphId: string, updates: Partial<Graph>) =
     }))
   }
 
-  let resp: any = await axios.put(`/api/dev/v1/graphs/${graphId}`, payload)
+  // let resp: any = await axios.put(`/api/dev/v1/graphs/${graphId}`, payload)
+  let resp: any = await axios.post(`/api/dev/v1/graphs/update`, {
+    graph_id: graphId,
+    nodes: payload.nodes,
+    connections: payload.connections,
+  })
   resp = (resp.data) || {}
   return resp
 }
@@ -356,7 +449,9 @@ export const apiSaveProperty = async () => {
 }
 
 export const apiReloadPackage = async () => {
-  let resp: any = await axios.post(`/api/dev/v1/packages/reload`)
+  let resp: any = await axios.post(`/api/dev/v1/apps/reload`, {
+    base_dir: "/app/agents",
+  })
   resp = (resp.data) || {}
   return resp
 }
@@ -374,14 +469,15 @@ export const apiFetchInstalledAddons = async (): Promise<AddonDef.Module[]> => {
   }))
 }
 
-export const apiFetchGraphDetails = async (graphId: string): Promise<Graph> => {
+export const apiFetchGraphDetails = async (graph: Graph): Promise<Graph> => {
   const [nodes, connections] = await Promise.all([
-    apiFetchGraphNodes(graphId),
-    apiFetchGraphConnections(graphId),
+    apiFetchGraphNodes(graph.uuid),
+    apiFetchGraphConnections(graph.uuid),
   ])
   return {
-    id: graphId,
-    autoStart: true,
+    uuid: graph.uuid,
+    name: graph.name,
+    autoStart: graph.autoStart,
     nodes,
     connections,
   }

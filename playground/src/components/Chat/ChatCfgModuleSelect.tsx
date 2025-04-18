@@ -28,20 +28,21 @@ import {
 } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAppSelector, useGraphs, } from "@/common/hooks"
+import { useAppSelector, useGraphs } from "@/common/hooks"
 import { AddonDef, Graph, Destination, GraphEditor, ProtocolLabel as GraphConnProtocol, ProtocolLabel } from "@/common/graph"
 import { toast } from "sonner"
-import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, SettingsIcon, Trash2Icon, WrenchIcon } from "lucide-react"
+import { BoxesIcon, ChevronRightIcon, LoaderCircleIcon, Trash2Icon, WrenchIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../ui/dropdown"
-import { isLLM } from "@/common"
+import { apiAddConnection, apiAddNode, apiGetDefaultProperty, apiRemoveNode, apiReplaceNodeModule, isLLM } from "@/common"
 import { compatibleTools, ModuleRegistry, ModuleTypeLabels, moduleRegistry, toolModuleRegistry } from "@/common/moduleConfig"
+import { fetchGraphDetails } from "@/store/reducers/global"
 
 export function RemoteModuleCfgSheet() {
     const addonModules = useAppSelector((state) => state.global.addonModules);
-    const { getGraphNodeAddonByName, selectedGraph, update: updateGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
+    const { getGraphNodeAddonByName, selectedGraph, updateGraph, installedAndRegisteredModulesMap, installedAndRegisteredToolModules } = useGraphs();
 
     const metadata = React.useMemo(() => {
         const dynamicMetadata: Record<string, { type: string; options: { value: string; label: string }[] }> = {};
@@ -212,9 +213,9 @@ export function RemoteModuleCfgSheet() {
 
                                 // Perform the update if changes are detected
                                 if (needUpdate) {
-                                    await updateGraph(selectedGraphCopy.id, selectedGraphCopy);
+                                    await updateGraph(selectedGraph, selectedGraphCopy);
                                     toast.success("Modules updated", {
-                                        description: `Graph: ${selectedGraphCopy.id}`,
+                                        description: `Graph: ${selectedGraphCopy.uuid}`,
                                     });
                                 }
                             } catch (e: any) {
