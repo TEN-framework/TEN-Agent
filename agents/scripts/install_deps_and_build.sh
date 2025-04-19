@@ -133,6 +133,10 @@ main() {
   echo "install dependencies..."
   tman install
 
+  # workaround for python3.12
+  cp ${APP_HOME}/bin/libpython_addon_loader.so ${APP_HOME}/agents/ten_packages/addon_loader/python_addon_loader/lib/
+  cp ${APP_HOME}/bin/libten_runtime_python.so ${APP_HOME}/agents/ten_packages/system/ten_runtime_python/lib/
+
   # build extensions and app
   echo "build_cxx_extensions..."
   build_cxx_extensions $APP_HOME
