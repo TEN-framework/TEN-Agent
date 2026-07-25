@@ -1,0 +1,11 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "base_url": "https://api.speechify.ai",
+        "key": "${env:SPEECHIFY_TTS_KEY}",
+        "model": "simba-3.2",
+        "voice_id": "george",
+        "sample_rate": 24000
+    }
+}
