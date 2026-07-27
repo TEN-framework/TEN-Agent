@@ -50,7 +50,7 @@ Configure the extension in `property.json`:
     "base_url": "https://api.speechify.ai",
     "key": "your_speechify_api_key",
     "model": "simba-3.2",
-    "voice_id": "george",
+    "voice_id": "geffen_32",
     "sample_rate": 24000
   }
 }

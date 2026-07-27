@@ -4,6 +4,6 @@
     "params": {
         "sample_rate": 16000,
         "key": "${env:SPEECHIFY_TTS_KEY}",
-        "voice_id": "george"
+        "voice_id": "geffen_32"
     }
 }
