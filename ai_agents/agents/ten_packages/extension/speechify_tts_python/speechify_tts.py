@@ -132,13 +132,48 @@ class SpeechifyTTSSynthesizer:
                 error_text = response.text
                 raise ApiError(status_code=response.status_code, body=error_text)
             
-            # Parse JSON response
-            data = response.json()
-            audio_data = data.get("audio_data", "")
+            # Parse SSE stream
+            text_data = response.text
+            audio_chunks = []
+            all_speech_marks = []
             
-            # Decode base64 audio and stream it in chunks
+            # Parse SSE format: "event: <type>\ndata: <json>\n\n"
+            events = text_data.split('\n\n')
+            for event in events:
+                if not event.strip():
+                    continue
+                
+                lines = event.split('\n')
+                event_type = ''
+                data_line = ''
+                
+                for line in lines:
+                    if line.startswith('event: '):
+                        event_type = line[7:].strip()
+                    elif line.startswith('data: '):
+                        data_line = line[6:].strip()
+                
+                if not data_line:
+                    continue
+                
+                try:
+                    parsed = json.loads(data_line)
+                    
+                    if event_type == 'speech.chunk':
+                        if parsed.get('audio'):
+                            audio_chunks.append(parsed['audio'])
+                        if parsed.get('speech_marks') and isinstance(parsed['speech_marks'], list):
+                            all_speech_marks.extend(parsed['speech_marks'])
+                except json.JSONDecodeError:
+                    # Skip malformed JSON
+                    pass
+            
+            # Concatenate base64 audio chunks
+            full_audio_base64 = ''.join(audio_chunks)
+            
+            # Decode base64 audio
             import base64
-            audio_bytes = base64.b64decode(audio_data)
+            audio_bytes = base64.b64decode(full_audio_base64)
             
             # Stream audio in chunks
             chunk_size = 4096
@@ -153,6 +188,13 @@ class SpeechifyTTSSynthesizer:
                 if self.response_msgs is not None:
                     await self.response_msgs.put((chunk, False, "", ttfb_ms))
 
+            # Send speech marks as the final message
+            speech_marks_text = ""
+            if all_speech_marks:
+                # Format speech marks for TEN Framework
+                # TEN expects word-level timing info in the final message
+                speech_marks_text = json.dumps(all_speech_marks)
+            
             if self.response_msgs is not None:
                 await self.response_msgs.put((None, True, text, None))
 
