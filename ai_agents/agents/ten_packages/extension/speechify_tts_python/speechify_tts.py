@@ -32,12 +32,12 @@ VENDOR = "speechify"
 
 class SpeechifyTTSSynthesizer:
     """
-    Speechify's public API (`POST /v1/audio/stream`) is a one-shot
-    request/response HTTP stream, unlike ElevenLabs' persistent bidirectional
-    websocket. A synthesizer instance therefore represents a single TTS
-    request: text deltas are buffered as they arrive and only sent once
-    `text_input_end` closes the request, at which point the streamed audio
-    chunks are pushed onto `response_msgs` as they arrive over the wire.
+    Speechify's public API (`POST /v1/audio/stream/with-timestamps`) is a
+    one-shot request/response HTTP endpoint that returns audio with word-level
+    timestamps, unlike ElevenLabs' persistent bidirectional websocket. A
+    synthesizer instance therefore represents a single TTS request: text deltas
+    are buffered as they arrive and only sent once `text_input_end` closes the
+    request, at which point the audio and speech marks are returned.
     """
 
     def __init__(
@@ -97,16 +97,53 @@ class SpeechifyTTSSynthesizer:
                     "text_normalization"
                 )
 
-            stream = self.sdk_client.audio.stream(
-                input=text,
-                voice_id=self.config.params.get("voice_id"),
-                model=self.config.params.get("model", "simba-3.2"),
-                language=self.config.params.get("language"),
-                output_format=f"pcm_{self.config.sample_rate}",
-                options=options or None,
+            # Direct HTTP call to /v1/audio/stream/with-timestamps for word-level timing
+            base_url = self.config.params.get("base_url") or "https://api.sws.speechify.com"
+            url = f"{base_url}/v1/audio/stream/with-timestamps"
+            
+            request_body = {
+                "input": text,
+                "voice_id": self.config.params.get("voice_id"),
+                "model": self.config.params.get("model", "simba-3.2"),
+                "output_format": f"pcm_{self.config.sample_rate}",
+            }
+            
+            if self.config.params.get("language"):
+                request_body["language"] = self.config.params.get("language")
+            
+            if options:
+                request_body["options"] = options
+            
+            headers = {
+                "Authorization": f"Bearer {self.config.params.get('key')}",
+                "Content-Type": "application/json",
+                CALLER_HEADER: CALLER_VALUE,
+            }
+            
+            # Get the httpx client from parent
+            import json
+            response = await self.sdk_client._client.post(
+                url,
+                headers=headers,
+                content=json.dumps(request_body),
             )
-
-            async for chunk in stream:
+            
+            if response.status_code != 200:
+                error_text = response.text
+                raise ApiError(status_code=response.status_code, body=error_text)
+            
+            # Parse JSON response
+            data = response.json()
+            audio_data = data.get("audio_data", "")
+            
+            # Decode base64 audio and stream it in chunks
+            import base64
+            audio_bytes = base64.b64decode(audio_data)
+            
+            # Stream audio in chunks
+            chunk_size = 4096
+            for i in range(0, len(audio_bytes), chunk_size):
+                chunk = audio_bytes[i:i + chunk_size]
                 if self._closing:
                     return
                 ttfb_ms = None
