@@ -20,7 +20,11 @@ export default function MessageList(props: { className?: string }) {
       className={cn("grow space-y-2 overflow-y-auto p-4", className)}
     >
       {chatItems.map((item, _index) => {
-        return <MessageItem data={item} key={item.time} />;
+        // `time` alone collides: addChatItem dedupes per userId, so a user and
+        // an agent transcript stamped in the same millisecond both get pushed.
+        // Speech-to-speech makes that routine, since the final input
+        // transcription lands as the first output transcript delta arrives.
+        return <MessageItem data={item} key={`${item.userId}-${item.time}`} />;
       })}
     </div>
   );
