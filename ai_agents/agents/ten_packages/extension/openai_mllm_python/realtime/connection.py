@@ -76,8 +76,9 @@ class RealtimeApiConnection:
         if self.vendor == VENDOR_AZURE:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
+            # GA realtime API: no OpenAI-Beta header (the beta shape is
+            # retired and rejects connections that request it).
             auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            headers = {"OpenAI-Beta": "realtime=v1"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
@@ -90,6 +91,13 @@ class RealtimeApiConnection:
         base64_audio_data = base64.b64encode(audio_data).decode("utf-8")
         message = InputAudioBufferAppend(audio=base64_audio_data)
         await self.send_request(message)
+
+    async def send_json(self, event: dict):
+        assert self.websocket is not None
+        message_str = json.dumps(event)
+        if self.verbose:
+            self.ten_env.log_info(f"-> {smart_str(message_str)}")
+        await self.websocket.send_str(message_str)
 
     async def send_request(self, message: ClientToServerMessage):
         assert self.websocket is not None

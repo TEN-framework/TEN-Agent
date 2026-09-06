@@ -57,14 +57,9 @@ from .realtime.struct import (
     InputAudioBufferSpeechStopped,
     ResponseFunctionCallArgumentsDone,
     ErrorMessage,
-    SessionUpdate,
-    SessionUpdateParams,
-    InputAudioTranscription,
     ContentType,
     FunctionCallOutputItemParam,
     ResponseCreate,
-    ServerVADUpdateParams,
-    SemanticVADUpdateParams,
 )
 
 
@@ -78,6 +73,10 @@ class OpenAIRealtimeConfig(BaseModel):
     prompt: str = ""
     temperature: float = 0.5
     max_tokens: int = 1024
+    # Spoken opening line, sent once per join as a user message plus a
+    # response request. Empty (default) disables it; typically supplied
+    # per join by the platform rather than hardcoded in the graph.
+    greeting: str = ""
     voice: str = "alloy"
     server_vad: bool = True
     audio_out: bool = True
@@ -106,6 +105,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         self.connected: bool = False
 
         self.request_transcript: str = ""
+        self._greeting_sent: bool = False
         self.response_transcript: str = ""
         self.available_tools: list[LLMToolMetadata] = []
         self.loop: asyncio.AbstractEventLoop = None
@@ -169,6 +169,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             self.connected = True
                             self.openai_session_id = message.session.id
                             self.openai_session = message.session
+                            self._greeting_sent = False
                             await self._update_session()
                             await self._resume_context(self.message_context)
                         case SessionUpdated():
@@ -178,6 +179,17 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             await self.send_server_session_ready(
                                 MLLMServerSessionReady()
                             )
+                            if self.config.greeting and not self._greeting_sent:
+                                # Session config is applied; speak the
+                                # configured opening line once per join.
+                                self._greeting_sent = True
+                                await self.send_client_message_item(
+                                    MLLMClientMessageItem(
+                                        role="user",
+                                        content=self.config.greeting,
+                                    )
+                                )
+                                await self.send_client_create_response()
                         case ItemInputAudioTranscriptionDelta():
                             self.ten_env.log_debug(
                                 f"On request transcript delta {message.item_id} {message.content_index}"
@@ -587,36 +599,45 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
             tools = [tool_dict(t) for t in self.available_tools]
         prompt = self.config.prompt
 
+        # GA realtime session shape: type marker, output_modalities, and
+        # nested audio.input/audio.output blocks (the flat beta fields
+        # are rejected since the beta shape was retired).
         if self.config.vad_type == "server_vad":
-            vad_params = ServerVADUpdateParams(
-                threshold=self.config.vad_threshold,
-                prefix_padding_ms=self.config.vad_prefix_padding_ms,
-                silence_duration_ms=self.config.vad_silence_duration_ms,
-            )
+            vad: dict = {
+                "type": "server_vad",
+                "threshold": self.config.vad_threshold,
+                "prefix_padding_ms": self.config.vad_prefix_padding_ms,
+                "silence_duration_ms": self.config.vad_silence_duration_ms,
+            }
         else:  # semantic vad
-            vad_params = SemanticVADUpdateParams(
-                eagerness=self.config.vad_eagerness,
-            )
-        su = SessionUpdate(
-            session=SessionUpdateParams(
-                instructions=prompt,
-                model=self.config.model,
-                tool_choice="auto" if self.available_tools else "none",
-                tools=tools,
-                turn_detection=vad_params,
-            )
-        )
-        if self.config.audio_out:
-            su.session.voice = self.config.voice
-        else:
-            su.session.modalities = ["text"]
+            vad = {
+                "type": "semantic_vad",
+                "eagerness": self.config.vad_eagerness,
+            }
+        session: dict = {
+            "type": "realtime",
+            "instructions": prompt,
+            "tool_choice": "auto" if self.available_tools else "none",
+            "tools": tools,
+            "output_modalities": (
+                ["audio"] if self.config.audio_out else ["text"]
+            ),
+            "audio": {
+                "input": {
+                    "transcription": {
+                        "model": "gpt-4o-mini-transcribe",
+                        "language": self.config.language,
+                    },
+                    "turn_detection": vad,
+                },
+                "output": {"voice": self.config.voice},
+            },
+        }
+        self.ten_env.log_info(f"update session {session}")
 
-        su.session.input_audio_transcription = InputAudioTranscription(
-            language=self.config.language,
+        await self.conn.send_json(
+            {"type": "session.update", "session": session}
         )
-        self.ten_env.log_info(f"update session {su}")
-
-        await self.conn.send_request(su)
 
     async def _handle_tool_call(
         self, tool_call_id: str, name: str, arguments: str

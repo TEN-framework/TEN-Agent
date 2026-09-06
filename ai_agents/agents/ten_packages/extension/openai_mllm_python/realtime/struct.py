@@ -900,6 +900,24 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     elif data["type"] == EventType.ITEM_INPUT_AUDIO_TRANSCRIPTION_DELTA:
         return from_dict(ItemInputAudioTranscriptionDelta, data)
 
+    # GA realtime API event names (the beta shape was retired); map the
+    # renamed events onto the existing message classes.
+    ga_aliases = {
+        "response.output_audio.delta": ResponseAudioDelta,
+        "response.output_audio.done": ResponseAudioDone,
+        "response.output_audio_transcript.delta": ResponseAudioTranscriptDelta,
+        "response.output_audio_transcript.done": ResponseAudioTranscriptDone,
+        "response.output_text.delta": ResponseTextDelta,
+        "response.output_text.done": ResponseTextDone,
+        "conversation.item.added": ItemCreated,
+        "conversation.item.done": ItemCreated,
+    }
+    cls = ga_aliases.get(data["type"])
+    if cls is not None:
+        data = dict(data)
+        data["type"] = cls.__dataclass_fields__["type"].default
+        return from_dict(cls, data)
+
     raise ValueError(f"Unknown message type: {data['type']} {data}")
 
 
