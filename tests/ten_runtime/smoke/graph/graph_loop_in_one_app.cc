@@ -170,7 +170,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
                   "name": "hello_world",
                   "dest": [{
                     "app": "msgpack://127.0.0.1:8001/",
-                    "extension_group": "graph_loop_in_one_app__extension_group",
                     "extension": "test_extension_3"
                   }]
                 }]
@@ -181,7 +180,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
                   "name": "hello_world",
                   "dest": [{
                     "app": "msgpack://127.0.0.1:8001/",
-                    "extension_group": "graph_loop_in_one_app__extension_group",
                     "extension": "test_extension_3"
                   }]
                 }]
@@ -192,7 +190,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
                   "name": "hello_world",
                   "dest": [{
                     "app": "msgpack://127.0.0.1:8001/",
-                    "extension_group": "graph_loop_in_one_app__extension_group",
                     "extension": "test_extension_4"
                   }]
                 }]
@@ -203,7 +200,6 @@ TEST(ExtensionTest, GraphLoopInOneApp) {
                   "name": "hello_world",
                   "dest": [{
                     "app": "msgpack://127.0.0.1:8001/",
-                    "extension_group": "graph_loop_in_one_app__extension_group",
                     "extension": "test_extension_2"
                   }]
                 }]

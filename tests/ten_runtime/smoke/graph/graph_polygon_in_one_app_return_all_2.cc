@@ -157,7 +157,6 @@ TEST(ExtensionTest, GraphPolygonInOneAppReturnAll2) {  // NOLINT
                "name": "A",
                "addon": "graph_polygon_in_one_app_return_all_2__extension",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "graph_polygon_in_one_app_return_all_2__extension_group",
                "property": {
                  "is_leaf": false
                 }
@@ -166,7 +165,6 @@ TEST(ExtensionTest, GraphPolygonInOneAppReturnAll2) {  // NOLINT
                "name": "B",
                "addon": "graph_polygon_in_one_app_return_all_2__extension",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "graph_polygon_in_one_app_return_all_2__extension_group",
                "property": {
                  "is_leaf": false
                 }
@@ -175,7 +173,6 @@ TEST(ExtensionTest, GraphPolygonInOneAppReturnAll2) {  // NOLINT
                "name": "C",
                "addon": "graph_polygon_in_one_app_return_all_2__extension",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "graph_polygon_in_one_app_return_all_2__extension_group",
                "property": {
                  "is_leaf": false
                 }
@@ -184,7 +181,6 @@ TEST(ExtensionTest, GraphPolygonInOneAppReturnAll2) {  // NOLINT
                "name": "D",
                "addon": "graph_polygon_in_one_app_return_all_2__extension",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "graph_polygon_in_one_app_return_all_2__extension_group",
                "property": {
                  "is_leaf": true
                 }
@@ -224,7 +220,6 @@ TEST(ExtensionTest, GraphPolygonInOneAppReturnAll2) {  // NOLINT
                }]
              },{
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "graph_polygon_in_one_app_return_all_2__extension_group",
                "extension": "D"
              }]
          })");

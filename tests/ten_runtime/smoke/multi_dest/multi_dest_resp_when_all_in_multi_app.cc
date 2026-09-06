@@ -232,36 +232,34 @@ TEST(MultiDestTest, MultiDestRespWhenAllInMultiApp) {  // NOLINT
     start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                   "type": "extension",
-                  "name": "extension 1",
+                  "name": "extension_1",
                   "addon": "multi_dest_resp_when_all_in_multi_app__extension_1",
                   "app": "msgpack://127.0.0.1:8001/",
                   "extension_group": "test_extension_group"
                },{
                   "type": "extension",
-                  "name": "extension 2",
+                  "name": "extension_2",
                   "addon": "multi_dest_resp_when_all_in_multi_app__extension_2",
                   "app": "msgpack://127.0.0.1:8002/",
                   "extension_group": "test_extension_group"
                },{
                   "type": "extension",
-                  "name": "extension 3",
+                  "name": "extension_3",
                   "addon": "multi_dest_resp_when_all_in_multi_app__extension_3",
                   "app": "msgpack://127.0.0.1:8003/",
                   "extension_group": "test_extension_group"
                }],
                "connections": [{
                  "app": "msgpack://127.0.0.1:8001/",
-                 "extension": "extension 1",
+                 "extension": "extension_1",
                  "cmd": [{
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "test_extension_group",
-                     "extension": "extension 2"
+                     "extension": "extension_2"
                    },{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "test_extension_group",
-                     "extension": "extension 3"
+                     "extension": "extension_3"
                    }]
                  }]
                }]
@@ -286,7 +284,7 @@ TEST(MultiDestTest, MultiDestRespWhenAllInMultiApp) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "", "extension 1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension_1"}});
 
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(hello_world_cmd));

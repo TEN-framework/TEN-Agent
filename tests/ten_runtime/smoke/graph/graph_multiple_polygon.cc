@@ -371,19 +371,15 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_multiple_polygon_1",
                      "extension": "B"
                    },{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_multiple_polygon_1",
                      "extension": "C"
                    },{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_multiple_polygon_1",
                      "extension": "D"
                    },{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "graph_multiple_polygon_2",
                      "extension": "E"
                    }]
                  }]
@@ -394,7 +390,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "graph_multiple_polygon_3",
                      "extension": "F"
                    }]
                  }]
@@ -405,7 +400,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "graph_multiple_polygon_3",
                      "extension": "F"
                    }]
                  }]
@@ -416,7 +410,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "graph_multiple_polygon_2",
                      "extension": "G"
                    }]
                  }]
@@ -427,7 +420,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "graph_multiple_polygon_2",
                      "extension": "G"
                    }]
                  }]
@@ -438,7 +430,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "graph_multiple_polygon_3",
                      "extension": "H"
                    }]
                  }]
@@ -449,7 +440,6 @@ TEST(ExtensionTest, GraphMultiplePolygon) {  // NOLINT
                    "name": "send",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "graph_multiple_polygon_3",
                      "extension": "H"
                    }]
                  }]

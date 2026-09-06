@@ -53,6 +53,30 @@ fn load_schema_with_shared_definitions(
     Ok(jsonschema::validator_for(&main_schema)?)
 }
 
+fn load_schema_with_extra_definitions(
+    schema_content: &str,
+    extra_definitions_schema: &str,
+) -> Result<Validator> {
+    let mut main_schema: serde_json::Value = json5::from_str(schema_content)?;
+    let extra_schema: serde_json::Value = json5::from_str(extra_definitions_schema)?;
+
+    if let Some(extra_defs) = extra_schema.get("$defs") {
+        if main_schema.get("$defs").is_none() {
+            main_schema["$defs"] = serde_json::json!({});
+        }
+
+        if let Some(main_defs) = main_schema.get_mut("$defs").and_then(|v| v.as_object_mut()) {
+            if let Some(extra_defs_obj) = extra_defs.as_object() {
+                for (key, value) in extra_defs_obj {
+                    main_defs.insert(key.clone(), value.clone());
+                }
+            }
+        }
+    }
+
+    Ok(jsonschema::validator_for(&main_schema)?)
+}
+
 fn validate_json_object(json: &serde_json::Value, schema_str: &str) -> Result<()> {
     let validator = load_schema(schema_str);
 
@@ -74,6 +98,25 @@ fn validate_json_object_with_shared_definitions(
     shared_definitions: &str,
 ) -> Result<()> {
     let validator = load_schema_with_shared_definitions(schema_str, shared_definitions)?;
+
+    match validator.validate(json) {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            let mut msgs = String::new();
+            for error in validator.iter_errors(json) {
+                msgs.push_str(&format!("{} @ {}\n", error, error.instance_path));
+            }
+            Err(anyhow::anyhow!("{}", msgs))
+        }
+    }
+}
+
+fn validate_json_object_with_extra_definitions(
+    json: &serde_json::Value,
+    schema_str: &str,
+    extra_definitions_schema: &str,
+) -> Result<()> {
+    let validator = load_schema_with_extra_definitions(schema_str, extra_definitions_schema)?;
 
     match validator.validate(json) {
         Ok(()) => Ok(()),
@@ -123,7 +166,11 @@ pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
 
 pub fn ten_validate_property_json_string(data: &str) -> Result<()> {
     let property_json: serde_json::Value = serde_json::from_str(data)?;
-    validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
+    validate_json_object_with_extra_definitions(
+        &property_json,
+        definition::PROPERTY_SCHEMA_DEFINITION,
+        definition::GRAPH_SCHEMA_DEFINITION,
+    )
 }
 
 pub fn ten_validate_property_json_file<P: AsRef<Path>>(file_path: P) -> Result<()> {
@@ -131,7 +178,16 @@ pub fn ten_validate_property_json_file<P: AsRef<Path>>(file_path: P) -> Result<(
     let reader = std::io::BufReader::new(file);
     let property_json: serde_json::Value = serde_json::from_reader(reader)?;
 
-    validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
+    validate_json_object_with_extra_definitions(
+        &property_json,
+        definition::PROPERTY_SCHEMA_DEFINITION,
+        definition::GRAPH_SCHEMA_DEFINITION,
+    )
+}
+
+pub fn ten_validate_graph_json_string(data: &str) -> Result<()> {
+    let graph_json: serde_json::Value = serde_json::from_str(data)?;
+    validate_json_object(&graph_json, definition::GRAPH_SCHEMA_DEFINITION)
 }
 
 pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {

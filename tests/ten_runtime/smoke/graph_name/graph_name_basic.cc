@@ -206,7 +206,6 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
                    "name": "send_message",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "graph_id_basic__extension_group_2",
                      "extension": "extension3"
                    }]
                  }]
@@ -217,7 +216,6 @@ TEST(ExtensionTest, GraphNameBasic) {  // NOLINT
                    "name": "send_message",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_id_basic__extension_group_1",
                      "extension": "extension2"
                    }]
                  }]

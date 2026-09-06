@@ -165,19 +165,19 @@ TEST(ExtensionTest, Return3) {  // NOLINT
                "name": "test_extension_1",
                "addon": "return_3__extension_1",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "test_extension_group 1"
+               "extension_group": "test_extension_group_1"
              },{
                "type": "extension",
                "name": "test_extension_2",
                "addon": "return_3__extension_2",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "test_extension_group 1"
+               "extension_group": "test_extension_group_1"
              },{
                "type": "extension",
                "name": "test_extension_3",
                "addon": "return_3__extension_3",
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "test_extension_group 2"
+               "extension_group": "test_extension_group_2"
              }],
              "connections": [{
                "app": "msgpack://127.0.0.1:8001/",

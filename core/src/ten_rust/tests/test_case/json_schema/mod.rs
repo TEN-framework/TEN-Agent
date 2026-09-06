@@ -7,8 +7,9 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::json_schema::{
-        ten_validate_interface_json_string, ten_validate_manifest_json_string,
-        ten_validate_property_json_string, validate_manifest_lock_json_string,
+        ten_validate_graph_json_string, ten_validate_interface_json_string,
+        ten_validate_manifest_json_string, ten_validate_property_json_string,
+        validate_manifest_lock_json_string,
     };
 
     #[test]
@@ -23,6 +24,44 @@ mod tests {
         "#;
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_allows_builtin_test_extension() {
+        let graph = r#"
+        {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ten:test_extension",
+              "addon": "ten:test_extension"
+            },
+            {
+              "type": "extension",
+              "name": "ext_a",
+              "addon": "addon_a"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ten:test_extension",
+              "cmd": [
+                {
+                  "name": "test_cmd",
+                  "dest": [
+                    {
+                      "extension": "ext_a"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_graph_json_string(graph);
+        assert!(result.is_ok(), "{result:?}");
     }
 
     #[test]
@@ -210,6 +249,35 @@ mod tests {
 
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Additional properties are not allowed"));
+    }
+
+    #[test]
+    fn test_validate_graph_rejects_null_in_node_property() {
+        let graph = r#"
+        {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "glue_python_async",
+              "property": {
+                "system_messages": [
+                  {
+                    "role": "system",
+                    "content": null
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_graph_json_string(graph);
+        assert!(result.is_err());
+
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("null"));
     }
 
     #[test]

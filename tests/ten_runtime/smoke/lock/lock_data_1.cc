@@ -188,35 +188,34 @@ TEST(ExtensionTest, LockData1) {  // NOLINT
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",
-               "name": "extension 1",
+               "name": "extension_1",
                "addon": "lock_data_1__extension_1",
                "app": "msgpack://127.0.0.1:8001/",
                "extension_group": "test_extension_group"
              },{
                "type": "extension",
-               "name": "extension 2",
+               "name": "extension_2",
                "addon": "lock_data_1__extension_2",
                "app": "msgpack://127.0.0.1:8001/",
                "extension_group": "test_extension_group"
              },{
                "type": "extension",
-               "name": "extension 3",
+               "name": "extension_3",
                "addon": "lock_data_1__extension_3",
                "app": "msgpack://127.0.0.1:8001/",
                "extension_group": "test_extension_group"
              }],
              "connections": [{
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "test_extension_group",
-               "extension": "extension 1",
+               "extension": "extension_1",
                "data": [{
                  "name": "data",
                  "dest": [{
                    "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "extension 2"
+                   "extension": "extension_2"
                  },{
                    "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "extension 3"
+                   "extension": "extension_3"
                  }]
                }]
              }]
@@ -228,7 +227,7 @@ TEST(ExtensionTest, LockData1) {  // NOLINT
   // Send a user-defined 'dispatch_data' command.
   auto dispatch_data_cmd = ten::cmd_t::create("dispatch_data");
   dispatch_data_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "", "extension 1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension_1"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(dispatch_data_cmd));
 
@@ -237,7 +236,7 @@ TEST(ExtensionTest, LockData1) {  // NOLINT
 
   auto check_received_cmd = ten::cmd_t::create("check_received");
   check_received_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "", "extension 2"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension_2"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(check_received_cmd));
 
@@ -246,7 +245,7 @@ TEST(ExtensionTest, LockData1) {  // NOLINT
 
   check_received_cmd = ten::cmd_t::create("check_received");
   check_received_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "", "extension 3"}});
+      {{"msgpack://127.0.0.1:8001/", "", "extension_3"}});
 
   cmd_result = client->send_cmd_and_recv_result(std::move(check_received_cmd));
 

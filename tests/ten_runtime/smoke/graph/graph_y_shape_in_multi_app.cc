@@ -283,7 +283,6 @@ TEST(ExtensionTest, GraphYShapeInMultiApp) {  // NOLINT
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "graph_y_shape_in_multi_app__extension_group_2",
                      "extension": "test_extension_3"
                    }]
                  }]
@@ -294,19 +293,16 @@ TEST(ExtensionTest, GraphYShapeInMultiApp) {  // NOLINT
                     "name": "hello_world",
                     "dest": [{
                        "app": "msgpack://127.0.0.1:8002/",
-                       "extension_group": "graph_y_shape_in_multi_app__extension_group_2",
                        "extension": "test_extension_3"
                     }]
                  }]
                },{
                 "app": "msgpack://127.0.0.1:8002/",
-                "extension_group": "graph_y_shape_in_multi_app__extension_group_2",
                 "extension": "test_extension_3",
                 "cmd": [{
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "graph_y_shape_in_multi_app__extension_group_3",
                      "extension": "test_extension_4"
                    }]
                  }]

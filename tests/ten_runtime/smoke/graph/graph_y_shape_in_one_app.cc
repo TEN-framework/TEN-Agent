@@ -169,31 +169,26 @@ TEST(ExtensionTest, GraphYShapeInOneApp) {
                   "name": "hello_world",
                   "dest": [{
                     "app": "msgpack://127.0.0.1:8001/",
-                    "extension_group": "graph_y_shape_in_one_app__extension_group",
                     "extension": "test_extension_3"
                   }]
                 }]
               },{
                 "app": "msgpack://127.0.0.1:8001/",
-                "extension_group": "graph_y_shape_in_one_app__extension_group",
                 "extension": "test_extension_2",
                 "cmd": [{
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_y_shape_in_one_app__extension_group",
                      "extension": "test_extension_3"
                    }]
                  }]
               },{
                 "app": "msgpack://127.0.0.1:8001/",
-                "extension_group": "graph_y_shape_in_one_app__extension_group",
                 "extension": "test_extension_3",
                 "cmd": [{
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8001/",
-                     "extension_group": "graph_y_shape_in_one_app__extension_group",
                      "extension": "test_extension_4"
                    }]
                  }]

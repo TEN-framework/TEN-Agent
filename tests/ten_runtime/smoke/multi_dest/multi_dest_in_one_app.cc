@@ -255,8 +255,6 @@ TEST(MultiDestTest, MultiDestInOneApp) {  // NOLINT
   for (int i = DEST_EXTENSION_MIN_ID; i <= DEST_EXTENSION_MAX_ID; i++) {
     start_graph_cmd_content_str["connections"][0]["cmd"][0]["dest"].push_back({
         {"app", "msgpack://127.0.0.1:8001/"},  // app
-        {"extension_group",
-         "multi_dest_in_one_app__extension_group"},  // extension_group
         {"extension", "test_extension_" + std::to_string(i)},  // extension
     });
   }

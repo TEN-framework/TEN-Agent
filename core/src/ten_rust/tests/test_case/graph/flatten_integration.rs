@@ -13,7 +13,10 @@ use ten_rust::graph::{
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{
+        ffi::{CStr, CString},
+        fs, ptr,
+    };
 
     use tempfile::tempdir;
 
@@ -222,5 +225,38 @@ mod tests {
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
         assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
         assert!(flattened.nodes.iter().any(|node| node.get_name() == "subgraph_1_ext_b"));
+    }
+
+    #[test]
+    fn test_graph_flatten_binding_does_not_fail_on_schema_validation_error() {
+        let graph = CString::new(
+            r#"{
+              "nodes": [{
+                "type": "extension",
+                "name": "extension 1",
+                "addon": "addon_a"
+              }],
+              "connections": []
+            }"#,
+        )
+        .unwrap();
+        let mut err_msg = ptr::null_mut();
+
+        let result = unsafe {
+            ten_rust::bindings::ten_rust_graph_validate_complete_flatten(
+                graph.as_ptr(),
+                ptr::null(),
+                ptr::null(),
+                &mut err_msg,
+            )
+        };
+
+        assert!(!result.is_null());
+        assert!(err_msg.is_null());
+
+        let flattened = unsafe { CStr::from_ptr(result) }.to_str().unwrap();
+        assert!(flattened.contains("extension 1"));
+
+        ten_rust::bindings::ten_rust_free_cstring(result);
     }
 }

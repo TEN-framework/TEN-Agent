@@ -197,13 +197,13 @@ TEST(GraphTest, GroupNodeMissing2Apps) {  // NOLINT
                    "type": "extension",
                    "addon": "group_node_missing_2_apps__extension_1",
                    "name": "test_extension_1",
-                   "extension_group": "test_extension_group 1",
+                   "extension_group": "test_extension_group_1",
                    "app": "msgpack://127.0.0.1:8001/"
                  },{
                    "type": "extension",
                    "addon": "group_node_missing_2_apps__extension_2",
                    "name": "test_extension_2",
-                   "extension_group": "test_extension_group 2",
+                   "extension_group": "test_extension_group_2",
                    "app": "msgpack://127.0.0.1:8002/"
                  }],
                  "connections": [{
@@ -213,7 +213,6 @@ TEST(GraphTest, GroupNodeMissing2Apps) {  // NOLINT
                      "name": "hello_world",
                      "dest": [{
                        "app": "msgpack://127.0.0.1:8002/",
-                       "extension_group": "test_extension_group 2",
                        "extension": "test_extension_2"
                      }]
                    }]

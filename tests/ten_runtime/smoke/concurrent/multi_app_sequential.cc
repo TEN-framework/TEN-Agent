@@ -195,13 +195,13 @@ TEST(ExtensionTest, MultiAppSequential) {  // NOLINT
                  "name": "test_extension_1",
                  "addon": "multi_app_sequential__extension_1",
                  "app": "msgpack://127.0.0.1:8001/",
-                 "extension_group": "test_extension_group 1"
+                 "extension_group": "test_extension_group_1"
                },{
                  "type": "extension",
                  "name": "test_extension_2",
                  "addon": "multi_app_sequential__extension_2",
                  "app": "msgpack://127.0.0.1:8002/",
-                 "extension_group": "test_extension_group 2"
+                 "extension_group": "test_extension_group_2"
                }],
                "connections": [{
                  "app": "msgpack://127.0.0.1:8001/",

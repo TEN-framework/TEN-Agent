@@ -222,7 +222,6 @@ TEST(SchemaTest, DataProp) {  // NOLINT
              }],
              "connections": [{
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "basic_extension_group",
                "extension": "test_extension_1",
                "data": [{
                  "name": "data",

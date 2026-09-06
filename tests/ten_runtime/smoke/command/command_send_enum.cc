@@ -27,7 +27,7 @@ class test_extension_1 : public ten::extension_t {
     if (cmd->get_name() == "hello_world") {
       hello_world_cmd = std::move(cmd);
 
-      auto new_cmd = ten::cmd_t::create("send enum");
+      auto new_cmd = ten::cmd_t::create("send_enum");
       new_cmd->set_property("test data", TEST_1);
 
       ten_env.send_cmd(
@@ -57,7 +57,7 @@ class test_extension_2 : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "send enum") {
+    if (cmd->get_name() == "send_enum") {
       auto u_test_data = cmd->get_property_int32("test data");
       auto test_data = static_cast<TEST_ENUM>(u_test_data);
       if (test_data != TEST_1) {
@@ -153,7 +153,7 @@ TEST(ExtensionTest, CommandSendEnum) {  // NOLINT
                "app": "msgpack://127.0.0.1:8001/",
                "extension": "command_send_enum__extension_1",
                "cmd": [{
-                 "name": "send enum",
+                 "name": "send_enum",
                  "dest": [{
                    "app": "msgpack://127.0.0.1:8001/",
                    "extension": "command_send_enum__extension_2"

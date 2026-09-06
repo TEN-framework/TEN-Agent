@@ -109,13 +109,13 @@ TEST(ExtensionTest, GraphOutOfOrder2) {  // NOLINT
                 "type": "extension",
                 "name": "test_extension_1",
                 "addon": "graph_out_of_order_2__test_extension_1",
-                "extension_group": "test_extension_group 1",
+                "extension_group": "test_extension_group_1",
                 "app": "msgpack://127.0.0.1:8001/"
              },{
                 "type": "extension",
                 "name": "test_extension_2",
                 "addon": "graph_out_of_order_2__test_extension_2",
-                "extension_group": "test_extension_group 2",
+                "extension_group": "test_extension_group_2",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
            })");
