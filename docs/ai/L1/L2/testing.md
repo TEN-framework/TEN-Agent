@@ -215,6 +215,27 @@ checks `ENABLE_SAMPLE_RATE` env var. Extensions like `openai_tts_python`,
 - If a vendor does not expose that data, document the gap clearly and treat
   `test_subtitle_alignment` as out of scope rather than forcing fake support.
 
+### Interpreting Skips: What a Full Pass Looks Like
+
+For an HTTP-based TTS extension, `15 passed, 2 skipped` IS the full pass —
+the two skips are guarder-side conditions on whole classes of extensions,
+not gaps in the change under review:
+
+- `test_connection_status` only runs for websocket TTS extensions (and only
+  when explicitly enabled); HTTP extensions have no connection state machine
+  to test.
+- `test_subtitle_alignment` is disabled by default for all extensions
+  (`--enable_subtitle_alignment=True` to run) and restricted to vendors that
+  return per-word timing.
+
+When posting guarder evidence on a PR, run with `-v` so the per-test
+PASSED/SKIPPED lines are visible, and expect to explain skips in exactly
+these terms if a reviewer asks.
+
+MLLM (speech-to-speech) extensions have no guarder suite — only
+`asr_guarder` and `tts_guarder` exist. For MLLM PRs, provide the standalone
+pytest suite result plus a note on live-service verification instead.
+
 ---
 
 ## ASR Guarder Tests (10 Tests, 1 Excluded by Test Runner)
