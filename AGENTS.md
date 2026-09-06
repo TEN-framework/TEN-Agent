@@ -11,7 +11,7 @@ agents work efficiently. Documentation is structured in three levels under
    This gives you setup, architecture, code map, conventions, workflows,
    interfaces, gotchas, and security.
 3. If a task needs more detail than L1 provides, follow links to L2 deep dives
-   in `docs/ai/L1/deep_dives/`. Load only the specific L2 file you need.
+   in `docs/ai/L1/L2/`. Load only the specific L2 file you need.
 
 ## Levels
 
@@ -51,9 +51,9 @@ agents work efficiently. Documentation is structured in three levels under
 | update docs   | code changed since last `last_reviewed` date  |
 | test docs     | verify docs give agents the right context     |
 
-For detailed procedures, read
-[progressive-disclosure-standard.md](docs/progressive-disclosure-standard.md)
-sections 6 (generate) and 7 (bootstrap).
+For detailed procedures, read `progressive-disclosure-standard.md`
+sections 6 (generate) and 7 (bootstrap) on the `docs/progressive-disclosure`
+branch (the standard is not checked into main).
 
 ## Working Areas
 

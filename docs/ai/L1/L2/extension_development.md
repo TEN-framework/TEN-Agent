@@ -694,6 +694,8 @@ There are **10 tests** (1 excluded by the default test runner):
 | `test_dump`                 | Audio dump files created correctly                           |
 | `test_metrics`              | TTFW and TTLW metrics: positive, TTLW > TTFW                |
 | `test_audio_timestamp`      | start_ms and duration_ms accuracy                            |
+| `test_same_session_finalize_reconnect` | Audio sent after finalize still transcribes (fresh session if the vendor closes) |
+| `test_connection_status`    | connection_status_changed events — **allowlist-gated** (see below) |
 | `test_long_duration_stream` | **Excluded by default test runner** — 5+ min stream without timeout |
 
 ### Critical Pass Criteria
@@ -703,6 +705,29 @@ There are **10 tests** (1 excluded by the default test runner):
 - **Error format**: Errors must have `id`, `module`, `code`, `message` + vendor info
 - **Metrics**: TTFW > 0, TTLW > TTFW, both in milliseconds
 - **Audio format**: Accepts 16-bit PCM, 16kHz, mono, 320 bytes per frame
+
+### Guarder Contract Gotchas (learned the hard way)
+
+- **Timestamps** (`test_audio_timestamp`): every final needs `duration_ms > 0`,
+  and consecutive finals must not overlap (`prev.start_ms + prev.duration_ms
+  <= next.start_ms`). If the vendor returns no per-segment timing, synthesize
+  contiguous timestamps from the audio timeline: start = end of the previous
+  segment, end = total user audio sent when the final arrives.
+- **Invalid credentials must be NON-fatal** (`test_reconnection`): the test
+  feeds bad credentials and asserts every error in the window is non-fatal
+  (retry expected). Classify only HTTP 401/403 as immediately fatal; vendors
+  that reject bad keys another way (e.g. a websocket close code) must surface
+  a non-fatal error and let the reconnect manager escalate to FATAL at the
+  retry ceiling. Any fatal error inside the test window fails the test.
+- **connection_status tests are allowlist-gated**: the guarder only asserts
+  `connection_status_changed` sequences for extensions listed in
+  `_EXTENSIONS_WITH_CONNECTION_STATUS` (in
+  `integration_tests/asr_guarder/tests/test_connection_status.py`); other
+  extensions skip these two tests — expect `N passed, 2 skipped`.
+- **Capture the summary**: pipe guarder output to a log file
+  (`task asr-guarder-test ... > /tmp/guarder.log 2>&1; echo $?`) — piping to
+  `tail` reports the pipe's exit code, not pytest's, and the retry tracebacks
+  from `test_reconnection` push the summary line out of a short tail.
 
 ---
 

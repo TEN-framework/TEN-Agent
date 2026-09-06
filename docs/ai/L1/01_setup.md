@@ -67,6 +67,12 @@ docker exec -d ten_agent_dev bash -c \
    task run > /tmp/task_run.log 2>&1"
 ```
 
+**Fresh worktree/checkout**: run `task install` FIRST (it includes the
+python-deps step). Running `install_python_deps.sh` alone on a fresh tree
+fails with `failed to build go app` because `ten_packages/system/` (including
+`ten_runtime_go`) is only populated by the install. Step 1 above is for
+refreshing deps after a container restart, when packages already exist.
+
 Typical choices:
 - `voice-assistant` for standard vendor iteration and demo graphs
 - `voice-assistant-advanced` for generated multi-graph setups

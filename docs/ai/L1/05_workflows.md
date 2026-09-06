@@ -164,6 +164,10 @@ catches a miss. For an extension change under
 # 1. Format + static checks (CI: task check, task lint)
 sudo docker exec ten_agent_dev bash -c \
   "cd /app && task format && task check && task lint"
+# task lint / task lint-extension in-container ALWAYS exits non-zero with
+# E0401 import-errors — the runtime imports only resolve in CI. Judge by
+# comparing against a known CI-green extension (e.g. xai_asr_python shows
+# the same E0401s); only warnings beyond that baseline are real findings.
 
 # 2. Standalone tests for the extension
 sudo docker exec ten_agent_dev bash -c \
