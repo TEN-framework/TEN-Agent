@@ -1,7 +1,7 @@
 import type { LanguageMap } from "@/common/constant";
 import type { IOceanBaseSettings } from "@/types";
 
-const OPENAI_REALTIME_MODEL = "gpt-realtime";
+const OPENAI_REALTIME_MODEL = "gpt-realtime-2.1";
 const OPENAI_REALTIME_15_MODEL = "gpt-realtime-1.5";
 const OPENAI_REALTIME_MINI_MODEL = "gpt-realtime-mini";
 const MINIMAX_DEFAULT_PROMPT =
