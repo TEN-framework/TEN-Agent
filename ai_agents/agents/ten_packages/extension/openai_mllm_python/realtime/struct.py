@@ -43,10 +43,15 @@ class MessageRole(str, Enum):
 
 
 class ContentType(str, Enum):
+    # Input parts kept their beta names in GA.
     InputText = "input_text"
     InputAudio = "input_audio"
+    # GA renamed the assistant-side parts; "text"/"audio" are rejected on
+    # conversation.item.create and remain only for reading beta-era payloads.
     Text = "text"
     Audio = "audio"
+    OutputText = "output_text"
+    OutputAudio = "output_audio"
 
 
 @dataclass
@@ -169,6 +174,9 @@ class SessionUpdateParams:
     max_response_output_tokens: Optional[Union[int, str]] = (
         None  # Max response tokens, "inf" for infinite
     )
+    reasoning_effort: Optional[
+        Literal["minimal", "low", "medium", "high", "xhigh"]
+    ] = None  # Reasoning budget, serialised as GA `session.reasoning.effort`
 
 
 # Define individual message item param types
@@ -270,12 +278,15 @@ class EventType(str, Enum):
     RESPONSE_OUTPUT_ITEM_DONE = "response.output_item.done"
     RESPONSE_CONTENT_PART_ADDED = "response.content_part.added"
     RESPONSE_CONTENT_PART_DONE = "response.content_part.done"
-    RESPONSE_TEXT_DELTA = "response.text.delta"
-    RESPONSE_TEXT_DONE = "response.text.done"
-    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.audio_transcript.delta"
-    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.audio_transcript.done"
-    RESPONSE_AUDIO_DELTA = "response.audio.delta"
-    RESPONSE_AUDIO_DONE = "response.audio.done"
+    # GA renamed the response output events; the beta spellings
+    # (response.text.delta, response.audio.delta,
+    # response.audio_transcript.delta) are no longer emitted.
+    RESPONSE_TEXT_DELTA = "response.output_text.delta"
+    RESPONSE_TEXT_DONE = "response.output_text.done"
+    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.output_audio_transcript.delta"
+    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.output_audio_transcript.done"
+    RESPONSE_AUDIO_DELTA = "response.output_audio.delta"
+    RESPONSE_AUDIO_DONE = "response.output_audio.done"
     RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = (
         "response.function_call_arguments.delta"
     )
@@ -903,10 +914,161 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     raise ValueError(f"Unknown message type: {data['type']} {data}")
 
 
-def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
-    # ignore none value
-    return json.dumps(
-        asdict(
-            obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
-        )
+def _drop_none(obj: Any) -> Dict[str, Any]:
+    return asdict(
+        obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
     )
+
+
+# GA expresses audio formats as objects rather than the beta's bare strings.
+# The published reference still documents a string, but the service rejects it
+# with "Invalid type for 'session.audio.input.format': expected an object, but
+# got a string instead".
+_GA_AUDIO_FORMATS: Dict[str, Dict[str, Any]] = {
+    AudioFormats.PCM16.value: {"type": "audio/pcm", "rate": 24000},
+    AudioFormats.G711_ULAW.value: {"type": "audio/pcmu"},
+    AudioFormats.G711_ALAW.value: {"type": "audio/pcma"},
+}
+
+
+def _ga_audio_format(fmt: Any) -> Dict[str, Any]:
+    """Map a beta audio format value onto its GA object form.
+
+    Returns a fresh dict: the table is module state, and handing out a
+    reference would let a caller mutating the result rewrite it for every
+    later session. An unmapped value raises rather than falling back to
+    `{"type": <value>}`, which is object-shaped enough to pass a local check
+    and still be rejected on the wire — the exact failure the table exists to
+    prevent.
+    """
+    if isinstance(fmt, dict):  # already GA-shaped, pass through
+        return dict(fmt)
+    key = fmt.value if isinstance(fmt, Enum) else fmt
+    try:
+        return dict(_GA_AUDIO_FORMATS[key])
+    except (KeyError, TypeError) as exc:
+        raise ValueError(
+            f"no GA audio format mapping for {fmt!r}; "
+            f"add it to _GA_AUDIO_FORMATS"
+        ) from exc
+
+
+def _ga_output_modalities(modalities: Any) -> List[str]:
+    """Normalise `modalities` onto GA's `output_modalities` list.
+
+    A bare string is rejected rather than iterated: `sorted("audio")` yields
+    `["a", "d", "i", "o", "u"]`, which is silently wrong. Order is preserved
+    rather than sorted, since GA takes a single-element array and sorting
+    would reorder a caller's intent.
+    """
+    if isinstance(modalities, str):
+        raise ValueError(
+            f"modalities must be a sequence, not the string {modalities!r}"
+        )
+    return list(modalities)
+
+
+# Beta field -> GA location. Anything absent from these tables is an
+# unrecognised field and is rejected rather than passed through under its
+# beta name, which would make the whole session.update invalid.
+_GA_AUDIO_INPUT_FIELDS = {
+    "input_audio_format": "format",
+    "turn_detection": "turn_detection",
+    "input_audio_transcription": "transcription",
+}
+_GA_AUDIO_OUTPUT_FIELDS = {
+    "output_audio_format": "format",
+    "voice": "voice",
+}
+_GA_RENAMED_FIELDS = {
+    "modalities": "output_modalities",
+    "max_response_output_tokens": "max_output_tokens",
+}
+# Fields GA keeps at the top level of `session` under their existing names.
+_GA_PASSTHROUGH_FIELDS = frozenset(
+    {"instructions", "model", "tools", "tool_choice"}
+)
+
+
+def session_update_to_ga_dict(obj: "SessionUpdate") -> Dict[str, Any]:
+    """Serialise a SessionUpdate into the GA `session.update` payload.
+
+    GA reorganised the session object: audio settings move under
+    `session.audio.input` / `session.audio.output`, `modalities` becomes
+    `output_modalities`, `max_response_output_tokens` becomes
+    `max_output_tokens`, and the session itself is tagged `type: "realtime"`.
+    Fields left unset are omitted so the service applies its own defaults.
+
+    Unrecognised fields raise. GA rejects the entire `session.update` when it
+    carries an unknown key, which would take instructions, tools, VAD,
+    transcription and voice down with it — so a field added to
+    `SessionUpdateParams` without a mapping here has to fail loudly.
+    """
+    flat = _drop_none(obj.session) if obj.session is not None else {}
+
+    session: Dict[str, Any] = {"type": "realtime"}
+    audio: Dict[str, Dict[str, Any]] = {}
+
+    for beta_name, ga_name in _GA_AUDIO_INPUT_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            audio.setdefault("input", {})[ga_name] = (
+                _ga_audio_format(value) if ga_name == "format" else value
+            )
+
+    for beta_name, ga_name in _GA_AUDIO_OUTPUT_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            audio.setdefault("output", {})[ga_name] = (
+                _ga_audio_format(value) if ga_name == "format" else value
+            )
+
+    for beta_name, ga_name in _GA_RENAMED_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            if beta_name == "modalities":
+                value = _ga_output_modalities(value)
+            session[ga_name] = value
+
+    # An empty string is the "leave it to the model" sentinel on the config
+    # side; GA only accepts the documented effort levels, so treat it as unset
+    # here too rather than relying on the caller to filter it.
+    reasoning_effort = flat.pop("reasoning_effort", None)
+    if reasoning_effort:
+        session["reasoning"] = {"effort": reasoning_effort}
+
+    for name in list(flat):
+        if name in _GA_PASSTHROUGH_FIELDS:
+            session[name] = flat.pop(name)
+
+    if flat:
+        raise ValueError(
+            f"no GA mapping for session field(s) {sorted(flat)}; "
+            f"extend the _GA_* tables in this module"
+        )
+
+    if audio:
+        session["audio"] = audio
+
+    payload: Dict[str, Any] = {"type": obj.type, "session": session}
+    if obj.event_id is not None:
+        payload["event_id"] = obj.event_id
+    return payload
+
+
+def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
+    if isinstance(obj, SessionUpdate):
+        return json.dumps(session_update_to_ga_dict(obj))
+    if isinstance(obj, ResponseCreate) and obj.response is not None:
+        # ResponseCreateParams is still the flat beta struct: it carries
+        # modalities/voice/output_audio_format/max_response_output_tokens,
+        # where GA takes output_modalities, max_output_tokens and
+        # audio.output.{voice,format}. Nothing sets it today — callers send a
+        # bare ResponseCreate() — so it is unmigrated rather than wrong, and
+        # failing here beats emitting a beta payload GA would reject.
+        raise NotImplementedError(
+            "per-response overrides are not migrated to the GA shape; "
+            "extend this module before setting ResponseCreate.response"
+        )
+    # ignore none value
+    return json.dumps(_drop_none(obj))

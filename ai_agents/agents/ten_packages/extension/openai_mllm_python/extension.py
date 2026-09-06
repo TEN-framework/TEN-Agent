@@ -13,6 +13,11 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
 from ten_ai_base.mllm import AsyncMLLMBaseExtension
 from ten_ai_base.struct import (
     MLLMClientFunctionCallOutput,
@@ -73,7 +78,7 @@ class OpenAIRealtimeConfig(BaseModel):
     base_url: str = "wss://api.openai.com"
     api_key: str = ""
     path: str = "/v1/realtime"
-    model: str = "gpt-4o"
+    model: str = "gpt-realtime-2.1"
     language: str = "en"
     prompt: str = ""
     temperature: float = 0.5
@@ -87,6 +92,11 @@ class OpenAIRealtimeConfig(BaseModel):
     vad_threshold: float = 0.5
     vad_prefix_padding_ms: int = 300
     vad_silence_duration_ms: int = 500
+    # Empty string means "omit reasoning from session.update" so existing
+    # deployments keep the model's own default.
+    reasoning_effort: Literal[
+        "", "minimal", "low", "medium", "high", "xhigh"
+    ] = ""
     vendor: str = ""
     dump: bool = False
     dump_path: str = ""
@@ -429,6 +439,21 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             self.ten_env.log_error(
                                 f"Error message received: {message.error}"
                             )
+                            # A rejected session.update leaves the socket open,
+                            # so nothing else surfaces the failure: the graph
+                            # would wait on mllm_server_session_ready forever
+                            # while the connection looks healthy.
+                            await self.send_mllm_error(
+                                ModuleError(
+                                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                                    message=message.error.message,
+                                ),
+                                ModuleErrorVendorInfo(
+                                    vendor=self.vendor(),
+                                    code=message.error.code or "",
+                                    message=message.error.message,
+                                ),
+                            )
                         case _:
                             self.ten_env.log_debug(
                                 f"Not handled message {message}"
@@ -497,7 +522,10 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                     ItemCreate(
                         item=AssistantMessageItemParam(
                             content=[
-                                {"type": ContentType.Text, "text": item.content}
+                                {
+                                    "type": ContentType.OutputText,
+                                    "text": item.content,
+                                }
                             ]
                         )
                     )
@@ -614,6 +642,10 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         su.session.input_audio_transcription = InputAudioTranscription(
             language=self.config.language,
         )
+
+        if self.config.reasoning_effort:
+            su.session.reasoning_effort = self.config.reasoning_effort
+
         self.ten_env.log_info(f"update session {su}")
 
         await self.conn.send_request(su)

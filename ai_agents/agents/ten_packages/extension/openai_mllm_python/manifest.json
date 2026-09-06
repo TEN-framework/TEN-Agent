@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_mllm_python",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "dependencies": [
     {
       "type": "system",
@@ -90,6 +90,9 @@
         },
         "vad_silence_duration_ms": {
           "type": "int32"
+        },
+        "reasoning_effort": {
+          "type": "string"
         }
       }
     }
