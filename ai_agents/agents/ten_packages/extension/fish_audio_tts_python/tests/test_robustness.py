@@ -48,6 +48,10 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
+            # This is a complete standalone request. Mark it final so an
+            # error completes its state before the recovery request starts.
+            # Non-final chunk errors intentionally keep their request open.
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
