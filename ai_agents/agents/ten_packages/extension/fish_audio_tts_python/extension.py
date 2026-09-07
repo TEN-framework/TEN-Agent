@@ -123,20 +123,16 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             )
             if self.client:
                 await self.client.cancel()
-                if self.request_ts:
-                    request_event_interval = int(
-                        (datetime.now() - self.request_ts).total_seconds()
-                        * 1000
-                    )
-                    duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_audio_end(
-                        request_id=self.current_request_id,
-                        request_event_interval_ms=request_event_interval,
-                        request_total_audio_duration_ms=duration_ms,
-                        reason=TTSAudioEndReason.INTERRUPTED,
-                    )
-                    if self.current_request_id in self.recorder_map:
-                        await self.recorder_map[self.current_request_id].flush()
+
+            # A flush can arrive before the first audio chunk, while request_ts
+            # is still None. sent_ts lets us emit the required INTERRUPTED
+            # audio_end during that normal TTFB window as well.
+            #
+            # Do not call finish_request() here. AsyncTTS2BaseExtension's flush
+            # path clears request state after cancel_tts() returns.
+            await self._send_current_request_audio_end(
+                TTSAudioEndReason.INTERRUPTED
+            )
 
         else:
             self.ten_env.log_warn(
@@ -310,26 +306,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         self.ten_env.log_debug(
                             "Received empty payload for TTS response"
                         )
-                        if self.request_ts and t.text_input_end:
-                            duration_ms = self._calculate_audio_duration_ms()
-                            request_event_interval = int(
-                                (
-                                    datetime.now() - self.request_ts
-                                ).total_seconds()
-                                * 1000
-                            )
-                            await self.send_tts_audio_end(
-                                request_id=self.current_request_id,
-                                request_event_interval_ms=request_event_interval,
-                                request_total_audio_duration_ms=duration_ms,
-                            )
-                            if self.current_request_id in self.recorder_map:
-                                await self.recorder_map[
-                                    self.current_request_id
-                                ].flush()
-                            self.ten_env.log_debug(
-                                f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
-                            )
+                        # An empty vendor chunk is not a completion signal.
+                        # EVENT_TTS_END remains the single normal-completion
+                        # path, preventing duplicate audio_end events.
                 elif event == EVENT_TTS_END:
                     self.ten_env.log_debug(
                         "Received TTS_END event from Fish Audio TTS"
@@ -344,6 +323,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         "Received TTS_FLUSH event from Fish Audio TTS"
                     )
+                    # cancel_tts() owns the INTERRUPTED audio_end. The base
+                    # flush flow owns request-state cleanup, so there is no
+                    # completion work to duplicate here.
                     break
 
                 elif event == EVENT_TTS_INVALID_KEY_ERROR:
@@ -415,6 +397,28 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         if error is not None:
             await self.send_tts_error(request_id=request_id, error=error)
 
+        request_id = await self._send_current_request_audio_end(reason)
+        if request_id is None:
+            return
+
+        await self.finish_request(request_id=request_id, reason=reason)
+        self.current_request_finished = True
+        self.ten_env.log_debug(
+            f"Completed Fish Audio TTS request {request_id}, "
+            f"reason: {reason.value}"
+        )
+
+    async def _send_current_request_audio_end(
+        self, reason: TTSAudioEndReason
+    ) -> str | None:
+        """Send audio_end and flush its dump without changing base state."""
+        request_id = self.current_request_id
+        if request_id is None:
+            self.ten_env.log_warn(
+                "Cannot end Fish Audio TTS request without request_id"
+            )
+            return None
+
         interval_start = self.request_ts or self.sent_ts
         request_event_interval = (
             int((datetime.now() - interval_start).total_seconds() * 1000)
@@ -433,13 +437,12 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         if recorder is not None:
             await recorder.flush()
 
-        await self.finish_request(request_id=request_id, reason=reason)
-        self.current_request_finished = True
         self.ten_env.log_debug(
-            f"Completed Fish Audio TTS request {request_id}, "
+            f"Ended Fish Audio TTS audio for request {request_id}, "
             f"reason: {reason.value}, interval: {request_event_interval}ms, "
             f"duration: {duration_ms}ms"
         )
+        return request_id
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:

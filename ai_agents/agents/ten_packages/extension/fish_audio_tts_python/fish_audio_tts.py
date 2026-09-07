@@ -85,8 +85,7 @@ class FishAudioTTSClient:
             error_message = str(e)
             self.ten_env.log_error(
                 "vendor_error: "
-                f"type={type(e).__name__}, detail={e!r}, "
-                f"message={error_message}",
+                f"type={type(e).__name__}, message={error_message}",
                 category=LOG_CATEGORY_VENDOR,
             )
 
@@ -122,4 +121,14 @@ class FishAudioTTSClient:
         session = self.client
         self.client = None
         if session is not None:
-            await session.close()
+            try:
+                await session.close()
+            except Exception as close_error:
+                # Shutdown must continue even when the vendor connection is
+                # already broken. Avoid logging exception repr because HTTP
+                # exception objects may retain sensitive request headers.
+                self.ten_env.log_warn(
+                    "FishAudioTTS: failed to close session during cleanup: "
+                    f"type={type(close_error).__name__}, "
+                    f"message={str(close_error)}"
+                )

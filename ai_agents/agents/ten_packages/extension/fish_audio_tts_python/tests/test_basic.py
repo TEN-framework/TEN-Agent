@@ -294,6 +294,7 @@ def test_flush_logic(MockFishAudioTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockFishAudioTTSClient.return_value
+    mock_instance.cancel = AsyncMock()
     mock_instance.clean = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str):
