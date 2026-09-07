@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import os
 import asyncio
 import filecmp
@@ -119,7 +119,7 @@ def test_dump_functionality(MockFishAudioTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
@@ -294,7 +294,7 @@ def test_flush_logic(MockFishAudioTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str):
         for _ in range(20):

@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 import json
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_runtime import (
     ExtensionTester,
@@ -126,7 +126,7 @@ def test_reconnect_after_connection_drop(MockFishAudioTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates different behaviors on subsequent calls
     async def mock_get_stateful(text: str):

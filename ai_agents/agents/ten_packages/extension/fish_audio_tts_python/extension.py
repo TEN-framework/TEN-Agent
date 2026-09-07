@@ -24,6 +24,7 @@ from .config import FishAudioTTSConfig
 from .fish_audio_tts import (
     EVENT_TTS_END,
     EVENT_TTS_ERROR,
+    EVENT_TTS_FLUSH,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_INVALID_KEY_ERROR,
     FishAudioTTSClient,
@@ -92,7 +93,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         ten_env.log_debug("Extension stopping, rejecting new requests")
 
         if self.client:
-            self.client.clean()
+            await self.client.clean()
             self.client = None
 
         # Clean up all PCMWriters
@@ -121,7 +122,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
             )
             if self.client:
-                self.client.cancel()
+                await self.client.cancel()
                 if self.request_ts:
                     request_event_interval = int(
                         (datetime.now() - self.request_ts).total_seconds()
@@ -137,10 +138,6 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     if self.current_request_id in self.recorder_map:
                         await self.recorder_map[self.current_request_id].flush()
 
-                    await self.finish_request(
-                        request_id=self.current_request_id,
-                        reason=TTSAudioEndReason.INTERRUPTED,
-                    )
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."
@@ -177,6 +174,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 )
                 self.first_chunk = True
                 self.sent_ts = datetime.now()
+                self.request_ts = None
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
@@ -233,6 +231,21 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     f"TTS is stopped, skipping request_id: {t.request_id}"
                 )
                 return
+
+            # Fish Audio's live WebSocket does not reliably complete for an
+            # empty text stream. Handle empty chunks locally so a final empty
+            # chunk can still close a request that already produced audio, and
+            # an entirely empty request completes with zero duration.
+            if not t.text.strip():
+                self.ten_env.log_info(
+                    f"Skipping empty text for request_id: {t.request_id}"
+                )
+                if t.text_input_end:
+                    await self._complete_current_request(
+                        TTSAudioEndReason.REQUEST_END
+                    )
+                return
+
             async for audio_chunk, event in self.client.get(t.text):
                 if event == EVENT_TTS_RESPONSE:
                     if audio_chunk is not None and len(audio_chunk) > 0:
@@ -321,29 +334,16 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         "Received TTS_END event from Fish Audio TTS"
                     )
-                    # Send TTS audio end event
-                    if self.request_ts and t.text_input_end:
-                        request_event_interval = int(
-                            (datetime.now() - self.request_ts).total_seconds()
-                            * 1000
+                    if t.text_input_end:
+                        await self._complete_current_request(
+                            TTSAudioEndReason.REQUEST_END
                         )
-                        duration_ms = self._calculate_audio_duration_ms()
-                        await self.send_tts_audio_end(
-                            request_id=self.current_request_id,
-                            request_event_interval_ms=request_event_interval,
-                            request_total_audio_duration_ms=duration_ms,
-                        )
-                        if self.current_request_id in self.recorder_map:
-                            await self.recorder_map[
-                                self.current_request_id
-                            ].flush()
-                        self.ten_env.log_debug(
-                            f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms",
-                        )
-                        await self.finish_request(
-                            request_id=self.current_request_id,
-                            reason=TTSAudioEndReason.REQUEST_END,
-                        )
+                    break
+
+                elif event == EVENT_TTS_FLUSH:
+                    self.ten_env.log_debug(
+                        "Received TTS_FLUSH event from Fish Audio TTS"
+                    )
                     break
 
                 elif event == EVENT_TTS_INVALID_KEY_ERROR:
@@ -352,19 +352,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         if audio_chunk
                         else "Unknown API key error"
                     )
-                    await self.send_tts_error(
-                        request_id=self.current_request_id or t.request_id,
-                        error=ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
-                            ),
-                        ),
-                    )
-                    await self.finish_request(
-                        request_id=self.current_request_id,
+                    await self._complete_current_request(
                         reason=TTSAudioEndReason.ERROR,
                         error=ModuleError(
                             message=error_msg,
@@ -393,25 +381,65 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}"
             )
-            await self.send_tts_error(
-                request_id=self.current_request_id or t.request_id,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            await self.finish_request(
-                request_id=self.current_request_id,
-                reason=TTSAudioEndReason.ERROR,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+            if t.text_input_end:
+                await self._complete_current_request(
+                    TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                # A request can contain multiple text chunks. A transient
+                # failure on a non-final chunk must not complete the whole
+                # request or release a later request ahead of its final chunk.
+                await self.send_tts_error(
+                    request_id=self.current_request_id or t.request_id,
+                    error=error,
+                )
+
+    async def _complete_current_request(
+        self,
+        reason: TTSAudioEndReason,
+        error: ModuleError | None = None,
+    ) -> None:
+        request_id = self.current_request_id
+        if request_id is None:
+            self.ten_env.log_warn(
+                "Cannot complete Fish Audio TTS request without request_id"
             )
+            return
+
+        if error is not None:
+            await self.send_tts_error(request_id=request_id, error=error)
+
+        interval_start = self.request_ts or self.sent_ts
+        request_event_interval = (
+            int((datetime.now() - interval_start).total_seconds() * 1000)
+            if interval_start
+            else 0
+        )
+        duration_ms = self._calculate_audio_duration_ms()
+        await self.send_tts_audio_end(
+            request_id=request_id,
+            request_event_interval_ms=request_event_interval,
+            request_total_audio_duration_ms=duration_ms,
+            reason=reason,
+        )
+
+        recorder = self.recorder_map.get(request_id)
+        if recorder is not None:
+            await recorder.flush()
+
+        await self.finish_request(request_id=request_id, reason=reason)
+        self.current_request_finished = True
+        self.ten_env.log_debug(
+            f"Completed Fish Audio TTS request {request_id}, "
+            f"reason: {reason.value}, interval: {request_event_interval}ms, "
+            f"duration: {duration_ms}ms"
+        )
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:
