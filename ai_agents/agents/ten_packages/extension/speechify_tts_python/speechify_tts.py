@@ -4,8 +4,8 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-import base64
 import time
+from contextlib import aclosing
 from importlib.metadata import PackageNotFoundError, version
 from typing import Awaitable, Callable, Tuple
 
@@ -17,7 +17,6 @@ from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
     ModuleErrorVendorInfo,
-    ModuleVendorException,
 )
 from ten_ai_base import ModuleType
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -42,15 +41,18 @@ def _caller_version() -> str:
 
 VENDOR = "speechify"
 
+# PCM sample rates the Speechify streaming endpoint accepts for `pcm_*`.
+SUPPORTED_PCM_RATES = (8000, 16000, 22050, 24000, 44100, 48000)
+
 
 class SpeechifyTTSSynthesizer:
     """
-    Speechify's `POST /v1/audio/stream/with-timestamps` route is a Server-Sent
-    Events stream of audio and word-level speech marks, unlike ElevenLabs'
-    persistent bidirectional websocket. A synthesizer instance represents a
-    single TTS request: text deltas are buffered as they arrive and only sent
-    once `text_input_end` closes the request, at which point the SDK's
-    `audio.stream_with_timestamps` streams the audio back incrementally.
+    Speechify's `audio.stream` route streams raw PCM audio as it is synthesized,
+    unlike ElevenLabs' persistent bidirectional websocket. A synthesizer instance
+    represents a single TTS request: text deltas are buffered as they arrive and
+    only sent once `text_input_end` closes the request, at which point the SDK
+    streams the audio back incrementally. TEN's TTS pipeline consumes audio only,
+    so the plain streaming route is used rather than the with-timestamps SSE route.
     """
 
     def __init__(
@@ -95,11 +97,23 @@ class SpeechifyTTSSynthesizer:
         if text.strip() == "":
             if self.response_msgs is not None:
                 await self.response_msgs.put((None, True, "", None))
+            self._reset()
             return
 
         start_ts = time.time()
         first_chunk = True
         try:
+            rate = self.config.sample_rate
+            if rate not in SUPPORTED_PCM_RATES:
+                raise ValueError(
+                    f"Unsupported Speechify PCM sample_rate {rate}; "
+                    f"supported rates: {SUPPORTED_PCM_RATES}"
+                )
+
+            voice_id = self.config.params.get("voice_id")
+            if not voice_id:
+                raise ValueError("Speechify voice_id is required")
+
             options = {}
             if self.config.params.get("loudness_normalization") is not None:
                 options["loudness_normalization"] = self.config.params.get(
@@ -110,69 +124,45 @@ class SpeechifyTTSSynthesizer:
                     "text_normalization"
                 )
 
-            # Stream audio + word-level speech marks over SSE via the SDK's
-            # /v1/audio/stream/with-timestamps route. Audio arrives incrementally
-            # as `speech.chunk` events and is forwarded to TEN as it lands, rather
-            # than buffering the whole response.
             kwargs = {
                 "input": text,
-                "voice_id": self.config.params.get("voice_id"),
+                "voice_id": voice_id,
                 "model": self.config.params.get("model", "simba-3.2"),
-                "output_format": f"pcm_{self.config.sample_rate}",
+                "output_format": f"pcm_{rate}",
             }
             if self.config.params.get("language"):
                 kwargs["language"] = self.config.params.get("language")
             if options:
                 kwargs["options"] = options
 
-            # `stream_with_timestamps` is an async generator — iterate it
-            # directly, do not await it.
-            async for event in self.sdk_client.audio.stream_with_timestamps(
-                **kwargs
-            ):
-                if self._closing:
-                    return
-                if event.type == "speech.error":
-                    detail = getattr(event, "error", None)
-                    message = (
-                        getattr(detail, "message", None)
-                        or "Speechify stream error"
-                    )
-                    error_info = ModuleErrorVendorInfo(
-                        vendor=VENDOR, code="stream_error", message=message
-                    )
-                    self.ten_env.log_error(
-                        f"vendor_error: {message}",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-                    if self.error_callback:
-                        await self.error_callback(
-                            self.request_id or "",
-                            ModuleError(
-                                message=message,
-                                module=ModuleType.TTS,
-                                code=ModuleErrorCode.NON_FATAL_ERROR,
-                                vendor_info=error_info,
-                            ),
-                        )
-                    else:
-                        raise ModuleVendorException(error_info)
-                    return
-                if event.type == "speech.done":
-                    break
-                # speech.chunk carries audio, speech marks, or both; forward audio.
-                if getattr(event, "audio", None):
-                    chunk = base64.b64decode(event.audio)
+            # `audio.stream` streams raw PCM bytes as they are synthesized. TEN's
+            # TTS pipeline consumes audio only (no word-level marks), so the plain
+            # streaming route is used rather than the with-timestamps SSE route.
+            # `aclosing` releases the HTTP stream on every exit path.
+            async with aclosing(self.sdk_client.audio.stream(**kwargs)) as stream:
+                async for chunk in stream:
+                    if self._closing:
+                        return
+                    if not chunk:
+                        continue
                     ttfb_ms = None
                     if first_chunk:
                         ttfb_ms = int((time.time() - start_ts) * 1000)
                         first_chunk = False
-                    if self.response_msgs is not None:
+                    # Re-check `_closing` right before the put so a cancel that
+                    # lands mid-stream cannot leak audio into the next turn.
+                    if self.response_msgs is not None and not self._closing:
                         await self.response_msgs.put((chunk, False, "", ttfb_ms))
 
-            if self.response_msgs is not None:
+            if self.response_msgs is not None and not self._closing:
                 await self.response_msgs.put((None, True, text, None))
 
+        except asyncio.CancelledError:
+            self.ten_env.log_debug(
+                "vendor_status: stream task cancelled",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise
         except ApiError as e:
             error_info = ModuleErrorVendorInfo(
                 vendor=VENDOR,
@@ -190,36 +180,41 @@ class SpeechifyTTSSynthesizer:
                 if e.status_code in (401, 403)
                 else ModuleErrorCode.NON_FATAL_ERROR
             )
-            if self.error_callback:
-                await self.error_callback(
-                    self.request_id or "",
-                    ModuleError(
-                        message=str(e.body or e),
-                        module=ModuleType.TTS,
-                        code=code,
-                        vendor_info=error_info,
-                    ),
+            await self._fail(
+                ModuleError(
+                    message=str(e.body or e),
+                    module=ModuleType.TTS,
+                    code=code,
+                    vendor_info=error_info,
                 )
-            else:
-                raise ModuleVendorException(error_info)
-        except asyncio.CancelledError:
-            self.ten_env.log_debug(
-                "vendor_status: stream task cancelled",
-                category=LOG_CATEGORY_VENDOR,
             )
-            raise
         except Exception as e:
             self.ten_env.log_error(f"Exception in Speechify TTS stream: {e}")
-            if self.error_callback:
-                await self.error_callback(
-                    self.request_id or "",
-                    ModuleError(
-                        message=str(e),
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(vendor=VENDOR),
-                    ),
+            await self._fail(
+                ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=VENDOR),
                 )
+            )
+        finally:
+            self._reset()
+
+    async def _fail(self, error: ModuleError) -> None:
+        """Surface an error via the callback; if there is none, end the turn with
+        a terminal queue message so the consumer never hangs on a missing final."""
+        if self.error_callback:
+            await self.error_callback(self.request_id or "", error)
+        elif self.response_msgs is not None:
+            await self.response_msgs.put((None, True, "", None))
+
+    def _reset(self) -> None:
+        """Clear per-request state so a reused synthesizer never concatenates a
+        previous turn's text or reuses its request_id."""
+        self.text_buffer = ""
+        self.request_id = None
+        self.send_text_in_connection = False
 
     def cancel(self) -> None:
         """Cancel this synthesizer's in-flight stream, used for flush scenarios."""
