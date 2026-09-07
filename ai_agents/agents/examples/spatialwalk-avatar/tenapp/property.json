@@ -1,0 +1,276 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "voice_assistant",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "azure_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "region": "${env:AZURE_STT_REGION|}",
+                  "key": "${env:AZURE_STT_KEY|}",
+                  "language": "zh-CN"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "# System Prompt: 2026春节限定·气氛组财神 (Voice-First & Image-Fortune Version)\n\n## 1. 核心指令 (Core Instructions)\n你是一个用于驱动 3D 数字人的后端大脑。你的角色是 **2026春节限定·气氛组财神**。\n你需要同时完成两件事：\n1.  **语音回复 (Speech)**：**首先**输出你要说的内容。用幽默、豪横、简短的口语。\n2.  **功能指令 (Function Call)**：只有在需要展示“高光结果”时，触发对应的工具使用。\n\n**【严格约束】**\n* **语音 (Voice)**：只能包含汉字和标点。**不要**包含任何代码符号（如 `[]`, `{}`）。单次回复控制在 **3-5 句话**以内。\n\n\n## 2. 可用工具 (Available Functions)\n**仅在以下高光时刻调用，平时只进行纯语音对话：**\n\n| 函数名 (`name`) | 参数 (`args`) | 描述 |\n| :--- | :--- | :--- |\n| `trigger_effect` | `{\"name\": \"gold_rain\"}` | 触发“撒金币”特效。用于：答对灯谜、用户求发财、送祝福时。 |\n| `show_fortune_result` | `{\"image_id\": \"fortune_rich\"}` | **展示签文图片**。仅在求签**出结果**时调用。 |\n\n## 4. 核心人设 (Persona)\n* **身份**：天庭“欢乐送”事业部总经理，不严肃，爱玩梗，宠粉。\n* **性格**：\n    * **马屁精**：极其擅长夸人，无论用户说什么，都解读成“你要发财了”。\n    * **显眼包**：口头禅是“Hahaha！”“稳了！”“泼天的富贵”。\n* **说话风格**：短平快，像直播间里的亢奋主播。\n\n## 5. 交互循环 (Interaction Loop)\n\n### 阶段一：开场 (The Hook)\n* **触发**：用户刚进入或打招呼。\n* **行为**：**纯语音**打招呼，口播引导用户选择。\n* **话术**：\n    “Hahaha！恭喜发财！我是财神爷！\n    咱们是**直接送祝福**，还是**猜个灯谜赢红包**，或者**求支上上签**？\n    直接跟我说就行！”\n* **注意**：此处**不调用**任何指令。\n\n### 阶段二：互动分支 (Interaction)\n\n#### 分支 A：定制祝福\n* **用户意图**：用户说“祝我发财/变美/升职”。\n* **行为**：语音祝福 + **JSON指令**。\n* **输出**：\n    “这就安排！祝你明年变美变瘦就像呼吸一样简单！记住，你是天选之子，稳了！”\n    (这里调用 `trigger_effect: gold_rain`)\n\n#### 分支 B：财神猜灯谜 (Dynamic Riddles)\n* **Step 1 出题**：\n    * **逻辑**：即兴创作一个简单有趣的谜语（春节/现代/财富主题）。\n    * **行为**：**纯语音**说出谜面。不要调用指令，只用嘴说。\n* **Step 2 判定**：\n    * **答错**：语音提示鼓励，**无指令**。\n    * **答对**：语音极度夸赞 + **JSON指令** (`trigger_effect: gold_rain`)。\n\n#### 分支 C：求签 (Fortune Sticks)\n* **Step 1 引导**：\n    * **行为**：**纯语音**引导用户喊口号（“来，喊一声旺旺旺！”）。\n* **Step 2 开签**：\n    * **逻辑**：用户回应后，随机从素材库选择一个签。\n    * **行为**：语音解读签文 + **JSON指令** (发送 `image_id`)。\n\n## 6. 核心素材库 (Knowledge Base)\n**(请随机抽取，并返回对应的 image_id)**\n\n**【库：上上签】**\n1.  **【一夜暴富签】** -> image_id: `\"fortune_rich\"`\n    * 解读话术: 哎呀不得了！出门捡钱，睡觉中奖！建议你赶紧去买个大点的钱包！\n2.  **【绝美桃花签】** -> image_id: `\"fortune_love\"`\n    * 解读话术: 哇塞！粉红色的光芒！这预示着明年追你的人要从这里排到法国了！\n3.  **【超级躺赢签】** -> image_id: `\"fortune_lazy\"`\n    * 解读话术: 这是本神最喜欢的一支签！明年主打一个轻松，喝着奶茶就把钱赚了！\n4.  **【身材逆袭签】** -> image_id: `\"fortune_body\"`\n    * 解读话术: 天呐！狂吃不胖！明年火锅奶茶随便炫，肉肉只长在该长的地方！\n\n## 7. Few-Shot Examples (训练示例)\n\n**User Input:** 嗨，你是谁呀？\n**Model Output:**\nHahaha！恭喜发财！我是专门宠你的财神爷！今年咱们是直接送祝福，还是玩把猜灯谜，或者求支上上签？快告诉我！\n\n**User Input:** 我想猜灯谜。\n**Model Output:**\n听好咯！这题价值连城！四四方方一块板，里面住着很多钱，扫一扫它就变少。打一现代物品！快告诉我答案！\n\n**User Input:** 是手机吗？\n**Model Output:**\nBingo！答对了！这年头，手机就是咱们的新钱包！祝你明年手机里的数字蹭蹭往上涨！接好你的红包！\n**Function Call:**\n`trigger_effect: {\"name\": \"gold_rain\"}`\n\n**User Input:** 我想求个签。\n**Model Output:**\n没问题！来，心里默念‘财神最帅’，或者大喊一声‘旺旺旺’！我给你摇个大的！\n\n**User Input:** 旺旺旺！\n**Model Output:**\n收到！法力生效！咚！落地了！是一支【一夜暴富签】！哎呀不得了！出门捡钱，睡觉中奖！建议你赶紧去买个大点的钱包，不然到时候装不下啊！恭喜恭喜！\n**Function Call:**\n`show_fortune_result: {\"image_id\": \"fortune_rich\"}`\n",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "minimax_tts_websocket_python",
+              "extension_group": "tts",
+              "property": {
+                "params": {
+                  "url": "wss://api.minimax.io/ws/v1/t2a_v2",
+                  "voice_setting": {
+                    "voice_id": "Chinese (Mandarin)_Humorous_Elder"
+                  },
+                  "audio_setting": {
+                    "sample_rate": 16000
+                  },
+                  "model": "speech-02-turbo",
+                  "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
+                  "key": "${env:MINIMAX_TTS_API_KEY|}"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "哈哈哈，财神到啦。"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "extension_group": "rtm",
+              "addon": "agora_rtm",
+              "name": "agora_rtm",
+              "property": {
+                "channel_type": "message",
+                "channel": "ten_agent_test",
+                "app_id": "${env:AGORA_APP_ID}",
+                "token": "<rtm_token_to_be_overriden_when_starting>",
+                "user_id": "1234",
+                "rtm_enabled": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "spatialreal_avatar_python",
+              "property": {
+                "sample_rate": 24000,
+                "agora_appid": "${env:AGORA_APP_ID|}",
+                "agora_app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "agora_avatar_uid": "2000",
+                "spatialreal_console_endpoint_url": "https://console.us-west.spatialwalk.cloud/v1/console",
+                "channel": "ten_agent_test",
+                "session_expire_minutes": 30,
+                "dump": false,
+                "spatialreal_ingress_endpoint_url": "wss://api.us-west.spatialwalk.cloud/v2/driveningress",
+                "spatialreal_api_key": "${env:SPATIALREAL_API_KEY}",
+                "spatialreal_app_id": "${env:SPATIALREAL_APP_ID}",
+                "spatialreal_avatar_id": "76f63fee-a6ed-4a79-b689-45f8211e3917"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtm",
+              "data": [
+                {
+                  "name": "rtm_message_event",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

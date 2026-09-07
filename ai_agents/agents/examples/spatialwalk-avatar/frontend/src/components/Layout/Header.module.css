@@ -1,0 +1,18 @@
+.colorPicker :global(.react-colorful) {
+  width: 220px;
+  height: 8px;
+}
+
+.colorPicker :global(.react-colorful__saturation) {
+  display: none;
+}
+
+.colorPicker :global(.react-colorful__hue) {
+  border-radius: 8px !important;
+  height: 8px;
+}
+
+.colorPicker :global(.react-colorful__pointer) {
+  width: 24px;
+  height: 24px;
+}

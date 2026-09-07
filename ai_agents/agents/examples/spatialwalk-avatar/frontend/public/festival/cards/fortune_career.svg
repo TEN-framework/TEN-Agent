@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1080">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5c130f"/>
+      <stop offset="100%" stop-color="#2d1009"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1080" rx="36" fill="url(#g)"/>
+  <rect x="36" y="36" width="648" height="1008" rx="24" fill="none" stroke="#d8a53a" stroke-width="8"/>
+  <text x="360" y="260" fill="#f6d58a" font-size="48" text-anchor="middle" font-family="Arial, sans-serif">Fortune Card</text>
+  <text x="360" y="360" fill="#fff1c6" font-size="64" text-anchor="middle" font-family="Arial, sans-serif">fortune_career</text>
+  <text x="360" y="470" fill="#f0e5c3" font-size="30" text-anchor="middle" font-family="Arial, sans-serif">Temporary Placeholder</text>
+  <text x="360" y="920" fill="#ffe2a3" font-size="28" text-anchor="middle" font-family="Arial, sans-serif">Tap 收下祝福 to close</text>
+</svg>

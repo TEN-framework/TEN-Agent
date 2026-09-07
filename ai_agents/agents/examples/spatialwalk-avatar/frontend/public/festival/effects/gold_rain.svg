@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4d0d0d"/>
+      <stop offset="100%" stop-color="#120b0a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <g fill="#f7c94a" opacity="0.85">
+    <circle cx="120" cy="120" r="18"/><circle cx="220" cy="260" r="14"/><circle cx="330" cy="80" r="16"/>
+    <circle cx="430" cy="210" r="20"/><circle cx="560" cy="120" r="17"/><circle cx="690" cy="260" r="15"/>
+    <circle cx="790" cy="70" r="18"/><circle cx="910" cy="220" r="16"/><circle cx="1040" cy="110" r="19"/>
+  </g>
+  <text x="600" y="430" fill="#ffd777" font-size="64" text-anchor="middle" font-family="Arial, sans-serif">Gold Rain Effect</text>
+  <text x="600" y="500" fill="#ffefc2" font-size="30" text-anchor="middle" font-family="Arial, sans-serif">Temporary Placeholder</text>
+</svg>

@@ -1,0 +1,29 @@
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  run-api-prod:
+    desc: run api server in production
+    cmds:
+      - /app/server/bin/api -tenapp_dir=/app/agents
+    background: true
+
+  run-frontend-prod:
+    desc: run frontend in production
+    dir: ./frontend
+    cmds:
+      - bun start
+    background: true
+
+  run-prod:
+    desc: run both api and frontend in production
+    deps:
+      - task: run-api-prod
+      - task: run-frontend-prod
+
+  health-check:
+    desc: check if both services are running
+    cmds:
+      - curl -f http://localhost:8080/health || echo "API server not responding"
+      - curl -f http://localhost:3000 || echo "Frontend not responding"

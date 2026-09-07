@@ -1,0 +1,16 @@
+{
+    "spatialreal_api_key": "${env:SPATIALREAL_API_KEY|}",
+    "spatialreal_app_id": "${env:SPATIALREAL_APP_ID|}",
+    "spatialreal_avatar_id": "",
+    "spatialreal_console_endpoint_url": "https://console.us-west.spatialwalk.cloud/v1/console",
+    "spatialreal_ingress_endpoint_url": "https://api.us-west.spatialwalk.cloud/v2/driveningress",
+    "agora_avatar_uid": "",
+    "agora_token": "",
+    "agora_appid": "${env:AGORA_APP_ID|}",
+    "agora_app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+    "channel": "",
+    "sample_rate": 24000,
+    "session_expire_minutes": 30,
+    "dump": false,
+    "dump_path": ""
+}

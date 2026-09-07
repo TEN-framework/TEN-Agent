@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#100922"/>
+  <g stroke-width="6" fill="none">
+    <g stroke="#ff4f7f"><path d="M200 260l-70-90"/><path d="M200 260l95-45"/><path d="M200 260l0 110"/><path d="M200 260l-100 35"/></g>
+    <g stroke="#ffd24a"><path d="M580 180l-95-60"/><path d="M580 180l110-20"/><path d="M580 180l35 120"/><path d="M580 180l-120 40"/></g>
+    <g stroke="#67e8f9"><path d="M950 280l-80-100"/><path d="M950 280l120-40"/><path d="M950 280l45 110"/><path d="M950 280l-130 35"/></g>
+  </g>
+  <text x="600" y="430" fill="#f3f4ff" font-size="64" text-anchor="middle" font-family="Arial, sans-serif">Fireworks Effect</text>
+  <text x="600" y="500" fill="#dbe2ff" font-size="30" text-anchor="middle" font-family="Arial, sans-serif">Temporary Placeholder</text>
+</svg>

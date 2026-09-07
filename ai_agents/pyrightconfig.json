@@ -133,6 +133,13 @@
             ]
         },
         {
+            "root": "agents/examples/spatialwalk-avatar",
+            "extraPaths": [
+                "agents/examples/spatialwalk-avatar/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/spatialwalk-avatar/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
             "root": "agents/ten_packages",
             "extraPaths": [
                 "agents/ten_packages/system/ten_runtime_python/interface",
