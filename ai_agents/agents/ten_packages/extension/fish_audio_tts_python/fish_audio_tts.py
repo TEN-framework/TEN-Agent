@@ -34,6 +34,8 @@ class FishAudioTTSClient:
 
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
         """Process a single TTS request in serial manner"""
+        # AsyncTTS2BaseExtension invokes get() serially. The cancellation flag
+        # therefore belongs to the active stream and is reset for its successor.
         self._is_cancelled = False
         if self.client is None:
             self.client = self._create_session()
@@ -77,7 +79,8 @@ class FishAudioTTSClient:
         except Exception as e:
             if self._is_cancelled:
                 self.ten_env.log_debug(
-                    "FishAudioTTS: vendor stream stopped after cancellation."
+                    "FishAudioTTS: vendor stream stopped after cancellation: "
+                    f"type={type(e).__name__}"
                 )
                 yield None, EVENT_TTS_FLUSH
                 return
@@ -113,7 +116,8 @@ class FishAudioTTSClient:
             except Exception as close_error:
                 self.ten_env.log_warn(
                     "FishAudioTTS: failed to close cancelled session: "
-                    f"{close_error}"
+                    f"type={type(close_error).__name__}, "
+                    f"message={str(close_error)}"
                 )
 
     async def clean(self) -> None:

@@ -44,6 +44,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
+        self._audio_end_sent: bool = False
         self._is_stopped: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
             {}
@@ -117,9 +118,11 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
 
     async def cancel_tts(self) -> None:
         self.current_request_finished = True
-        if self.current_request_id:
+        request_id = self.current_request_id
+        if request_id:
             self.ten_env.log_debug(
-                f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+                f"Current request {request_id} is being cancelled. "
+                "Sending INTERRUPTED."
             )
             if self.client:
                 await self.client.cancel()
@@ -131,7 +134,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             # Do not call finish_request() here. AsyncTTS2BaseExtension's flush
             # path clears request state after cancel_tts() returns.
             await self._send_current_request_audio_end(
-                TTSAudioEndReason.INTERRUPTED
+                request_id, TTSAudioEndReason.INTERRUPTED
             )
 
         else:
@@ -173,6 +176,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 self.request_ts = None
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
+                self._audio_end_sent = False
                 self.total_audio_bytes = 0  # Reset for new request
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
@@ -397,9 +401,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         if error is not None:
             await self.send_tts_error(request_id=request_id, error=error)
 
-        request_id = await self._send_current_request_audio_end(reason)
-        if request_id is None:
-            return
+        await self._send_current_request_audio_end(request_id, reason)
 
         await self.finish_request(request_id=request_id, reason=reason)
         self.current_request_finished = True
@@ -409,15 +411,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         )
 
     async def _send_current_request_audio_end(
-        self, reason: TTSAudioEndReason
-    ) -> str | None:
-        """Send audio_end and flush its dump without changing base state."""
-        request_id = self.current_request_id
-        if request_id is None:
-            self.ten_env.log_warn(
-                "Cannot end Fish Audio TTS request without request_id"
-            )
-            return None
+        self, request_id: str, reason: TTSAudioEndReason
+    ) -> None:
+        """Send audio_end at most once and flush without changing base state."""
 
         interval_start = self.request_ts or self.sent_ts
         request_event_interval = (
@@ -426,13 +422,25 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             else 0
         )
         duration_ms = self._calculate_audio_duration_ms()
-        await self.send_tts_audio_end(
-            request_id=request_id,
-            request_event_interval_ms=request_event_interval,
-            request_total_audio_duration_ms=duration_ms,
-            reason=reason,
-        )
 
+        # Set the sentinel before the first await. A flush can run while normal
+        # completion is awaiting event delivery; marking it here prevents that
+        # race from emitting a second audio_end for the same request.
+        if not self._audio_end_sent:
+            self._audio_end_sent = True
+            await self.send_tts_audio_end(
+                request_id=request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=duration_ms,
+                reason=reason,
+            )
+        else:
+            self.ten_env.log_debug(
+                f"Skipping duplicate audio_end for request {request_id}"
+            )
+
+        # Flush even when audio_end was already sent. The task that originally
+        # sent it may have been cancelled before its recorder flush completed.
         recorder = self.recorder_map.get(request_id)
         if recorder is not None:
             await recorder.flush()
@@ -442,7 +450,6 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             f"reason: {reason.value}, interval: {request_event_interval}ms, "
             f"duration: {duration_ms}ms"
         )
-        return request_id
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:

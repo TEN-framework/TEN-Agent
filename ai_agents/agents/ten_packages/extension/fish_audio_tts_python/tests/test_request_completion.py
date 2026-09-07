@@ -11,6 +11,7 @@ from fish_audio_tts_python.fish_audio_tts import (
     EVENT_TTS_END,
     EVENT_TTS_ERROR,
     EVENT_TTS_FLUSH,
+    EVENT_TTS_INVALID_KEY_ERROR,
     EVENT_TTS_RESPONSE,
 )
 
@@ -236,5 +237,59 @@ def test_flush_event_does_not_duplicate_cancel_completion() -> None:
 
         extension.send_tts_audio_end.assert_not_awaited()
         extension.finish_request.assert_not_awaited()
+
+    asyncio.run(run_test())
+
+
+def test_cancel_after_completion_does_not_duplicate_audio_end() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        await extension.request_tts(
+            TTSTextInput(
+                request_id="completed-request",
+                text=" ",
+                text_input_end=True,
+                metadata={},
+            )
+        )
+
+        await extension.cancel_tts()
+
+        extension.send_tts_audio_end.assert_awaited_once()
+        extension.finish_request.assert_awaited_once_with(
+            request_id="completed-request",
+            reason=TTSAudioEndReason.REQUEST_END,
+        )
+
+    asyncio.run(run_test())
+
+
+def test_invalid_key_error_completes_with_audio_end() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+
+        async def invalid_key_stream(_text: str):
+            yield b"402 Payment Required", EVENT_TTS_INVALID_KEY_ERROR
+
+        extension.client.get = invalid_key_stream
+        await extension.request_tts(
+            TTSTextInput(
+                request_id="invalid-key-request",
+                text="hello",
+                text_input_end=True,
+                metadata={},
+            )
+        )
+
+        extension.send_tts_error.assert_awaited_once()
+        error = extension.send_tts_error.await_args.kwargs["error"]
+        assert error.code == int(ModuleErrorCode.FATAL_ERROR.value)
+        extension.send_tts_audio_end.assert_awaited_once()
+        end_args = extension.send_tts_audio_end.await_args.kwargs
+        assert end_args["reason"] == TTSAudioEndReason.ERROR
+        extension.finish_request.assert_awaited_once_with(
+            request_id="invalid-key-request",
+            reason=TTSAudioEndReason.ERROR,
+        )
 
     asyncio.run(run_test())
