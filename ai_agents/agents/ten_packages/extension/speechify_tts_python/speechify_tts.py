@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import base64
 import time
 from importlib.metadata import PackageNotFoundError, version
 from typing import Awaitable, Callable, Tuple
@@ -44,12 +45,12 @@ VENDOR = "speechify"
 
 class SpeechifyTTSSynthesizer:
     """
-    Speechify's public API (`POST /v1/audio/stream/with-timestamps`) is a
-    one-shot request/response HTTP endpoint that returns audio with word-level
-    timestamps, unlike ElevenLabs' persistent bidirectional websocket. A
-    synthesizer instance therefore represents a single TTS request: text deltas
-    are buffered as they arrive and only sent once `text_input_end` closes the
-    request, at which point the audio and speech marks are returned.
+    Speechify's `POST /v1/audio/stream/with-timestamps` route is a Server-Sent
+    Events stream of audio and word-level speech marks, unlike ElevenLabs'
+    persistent bidirectional websocket. A synthesizer instance represents a
+    single TTS request: text deltas are buffered as they arrive and only sent
+    once `text_input_end` closes the request, at which point the SDK's
+    `audio.stream_with_timestamps` streams the audio back incrementally.
     """
 
     def __init__(
@@ -109,105 +110,66 @@ class SpeechifyTTSSynthesizer:
                     "text_normalization"
                 )
 
-            # Direct HTTP call to /v1/audio/stream/with-timestamps for word-level timing
-            base_url = self.config.params.get("base_url") or "https://api.sws.speechify.com"
-            url = f"{base_url}/v1/audio/stream/with-timestamps"
-            
-            request_body = {
+            # Stream audio + word-level speech marks over SSE via the SDK's
+            # /v1/audio/stream/with-timestamps route. Audio arrives incrementally
+            # as `speech.chunk` events and is forwarded to TEN as it lands, rather
+            # than buffering the whole response.
+            kwargs = {
                 "input": text,
                 "voice_id": self.config.params.get("voice_id"),
                 "model": self.config.params.get("model", "simba-3.2"),
                 "output_format": f"pcm_{self.config.sample_rate}",
             }
-            
             if self.config.params.get("language"):
-                request_body["language"] = self.config.params.get("language")
-            
+                kwargs["language"] = self.config.params.get("language")
             if options:
-                request_body["options"] = options
-            
-            headers = {
-                "Authorization": f"Bearer {self.config.params.get('key')}",
-                "Content-Type": "application/json",
-                CALLER_HEADER: CALLER_VALUE,
-                CALLER_VERSION_HEADER: _caller_version(),
-            }
-            
-            # Get the httpx client from parent
-            import json
-            response = await self.sdk_client._client.post(
-                url,
-                headers=headers,
-                content=json.dumps(request_body),
-            )
-            
-            if response.status_code != 200:
-                error_text = response.text
-                raise ApiError(status_code=response.status_code, body=error_text)
-            
-            # Parse SSE stream
-            text_data = response.text
-            audio_chunks = []
-            all_speech_marks = []
-            
-            # Parse SSE format: "event: <type>\ndata: <json>\n\n"
-            events = text_data.split('\n\n')
-            for event in events:
-                if not event.strip():
-                    continue
-                
-                lines = event.split('\n')
-                event_type = ''
-                data_line = ''
-                
-                for line in lines:
-                    if line.startswith('event: '):
-                        event_type = line[7:].strip()
-                    elif line.startswith('data: '):
-                        data_line = line[6:].strip()
-                
-                if not data_line:
-                    continue
-                
-                try:
-                    parsed = json.loads(data_line)
-                    
-                    if event_type == 'speech.chunk':
-                        if parsed.get('audio'):
-                            audio_chunks.append(parsed['audio'])
-                        if parsed.get('speech_marks') and isinstance(parsed['speech_marks'], list):
-                            all_speech_marks.extend(parsed['speech_marks'])
-                except json.JSONDecodeError:
-                    # Skip malformed JSON
-                    pass
-            
-            # Concatenate base64 audio chunks
-            full_audio_base64 = ''.join(audio_chunks)
-            
-            # Decode base64 audio
-            import base64
-            audio_bytes = base64.b64decode(full_audio_base64)
-            
-            # Stream audio in chunks
-            chunk_size = 4096
-            for i in range(0, len(audio_bytes), chunk_size):
-                chunk = audio_bytes[i:i + chunk_size]
+                kwargs["options"] = options
+
+            # `stream_with_timestamps` is an async generator — iterate it
+            # directly, do not await it.
+            async for event in self.sdk_client.audio.stream_with_timestamps(
+                **kwargs
+            ):
                 if self._closing:
                     return
-                ttfb_ms = None
-                if first_chunk:
-                    ttfb_ms = int((time.time() - start_ts) * 1000)
-                    first_chunk = False
-                if self.response_msgs is not None:
-                    await self.response_msgs.put((chunk, False, "", ttfb_ms))
+                if event.type == "speech.error":
+                    detail = getattr(event, "error", None)
+                    message = (
+                        getattr(detail, "message", None)
+                        or "Speechify stream error"
+                    )
+                    error_info = ModuleErrorVendorInfo(
+                        vendor=VENDOR, code="stream_error", message=message
+                    )
+                    self.ten_env.log_error(
+                        f"vendor_error: {message}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
+                    if self.error_callback:
+                        await self.error_callback(
+                            self.request_id or "",
+                            ModuleError(
+                                message=message,
+                                module=ModuleType.TTS,
+                                code=ModuleErrorCode.NON_FATAL_ERROR,
+                                vendor_info=error_info,
+                            ),
+                        )
+                    else:
+                        raise ModuleVendorException(error_info)
+                    return
+                if event.type == "speech.done":
+                    break
+                # speech.chunk carries audio, speech marks, or both; forward audio.
+                if getattr(event, "audio", None):
+                    chunk = base64.b64decode(event.audio)
+                    ttfb_ms = None
+                    if first_chunk:
+                        ttfb_ms = int((time.time() - start_ts) * 1000)
+                        first_chunk = False
+                    if self.response_msgs is not None:
+                        await self.response_msgs.put((chunk, False, "", ttfb_ms))
 
-            # Send speech marks as the final message
-            speech_marks_text = ""
-            if all_speech_marks:
-                # Format speech marks for TEN Framework
-                # TEN expects word-level timing info in the final message
-                speech_marks_text = json.dumps(all_speech_marks)
-            
             if self.response_msgs is not None:
                 await self.response_msgs.put((None, True, text, None))
 
