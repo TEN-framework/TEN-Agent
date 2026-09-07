@@ -13,16 +13,20 @@ from .helpers import FakePropertyError, FakeTenEnv, data_as_dict
     "properties",
     [
         {
-            "url": "ws://127.0.0.1:9990/tuling/ast/v3",
-            "biz_id": "tenant-1",
-            "reconnect_delay": 2.0,
-            "reconnect_max_delay": 1.0,
+            "params": {
+                "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+                "biz_id": "tenant-1",
+                "reconnect_delay": 2.0,
+                "reconnect_max_delay": 1.0,
+            }
         },
         {
-            "url": "ws://127.0.0.1:9990/tuling/ast/v3",
-            "biz_id": "tenant-1",
             "dump": True,
             "dump_path": "   ",
+            "params": {
+                "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+                "biz_id": "tenant-1",
+            },
         },
     ],
 )
@@ -37,8 +41,10 @@ def test_property_read_error_reports_fatal_without_crashing() -> None:
     async def run() -> None:
         ten_env = FakeTenEnv(
             {
-                "url": "ws://127.0.0.1:9990/tuling/ast/v3",
-                "biz_id": "tenant-1",
+                "params": {
+                    "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+                    "biz_id": "tenant-1",
+                }
             },
             property_error=FakePropertyError("property backend unavailable"),
         )

@@ -51,11 +51,19 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         self.reconnect_manager: ReconnectManager | None = None
 
         self._message_task: Optional[asyncio.Task] = None
-        # In-flight reconnection tasks. Reconnection is always run on its own
-        # task (never awaited inline) so it cannot cancel the caller; see
-        # `_schedule_reconnect`. Tracked here so tasks are not garbage
-        # collected mid-flight and can be cancelled on shutdown.
-        self._reconnect_tasks: set[asyncio.Task] = set()
+        # Reconnection is always run on its own task (never awaited inline) so
+        # it cannot cancel the message task that detected the disconnect.
+        # A single task also serializes retry-budget and connection mutations.
+        self._reconnect_task: asyncio.Task[None] | None = None
+        self._reconnect_pending: bool = False
+
+    @override
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # Close the race between the base on_stop() and on_deinit(): prevent a
+        # reconnect sleeping in backoff from opening a new socket after stop.
+        self.stopped = True
+        await self._cancel_reconnect_task()
+        await super().on_stop(ten_env)
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -65,20 +73,18 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             self.audio_dumper = None
         # Cancel any in-flight reconnection before tearing down the connection
         # so a pending reconnect cannot re-open the socket during shutdown.
-        await self._cancel_reconnect_tasks()
+        await self._cancel_reconnect_task()
         await self.stop_connection()
 
-    async def _cancel_reconnect_tasks(self) -> None:
-        """Cancel and drain any outstanding reconnection tasks."""
-        tasks = list(self._reconnect_tasks)
-        for task in tasks:
-            task.cancel()
-        for task in tasks:
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-        self._reconnect_tasks.clear()
+    async def _cancel_reconnect_task(self) -> None:
+        """Cancel and drain the outstanding reconnection task, if any."""
+        task = self._reconnect_task
+        self._reconnect_task = None
+        self._reconnect_pending = False
+        if task is None or task is asyncio.current_task():
+            return
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
     @override
     def vendor(self) -> str:
@@ -149,110 +155,196 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         return f"{ws_url}?{urlencode(params)}"
 
     @override
-    async def start_connection(self) -> None:
+    async def start_connection(self, *, _propagate_error: bool = False) -> None:
+        if self.stopped:
+            return
+
+        try:
+            await self._connect_once()
+        except Exception as e:
+            await self._report_connection_failure(e)
+            if _propagate_error:
+                raise
+            self._schedule_reconnect()
+
+    async def _connect_once(self) -> None:
+        """Open one vendor connection, propagating failure to the caller."""
         assert self.config is not None
         self.ten_env.log_info("start_connection")
 
+        await self.stop_connection()
+        if self.stopped:
+            return
+
+        # Create aiohttp session if not exists
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
+
+        if self.audio_dumper:
+            await self.audio_dumper.start()
+
+        # Build WebSocket URL
+        ws_url = self._build_websocket_url()
+        # Get API key from config or params
+        api_key = self.config.api_key or self.config.params.get("api_key", "")
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "X-Source": SOURCE_NAME,
+        }
+
+        self.ten_env.log_info(
+            f"Connecting to Smallest AI WebSocket: {ws_url}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+        # Connect to WebSocket
         try:
-            await self.stop_connection()
-
-            # Create aiohttp session if not exists
-            if self.session is None or self.session.closed:
-                self.session = aiohttp.ClientSession()
-
-            if self.audio_dumper:
-                await self.audio_dumper.start()
-
-            # Build WebSocket URL
-            ws_url = self._build_websocket_url()
-            # Get API key from config or params
-            api_key = self.config.api_key or self.config.params.get(
-                "api_key", ""
+            timeout = aiohttp.ClientTimeout(total=30)
+            self.ws = await asyncio.wait_for(
+                self.session.ws_connect(
+                    ws_url, headers=headers, timeout=timeout
+                ),
+                timeout=30.0,
             )
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "X-Source": SOURCE_NAME,
-            }
-
-            self.ten_env.log_info(
-                f"Connecting to Smallest AI WebSocket: {ws_url}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-
-            # Connect to WebSocket
-            try:
-                timeout = aiohttp.ClientTimeout(total=30)
-                self.ws = await asyncio.wait_for(
-                    self.session.ws_connect(
-                        ws_url, headers=headers, timeout=timeout
-                    ),
-                    timeout=30.0,
-                )
-            except asyncio.TimeoutError:
-                self.ten_env.log_error("WebSocket connection timeout")
-                raise
-            except Exception as e:
-                self.ten_env.log_error(f"WebSocket connection failed: {e}")
-                raise
-
-            self.connected = True
-            self.sent_user_audio_duration_ms_before_last_reset += (
-                self.audio_timeline.get_total_user_audio_duration()
-            )
-            self.audio_timeline.reset()
-            self._utterance_start_ms = None
-
-            # Report the socket as usable now that the handshake succeeded,
-            # not just "connecting" — the base class only emits CONNECTING
-            # before this hook runs.
-            await self.on_connected()
-
-            # Start message processing task
-            self._message_task = asyncio.create_task(self._process_messages())
-
-            self.ten_env.log_info(
-                "start_connection completed",
-                category=LOG_CATEGORY_VENDOR,
-            )
-
+        except asyncio.TimeoutError:
+            self.ten_env.log_error("WebSocket connection timeout")
+            raise
         except Exception as e:
-            self.ten_env.log_error(
-                f"KEYPOINT start_connection failed: invalid vendor config: {e}"
-            )
-            self.connected = False
-            error = ModuleError(
-                module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=str(e),
-            )
-            await self.send_asr_error(error)
-            await self.on_disconnected(code=error.code, message=error.message)
-            self._schedule_reconnect()
+            self.ten_env.log_error(f"WebSocket connection failed: {e}")
+            raise
+
+        self.connected = True
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
+        self._utterance_start_ms = None
+
+        # Report the socket as usable now that the handshake succeeded, not
+        # just "connecting" — the base class only emits CONNECTING first.
+        await self.on_connected()
+
+        self._message_task = asyncio.create_task(self._process_messages())
+
+        self.ten_env.log_info(
+            "start_connection completed",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+    async def _report_connection_failure(self, exc: Exception) -> None:
+        self.ten_env.log_error(f"KEYPOINT start_connection failed: {exc}")
+        self.connected = False
+        message = str(exc)
+        error = ModuleError(
+            module=MODULE_NAME_ASR,
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=message,
+        )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(getattr(exc, "status", type(exc).__name__)),
+            message=message,
+        )
+        await self.send_asr_error(error, vendor_info)
+        await self.on_disconnected(
+            code=error.code,
+            message=error.message,
+            vendor_info=vendor_info,
+        )
+
+    async def _send_reconnect_manager_error(self, error: ModuleError) -> None:
+        """Report retry-manager errors with a complete vendor payload."""
+        await self.send_asr_error(
+            error,
+            ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(error.code),
+                message=error.message,
+            ),
+        )
 
     def _schedule_reconnect(self) -> None:
         """Trigger a reconnection attempt on an independent task.
 
         Reconnection must never be awaited from within `_message_task`. The
-        reconnect path runs `start_connection()` -> `stop_connection()`, and
+        reconnect path runs `start_connection()` -> `_connect_once()` ->
+        `stop_connection()`, and
         `stop_connection()` cancels `_message_task`. Awaiting the reconnect
         inline would therefore cancel the very task executing it, tearing the
         flow down before `start_connection()` can spawn a fresh message task.
 
         Running it as a standalone task lets the message loop return cleanly
-        while the reconnect proceeds. Tasks are retained in a set (and removed
-        on completion) so they are not garbage collected mid-flight and can be
-        cancelled on shutdown.
+        while the reconnect proceeds. At most one task may run so concurrent
+        send, finalize, and receive failures cannot race the retry manager.
         """
+        if self.stopped:
+            return
+        if self._reconnect_task and not self._reconnect_task.done():
+            # The active reconnect may have opened a socket which then closed
+            # before the reconnect task finished unwinding. Remember that
+            # disconnect so the done callback can start another attempt.
+            self._reconnect_pending = True
+            self.ten_env.log_debug("Reconnect already in progress, skip")
+            return
+
+        self._reconnect_pending = False
         task = asyncio.create_task(self._handle_reconnect())
-        self._reconnect_tasks.add(task)
-        task.add_done_callback(self._reconnect_tasks.discard)
+        self._reconnect_task = task
+
+        def clear_reconnect_task(done_task: asyncio.Task[None]) -> None:
+            if not done_task.cancelled():
+                exc = done_task.exception()
+                if exc is not None:
+                    self.ten_env.log_error(f"Reconnect task failed: {exc}")
+            if self._reconnect_task is done_task:
+                self._reconnect_task = None
+                reconnect_pending = self._reconnect_pending
+                self._reconnect_pending = False
+                if (
+                    reconnect_pending
+                    and not self.stopped
+                    and not self.connected
+                ):
+                    self._schedule_reconnect()
+
+        task.add_done_callback(clear_reconnect_task)
+
+    async def _handle_unexpected_disconnect(
+        self,
+        message: str,
+        ws: aiohttp.ClientWebSocketResponse,
+    ) -> None:
+        """Report and reconnect only if `ws` is still the active socket."""
+        if self.stopped or self.ws is not ws or not self.connected:
+            return
+
+        self.connected = False
+        error = ModuleError(
+            module=MODULE_NAME_ASR,
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=message,
+        )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code="websocket",
+            message=message,
+        )
+        await self.send_asr_error(error, vendor_info)
+        await self.on_disconnected(
+            code=error.code,
+            message=error.message,
+            vendor_info=vendor_info,
+        )
+        self._schedule_reconnect()
 
     async def _process_messages(self) -> None:
         """Process incoming messages from the WebSocket."""
-        assert self.ws is not None
+        ws = self.ws
+        if ws is None:
+            return
 
         try:
-            async for msg in self.ws:
+            async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     try:
                         data = json.loads(msg.data)
@@ -271,57 +363,29 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                         raise
 
                 elif msg.type == aiohttp.WSMsgType.ERROR:
-                    error_msg = f"WebSocket error: {self.ws.exception()}"
+                    error_msg = f"WebSocket error: {ws.exception()}"
                     self.ten_env.log_error(
                         error_msg,
                         category=LOG_CATEGORY_VENDOR,
                     )
                     raise RuntimeError(error_msg)
 
-                elif msg.type in (
-                    aiohttp.WSMsgType.CLOSED,
-                    aiohttp.WSMsgType.CLOSE,
-                    aiohttp.WSMsgType.CLOSING,
-                ):
-                    self.ten_env.log_info(
-                        f"WebSocket closed: {msg.type}",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-                    # WebSocket closed unexpectedly, trigger reconnection
-                    if not self.stopped:
-                        error = ModuleError(
-                            module=MODULE_NAME_ASR,
-                            code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                            message=f"WebSocket closed unexpectedly: {msg.type}",
-                        )
-                        await self.send_asr_error(error)
-                        await self.on_disconnected(
-                            code=error.code, message=error.message
-                        )
-                        # Schedule (do not await) so this task can exit before
-                        # the reconnect path cancels it via stop_connection.
-                        self._schedule_reconnect()
-                    break
-
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in message processing loop: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            if not self.stopped:
-                # Send error before attempting reconnection
-                error = ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=f"WebSocket error, attempting reconnection: {str(e)}",
-                )
-                await self.send_asr_error(error)
-                await self.on_disconnected(
-                    code=error.code, message=error.message
-                )
-                # Schedule (do not await): this runs inside `_message_task`,
-                # which the reconnect path cancels via stop_connection.
-                self._schedule_reconnect()
+            await self._handle_unexpected_disconnect(
+                f"WebSocket error, attempting reconnection: {e}", ws
+            )
+        else:
+            # ClientWebSocketResponse.__anext__ ends iteration for CLOSE,
+            # CLOSING, and CLOSED instead of yielding those messages.
+            await self._handle_unexpected_disconnect(
+                "WebSocket message loop ended unexpectedly "
+                f"(close code: {ws.close_code})",
+                ws,
+            )
 
     async def _handle_message(self, data: dict) -> None:
         """Handle different types of messages from the Pulse streaming API."""
@@ -456,11 +520,8 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             ),
         )
 
-    async def _handle_reconnect(self):
-        """
-        Handle a single reconnection attempt using the ReconnectManager.
-        Connection success is determined by the start_connection callback.
-        """
+    async def _handle_reconnect(self) -> None:
+        """Retry serially until a connection opens or the budget is spent."""
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
             return
@@ -468,7 +529,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         # Check if we can still retry
         if not self.reconnect_manager.can_retry():
             self.ten_env.log_warn("No more reconnection attempts allowed")
-            await self.send_asr_error(
+            await self._send_reconnect_manager_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
@@ -477,17 +538,26 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             )
             return
 
-        # Attempt a single reconnection
-        success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection,
-            error_handler=self.send_asr_error,
-        )
+        async def reconnect_once() -> None:
+            # Call the public hook so AsyncASRBaseExtension's wrapper emits a
+            # DISCONNECTED -> CONNECTING transition for every retry. Request
+            # propagation so ReconnectManager can apply its retry budget.
+            if self.stopped:
+                return
+            await self.start_connection(_propagate_error=True)
 
-        if success:
-            self.ten_env.log_debug(
-                "Reconnection attempt initiated successfully"
+        while not self.stopped and self.reconnect_manager.can_retry():
+            success = await self.reconnect_manager.handle_reconnect(
+                connection_func=reconnect_once,
+                error_handler=self._send_reconnect_manager_error,
             )
-        else:
+
+            if success or self.stopped:
+                self.ten_env.log_debug(
+                    "Reconnection attempt completed successfully"
+                )
+                return
+
             info = self.reconnect_manager.get_attempts_info()
             self.ten_env.log_debug(
                 f"Reconnection attempt failed. Status: {info}"
@@ -519,22 +589,26 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         """Stop the Smallest AI connection."""
         try:
             # Cancel message processing task
-            if self._message_task and not self._message_task.done():
-                self._message_task.cancel()
+            message_task = self._message_task
+            self._message_task = None
+            if message_task and not message_task.done():
+                message_task.cancel()
                 try:
-                    await self._message_task
+                    await message_task
                 except asyncio.CancelledError:
                     pass
 
             # Close WebSocket
-            if self.ws and not self.ws.closed:
-                await self.ws.close()
-                self.ws = None
+            ws = self.ws
+            self.ws = None
+            if ws and not ws.closed:
+                await ws.close()
 
             # Close session
-            if self.session and not self.session.closed:
-                await self.session.close()
-                self.session = None
+            session = self.session
+            self.session = None
+            if session and not session.closed:
+                await session.close()
 
             self.connected = False
             self.ten_env.log_info("smallest connection stopped")
@@ -554,15 +628,17 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             )
             await self._finalize_end()
             return
+        ws = self.ws
         try:
             finalize_message = {"type": "finalize"}
-            await self.ws.send_str(json.dumps(finalize_message))
+            await ws.send_str(json.dumps(finalize_message))
             self.ten_env.log_debug("smallest finalize sent")
         except Exception as e:
             self.ten_env.log_error(f"Error sending smallest finalize: {e}")
             await self._finalize_end()
-            if not self.stopped:
-                self._schedule_reconnect()
+            await self._handle_unexpected_disconnect(
+                f"WebSocket finalize send failed: {e}", ws
+            )
 
     @override
     def is_connected(self) -> bool:
@@ -592,7 +668,9 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_error("Smallest AI connection is not established")
             return False
 
+        ws = self.ws
         buf = frame.lock_buf()
+        send_error: Exception | None = None
         try:
             audio_data = bytes(buf)
 
@@ -604,13 +682,18 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             )
 
             # Pulse accepts raw PCM binary frames directly.
-            await self.ws.send_bytes(audio_data)
-            return True
+            await ws.send_bytes(audio_data)
 
         except Exception as e:
-            self.ten_env.log_error(f"Error sending audio: {e}")
-            if not self.stopped:
-                self._schedule_reconnect()
-            return False
+            send_error = e
         finally:
             frame.unlock_buf(buf)
+
+        if send_error is not None:
+            self.ten_env.log_error(f"Error sending audio: {send_error}")
+            await self._handle_unexpected_disconnect(
+                f"WebSocket audio send failed: {send_error}", ws
+            )
+            return False
+
+        return True

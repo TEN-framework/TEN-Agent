@@ -289,7 +289,7 @@ cd agents/examples/voice-assistant-realtime
 
 ##### 6. 启动 Web 服务
 
-如果修改过本地源码，先运行 `task build`。对于 TypeScript、Go 等需要编译的语言必须执行此步骤，Python 项目则无需。
+首次启动前，以及依赖或 Go 源码发生变化后，请运行 `task install`。它会安装 TEN、Python 和前端依赖，并构建 Go API 服务。仅修改 Python 源码时无需重新安装。
 
 ```bash
 task install

@@ -52,9 +52,11 @@ class Listener:
 
 def create_config() -> IFlytekAsrConfig:
     return IFlytekAsrConfig(
-        url="ws://127.0.0.1:9990/tuling/ast/v3",
-        biz_id="tenant-1",
-        trace_id_prefix="test",
+        params={
+            "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+            "biz_id": "tenant-1",
+            "trace_id_prefix": "test",
+        }
     )
 
 
@@ -132,8 +134,10 @@ async def _test_client_works_with_real_websockets_transport() -> None:
     try:
         port = server.sockets[0].getsockname()[1]
         config = IFlytekAsrConfig(
-            url=f"ws://127.0.0.1:{port}/tuling/ast/v3",
-            biz_id="tenant-1",
+            params={
+                "url": f"ws://127.0.0.1:{port}/tuling/ast/v3",
+                "biz_id": "tenant-1",
+            }
         )
         listener = Listener()
         client = IFlytekAsrClient(config, listener)

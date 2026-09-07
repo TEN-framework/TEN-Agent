@@ -255,7 +255,7 @@ cd agents/examples/voice-assistant-realtime
 
 ##### 6. Web サーバーを起動
 
-ローカルコードを変更した場合は `task build` を実行してください。TypeScript や Go などのコンパイル言語では必須、Python では不要です。
+初回起動前、および依存関係や Go のソースコードを変更した後は `task install` を実行してください。このコマンドは TEN、Python、フロントエンドの依存関係をインストールし、Go API サーバーをビルドします。Python のソースコードのみを変更した場合、再インストールは不要です。
 
 ```bash
 task install

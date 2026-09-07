@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "sarvam_http_tts",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "dependencies": [
     {
       "type": "system",

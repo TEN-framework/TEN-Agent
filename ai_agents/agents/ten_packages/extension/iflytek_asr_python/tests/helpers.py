@@ -118,13 +118,18 @@ class FakeClient:
 
 
 def create_config(**overrides: Any) -> IFlytekAsrConfig:
-    properties: dict[str, Any] = {
+    params: dict[str, Any] = {
         "url": "ws://127.0.0.1:9990/tuling/ast/v3",
         "biz_id": "tenant-1",
         "sample_rate": 16000,
         "language": "en-US",
     }
-    properties.update(overrides)
+    properties: dict[str, Any] = {"params": params}
+    for key, value in overrides.items():
+        if key in ("dump", "dump_path"):
+            properties[key] = value
+        else:
+            params[key] = value
     return IFlytekAsrConfig.model_validate(properties)
 
 

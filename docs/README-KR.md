@@ -255,7 +255,7 @@ cd agents/examples/voice-assistant-realtime
 
 ##### 6. 웹 서버 시작
 
-로컬 소스를 수정했다면 `task build`를 실행하세요. TypeScript, Go 등 컴파일 언어에서는 필수이며 Python 에서는 선택입니다.
+처음 실행하기 전과 종속성 또는 Go 소스 코드를 변경한 후에는 `task install`을 실행하세요. 이 명령은 TEN, Python, 프런트엔드 종속성을 설치하고 Go API 서버를 빌드합니다. Python 소스 코드만 변경한 경우에는 다시 설치할 필요가 없습니다.
 
 ```bash
 task install

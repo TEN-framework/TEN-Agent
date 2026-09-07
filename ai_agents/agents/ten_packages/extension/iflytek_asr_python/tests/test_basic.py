@@ -45,12 +45,14 @@ def test_ten_runtime_loads_extension_and_handles_command():
         "iflytek_asr_python",
         json.dumps(
             {
-                "url": "ws://127.0.0.1:1/tuling/ast/v3",
-                "biz_id": "runtime-smoke-test",
-                "connect_timeout": 0.1,
-                "reconnect_delay": 0,
-                "reconnect_max_delay": 0,
-                "reconnect_max_attempts": 1,
+                "params": {
+                    "url": "ws://127.0.0.1:1/tuling/ast/v3",
+                    "biz_id": "runtime-smoke-test",
+                    "connect_timeout": 0.1,
+                    "reconnect_delay": 0,
+                    "reconnect_max_delay": 0,
+                    "reconnect_max_attempts": 1,
+                }
             }
         ),
     )

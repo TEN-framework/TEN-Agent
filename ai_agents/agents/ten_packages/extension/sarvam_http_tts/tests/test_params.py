@@ -14,6 +14,7 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from pathlib import Path
+import asyncio
 import json
 from unittest.mock import AsyncMock, patch, MagicMock
 
@@ -25,6 +26,72 @@ from ten_runtime import (
     StatusCode,
     TenError,
 )
+
+from sarvam_http_tts.config import SarvamTTSConfig
+from sarvam_http_tts.sarvam_tts import SarvamTTSClient
+
+
+def test_bulbul_v3_removes_unsupported_params():
+    config = SarvamTTSConfig(
+        params={
+            "model": "bulbul:v3",
+            "pitch": 0.0,
+            "loudness": 1.0,
+            "pace": 1.0,
+        }
+    )
+
+    config.update_params()
+
+    assert config.params == {"model": "bulbul:v3", "pace": 1.0}
+
+
+def test_bulbul_v2_keeps_pitch_and_loudness():
+    config = SarvamTTSConfig(
+        params={
+            "model": "bulbul:v2",
+            "pitch": 0.2,
+            "loudness": 1.5,
+        }
+    )
+
+    config.update_params()
+
+    assert config.params["pitch"] == 0.2
+    assert config.params["loudness"] == 1.5
+
+
+@patch("sarvam_http_tts.sarvam_tts.AsyncClient")
+def test_bulbul_v3_request_omits_unsupported_params(MockAsyncClient):
+    config = SarvamTTSConfig(
+        params={
+            "api_subscription_key": "test_api_key",
+            "target_language_code": "hi-IN",
+            "model": "bulbul:v3",
+            "pitch": 0.0,
+            "loudness": 1.0,
+        }
+    )
+    config.update_params()
+
+    response = MagicMock(status_code=200)
+    response.json.return_value = {"audios": []}
+    mock_http_client = MockAsyncClient.return_value
+    mock_http_client.post = AsyncMock(return_value=response)
+
+    client = SarvamTTSClient(config=config, ten_env=MagicMock())
+
+    async def collect_events():
+        return [event async for event in client.get("hello", "request-id")]
+
+    asyncio.run(collect_events())
+
+    payload = mock_http_client.post.await_args.kwargs["json"]
+    assert payload["model"] == "bulbul:v3"
+    assert payload["text"] == "hello"
+    assert "api_subscription_key" not in payload
+    assert "pitch" not in payload
+    assert "loudness" not in payload
 
 
 # ================ test params passthrough ================
@@ -73,8 +140,6 @@ def test_params_passthrough(MockSarvamTTSClient):
     real_params = {
         "api_subscription_key": "test_api_key",
         "target_language_code": "hi-IN",
-        "speaker": "anushka",
-        "speech_sample_rate": 22050,
     }
 
     real_config = {
@@ -84,13 +149,11 @@ def test_params_passthrough(MockSarvamTTSClient):
     passthrough_params = {
         "api_subscription_key": "test_api_key",
         "target_language_code": "hi-IN",
-        "speaker": "anushka",
-        "speech_sample_rate": 22050,
-        "pitch": 0.0,
+        "speaker": "shubh",
+        "speech_sample_rate": 24000,
         "pace": 1.0,
-        "loudness": 1.0,
         "enable_preprocessing": False,
-        "model": "bulbul:v2",
+        "model": "bulbul:v3",
     }
 
     tester = ExtensionTesterForPassthrough()

@@ -4,12 +4,10 @@
     "params": {
         "api_subscription_key": "${env:SARVAM_TTS_KEY|}",
         "target_language_code": "en-IN",
-        "speaker": "anushka",
-        "pitch": 0.0,
+        "speaker": "shubh",
         "pace": 1.0,
-        "loudness": 1.0,
-        "speech_sample_rate": 22050,
+        "speech_sample_rate": 24000,
         "enable_preprocessing": false,
-        "model": "bulbul:v2"
+        "model": "bulbul:v3"
     }
 }

@@ -98,11 +98,11 @@ def test_connection_status_reports_connected_after_handshake(
     ), f"never observed a 'connected' transition: {tester.transitions}"
 
 
-# The vendor drops the socket mid-session (a CLOSED frame). The extension
-# must report "disconnected" (with close details) before scheduling the
-# reconnect — otherwise the reported connection_status stays wrong for the
-# whole reconnect window.
-def test_connection_status_reports_disconnected_on_ws_close(
+# aiohttp consumes CLOSE/CLOSING/CLOSED frames in __anext__ and ends iteration
+# via StopAsyncIteration. The extension must report "disconnected" and
+# reconnect after that normal loop exit rather than waiting for a close frame
+# that aiohttp never yields to the loop body.
+def test_connection_status_reports_disconnected_on_iterator_exit(
     patch_smallest_ws,
 ):
     connect_attempts = 0
@@ -136,14 +136,10 @@ def test_connection_status_reports_disconnected_on_ws_close(
             nonlocal connect_attempts
             connect_attempts += 1
 
-            ws = patch_smallest_ws.ws
-            ws.closed = False
-            ws._exception = None
-            with patch_smallest_ws.messages_lock:
-                patch_smallest_ws.messages.clear()
+            ws = patch_smallest_ws.prepare_connection()
 
             if connect_attempts == 1:
-                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED)
+                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED, 1006)
             else:
                 push_after(
                     0.3,
@@ -178,7 +174,8 @@ def test_connection_status_reports_disconnected_on_ws_close(
         )
         err = tester.run()
         assert err is None, (
-            f"test_connection_status_reports_disconnected_on_ws_close err "
+            "test_connection_status_reports_disconnected_on_iterator_exit "
+            "err "
             f"code: {err.error_code()} message: {err.error_message()}"
         )
 
@@ -187,11 +184,26 @@ def test_connection_status_reports_disconnected_on_ws_close(
             "connected" in statuses
         ), f"never observed a 'connected' transition: {tester.transitions}"
         assert "disconnected" in statuses, (
-            "never observed a 'disconnected' transition after the ws close: "
+            "never observed a 'disconnected' transition after iterator exit: "
             f"{tester.transitions}"
         )
-        # The close must be reported before the reconnect's own "connected"
-        # transition, not silently skipped.
-        assert statuses.index("disconnected") > statuses.index(
-            "connected"
-        ), f"disconnected did not follow the initial connect: {statuses}"
+        assert connect_attempts >= 2, "iterator exit did not trigger reconnect"
+        assert statuses.count("connected") >= 2, (
+            "never observed the reconnect's 'connected' transition: "
+            f"{statuses}"
+        )
+        first_connected = statuses.index("connected")
+        disconnected = statuses.index("disconnected")
+        reconnected = statuses.index("connected", first_connected + 1)
+        assert first_connected < disconnected < reconnected, (
+            "expected connected -> disconnected -> connected transitions: "
+            f"{statuses}"
+        )
+        disconnected_transition = next(
+            transition
+            for transition in tester.transitions
+            if transition.get("current") == "disconnected"
+        )
+        assert "close code: 1006" in disconnected_transition.get(
+            "message", ""
+        ), f"close code was not reported: {disconnected_transition}"

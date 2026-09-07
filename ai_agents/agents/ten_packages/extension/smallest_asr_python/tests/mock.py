@@ -26,7 +26,7 @@ def patch_smallest_ws():
       - async send_str (finalize control message)
       - async send_bytes (binary PCM audio)
       - async close
-      - async iterator yielding predefined messages
+      - async iterator matching aiohttp's close-frame semantics
     - Exposes the WebSocket and message list so tests can control behavior.
     """
 
@@ -49,6 +49,13 @@ def patch_smallest_ws():
             self.sent_messages: list[str] = []
             self.sent_bytes: list[bytes] = []
             self.closed: bool = False
+            self.close_code: int | None = None
+            self._exception = None
+
+        def reset(self) -> None:
+            """Prepare the shared socket for a fresh ws_connect call."""
+            self.closed = False
+            self.close_code = None
             self._exception = None
 
         async def send_str(self, data: str) -> bool:
@@ -78,6 +85,21 @@ def patch_smallest_ws():
 
                     if current_messages:
                         for msg in current_messages:
+                            # ClientWebSocketResponse.__anext__ consumes close
+                            # frames and ends iteration instead of yielding
+                            # them to an async-for loop.
+                            if msg.type in (
+                                aiohttp.WSMsgType.CLOSE,
+                                aiohttp.WSMsgType.CLOSING,
+                                aiohttp.WSMsgType.CLOSED,
+                            ):
+                                self.closed = True
+                                self.close_code = (
+                                    msg.data
+                                    if isinstance(msg.data, int)
+                                    else 1000
+                                )
+                                return
                             yield msg
                     else:
                         # Small sleep to avoid busy waiting when no messages
@@ -90,13 +112,19 @@ def patch_smallest_ws():
             self.closed: bool = False
 
         async def ws_connect(self, url, headers=None, timeout=None):
-            # Always return the same mock WebSocket instance
-            return ws
+            return prepare_connection()
 
         async def close(self) -> None:
             self.closed = True
 
     ws = MockWebSocket()
+
+    def prepare_connection():
+        """Reset the shared socket and discard the previous session's queue."""
+        ws.reset()
+        with messages_lock:
+            messages.clear()
+        return ws
 
     # Patch the ClientSession used inside the Smallest AI extension module
     with patch(
@@ -113,6 +141,7 @@ def patch_smallest_ws():
             ws=ws,
             messages=messages,
             messages_lock=messages_lock,  # Expose lock for thread-safe access
+            prepare_connection=prepare_connection,
             add_message=add_message,  # Helper function to add messages thread-safely
             WSMsgType=aiohttp.WSMsgType,  # Expose WSMsgType for tests
             MockWebSocketMessage=MockWebSocketMessage,  # Helper for creating messages

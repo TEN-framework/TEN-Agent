@@ -59,7 +59,7 @@ flowchart LR
 | Python | `>= 3.10`，当前验证版本为 `3.10.20` |
 | tman / TEN Framework | 当前验证版本为 `0.11.71` |
 | `ten_runtime_python` | `0.11.71` |
-| `ten_ai_base` | `0.6` |
+| `ten_ai_base` | `0.7` |
 | `websockets` | `>=14.0`，当前验证版本为 `14.2` |
 | Pydantic | `>=2.13.4,<3.0`，当前验证版本为 `2.13.4` |
 | pytest | 用于离线测试 |
@@ -94,11 +94,13 @@ python -m pip install \
 tman run test -- -q
 ```
 
-当前离线基线为 `63 passed`。这些测试不访问真实讯飞服务，也不需要业务凭据。
+当前离线基线为 `88 passed`。这些测试不访问真实讯飞服务，也不需要业务凭据。
 
 ## 配置
 
-TEN 从 `property.json` 读取扩展属性。连接信息默认支持通过环境变量注入：
+TEN 从 `property.json` 读取扩展属性。0.2.0 起，供应商及连接参数统一放在
+`params` 对象中，不再接受 0.1.0 的顶层参数。`dump` 和 `dump_path` 保持为
+扩展顶层属性。连接信息默认支持通过环境变量注入：
 
 ```bash
 export IFLYTEK_ASR_URL="wss://asr.example.com/tuling/ast/v3"
@@ -133,6 +135,7 @@ export IFLYTEK_BIZ_ID="business-id"
 | `dump` | 否 | `false` | 是否把成功发送的 PCM 音频写入本地文件 |
 | `dump_path` | 否 | 系统临时目录 | Dump 目录或以 `.pcm` 结尾的文件路径 |
 
+除 `dump` 和 `dump_path` 外，表中配置项均位于 `params` 对象内。
 `language` 会在 `engine` 未显式设置时自动写入
 `wrec_param_language_name`。未知配置项会被忽略，以兼容 TEN 图中的共享属性。
 
@@ -140,25 +143,27 @@ export IFLYTEK_BIZ_ID="business-id"
 
 ```json
 {
-  "url": "${env:IFLYTEK_ASR_URL|wss://asr.example.com/tuling/ast/v3}",
-  "app_id": "${env:IFLYTEK_APP_ID|}",
-  "biz_id": "${env:IFLYTEK_BIZ_ID|}",
-  "trace_id_prefix": "ten",
-  "sample_rate": 16000,
-  "language": "zh|en",
-  "engine": {
-    "wfep_param_nOnlineSpkdia_on": "2"
+  "params": {
+    "url": "${env:IFLYTEK_ASR_URL|wss://asr.example.com/tuling/ast/v3}",
+    "app_id": "${env:IFLYTEK_APP_ID|}",
+    "biz_id": "${env:IFLYTEK_BIZ_ID|}",
+    "trace_id_prefix": "ten",
+    "sample_rate": 16000,
+    "language": "zh|en",
+    "engine": {
+      "wfep_param_nOnlineSpkdia_on": "2"
+    },
+    "res_id_list": [],
+    "hotwords": "zh-科大讯飞;en-Agora",
+    "hotword_weight": 4.0,
+    "voiceprints": {},
+    "connect_timeout": 10.0,
+    "finalize_timeout": 5.0,
+    "reconnect_delay": 0.5,
+    "reconnect_max_delay": 8.0,
+    "reconnect_max_attempts": 5,
+    "buffer_max_bytes": 10485760
   },
-  "res_id_list": [],
-  "hotwords": "zh-科大讯飞;en-Agora",
-  "hotword_weight": 4.0,
-  "voiceprints": {},
-  "connect_timeout": 10.0,
-  "finalize_timeout": 5.0,
-  "reconnect_delay": 0.5,
-  "reconnect_max_delay": 8.0,
-  "reconnect_max_attempts": 5,
-  "buffer_max_bytes": 10485760,
   "dump": false,
   "dump_path": "/tmp"
 }

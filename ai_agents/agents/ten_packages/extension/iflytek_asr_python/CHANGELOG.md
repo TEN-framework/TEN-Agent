@@ -2,6 +2,13 @@
 
 All notable changes to the iFLYTEK ASR Python Extension are documented here.
 
+## 0.2.0 - 2026-08-20
+
+- Standardize vendor and connection settings under `property.params` so TEN
+  graphs can configure iFLYTEK consistently with other ASR extensions.
+- Require all vendor and connection settings under `property.params`; only
+  `dump` and `dump_path` remain extension-level properties.
+
 ## 0.1.0 - 2026-08-04
 
 - Implement iFLYTEK WebSocket request and response mapping.

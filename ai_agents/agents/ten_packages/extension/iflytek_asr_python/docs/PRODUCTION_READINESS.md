@@ -1,6 +1,6 @@
 # iFLYTEK ASR Production Readiness
 
-This checklist applies to `iflytek_asr_python` version `0.1.0`. It complements
+This checklist applies to `iflytek_asr_python` version `0.2.0`. It complements
 the automated tests; deployment-specific networking, credentials, privacy,
 capacity, and monitoring remain operator responsibilities.
 
@@ -22,6 +22,8 @@ capacity, and monitoring remain operator responsibilities.
   minutes without a maximum-duration error.
 - [x] Black formatting, Python compilation, TMan metadata validation, static
   analysis, dependency audit, and package-content checks are release gates.
+- [x] Before opening or updating a PR, validate its title with
+  `echo "${PR_TITLE}" | npx --yes commitlint --default-config`.
 - [x] Every runnable Guarder case runs across the default and dedicated
   long-duration invocations; skips and deselections are reported and never
   counted as passes.

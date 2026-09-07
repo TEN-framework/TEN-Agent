@@ -498,7 +498,14 @@ class DeepgramASRExtension(
                     self.audio_timeline.get_audio_duration_before_time(start_ms)
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
-
+                metadata = self._build_metadata_with_asr_info(
+                    {
+                        "api": "listen_v1",
+                        "message_type": message_data.get("type", "Results"),
+                        "is_final": is_final,
+                        "speech_final": message_data.get("speech_final", False),
+                    },
+                )
                 # Process ASR result
                 await self._handle_asr_result(
                     text=result_to_send,
@@ -506,6 +513,7 @@ class DeepgramASRExtension(
                     start_ms=actual_start_ms,
                     duration_ms=duration_ms,
                     language=self.config.asr_result_language,
+                    metadata=metadata,
                 )
 
         except Exception as e:

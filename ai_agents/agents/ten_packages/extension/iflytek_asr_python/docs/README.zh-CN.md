@@ -16,6 +16,9 @@
 
 ## 配置
 
+从 0.2.0 开始，供应商和连接参数必须统一放在 `params` 对象中，不再接受 0.1.0
+的顶层字段。`dump` 与 `dump_path` 保持为扩展顶层属性。
+
 必填配置：
 
 - `url`：实时转写 WebSocket 地址，格式为 `ws(s)://host:port/tuling/ast/v3`
@@ -48,25 +51,27 @@
 
 ```json
 {
-  "url": "wss://asr.example.com/tuling/ast/v3",
-  "app_id": "app-1",
-  "biz_id": "tenant-1",
-  "sample_rate": 16000,
-  "language": "zh|en",
-  "engine": {
-    "wfep_param_nOnlineSpkdia_on": "2"
+  "params": {
+    "url": "wss://asr.example.com/tuling/ast/v3",
+    "app_id": "app-1",
+    "biz_id": "tenant-1",
+    "sample_rate": 16000,
+    "language": "zh|en",
+    "engine": {
+      "wfep_param_nOnlineSpkdia_on": "2"
+    },
+    "res_id_list": ["tenant-2"],
+    "hotwords": "zh-科大讯飞;en-Agora",
+    "hotword_weight": 4.0,
+    "voiceprints": {
+      "10001": "Base64 encoded voiceprint"
+    },
+    "finalize_timeout": 5.0,
+    "reconnect_delay": 0.5,
+    "reconnect_max_delay": 8.0,
+    "reconnect_max_attempts": 5,
+    "buffer_max_bytes": 10485760
   },
-  "res_id_list": ["tenant-2"],
-  "hotwords": "zh-科大讯飞;en-Agora",
-  "hotword_weight": 4.0,
-  "voiceprints": {
-    "10001": "Base64 encoded voiceprint"
-  },
-  "finalize_timeout": 5.0,
-  "reconnect_delay": 0.5,
-  "reconnect_max_delay": 8.0,
-  "reconnect_max_attempts": 5,
-  "buffer_max_bytes": 10485760,
   "dump": false,
   "dump_path": "/tmp"
 }

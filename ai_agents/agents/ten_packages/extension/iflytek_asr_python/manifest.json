@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "iflytek_asr_python",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "display_name": {
     "locales": {
       "en-US": {
@@ -85,67 +85,72 @@
     ],
     "property": {
       "properties": {
-        "url": {
-          "type": "string"
-        },
-        "app_id": {
-          "type": "string"
-        },
-        "biz_id": {
-          "type": "string"
-        },
-        "trace_id_prefix": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
-        },
-        "language": {
-          "type": "string"
-        },
-        "engine": {
+        "params": {
           "type": "object",
-          "properties": {}
-        },
-        "res_id_list": {
-          "type": "array",
-          "items": {
-            "type": "string"
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "app_id": {
+              "type": "string"
+            },
+            "biz_id": {
+              "type": "string"
+            },
+            "trace_id_prefix": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "language": {
+              "type": "string"
+            },
+            "engine": {
+              "type": "object",
+              "properties": {}
+            },
+            "res_id_list": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "hotwords": {
+              "type": "string"
+            },
+            "hotword_weight": {
+              "type": "float64"
+            },
+            "voiceprints": {
+              "type": "object",
+              "properties": {}
+            },
+            "connect_timeout": {
+              "type": "float64"
+            },
+            "finalize_timeout": {
+              "type": "float64"
+            },
+            "reconnect_delay": {
+              "type": "float64"
+            },
+            "reconnect_max_delay": {
+              "type": "float64"
+            },
+            "reconnect_max_attempts": {
+              "type": "int64"
+            },
+            "buffer_max_bytes": {
+              "type": "int64"
+            }
           }
-        },
-        "hotwords": {
-          "type": "string"
-        },
-        "hotword_weight": {
-          "type": "float64"
-        },
-        "voiceprints": {
-          "type": "object",
-          "properties": {}
         },
         "dump": {
           "type": "bool"
         },
         "dump_path": {
           "type": "string"
-        },
-        "connect_timeout": {
-          "type": "float64"
-        },
-        "finalize_timeout": {
-          "type": "float64"
-        },
-        "reconnect_delay": {
-          "type": "float64"
-        },
-        "reconnect_max_delay": {
-          "type": "float64"
-        },
-        "reconnect_max_attempts": {
-          "type": "int64"
-        },
-        "buffer_max_bytes": {
-          "type": "int64"
         }
       }
     }

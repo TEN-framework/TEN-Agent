@@ -27,6 +27,27 @@ VENDOR_LANGUAGE_ALIASES = {
 }
 MAX_ERROR_MESSAGE_LENGTH = 2048
 REDACTED_VALUE = "<redacted>"
+PARAM_FIELDS = frozenset(
+    {
+        "url",
+        "app_id",
+        "biz_id",
+        "trace_id_prefix",
+        "sample_rate",
+        "language",
+        "engine",
+        "res_id_list",
+        "hotwords",
+        "hotword_weight",
+        "voiceprints",
+        "connect_timeout",
+        "finalize_timeout",
+        "reconnect_delay",
+        "reconnect_max_delay",
+        "reconnect_max_attempts",
+        "buffer_max_bytes",
+    }
+)
 
 
 class IFlytekAsrConfig(BaseModel):
@@ -52,8 +73,33 @@ class IFlytekAsrConfig(BaseModel):
     reconnect_max_delay: float = Field(default=8.0, ge=0)
     reconnect_max_attempts: int = Field(default=5, ge=1)
     buffer_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    params: dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_params(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            top_level_params = PARAM_FIELDS.intersection(data)
+            if top_level_params:
+                field_names = ", ".join(sorted(top_level_params))
+                raise ValueError(
+                    f"iFLYTEK parameters must be nested under params: "
+                    f"{field_names}"
+                )
+            nested_params = data.get("params")
+            if isinstance(nested_params, dict):
+                merged = dict(data)
+                merged.update(
+                    {
+                        key: value
+                        for key, value in nested_params.items()
+                        if key in PARAM_FIELDS
+                    }
+                )
+                return merged
+        return data
 
     @field_validator("url")
     @classmethod

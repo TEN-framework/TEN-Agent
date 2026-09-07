@@ -1,6 +1,6 @@
 [project]
 name = "sarvam-http-tts"
-version = "0.5.2"
+version = "0.5.3"
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.28.1",
