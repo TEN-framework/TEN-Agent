@@ -1,3 +1,8 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -291,5 +296,127 @@ def test_invalid_key_error_completes_with_audio_end() -> None:
             request_id="invalid-key-request",
             reason=TTSAudioEndReason.ERROR,
         )
+
+    asyncio.run(run_test())
+
+
+def test_initialization_failure_uses_input_request_id() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.config = None
+        extension.client = None
+
+        await extension.request_tts(
+            TTSTextInput(
+                request_id="initialization-failure",
+                text="hello",
+                text_input_end=True,
+                metadata={},
+            )
+        )
+
+        extension.send_tts_error.assert_awaited_once()
+        error_args = extension.send_tts_error.await_args.kwargs
+        assert error_args["request_id"] == "initialization-failure"
+        assert error_args["error"].code == int(
+            ModuleErrorCode.NON_FATAL_ERROR.value
+        )
+        extension.send_tts_audio_end.assert_awaited_once()
+        end_args = extension.send_tts_audio_end.await_args.kwargs
+        assert end_args["request_id"] == "initialization-failure"
+        assert end_args["reason"] == TTSAudioEndReason.ERROR
+        extension.finish_request.assert_awaited_once_with(
+            request_id="initialization-failure",
+            reason=TTSAudioEndReason.ERROR,
+        )
+
+    asyncio.run(run_test())
+
+
+def test_flush_during_audio_end_shares_in_flight_send() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        send_started = asyncio.Event()
+        allow_send = asyncio.Event()
+        sent_reasons: list[TTSAudioEndReason] = []
+
+        async def blocking_send_tts_audio_end(**kwargs) -> None:
+            sent_reasons.append(kwargs["reason"])
+            send_started.set()
+            await allow_send.wait()
+
+        extension.send_tts_audio_end = blocking_send_tts_audio_end
+        completion_task = asyncio.create_task(
+            extension.request_tts(
+                TTSTextInput(
+                    request_id="completion-flush-race",
+                    text=" ",
+                    text_input_end=True,
+                    metadata={},
+                )
+            )
+        )
+        await asyncio.wait_for(send_started.wait(), 0.5)
+
+        cancel_task = asyncio.create_task(extension.cancel_tts())
+        await asyncio.sleep(0)
+        assert not cancel_task.done()
+
+        allow_send.set()
+        await asyncio.wait_for(
+            asyncio.gather(completion_task, cancel_task), 0.5
+        )
+
+        assert sent_reasons == [TTSAudioEndReason.REQUEST_END]
+        extension.finish_request.assert_awaited_once_with(
+            request_id="completion-flush-race",
+            reason=TTSAudioEndReason.REQUEST_END,
+        )
+
+    asyncio.run(run_test())
+
+
+def test_flush_finishes_audio_end_after_completion_task_is_cancelled() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        send_started = asyncio.Event()
+        allow_send = asyncio.Event()
+        send_count = 0
+
+        async def blocking_send_tts_audio_end(**_kwargs) -> None:
+            nonlocal send_count
+            send_count += 1
+            send_started.set()
+            await allow_send.wait()
+
+        extension.send_tts_audio_end = blocking_send_tts_audio_end
+        completion_task = asyncio.create_task(
+            extension.request_tts(
+                TTSTextInput(
+                    request_id="cancelled-completion",
+                    text=" ",
+                    text_input_end=True,
+                    metadata={},
+                )
+            )
+        )
+        await asyncio.wait_for(send_started.wait(), 0.5)
+
+        completion_task.cancel()
+        try:
+            await completion_task
+        except asyncio.CancelledError:
+            pass
+
+        cancel_task = asyncio.create_task(extension.cancel_tts())
+        await asyncio.sleep(0)
+        assert not cancel_task.done()
+
+        allow_send.set()
+        await asyncio.wait_for(cancel_task, 0.5)
+
+        assert send_count == 1
+        assert extension._audio_end_sent is True
+        extension.finish_request.assert_not_awaited()
 
     asyncio.run(run_test())

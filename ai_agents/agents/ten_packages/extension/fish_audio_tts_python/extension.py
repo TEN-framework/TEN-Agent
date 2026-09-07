@@ -45,6 +45,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
         self._audio_end_sent: bool = False
+        self._audio_end_task: asyncio.Task[None] | None = None
         self._is_stopped: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
             {}
@@ -177,6 +178,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self._audio_end_sent = False
+                self._audio_end_task = None
                 self.total_audio_bytes = 0  # Reset for new request
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
@@ -375,7 +377,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             )
             if t.text_input_end:
                 await self._complete_current_request(
-                    TTSAudioEndReason.ERROR, error=error
+                    TTSAudioEndReason.ERROR,
+                    error=error,
+                    request_id=t.request_id,
                 )
             else:
                 # A request can contain multiple text chunks. A transient
@@ -390,8 +394,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self,
         reason: TTSAudioEndReason,
         error: ModuleError | None = None,
+        request_id: str | None = None,
     ) -> None:
-        request_id = self.current_request_id
+        request_id = request_id or self.current_request_id
         if request_id is None:
             self.ten_env.log_warn(
                 "Cannot complete Fish Audio TTS request without request_id"
@@ -423,21 +428,36 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         )
         duration_ms = self._calculate_audio_duration_ms()
 
-        # Set the sentinel before the first await. A flush can run while normal
-        # completion is awaiting event delivery; marking it here prevents that
-        # race from emitting a second audio_end for the same request.
-        if not self._audio_end_sent:
-            self._audio_end_sent = True
-            await self.send_tts_audio_end(
-                request_id=request_id,
-                request_event_interval_ms=request_event_interval,
-                request_total_audio_duration_ms=duration_ms,
-                reason=reason,
-            )
-        else:
+        # Share the in-flight send between normal completion and flush. Marking
+        # audio_end as sent before awaiting delivery can lose the event if that
+        # caller is cancelled; starting one task and shielding each waiter keeps
+        # the delivery alive without allowing a second send.
+        if self._audio_end_task is None:
+
+            async def send_audio_end() -> None:
+                await self.send_tts_audio_end(
+                    request_id=request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=duration_ms,
+                    reason=reason,
+                )
+                self._audio_end_sent = True
+
+            self._audio_end_task = asyncio.create_task(send_audio_end())
+        elif self._audio_end_sent:
             self.ten_env.log_debug(
                 f"Skipping duplicate audio_end for request {request_id}"
             )
+
+        audio_end_task = self._audio_end_task
+        # shield keeps the shared delivery alive if this particular waiter is
+        # cancelled; cancel_tts() can then await the same task.
+        try:
+            await asyncio.shield(audio_end_task)
+        except Exception:
+            if self._audio_end_task is audio_end_task:
+                self._audio_end_task = None
+            raise
 
         # Flush even when audio_end was already sent. The task that originally
         # sent it may have been cancelled before its recorder flush completed.
