@@ -1,6 +1,6 @@
 # iFLYTEK ASR Production Readiness
 
-This checklist applies to `iflytek_asr_python` version `0.2.0`. It complements
+This checklist applies to `iflytek_asr_python` version `0.2.1`. It complements
 the automated tests; deployment-specific networking, credentials, privacy,
 capacity, and monitoring remain operator responsibilities.
 

@@ -2,6 +2,14 @@
 
 All notable changes to the iFLYTEK ASR Python Extension are documented here.
 
+## 0.2.1 - 2026-09-02
+
+- Align the packaged extension with the reviewed conversational agent
+  integration, including the reconnect-limit error naming used by vendor
+  error classification.
+- Preserve `ReconnectLimitReached` as a legacy alias for 0.2.x callers.
+- Modernize the protocol `Mapping` import to use `collections.abc`.
+
 ## 0.2.0 - 2026-08-20
 
 - Standardize vendor and connection settings under `property.params` so TEN

@@ -7,8 +7,12 @@ import asyncio
 from collections.abc import Awaitable, Callable
 
 
-class ReconnectLimitReached(RuntimeError):
+class ReconnectLimitReachedError(RuntimeError):
     pass
+
+
+# Legacy compatibility alias for 0.2.x; remove in 0.3.0.
+ReconnectLimitReached = ReconnectLimitReachedError
 
 
 SleepCallable = Callable[[float], Awaitable[None]]
@@ -47,7 +51,9 @@ class ReconnectManager:
 
     def next_delay(self) -> float:
         if not self.can_retry():
-            raise ReconnectLimitReached("maximum reconnection attempts reached")
+            raise ReconnectLimitReachedError(
+                "maximum reconnection attempts reached"
+            )
         return min(
             self.base_delay * (2**self.current_attempts),
             self.max_delay,

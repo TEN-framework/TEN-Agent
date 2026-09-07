@@ -4,8 +4,13 @@ import pytest
 
 from iflytek_asr_python.reconnect_manager import (
     ReconnectLimitReached,
+    ReconnectLimitReachedError,
     ReconnectManager,
 )
+
+
+def test_legacy_reconnect_limit_exception_name_is_preserved() -> None:
+    assert ReconnectLimitReached is ReconnectLimitReachedError
 
 
 def test_reconnect_manager_uses_capped_exponential_backoff_and_resets() -> None:
@@ -65,7 +70,7 @@ def test_reconnect_manager_stops_at_configured_limit() -> None:
                 await manager.attempt(fail)
 
         assert manager.can_retry() is False
-        with pytest.raises(ReconnectLimitReached):
+        with pytest.raises(ReconnectLimitReachedError):
             await manager.attempt(fail)
 
     asyncio.run(run())
