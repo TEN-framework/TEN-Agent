@@ -5,6 +5,7 @@
 #
 import asyncio
 import time
+from importlib.metadata import PackageNotFoundError, version
 from typing import Awaitable, Callable, Tuple
 
 import httpx
@@ -23,9 +24,20 @@ from ten_runtime import AsyncTenEnv
 from .config import SpeechifyTTSConfig
 
 # Every outbound Speechify request must attribute usage to this integration;
-# see docs.speechify.ai's third-party integration guidelines.
+# see docs.speechify.ai's third-party integration guidelines. The caller is the
+# installable artifact's slug; the version is this extension's release, so usage
+# attributes per release.
 CALLER_HEADER = "Speechify-Caller"
-CALLER_VALUE = "ten-framework"
+CALLER_VALUE = "ten"
+CALLER_VERSION_HEADER = "Speechify-Caller-Version"
+
+
+def _caller_version() -> str:
+    try:
+        return version("speechify-tts-python")
+    except PackageNotFoundError:
+        return "unknown"
+
 
 VENDOR = "speechify"
 
@@ -118,6 +130,7 @@ class SpeechifyTTSSynthesizer:
                 "Authorization": f"Bearer {self.config.params.get('key')}",
                 "Content-Type": "application/json",
                 CALLER_HEADER: CALLER_VALUE,
+                CALLER_VERSION_HEADER: _caller_version(),
             }
             
             # Get the httpx client from parent
@@ -287,7 +300,10 @@ class SpeechifyTTSClient:
         self.sdk_client = AsyncSpeechify(
             base_url=self.config.params.get("base_url"),
             token=self.config.params.get("key"),
-            headers={CALLER_HEADER: CALLER_VALUE},
+            headers={
+                CALLER_HEADER: CALLER_VALUE,
+                CALLER_VERSION_HEADER: _caller_version(),
+            },
             httpx_client=self._httpx_client,
         )
 

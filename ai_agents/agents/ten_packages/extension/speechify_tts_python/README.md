@@ -14,10 +14,11 @@ A Text-to-Speech extension for TEN Framework using the [Speechify](https://speec
 
 Unlike ElevenLabs' persistent bidirectional websocket, Speechify's public API is a
 one-shot HTTP request/response stream: each TTS request buffers incoming text deltas
-until `text_input_end`, then issues a single `POST /v1/audio/stream` call whose
-chunked response is forwarded to TEN as they arrive. The `speechify-api` Python SDK
-(`AsyncSpeechify`) is used for all outbound calls, with `Speechify-Caller: ten-framework`
-set on every request so usage is attributed to this integration.
+until `text_input_end`, then issues a single `POST /v1/audio/stream/with-timestamps`
+call whose chunked response is forwarded to TEN as it arrives, carrying word-level
+timing. The `speechify-api` Python SDK (`AsyncSpeechify`) is used for outbound calls,
+with `Speechify-Caller: ten` and `Speechify-Caller-Version` (this extension's release)
+set on every request so usage is attributed to this integration per release.
 
 ## API
 
