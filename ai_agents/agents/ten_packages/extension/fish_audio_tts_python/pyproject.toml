@@ -1,6 +1,6 @@
 [project]
 name = "fish-audio-tts-python"
-version = "0.4.2"
+version = "0.4.3"
 requires-python = ">=3.10"
 dependencies = [
     "fish-audio-sdk>=1.3.0",
