@@ -125,6 +125,15 @@ async fn install_non_local_dependency_pkg_info(
     )
     .await?;
 
+    match fs::symlink_metadata(dest_dir_path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => fs::remove_dir_all(dest_dir_path),
+        Ok(metadata) if metadata.is_dir() => remove_dir_all::remove_dir_all(dest_dir_path),
+        Ok(_) => fs::remove_file(dest_dir_path),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(err),
+    }
+    .with_context(|| format!("Failed to remove existing package path: {dest_dir_path}"))?;
+
     let mut installed_paths = extract_and_process_tpkg_file(temp_file.path(), dest_dir_path, None)?;
 
     // After installation (after decompression), check whether the content
