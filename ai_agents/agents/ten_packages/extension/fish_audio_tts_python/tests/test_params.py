@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_runtime import (
     ExtensionTester,
@@ -65,7 +65,7 @@ def test_params_passthrough(MockFishAudioTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()  # Required for clean shutdown in on_flush
+    mock_instance.clean = AsyncMock()  # Required for clean shutdown in on_flush
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
