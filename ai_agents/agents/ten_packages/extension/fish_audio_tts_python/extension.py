@@ -444,6 +444,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 self._audio_end_sent = True
 
             self._audio_end_task = asyncio.create_task(send_audio_end())
+            self._audio_end_task.add_done_callback(
+                self._handle_audio_end_task_done
+            )
         elif self._audio_end_sent:
             self.ten_env.log_debug(
                 f"Skipping duplicate audio_end for request {request_id}"
@@ -470,6 +473,23 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             f"reason: {reason.value}, interval: {request_event_interval}ms, "
             f"duration: {duration_ms}ms"
         )
+
+    def _handle_audio_end_task_done(self, task: asyncio.Task[None]) -> None:
+        """Retrieve failures when an audio_end task outlives its waiter."""
+        if task.cancelled():
+            self.ten_env.log_debug(
+                "Fish Audio TTS audio_end task was cancelled"
+            )
+            return
+
+        error = task.exception()
+        if error is not None:
+            # Do not log the exception representation because runtime errors
+            # can retain message payloads or other request details.
+            self.ten_env.log_error(
+                "Fish Audio TTS audio_end task failed: "
+                f"type={type(error).__name__}"
+            )
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:

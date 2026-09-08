@@ -420,3 +420,45 @@ def test_flush_finishes_audio_end_after_completion_task_is_cancelled() -> None:
         extension.finish_request.assert_not_awaited()
 
     asyncio.run(run_test())
+
+
+def test_audio_end_failure_is_retrieved_without_waiter() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        send_started = asyncio.Event()
+        allow_failure = asyncio.Event()
+
+        async def failing_send_tts_audio_end(**_kwargs) -> None:
+            send_started.set()
+            await allow_failure.wait()
+            raise RuntimeError("delivery failed")
+
+        extension.send_tts_audio_end = failing_send_tts_audio_end
+        waiter = asyncio.create_task(
+            extension._send_current_request_audio_end(
+                "orphaned-audio-end", TTSAudioEndReason.REQUEST_END
+            )
+        )
+        await asyncio.wait_for(send_started.wait(), 0.5)
+
+        waiter.cancel()
+        try:
+            await waiter
+        except asyncio.CancelledError:
+            pass
+
+        allow_failure.set()
+        audio_end_task = extension._audio_end_task
+        assert audio_end_task is not None
+        for _ in range(10):
+            await asyncio.sleep(0)
+            if audio_end_task.done():
+                break
+        assert audio_end_task.done()
+        await asyncio.sleep(0)  # Let the done callback retrieve the failure.
+
+        extension.ten_env.log_error.assert_called_once_with(
+            "Fish Audio TTS audio_end task failed: type=RuntimeError"
+        )
+
+    asyncio.run(run_test())
