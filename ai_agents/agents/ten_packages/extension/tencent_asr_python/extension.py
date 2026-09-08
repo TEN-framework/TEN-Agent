@@ -72,6 +72,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         if self.config is None or self.request_params is None:
             return {}
         metadata: dict[str, Any] = {}
+        if self.request_params.appid:
+            metadata["appid"] = self.request_params.appid
         if self.request_params.secretid:
             metadata["key"] = self.request_params.secretid
         url = self.request_params.base_uri()
