@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 import json
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_runtime import (
     ExtensionTester,
@@ -48,6 +48,10 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
+            # This is a complete standalone request. Mark it final so an
+            # error completes its state before the recovery request starts.
+            # Non-final chunk errors intentionally keep their request open.
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
@@ -126,7 +130,7 @@ def test_reconnect_after_connection_drop(MockFishAudioTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates different behaviors on subsequent calls
     async def mock_get_stateful(text: str):
