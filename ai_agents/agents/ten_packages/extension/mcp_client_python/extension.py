@@ -13,9 +13,11 @@ from ten_ai_base.types import (
 )
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 from dataclasses import dataclass
+import shlex
 
-from mcp import ClientSession
+from mcp import ClientSession, StdioServerParameters
 from mcp.client.sse import sse_client
+from mcp.client.stdio import stdio_client
 
 CMD_TOOL_REGISTER = "tool_register"
 CMD_TOOL_CALL = "tool_call"
@@ -30,7 +32,13 @@ TOOL_CALLBACK = "callback"
 
 @dataclass
 class MCPClientConfig(BaseConfig):
+    # SSE endpoint of a remote MCP server.
     url: str = ""
+
+    # Command line of a local MCP server to launch and talk to over stdio,
+    # e.g. "npx -y @modelcontextprotocol/server-filesystem /data".
+    # Takes precedence over `url` when both are set.
+    command: str = ""
 
 
 class MCPClientExtension(AsyncLLMToolBaseExtension):
@@ -47,13 +55,47 @@ class MCPClientExtension(AsyncLLMToolBaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
 
+    def _create_transport(self, ten_env: AsyncTenEnv):
+        """Create the MCP transport selected by the configuration.
+
+        `command` launches a local server and talks to it over stdio,
+        `url` connects to a remote server over SSE. Returns None when
+        neither is configured.
+        """
+        if self.config.command:
+            argv = shlex.split(self.config.command)
+            if not argv:
+                ten_env.log_error(
+                    "`command` is set but contains no executable"
+                )
+                return None
+
+            ten_env.log_info(f"Starting MCP server over stdio: {argv}")
+            return stdio_client(
+                StdioServerParameters(command=argv[0], args=argv[1:])
+            )
+
+        if self.config.url:
+            ten_env.log_info(
+                f"Connecting to MCP server over SSE: {self.config.url}"
+            )
+            return sse_client(url=self.config.url)
+
+        ten_env.log_error(
+            "No MCP server configured. Set `command` for a local server "
+            "over stdio, or `url` for a remote one over SSE."
+        )
+        return None
+
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
 
         self.config = await MCPClientConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
-        if self.config.url:
-            self._streams_context = sse_client(url=self.config.url)
+
+        transport = self._create_transport(ten_env)
+        if transport is not None:
+            self._streams_context = transport
             # pylint: disable=no-member
             streams = await self._streams_context.__aenter__()
             # pylint: enable=no-member
