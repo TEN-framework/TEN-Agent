@@ -1,3 +1,4 @@
+name: ten_ai_agents
 services:
   ten_agent_dev:
     image: ghcr.io/ten-framework/ten_agent_build:0.7.14
@@ -16,6 +17,8 @@ services:
       - ../.vscode/:/app/.vscode
       - ../tools/pylint/.pylintrc:/tools/pylint/.pylintrc
       - ../tools/upgrade:/tools/upgrade
+      - agent_dev:/root
+
     working_dir: /app
     env_file:
       - .env
@@ -34,3 +37,6 @@ services:
 networks:
   ten_agent_network:
     driver: bridge
+
+volumes:
+  agent_dev:
