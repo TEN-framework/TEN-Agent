@@ -526,6 +526,39 @@ impl Graph {
         Ok(Some(new_graph))
     }
 
+    /// Applies the passes that must run before subgraph flattening:
+    ///
+    /// 1. Expand `names` arrays into individual `name` items.
+    /// 2. Replace selector references with the nodes they match.
+    /// 3. Convert reversed connections (`source`) to forward connections
+    ///    (`dest`).
+    ///
+    /// `flatten_subgraphs` relies on all three having already run - it expects
+    /// `name` to be `Some`, `names` to be `None`, and every node to be an
+    /// extension node. Any graph handed to it, including one imported through
+    /// `import_uri`, has to go through here first.
+    ///
+    /// Returns `Ok(None)` if none of the passes changed anything.
+    pub fn apply_pre_flatten_passes(&self) -> Result<Option<Graph>> {
+        let mut processing_graph = self;
+
+        let expanded_names_graph = processing_graph.expand_names_to_individual_items()?;
+        processing_graph = expanded_names_graph.as_ref().unwrap_or(processing_graph);
+
+        let flattened_selector_graph = processing_graph.flatten_selectors()?;
+        processing_graph = flattened_selector_graph.as_ref().unwrap_or(processing_graph);
+
+        let reversed_graph =
+            processing_graph.convert_reversed_connections_to_forward_connections()?;
+        processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
+
+        if std::ptr::eq(processing_graph, self) {
+            return Ok(None);
+        }
+
+        Ok(Some(processing_graph.clone()))
+    }
+
     /// Convenience method for flattening a graph instance without preserving
     /// exposed info. This is the main public API for flattening graphs.
     ///
@@ -534,19 +567,9 @@ impl Graph {
     pub async fn flatten_graph(&self, current_base_dir: Option<&str>) -> Result<Option<Graph>> {
         let mut processing_graph = self;
 
-        // Step 1: Expand names arrays to individual name items
-        let expanded_names_graph = processing_graph.expand_names_to_individual_items()?;
-        processing_graph = expanded_names_graph.as_ref().unwrap_or(processing_graph);
-
-        // Step 2: Match nodes according to selector rules and replace them in
-        // connections
-        let flattened_selector_graph = processing_graph.flatten_selectors()?;
-        processing_graph = flattened_selector_graph.as_ref().unwrap_or(processing_graph);
-
-        // Step 3: Convert reversed connections to forward connections if needed
-        let reversed_graph =
-            processing_graph.convert_reversed_connections_to_forward_connections()?;
-        processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
+        // Steps 1-3: names expansion, selector resolution, reversed connections.
+        let pre_flattened_graph = processing_graph.apply_pre_flatten_passes()?;
+        processing_graph = pre_flattened_graph.as_ref().unwrap_or(processing_graph);
 
         // Step 4: Flatten subgraphs
         let flattened = Self::flatten_subgraphs(processing_graph, current_base_dir, false)

@@ -1339,4 +1339,171 @@ mod tests {
         assert_eq!(expanded_property.name, "config_b");
         assert!(expanded_property.subgraph.is_none());
     }
+
+    /// Builds a main graph whose only node imports `subgraph_path`.
+    fn main_graph_importing(subgraph_path: &str) -> Graph {
+        Graph {
+            nodes: vec![GraphNode::new_subgraph_node(
+                "sg".to_string(),
+                None,
+                GraphResource { import_uri: format!("file://{subgraph_path}") },
+            )],
+            connections: None,
+            exposed_messages: None,
+            exposed_properties: None,
+        }
+    }
+
+    /// A reversed connection (`source`) written inside an imported subgraph
+    /// must be converted to a forward connection, with the subgraph name
+    /// prefix applied, just like one written in the main graph.
+    #[tokio::test]
+    async fn test_flatten_subgraph_with_reversed_connection() {
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("subgraph_reversed.json");
+
+        // Inside the subgraph: ext_a --hello--> ext_b, written in reverse form.
+        fs::write(
+            &subgraph_file_path,
+            r#"{
+              "nodes": [
+                {"type": "extension", "name": "ext_a", "addon": "addon_a"},
+                {"type": "extension", "name": "ext_b", "addon": "addon_b"}
+              ],
+              "connections": [
+                {
+                  "extension": "ext_b",
+                  "cmd": [{"name": "hello", "source": [{"extension": "ext_a"}]}]
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let main_graph = main_graph_importing(subgraph_file_path.to_str().unwrap());
+        let flattened = main_graph.flatten_graph(None).await.unwrap().unwrap();
+
+        let connections = flattened.connections.as_ref().unwrap();
+
+        // No reversed connection may survive flattening.
+        assert!(
+            connections
+                .iter()
+                .flat_map(|conn| conn.cmd.iter().flatten())
+                .all(|flow| flow.source.is_empty()),
+            "reversed connection inside the subgraph was not converted: {connections:?}"
+        );
+
+        // It must have become sg_ext_a --hello--> sg_ext_b.
+        let forward = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("sg_ext_a"))
+            .expect("no forward connection originating from sg_ext_a");
+
+        let flow = forward
+            .cmd
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|flow| flow.name.as_deref() == Some("hello"))
+            .expect("no 'hello' cmd flow");
+
+        assert_eq!(flow.dest.len(), 1);
+        assert_eq!(flow.dest[0].loc.extension.as_deref(), Some("sg_ext_b"));
+    }
+
+    /// A `names` array written inside an imported subgraph must be expanded
+    /// into individual `name` items.
+    #[tokio::test]
+    async fn test_flatten_subgraph_with_names_array() {
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("subgraph_names.json");
+
+        fs::write(
+            &subgraph_file_path,
+            r#"{
+              "nodes": [
+                {"type": "extension", "name": "ext_a", "addon": "addon_a"},
+                {"type": "extension", "name": "ext_b", "addon": "addon_b"}
+              ],
+              "connections": [
+                {
+                  "extension": "ext_a",
+                  "cmd": [{"names": ["hello", "world"], "dest": [{"extension": "ext_b"}]}]
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let main_graph = main_graph_importing(subgraph_file_path.to_str().unwrap());
+        let flattened = main_graph.flatten_graph(None).await.unwrap().unwrap();
+
+        let connections = flattened.connections.as_ref().unwrap();
+        let flows: Vec<_> = connections.iter().flat_map(|conn| conn.cmd.iter().flatten()).collect();
+
+        assert!(
+            flows.iter().all(|flow| flow.names.is_none()),
+            "'names' inside the subgraph was not expanded: {flows:?}"
+        );
+
+        let mut names: Vec<&str> = flows.iter().filter_map(|flow| flow.name.as_deref()).collect();
+        names.sort_unstable();
+        assert_eq!(names, vec!["hello", "world"]);
+
+        for flow in &flows {
+            assert_eq!(flow.dest.len(), 1);
+            assert_eq!(flow.dest[0].loc.extension.as_deref(), Some("sg_ext_b"));
+        }
+    }
+
+    /// A selector node written inside an imported subgraph must be resolved to
+    /// the nodes it matches and removed, instead of reaching the flattening
+    /// logic and panicking as a non-extension node.
+    #[tokio::test]
+    async fn test_flatten_subgraph_with_selector() {
+        let temp_dir = tempdir().unwrap();
+        let subgraph_file_path = temp_dir.path().join("subgraph_selector.json");
+
+        fs::write(
+            &subgraph_file_path,
+            r#"{
+              "nodes": [
+                {"type": "extension", "name": "ext_a", "addon": "addon_a"},
+                {"type": "extension", "name": "ext_b", "addon": "addon_b"},
+                {
+                  "type": "selector",
+                  "name": "targets",
+                  "filter": {"field": "name", "operator": "exact", "value": "ext_b"}
+                }
+              ],
+              "connections": [
+                {
+                  "extension": "ext_a",
+                  "cmd": [{"name": "hello", "dest": [{"selector": "targets"}]}]
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let main_graph = main_graph_importing(subgraph_file_path.to_str().unwrap());
+        let flattened = main_graph.flatten_graph(None).await.unwrap().unwrap();
+
+        // The selector node must not survive into the flattened graph.
+        assert!(flattened.nodes.iter().all(|node| node.get_type() == GraphNodeType::Extension));
+        assert_eq!(flattened.nodes.len(), 2);
+
+        let connections = flattened.connections.as_ref().unwrap();
+        let flow = connections
+            .iter()
+            .find(|conn| conn.loc.extension.as_deref() == Some("sg_ext_a"))
+            .and_then(|conn| conn.cmd.as_ref())
+            .and_then(|flows| flows.iter().find(|flow| flow.name.as_deref() == Some("hello")))
+            .expect("no 'hello' cmd flow from sg_ext_a");
+
+        assert_eq!(flow.dest.len(), 1);
+        assert_eq!(flow.dest[0].loc.extension.as_deref(), Some("sg_ext_b"));
+        assert!(flow.dest[0].loc.selector.is_none());
+    }
 }
