@@ -1,0 +1,7 @@
+{
+    "params": {
+        "api_key": "${env:SPEKO_API_KEY|}",
+        "language": "es",
+        "sample_rate": 16000
+    }
+}

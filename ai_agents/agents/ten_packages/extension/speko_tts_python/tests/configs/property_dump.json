@@ -1,0 +1,9 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:SPEKO_API_KEY}",
+        "model": "auto",
+        "language": "en"
+    }
+}

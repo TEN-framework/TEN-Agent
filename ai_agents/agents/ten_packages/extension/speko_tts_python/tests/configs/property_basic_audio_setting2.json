@@ -1,0 +1,10 @@
+{
+    "dump": false,
+    "dump_path": "/tmp",
+    "params": {
+        "api_key": "${env:SPEKO_API_KEY}",
+        "model": "auto",
+        "language": "en",
+        "objective": "latency"
+    }
+}

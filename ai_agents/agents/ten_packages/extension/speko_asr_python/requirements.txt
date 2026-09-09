@@ -1,0 +1,3 @@
+aiohttp
+pydantic
+typing-extensions

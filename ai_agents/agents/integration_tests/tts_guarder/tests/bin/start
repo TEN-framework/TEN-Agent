@@ -9,7 +9,7 @@ EXTENSION_NAME=${EXT_NAME:-elevenlabs_tts_python}
 
 export PYTHONPATH=.:ten_packages/system/ten_runtime_python/lib:ten_packages/system/ten_runtime_python/interface:ten_packages/system/ten_ai_base/interface:ten_packages/extension/${EXTENSION_NAME}:$PYTHONPATH
 # some tts extension does not support sample rate comparison, so we need to set the enable_sample_rate parameter
-if [[ "${EXTENSION_NAME}" == "humeai_tts_python" || "${EXTENSION_NAME}" == "openai_tts_python" || "${EXTENSION_NAME}" == "openai_tts2_python" || "${EXTENSION_NAME}" == "mistral_tts_python" || "${EXTENSION_NAME}" == "ezai_tw_tts_python" || "${EXTENSION_NAME}" == "typecast_tts_python" ]]; then
+if [[ "${EXTENSION_NAME}" == "humeai_tts_python" || "${EXTENSION_NAME}" == "openai_tts_python" || "${EXTENSION_NAME}" == "openai_tts2_python" || "${EXTENSION_NAME}" == "mistral_tts_python" || "${EXTENSION_NAME}" == "ezai_tw_tts_python" || "${EXTENSION_NAME}" == "typecast_tts_python" || "${EXTENSION_NAME}" == "speko_tts_python" ]]; then
     export ENABLE_SAMPLE_RATE="False"
 else
     export ENABLE_SAMPLE_RATE="True"

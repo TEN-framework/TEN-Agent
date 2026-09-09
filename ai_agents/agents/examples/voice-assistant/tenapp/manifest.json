@@ -172,6 +172,12 @@
       "path": "../../../ten_packages/extension/murf_tts_python"
     },
     {
+      "path": "../../../ten_packages/extension/speko_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/speko_tts_python"
+    },
+    {
       "path": "../../../ten_packages/extension/smallest_asr_python"
     },
     {
