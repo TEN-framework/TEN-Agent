@@ -1,0 +1,13 @@
+{
+    "dump": false,
+    "dump_path": "/tmp",
+    "finalize_mode": "disconnect",
+    "silence_duration_ms": 1000,
+    "params": {
+        "model": "iic/SenseVoiceSmall",
+        "device": "cpu",
+        "language": "auto",
+        "use_itn": true,
+        "sample_rate": 16000
+    }
+}
