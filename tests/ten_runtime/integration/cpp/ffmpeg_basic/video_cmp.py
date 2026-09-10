@@ -41,6 +41,7 @@ def compare(
     frame_count = int(video1.get(cv2.CAP_PROP_FRAME_COUNT))
 
     similar = 0
+    grab_failure_cnt = 0
 
     # grab frame and compare.
     for _ in range(frame_count):
