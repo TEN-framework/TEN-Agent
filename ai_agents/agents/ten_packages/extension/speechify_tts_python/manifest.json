@@ -1,0 +1,78 @@
+{
+  "type": "extension",
+  "name": "speechify_tts_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "base_url": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "request_timeout_seconds": {
+              "type": "int64"
+            },
+            "loudness_normalization": {
+              "type": "bool"
+            },
+            "text_normalization": {
+              "type": "bool"
+            }
+          }
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

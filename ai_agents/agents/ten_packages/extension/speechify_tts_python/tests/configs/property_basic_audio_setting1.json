@@ -1,0 +1,9 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "sample_rate": 16000,
+        "key": "${env:SPEECHIFY_TTS_KEY}",
+        "voice_id": "geffen_32"
+    }
+}
