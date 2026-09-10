@@ -1,0 +1,12 @@
+{
+  "params": {
+    "api_key": "${env:DEEPDUB_API_KEY|}",
+    "url": "${env:DEEPDUB_WS_STREAMING_URL|}",
+    "model": "${env:DEEPDUB_MODEL|dd-etts-3.2}",
+    "locale": "${env:DEEPDUB_LOCALE|en-US}",
+    "voice_prompt_id": "${env:DEEPDUB_VOICE_PROMPT_ID|}",
+    "sample_rate": 48000,
+    "channels": 1,
+    "format": "s16le"
+  }
+}

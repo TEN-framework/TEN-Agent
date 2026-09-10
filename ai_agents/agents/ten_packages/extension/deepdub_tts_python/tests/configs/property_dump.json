@@ -1,0 +1,14 @@
+{
+    "dump": true,
+    "dump_path": "./dump/",
+    "params": {
+        "api_key": "test_api_key",
+        "url": "wss://example.invalid/ws",
+        "voice_prompt_id": "test_voice",
+        "model": "dd-etts-3.2",
+        "locale": "en-US",
+        "sample_rate": 48000,
+        "channels": 1,
+        "format": "s16le"
+    }
+}
