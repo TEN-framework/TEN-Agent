@@ -1,0 +1,62 @@
+version: '3'
+
+vars:
+  APP_NAME: voice-assistant-with-PowerMem-LanguageTutor
+  TEN_AGENT_DIR: '{{.USER_WORKING_DIR}}/../../..'
+  FRONTEND_DIR: '{{.TEN_AGENT_DIR}}/ten_apps/voice-assistant'
+
+tasks:
+  install:
+    desc: Install dependencies for the voice assistant with PowerMem Language Tutor
+    cmds:
+      - |
+        echo "Installing Python dependencies..."
+        cd {{.TEN_AGENT_DIR}}/ten_packages/extension/main_python
+        pip install -r requirements.txt
+        echo "Python dependencies installed."
+
+        echo "Installing extension dependencies..."
+        cd {{.TEN_AGENT_DIR}}/ten_packages/extension/openai_llm2_python
+        pip install -r requirements.txt
+        echo "Extension dependencies installed."
+
+        echo "Installing frontend dependencies..."
+        cd {{.FRONTEND_DIR}}
+        npm install
+        echo "Frontend dependencies installed."
+
+        echo "Installation completed."
+    dir: '{{.PWD}}'
+
+  run:
+    desc: Run the voice assistant with PowerMem Language Tutor
+    cmds:
+      - |
+        echo "Starting frontend..."
+        cd {{.FRONTEND_DIR}}
+        export REACT_APP_DEFAULT_AGENT=voice-assistant-with-PowerMem-LanguageTutor
+        npm run dev &
+        FRONTEND_PID=$!
+        echo "Frontend started with PID: $FRONTEND_PID"
+
+        echo "Starting API server..."
+        cd {{.TEN_AGENT_DIR}}/ten_apps/api_server
+        python main.py &
+        API_PID=$!
+        echo "API server started with PID: $API_PID"
+
+        echo "Starting TMAN Designer..."
+        cd {{.TEN_AGENT_DIR}}
+        python -m ten_app_designer &
+        DESIGNER_PID=$!
+        echo "TMAN Designer started with PID: $DESIGNER_PID"
+
+        echo "Starting Language Tutor Agent..."
+        cd tenapp
+        go run main.go
+        AGENT_EXIT=$?
+
+        echo "Stopping services..."
+        kill $FRONTEND_PID $API_PID $DESIGNER_PID 2>/dev/null || true
+        echo "All services stopped."
+    dir: '{{.PWD}}'

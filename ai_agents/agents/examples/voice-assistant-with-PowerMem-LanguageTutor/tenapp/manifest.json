@@ -1,0 +1,149 @@
+{
+  "type": "app",
+  "name": "voice_assistant_powermem_language_tutor",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "path": "../../../ten_packages/extension/aliyun_asr"
+    },
+    {
+      "path": "../../../ten_packages/extension/aliyun_asr_bigmodel_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/assemblyai_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/aws_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/azure_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/bytedance_asr"
+    },
+    {
+      "path": "../../../ten_packages/extension/bytedance_llm_based_asr"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/gladia_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/google_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/soniox_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/speechmatics_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/tencent_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/xfyun_asr_bigmodel_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/xfyun_asr_dialect_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/xfyun_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/coze_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/dify_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/azure_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/bytedance_tts_duplex"
+    },
+    {
+      "path": "../../../ten_packages/extension/cartesia_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/cosy_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/dubverse_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/elevenlabs_tts2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/fish_audio_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/google_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/groq_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/humeai_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/minimax_tts_websocket_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/neuphonic_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_tts2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/polly_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/rime_http_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/rime_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/stepfun_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/tencent_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/message_collector2"
+    },
+    {
+      "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh",
+    "build": "scripts/install_python_deps.sh"
+  }
+}

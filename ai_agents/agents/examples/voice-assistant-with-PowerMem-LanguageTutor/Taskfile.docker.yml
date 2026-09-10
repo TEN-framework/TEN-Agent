@@ -1,0 +1,32 @@
+version: '3'
+
+vars:
+  APP_NAME: voice-assistant-with-PowerMem-LanguageTutor
+  TEN_AGENT_DIR: '{{.USER_WORKING_DIR}}/../../..'
+  FRONTEND_DIR: '{{.TEN_AGENT_DIR}}/ten_apps/voice-assistant'
+
+tasks:
+  install:
+    desc: Install dependencies for Docker build
+    cmds:
+      - |
+        echo "Installing Python dependencies..."
+        cd {{.TEN_AGENT_DIR}}/ten_packages/extension/main_python
+        pip install -r requirements.txt -q
+
+        echo "Installing extension dependencies..."
+        cd {{.TEN_AGENT_DIR}}/ten_packages/extension/openai_llm2_python
+        pip install -r requirements.txt -q
+
+        echo "Installation completed."
+    dir: '{{.PWD}}'
+
+  run:
+    desc: Run with Docker
+    cmds:
+      - |
+        docker run --rm -it --env-file .env \
+          -p 8080:8080 \
+          -p 3000:3000 \
+          voice-assistant-with-PowerMem-LanguageTutor-app
+    dir: '{{.PWD}}'
