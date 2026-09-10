@@ -77,7 +77,6 @@ class RealtimeApiConnection:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
             auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            headers = {"OpenAI-Beta": "realtime=v1"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
