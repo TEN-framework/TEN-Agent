@@ -11,12 +11,17 @@ on:
         type: string
         default: "latest"
 
+permissions:
+  contents: read
+
 jobs:
   trigger_sync_remote_docs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger remote workflow_dispatch
         uses: actions/github-script@v8
+        env:
+          TARGET_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag_name }}
         with:
           github-token: ${{ secrets.TEN_FRAMEWORK_PORTAL_ACTION_PAT }} # need repo + workflow permissions
           script: |
@@ -26,6 +31,6 @@ jobs:
               workflow_id: 'sync-remote-docs.yml', // target workflow
               ref: 'main', // branch
               inputs: {
-                target_tag: '${{ github.event.release.tag_name || github.event.inputs.tag_name }}' // workflow_dispatch.inputs.target_tag
+                target_tag: process.env.TARGET_TAG // workflow_dispatch.inputs.target_tag
               }
             });
