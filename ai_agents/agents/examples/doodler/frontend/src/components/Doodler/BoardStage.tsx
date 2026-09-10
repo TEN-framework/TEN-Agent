@@ -521,12 +521,16 @@ export default function BoardStage(props: {
     onErase,
     eraseDisabled = false,
   } = props;
-  const drawingActive = Boolean(phase && phase !== "idle");
+  const isGenerating =
+    phase === "queued" || phase === "sketch" || phase === "color";
+  const showPlaceholder = isGenerating && !imageUrl;
+  const drawingActive = showPlaceholder;
   const resolvedActiveId = activeSwatchId ?? swatches[0]?.id;
   const activeSwatch =
     swatches.find((swatch) => swatch.id === resolvedActiveId) ?? swatches[0];
   const resolvedPenBody = penBodyColor ?? activeSwatch?.penBody ?? "#F97316";
   const resolvedPenTop = penTopColor ?? activeSwatch?.penTop ?? "#FB923C";
+  const stylusPhase = imageUrl || !isGenerating ? "idle" : (phase ?? "idle");
   const canErase = Boolean(onErase) && !eraseDisabled;
   const [eraseProgress, setEraseProgress] = React.useState(0);
   const eraseTriggeredRef = React.useRef(false);
@@ -612,7 +616,12 @@ export default function BoardStage(props: {
               <SurfaceTexture />
               <div className="pointer-events-none absolute inset-0 doodle-board-grid opacity-20" />
 
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center",
+                  showPlaceholder && "flex-col gap-3 text-center"
+                )}
+              >
                 <AnimatePresence mode="wait">
                   {imageUrl ? (
                     <motion.div
@@ -638,37 +647,31 @@ export default function BoardStage(props: {
                         />
                       </div>
                     </motion.div>
-                  ) : drawingActive ? (
-                    <motion.div
-                      key="doodle-placeholder"
-                      className="flex w-full max-w-[min(520px,90%)] flex-col items-center gap-3 rounded-[18px] border border-dashed border-neutral-300/80 bg-white/80 p-6 text-center shadow-[0_16px_40px_rgba(32,16,8,0.12)] backdrop-blur-sm"
-                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      <div
-                        className="h-2 w-40 rounded-full"
-                        style={{
-                          background: `linear-gradient(90deg, ${resolvedPenBody} 0%, rgba(255,255,255,0.6) 100%)`,
-                        }}
-                        aria-hidden
-                      />
-                      <div className="text-sm font-semibold text-neutral-700">
-                        Sketching your doodle…
-                      </div>
-                      <div className="text-xs text-neutral-500">
-                        The pen is warming up with your color.
-                      </div>
-                    </motion.div>
                   ) : null}
                 </AnimatePresence>
+                {showPlaceholder ? (
+                  <>
+                    <div
+                      className="h-2 w-40 rounded-full"
+                      style={{
+                        background: `linear-gradient(90deg, ${resolvedPenBody} 0%, rgba(255,255,255,0.6) 100%)`,
+                      }}
+                      aria-hidden
+                    />
+                    <div className="text-sm font-semibold text-neutral-700">
+                      Sketching your doodle…
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      The pen is warming up with your color.
+                    </div>
+                  </>
+                ) : null}
               </div>
 
               <div className="pointer-events-none absolute inset-0">
                 {overlay}
                 <ToyStylusAnimator
-                  phase={imageUrl ? "idle" : phase}
+                  phase={stylusPhase}
                   reducedMotion={reducedMotion}
                   bodyColor={resolvedPenBody}
                   topColor={resolvedPenTop}

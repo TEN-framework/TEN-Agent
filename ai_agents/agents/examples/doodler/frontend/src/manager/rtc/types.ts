@@ -11,6 +11,14 @@ import {
 } from "agora-rtc-sdk-ng";
 import { type IChatItem, ITextItem } from "@/types";
 
+export type ImageProgressPhase = "queued" | "drawing" | "final";
+
+export interface IProgressEvent {
+  phase: ImageProgressPhase;
+  pct?: number;
+  time: number;
+}
+
 export interface IRtcUser {
   userId: UID;
   videoTrack?: IRemoteVideoTrack;
@@ -23,6 +31,7 @@ export interface RtcEvents {
   localTracksChanged: (tracks: IUserTracks) => void;
   networkQuality: (quality: NetworkQuality) => void;
   textChanged: (text: IChatItem) => void;
+  progressChanged: (progress: IProgressEvent) => void;
 }
 
 export interface IUserTracks {
