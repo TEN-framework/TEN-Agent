@@ -18,32 +18,49 @@ pip install httpx pydantic
 
 ### Environment Variables
 
-Set the following environment variables:
-
 ```bash
-export BLAZE_TTS_API_URL="http://localhost:8000"
-export BLAZE_TTS_API_KEY="your-api-key-here"  # Optional
+export BLAZE_API_KEY="your-api-key-here"
+export BLAZE_TTS_API_KEY="$BLAZE_API_KEY"
+export BLAZE_TTS_API_URL="https://api.blaze.vn"
 ```
 
 ### Property.json (TEN Framework)
 
-The extension includes a `property.json` file with default configuration that TEN framework can use:
-
 ```json
 {
+    "dump": false,
+    "dump_path": "./",
     "params": {
-        "api_url": "${env:BLAZE_TTS_API_URL}",
+        "api_url": "${env:BLAZE_TTS_API_URL|https://api.blaze.vn}",
         "api_key": "${env:BLAZE_TTS_API_KEY}",
         "language": "vi",
-        "speaker_id": null,
+        "speaker_id": "HN-Nam-2-BL",
         "audio_speed": 1.0,
         "audio_quality": 64,
+        "sample_rate": 24000,
+        "model": "v1.5_pro",
         "timeout": 3600
     }
 }
 ```
 
-TEN framework will automatically read this file and use environment variables for configuration.
+Output is WAV PCM16 mono at **24 kHz**. The TEN HTTP client posts `/v1/tts`,
+polls `/v1/tts/{id}/download` (handles HTTP 425), then strips the WAV header.
+
+### Voice assistant graphs
+
+In `agents/examples/voice-assistant`:
+
+| Graph name | STT | TTS |
+| ---------- | --- | --- |
+| `voice_assistant_blaze_full` | Blaze | Blaze |
+
+### Live smoke test
+
+```bash
+python ai_agents/scripts/smoke_blaze.py
+python ai_agents/scripts/smoke_blaze.py --skip-stt --text "Xin chào"
+```
 
 ## Usage
 

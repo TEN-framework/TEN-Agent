@@ -1,12 +1,15 @@
 {
+    "dump": false,
+    "dump_path": "./",
     "params": {
-        "api_url": "${env:BLAZE_TTS_API_URL}",
         "api_key": "${env:BLAZE_TTS_API_KEY}",
+        "api_url": "${env:BLAZE_TTS_API_URL|https://api.blaze.vn}",
         "language": "vi",
-        "speaker_id": null,
+        "speaker_id": "HN-Nu-CSKH-HuongGiang",
         "audio_speed": 1.0,
         "audio_quality": 64,
-        "timeout": 3600
+        "sample_rate": 24000,
+        "model": "2.0-realtime",
+        "audio_format": "pcm"
     }
 }
-

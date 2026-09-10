@@ -967,6 +967,40 @@
           "arch": "x64"
         }
       ]
+    },
+    {
+      "type": "extension",
+      "name": "blaze_stt_python",
+      "version": "1.0.1",
+      "hash": "86b6295019101d33477b835c2f0b1cd7dd0368121b54dafda59711d08d8b54f0",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/blaze_stt_python"
+    },
+    {
+      "type": "extension",
+      "name": "blaze_tts_python",
+      "version": "1.0.1",
+      "hash": "fac55efe4566587ed5c207437b38b7824ce572a14ac683707ed81e860fa5173c",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/blaze_tts_python"
     }
   ]
 }

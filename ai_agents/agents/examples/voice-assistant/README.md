@@ -2,6 +2,8 @@
 
 A configurable voice assistant with real-time conversation capabilities using Agora RTC, interchangeable STT/TTS providers, and an OpenAI-compatible LLM.
 
+**New to the Blaze stack?** See [TUTORIAL.md](./TUTORIAL.md) for a step-by-step guide to `voice_assistant_blaze_full` (Blaze realtime STT + TTS).
+
 ## Features
 
 - **Chained Model Real-time Voice Interaction**: Complete voice conversation pipeline with STT → LLM → TTS processing
@@ -16,6 +18,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 2. **STT Provider**: choose the graph you want to run
    - `DEEPGRAM_API_KEY` for the default `voice_assistant` graph
    - `XAI_API_KEY` for `voice_assistant_xai_asr` or `voice_assistant_xai_full`
+   - `BLAZE_STT_API_KEY` (or `BLAZE_API_KEY`) for `voice_assistant_blaze_full`
 
 3. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
    - `OPENAI_API_KEY` - Your OpenAI API key (required)
@@ -24,6 +27,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
    - `ELEVENLABS_TTS_KEY` for the default `voice_assistant` graph or `voice_assistant_xai_asr`
    - `GRADIUM_API_KEY` for `voice_assistant_gradium`
    - `XAI_API_KEY` for `voice_assistant_xai_tts` or `voice_assistant_xai_full`
+   - `BLAZE_TTS_API_KEY` (or `BLAZE_API_KEY`) for `voice_assistant_blaze_full`
 
 ### Provider-specific keys
 
@@ -35,6 +39,9 @@ A configurable voice assistant with real-time conversation capabilities using Ag
    - `GRADIUM_API_KEY` - Your Gradium API key (required for the Gradium TTS graph)
 - **xAI Account**: Get credentials from [xAI Console](https://console.x.ai/)
    - `XAI_API_KEY` - Your xAI Voice API key (required for xAI STT/TTS graphs)
+- **Blaze Account**: Get credentials from [Blaze](https://app.blaze.vn)
+   - `BLAZE_API_KEY` / `BLAZE_STT_API_KEY` / `BLAZE_TTS_API_KEY` - required for `voice_assistant_blaze_full`
+   - `BLAZE_STT_API_URL` / `BLAZE_TTS_API_URL` - optional (default `https://api.blaze.vn`)
 
 ### Optional Environment Variables
 
@@ -111,13 +118,17 @@ Available graph names:
 - `voice_assistant_xai_asr` - xAI STT + OpenAI-compatible LLM + ElevenLabs TTS
 - `voice_assistant_xai_tts` - Deepgram STT + OpenAI-compatible LLM + xAI TTS
 - `voice_assistant_xai_full` - xAI STT + OpenAI-compatible LLM + xAI TTS
+- `voice_assistant_blaze_full` - Blaze realtime STT + OpenAI-compatible LLM + Blaze realtime TTS
 
 Examples:
 
 ```text
+http://localhost:3000/?graph=voice_assistant_blaze_full
 http://localhost:3000/?graph=voice_assistant_xai_full
 https://ten-demo.agora.io/?graph=voice_assistant_xai_full
 ```
+
+For Blaze setup details, see [TUTORIAL.md](./TUTORIAL.md).
 
 ## Configuration
 

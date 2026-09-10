@@ -18,7 +18,7 @@
         "content": "Blaze Text-to-Speech extension for TEN Framework"
       },
       "vi-VN": {
-        "content": "Extension chuyển đổi văn bản thành giọng nói cho TEN Framework"
+        "content": "Extension chuy\u1ec3n \u0111\u1ed5i v\u0103n b\u1ea3n th\u00e0nh gi\u1ecdng n\u00f3i cho TEN Framework"
       }
     }
   },
@@ -38,7 +38,6 @@
     "include": [
       "manifest.json",
       "property.json",
-      "BUILD.gn",
       "**.tent",
       "**.py",
       "README.md",
@@ -54,13 +53,19 @@
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
-            "api_url": {
+            "api_key": {
               "type": "string"
             },
-            "api_key": {
+            "api_url": {
               "type": "string"
             },
             "language": {
@@ -73,7 +78,13 @@
               "type": "float64"
             },
             "audio_quality": {
-              "type": "float64"
+              "type": "int32"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "model": {
+              "type": "string"
             },
             "timeout": {
               "type": "int32"

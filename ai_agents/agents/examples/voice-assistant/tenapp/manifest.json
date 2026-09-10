@@ -176,6 +176,12 @@
     },
     {
       "path": "../../../ten_packages/extension/smallest_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/blaze_stt_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/blaze_tts_python"
     }
   ],
   "scripts": {

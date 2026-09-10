@@ -1779,6 +1779,196 @@
             }
           ]
         }
+      },
+      {
+        "name": "voice_assistant_blaze_full",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "blaze_stt_python",
+              "extension_group": "stt",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:BLAZE_STT_API_KEY}",
+                  "api_url": "${env:BLAZE_STT_API_URL|https://api.blaze.vn}",
+                  "language": "vi",
+                  "sample_rate": 16000,
+                  "model": "stt-stream-1.5"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Xin chào, TEN Agent với Blaze đã kết nối. Tôi có thể giúp gì cho bạn?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "blaze_tts_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:BLAZE_TTS_API_KEY}",
+                  "api_url": "${env:BLAZE_TTS_API_URL|https://api.blaze.vn}",
+                  "language": "vi",
+                  "speaker_id": "HN-Nu-CSKH-HuongGiang",
+                  "audio_speed": 1.0,
+                  "audio_quality": 64,
+                  "sample_rate": 24000,
+                  "model": "2.0-realtime",
+                  "audio_format": "pcm"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Xin chào, TEN Agent với Blaze đã kết nối. Tôi có thể giúp gì cho bạn?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {
