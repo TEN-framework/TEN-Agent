@@ -9,11 +9,35 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
+
+// init registers a SIGCHLD handler to reap zombie child processes.
+//
+// TEN workers are spawned via tman, which forks a [main] subprocess.
+// When tman receives SIGKILL during stop(), it has no chance to wait()
+// for [main]. [main] becomes an orphan, re-parented to the api process
+// (PID 1 in the container). Without this handler, those orphans
+// accumulate as zombies.
+func init() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGCHLD)
+	go func() {
+		for range c {
+			for {
+				var wstatus syscall.WaitStatus
+				pid, err := syscall.Wait4(-1, &wstatus, syscall.WNOHANG, nil)
+				if pid <= 0 || err != nil {
+					break
+				}
+			}
+		}
+	}()
+}
 
 // Function to check if a PID is in the correct process group
 func isInProcessGroup(pid, pgid int) bool {
