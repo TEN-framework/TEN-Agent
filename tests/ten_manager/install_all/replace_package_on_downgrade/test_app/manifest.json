@@ -1,0 +1,12 @@
+{
+  "type": "app",
+  "name": "test_app",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "ext_h",
+      "version": "=2.0.0"
+    }
+  ]
+}

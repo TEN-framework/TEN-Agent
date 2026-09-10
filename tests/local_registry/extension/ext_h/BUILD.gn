@@ -19,7 +19,10 @@ ten_package_packaging("1.0.0") {
 }
 
 ten_package_packaging("2.0.0") {
-  sources = [ "2.0.0/manifest.json" ]
+  sources = [
+    "2.0.0/manifest.json",
+    "2.0.0/v2_only.txt",
+  ]
 
   target_path = get_label_info("2.0.0", "dir")
 

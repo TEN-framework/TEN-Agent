@@ -1,0 +1,21 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+
+ten_package_test_prepare_auxiliary_resources("replace_package_on_downgrade") {
+  resources = [
+    "//.gnfiles/build/scripts/cmd_exec.py=>utils/cmd_exec.py",
+    "__init__.py",
+    "test_app/manifest.json",
+    "test_case.py",
+  ]
+
+  deps = [
+    "//core/src/ten_manager",
+    "//tests/local_registry",
+  ]
+}

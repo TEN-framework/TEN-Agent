@@ -25,6 +25,7 @@ group("install_all") {
     "locked_mode_version_mismatch",
     "locked_mode_with_dev_deps",
     "not_install_again_for_installed_extension",
+    "replace_package_on_downgrade",
     "tracing_all_mode",
     "tracing_chrome_mode",
     "tracing_flame_mode",
