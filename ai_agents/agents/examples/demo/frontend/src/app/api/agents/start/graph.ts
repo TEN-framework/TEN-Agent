@@ -408,6 +408,31 @@ export const getGraphProperties = (
         },
       },
     };
+  } else if (graphName === "orcarouter") {
+    return {
+      stt: {
+        params: {
+          language: language,
+        },
+      },
+      llm: {
+        prompt: prompt,
+        model: "orcarouter/fusion",
+      },
+      main_control: {
+        greeting: combined_greeting,
+      },
+      tts: {
+        params: {
+          propertys: [
+            [
+              "SpeechServiceConnection_SynthVoice",
+              voiceNameMap[language].azure[voiceType],
+            ],
+          ],
+        },
+      },
+    };
   } else if (graphName === "minimax") {
     const resolvedMinimaxPrompt = prompt?.trim()
       ? prompt
