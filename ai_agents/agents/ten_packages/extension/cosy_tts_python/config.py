@@ -1,7 +1,29 @@
 import copy
-from pydantic import BaseModel, Field
 from typing import Any
+
+from pydantic import BaseModel, Field
 from ten_ai_base import utils
+
+
+SUPPORTED_PCM_SAMPLE_RATES = frozenset(
+    {8000, 16000, 22050, 24000, 44100, 48000}
+)
+
+_TYPED_PARAM_KEYS = (
+    "api_key",
+    "model",
+    "voice",
+    "sample_rate",
+)
+
+_IGNORED_PARAM_KEYS = (
+    "pool_size",
+    "format",
+    "enable_ssml",
+    "headers",
+    "base_url",
+    "workspace_id",
+)
 
 
 class CosyTTSConfig(BaseModel):
@@ -11,51 +33,43 @@ class CosyTTSConfig(BaseModel):
     # TTS specific configs
     model: str = ""  # Model name
     voice: str = ""  # Voice name
+    format: str = "pcm"
     sample_rate: int = 16000  # Audio sample rate
     url: str = ""  # DashScope WebSocket URL
+    headers: dict[str, str] = Field(default_factory=dict)
 
     # Debug and dump settings
     dump: bool = False
-    dump_path: str = "/tmp"
+    dump_path: str = "./"
 
-    # Parameters
-    # Function reserved, currently empty, may need to add content later
-    black_list_params: list[str] = Field(default_factory=list)
     params: dict[str, Any] = Field(default_factory=dict)
-
-    def is_black_list_params(self, key: str) -> bool:
-        return key in self.black_list_params
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
         if not sensitive_handling:
             return f"{self}"
 
-        config = copy.deepcopy(self)
-
-        # Encrypt sensitive fields
-        if config.api_key:
-            config.api_key = utils.encrypt(config.api_key)
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
-
-        return f"{config}"
+        return f"{utils.redact_json(self.model_dump())}"
 
     def update_params(self) -> None:
-        """Update config attributes from params dictionary."""
-        param_names = [
-            "api_key",
-            "model",
-            "sample_rate",
-            "voice",
-            "url",
-        ]
+        """Extract dedicated config fields, leaving provider params behind."""
+        params_url = self.params.pop("url", None)  # pylint: disable=no-member
+        if not self.url:
+            match params_url:
+                case str() if params_url.strip():
+                    self.url = params_url
 
-        for param_name in param_names:
-            if param_name in self.params and not self.is_black_list_params(
-                param_name
-            ):
-                setattr(self, param_name, self.params[param_name])
+        for param_name in _IGNORED_PARAM_KEYS:
+            self.params.pop(param_name, None)  # pylint: disable=no-member
+
+        for param_name in _TYPED_PARAM_KEYS:
+            if param_name in self.params:
+                value = self.params.pop(param_name)  # pylint: disable=no-member
+                setattr(self, param_name, value)
+
+        # The extension only emits streaming mono 16-bit PCM. Ignore any
+        # externally supplied format instead of rejecting the request.
+        self.format = "pcm"
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
@@ -67,7 +81,26 @@ class CosyTTSConfig(BaseModel):
 
         for field_name in required_fields:
             value = getattr(self, field_name)
-            if not value or (isinstance(value, str) and value.strip() == ""):
+            match value:
+                case str() if value.strip() == "":
+                    missing = True
+                case None:
+                    missing = True
+                case _:
+                    missing = False
+            if missing:
                 raise ValueError(
-                    f"required fields are missing or empty: params.{field_name}"
+                    f"required fields are missing or empty: params.{field_name}",
                 )
+
+        if self.sample_rate not in SUPPORTED_PCM_SAMPLE_RATES:
+            supported = ", ".join(
+                str(rate) for rate in sorted(SUPPORTED_PCM_SAMPLE_RATES)
+            )
+            raise ValueError(
+                f"params.sample_rate must be one of: {supported}",
+            )
+
+    def provider_params(self) -> dict[str, Any]:
+        """Return task parameters that should be forwarded to DashScope."""
+        return copy.deepcopy(self.params)

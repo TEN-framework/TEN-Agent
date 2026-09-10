@@ -1,0 +1,1 @@
+"""Standalone CosyVoice diagnostic scripts."""

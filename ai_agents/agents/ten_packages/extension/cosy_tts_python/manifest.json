@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "cosy_tts_python",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "0.7.58"
     }
   ],
   "package": {
@@ -34,6 +34,10 @@
     ],
     "property": {
       "properties": {
+        "headers": {
+          "type": "object",
+          "properties": {}
+        },
         "params": {
           "type": "object",
           "properties": {
@@ -53,6 +57,9 @@
               "type": "string"
             }
           }
+        },
+        "url": {
+          "type": "string"
         }
       }
     }

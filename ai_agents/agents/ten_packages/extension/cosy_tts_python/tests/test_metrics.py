@@ -4,8 +4,8 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
-import asyncio
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 import json
 
 from ten_ai_base.struct import TTSTextInput
@@ -15,9 +15,40 @@ from ten_runtime import (
     TenEnvTester,
 )
 from ..cosy_tts import (
+    AsyncIteratorCallback,
+    CosyTTSClient,
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
 )
+from .mock_client import MockClientStream
+
+
+def test_ttfb_uses_first_text_send_and_first_audio_callback() -> None:
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request-id",
+    )
+    callback._put = MagicMock()
+    synthesizer = MagicMock()
+    active = SimpleNamespace(
+        callback=callback,
+        lease=SimpleNamespace(synthesizer=synthesizer),
+    )
+
+    with patch(
+        "cosy_tts_python.cosy_tts.time.perf_counter_ns",
+        side_effect=[1_000_000_000, 1_607_000_000],
+    ):
+        CosyTTSClient._send_text(active, "first")
+        CosyTTSClient._send_text(active, "second")
+        callback.on_data(b"audio")
+
+    assert synthesizer.streaming_call.call_count == 2
+    assert callback.first_request_sent_ns == 1_000_000_000
+    assert callback.first_audio_ns == 1_607_000_000
+    assert callback._put.call_args.args[0].ttfb_ms == 607
 
 
 # ================ test metrics ================
@@ -28,6 +59,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         self.ttfb_value = -1
         self.audio_frame_received = False
         self.audio_end_received = False
+        self.request_event_interval_ms = -1
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
@@ -36,6 +68,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="tts_request_for_metrics",
             text="hello, this is a metrics test.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -61,6 +94,11 @@ class ExtensionTesterMetrics(ExtensionTester):
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
+            json_str, _ = data.get_property_to_json(None)
+            payload = json.loads(json_str)
+            self.request_event_interval_ms = payload.get(
+                "request_event_interval_ms", -1
+            )
             # Stop the test only after both TTFB and audio end are received
             if self.ttfb_received:
                 ten_env.log_info("Received tts_audio_end, stopping test.")
@@ -83,43 +121,15 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.synthesize_audio = AsyncMock()
-
-    # Create state to hold the queue and task
-    stream_state = {"queue": None, "task": None}
-
-    async def get_audio_data():
-        """Simulate async streaming data from queue"""
-        # Lazy initialization: create queue and start producer on first call
-        if stream_state["queue"] is None:
-            stream_state["queue"] = asyncio.Queue()
-
-            async def simulate_audio_stream():
-                """Simulate TTS service sending data asynchronously"""
-                queue = stream_state["queue"]
-                # Delay to simulate network latency and TTS processing time
-                await asyncio.sleep(0.25)  # 250ms TTFB
-
-                # Send first audio chunk
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x11\x22\x33"))
-
-                # Simulate more chunks arriving
-                await asyncio.sleep(0.05)
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x44\x55\x66"))
-
-                await asyncio.sleep(0.05)
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x77\x88\x99"))
-
-                # Send completion signal
-                await asyncio.sleep(0.05)
-                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
-
-            # Start producer task in background
-            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
-
-        return await stream_state["queue"].get()
-
-    mock_instance.get_audio_data.side_effect = get_audio_data
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"\x11\x22\x33", 0.6),
+            (MESSAGE_TYPE_PCM, b"\x44\x55\x66", 0.05),
+            (MESSAGE_TYPE_PCM, b"\x77\x88\x99", 0.05),
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0.05),
+        ]
+    )
+    stream.configure(mock_instance)
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
@@ -139,11 +149,18 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
     assert tester.audio_frame_received, "Did not receive any audio frame."
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
-
-    # Check if the TTFB value is reasonable. It should be around 250ms with the delay
-    # we introduced. Allow 50ms margin for timing variations and system scheduling.
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.request_event_interval_ms >= 0
+    ), "tts_audio_end did not include request_event_interval_ms."
+
+    # Check if the TTFB value is reasonable. The larger delay keeps it well
+    # above the post-first-chunk interval despite scheduling variability.
+    assert (
+        tester.ttfb_value >= 500
+    ), f"Expected TTFB to be >= 500ms, but got {tester.ttfb_value}ms."
+    assert tester.request_event_interval_ms < tester.ttfb_value, (
+        "request_event_interval_ms should start at the first audio chunk and "
+        "exclude TTFB."
+    )
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

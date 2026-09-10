@@ -5,14 +5,12 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import Optional
-from unittest.mock import patch, AsyncMock
-import asyncio
+from unittest.mock import patch
 import filecmp
 import json
 import os
 import shutil
 import threading
-import time
 
 from ten_runtime import (
     ExtensionTester,
@@ -24,6 +22,7 @@ from ..cosy_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
 )
+from .mock_client import MockClientStream
 
 
 # ================ test dump file functionality ================
@@ -47,6 +46,7 @@ class ExtensionTesterDump(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="tts_request_1",
             text="hello word, hello agora",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -111,54 +111,14 @@ def test_dump_functionality(MockCosyTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
 
-    # We use a stateful mock to coordinate between synthesize_audio and
-    # get_audio_data, preventing a race condition where audio chunks are
-    # delivered before the extension has processed the request_id.
-    class DumpStreamer:
-        class Session:
-            def __init__(self):
-                fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
-                fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
-                self._audio_stream = iter(
-                    [
-                        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1),
-                        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2),
-                        (True, MESSAGE_TYPE_CMD_COMPLETE, None),
-                    ]
-                )
-
-            async def get_audio_data(self):
-                try:
-                    return next(self._audio_stream)
-                except StopIteration:
-                    # Fallback if called after stream is exhausted
-                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "End of stream")
-
-        def __init__(self):
-            self.session: Optional[DumpStreamer.Session] = None
-            self._new_session_event = asyncio.Event()
-
-        def synthesize_audio(self, text: str, text_input_end: bool):
-            self.session = DumpStreamer.Session()
-            self._new_session_event.set()
-
-        async def get_audio_data(self):
-            if not self.session:
-                await self._new_session_event.wait()
-
-            assert self.session is not None
-
-            done, msg_type, data = await self.session.get_audio_data()
-
-            if done:
-                self.session = None
-                self._new_session_event.clear()
-
-            return done, msg_type, data
-
-    streamer = DumpStreamer()
-    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
-    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"\x11\x22\x33\x44" * 20, 0),
+            (MESSAGE_TYPE_PCM, b"\xaa\xbb\xcc\xdd" * 20, 0),
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0),
+        ]
+    )
+    stream.configure(mock_instance)
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
@@ -317,79 +277,13 @@ def test_flush_logic(MockCosyTTSClient):
 
     mock_instance = MockCosyTTSClient.return_value
 
-    # This stateful class simulates an audio stream that can be cancelled.
-    # It uses a simple flag and pre-generated stream to make the behavior
-    # deterministic and easy to reason about.
-    class Streamer:
-        class Session:
-            def __init__(self):
-                self._cancelled = False
-                # Pre-generate a stream of 20 audio chunks plus a final completion message.
-                audio_chunks = [
-                    (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
-                ] * 20
-                audio_chunks.append(
-                    (True, MESSAGE_TYPE_CMD_COMPLETE, None)  # Natural end
-                )
-                self._stream = iter(audio_chunks)
-
-            async def get_audio_data(self):
-                # If cancelled before the call, immediately return the final state.
-                if self._cancelled:
-                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
-
-                # Simulate the network delay of receiving the next chunk.
-                await asyncio.sleep(0.1)
-
-                # Re-check after the delay. This ensures that if cancel() was called
-                # during the sleep, we still return the final cancelled state and
-                # never return an audio frame post-cancellation.
-                if self._cancelled:
-                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
-
-                # If not cancelled, return the next item from the stream.
-                return next(self._stream)
-
-            def cancel(self):
-                self._cancelled = True
-
-        def __init__(self):
-            self.session: Optional[Streamer.Session] = None
-            # Event to signal that a new synthesis session has started.
-            self._new_session_event = asyncio.Event()
-
-        def synthesize_audio(self, text: str, text_input_end: bool):
-            # This mock simulates creating a new synthesis task/session.
-            self.session = Streamer.Session()
-            # Signal to any waiting consumer that data is ready to be fetched.
-            self._new_session_event.set()
-
-        async def get_audio_data(self):
-            # If there's no active session, wait until a new one is created.
-            if not self.session:
-                await self._new_session_event.wait()
-
-            # After waiting, the session should be available.
-            assert self.session is not None
-
-            # A session is active, so get its data.
-            done, msg_type, data = await self.session.get_audio_data()
-
-            # If the session is now finished, reset for the next request.
-            if done:
-                self.session = None
-                self._new_session_event.clear()
-
-            return (done, msg_type, data)
-
-        def cancel(self):
-            if self.session:
-                self.session.cancel()
-
-    streamer = Streamer()
-    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
-    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
-    mock_instance.cancel.side_effect = streamer.cancel
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100, 0.1) for _ in range(20)
+        ]
+        + [(MESSAGE_TYPE_CMD_COMPLETE, None, 0.1)]
+    )
+    stream.configure(mock_instance)
 
     config = {
         "params": {

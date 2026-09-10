@@ -14,11 +14,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from ..cosy_tts import (
-    CosyTTSTaskFailedException,
-    ERROR_CODE_TTS_FAILED,
-    MESSAGE_TYPE_CMD_COMPLETE,
-)
 
 
 # ================ test empty params ================
@@ -147,14 +142,18 @@ def test_invalid_params_fatal_error(MockCosyTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
     # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
-    mock_instance.start = AsyncMock()
+    mock_instance.start = AsyncMock(return_value=0)
     mock_instance.stop = AsyncMock()
 
     # Simulate the TimeoutError during the streaming call as per the real traceback
-    mock_instance.synthesize_audio.side_effect = TimeoutError(
-        "websocket connection could not established within 5s. "
-        "Please check your network connection, firewall settings, or server status."
+    mock_instance.synthesize_audio = AsyncMock(
+        side_effect=TimeoutError(
+            "websocket connection could not established within 5s. "
+            "Please check your network connection, firewall settings, or "
+            "server status."
+        )
     )
+    mock_instance.cancel = AsyncMock()
     # Since synthesize_audio will fail, the background audio consumer loop
     # will call get_audio_data but there's no active stream. The correct
     # behavior is to block. We simulate this by having the mock await a

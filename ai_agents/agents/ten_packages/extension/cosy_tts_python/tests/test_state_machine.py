@@ -11,18 +11,16 @@ This test verifies that:
 2. Second request waits for first request to complete before processing
 3. State machine handles multiple sequential requests correctly
 """
-import asyncio
 import json
-from unittest.mock import patch, AsyncMock, MagicMock
-import pytest
+from unittest.mock import patch
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from ten_ai_base.tts2 import RequestState
-from ..cosy_tts import MESSAGE_TYPE_PCM
+from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE, MESSAGE_TYPE_PCM
+from .mock_client import MockClientStream
 
 
 class StateMachineExtensionTester(ExtensionTester):
@@ -187,83 +185,16 @@ def test_sequential_requests_state_machine(MockCosyTTSClient):
     """
     print("\n=== Starting Sequential Requests State Machine Test ===")
 
-    # Create mock client instance
-    mock_instance = MagicMock()
-    MockCosyTTSClient.return_value = mock_instance
-
-    # Use a class-based approach like test_robustness.py for better state management
-    class StateMachineStreamer:
-        class Session:
-            def __init__(self, request_name: str):
-                self.request_name = request_name
-                self.chunks_sent = 0
-
-            async def get_audio_data(self):
-                await asyncio.sleep(0.01)  # Simulate processing delay
-
-                if self.chunks_sent < 3:
-                    # Send audio chunks
-                    self.chunks_sent += 1
-                    audio_chunk = (
-                        b"mock_audio_data_" + str(self.chunks_sent).encode()
-                    )
-                    return False, MESSAGE_TYPE_PCM, audio_chunk
-                else:
-                    # Signal request completion
-                    return True, MESSAGE_TYPE_PCM, b""
-
-        def __init__(self):
-            from typing import Optional
-
-            self.session: Optional[StateMachineStreamer.Session] = None
-            self._new_session_event = asyncio.Event()
-
-        def synthesize_audio(self, text: str, text_input_end: bool):
-            """Create a new session when synthesis starts."""
-            if "First" in text:
-                request_name = "request_1"
-                print(f"  → Mock: Starting synthesis for request 1")
-            elif "Second" in text:
-                request_name = "request_2"
-                print(f"  → Mock: Starting synthesis for request 2")
-            else:
-                request_name = "unknown"
-
-            self.session = StateMachineStreamer.Session(request_name)
-            self._new_session_event.set()
-
-        async def get_audio_data(self):
-            """Get audio data from current session."""
-            if not self.session:
-                await self._new_session_event.wait()
-
-            assert self.session is not None
-
-            done, msg_type, data = await self.session.get_audio_data()
-
-            # If session is done, reset for next request
-            if done:
-                self.session = None
-                self._new_session_event.clear()
-
-            return done, msg_type, data
-
-        def complete(self):
-            """Mock complete."""
-            if self.session:
-                print(f"  → Mock: Completing {self.session.request_name}")
-
-        def cancel(self):
-            """Mock cancel."""
-            if self.session:
-                print(f"  → Mock: Cancelling {self.session.request_name}")
-
-    streamer = StateMachineStreamer()
-    mock_instance.synthesize_audio = streamer.synthesize_audio
-    mock_instance.get_audio_data = streamer.get_audio_data
-    mock_instance.complete = streamer.complete
-    mock_instance.cancel = streamer.cancel
-    mock_instance.start = MagicMock()
+    mock_instance = MockCosyTTSClient.return_value
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"mock_audio_data_1", 0.01),
+            (MESSAGE_TYPE_PCM, b"mock_audio_data_2", 0.01),
+            (MESSAGE_TYPE_PCM, b"mock_audio_data_3", 0.01),
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0.01),
+        ]
+    )
+    stream.configure(mock_instance)
 
     # Create tester
     tester = StateMachineExtensionTester()
@@ -312,56 +243,14 @@ def test_request_state_transitions(MockCosyTTSClient):
     """
     print("\n=== Starting Request State Transitions Test ===")
 
-    # Create mock client
-    mock_instance = MagicMock()
-    MockCosyTTSClient.return_value = mock_instance
-
-    # Simple streamer for single request
-    class SimpleStreamer:
-        class Session:
-            def __init__(self):
-                self.call_count = 0
-
-            async def get_audio_data(self):
-                await asyncio.sleep(0.01)
-                self.call_count += 1
-                if self.call_count == 1:
-                    # Return one chunk
-                    return False, MESSAGE_TYPE_PCM, b"audio_chunk"
-                else:
-                    # Signal completion
-                    return True, MESSAGE_TYPE_PCM, b""
-
-        def __init__(self):
-            from typing import Optional
-
-            self.session: Optional[SimpleStreamer.Session] = None
-            self._new_session_event = asyncio.Event()
-
-        def synthesize_audio(self, text: str, text_input_end: bool):
-            self.session = SimpleStreamer.Session()
-            self._new_session_event.set()
-
-        async def get_audio_data(self):
-            if not self.session:
-                await self._new_session_event.wait()
-
-            assert self.session is not None
-
-            done, msg_type, data = await self.session.get_audio_data()
-
-            if done:
-                self.session = None
-                self._new_session_event.clear()
-
-            return done, msg_type, data
-
-    streamer = SimpleStreamer()
-    mock_instance.synthesize_audio = streamer.synthesize_audio
-    mock_instance.get_audio_data = streamer.get_audio_data
-    mock_instance.complete = MagicMock()
-    mock_instance.cancel = MagicMock()
-    mock_instance.start = MagicMock()
+    mock_instance = MockCosyTTSClient.return_value
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"audio_chunk", 0.01),
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0.01),
+        ]
+    )
+    stream.configure(mock_instance)
 
     # Create simple tester
     class StateTransitionTester(ExtensionTester):
@@ -406,6 +295,71 @@ def test_request_state_transitions(MockCosyTTSClient):
     assert tester.audio_end_received, "Did not receive audio_end event"
 
     print("✓ Request state transitions test PASSED!")
+
+
+@patch("cosy_tts_python.extension.CosyTTSClient")
+def test_empty_final_chunk_waits_for_delayed_audio(MockCosyTTSClient):
+    """Input completion must not be confused with provider audio completion."""
+
+    request_id = "delayed_audio_after_input_end"
+    mock_instance = MockCosyTTSClient.return_value
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"delayed_audio", 0.05),
+        ],
+        completion_event_factory=lambda _request_id: [
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0),
+        ],
+    )
+    stream.configure(mock_instance)
+
+    class DelayedAudioTester(ExtensionTester):
+        def __init__(self):
+            super().__init__()
+            self.events: list[str] = []
+
+        def on_start(self, ten_env_tester: TenEnvTester) -> None:
+            for tts_input in (
+                TTSTextInput(
+                    request_id=request_id,
+                    text="Text submitted before audio is available.",
+                    text_input_end=False,
+                ),
+                TTSTextInput(
+                    request_id=request_id,
+                    text="",
+                    text_input_end=True,
+                ),
+            ):
+                data = Data.create("tts_text_input")
+                data.set_property_from_json(None, tts_input.model_dump_json())
+                ten_env_tester.send_data(data)
+            ten_env_tester.on_start_done()
+
+        def on_data(self, ten_env: TenEnvTester, data: Data) -> None:
+            if data.get_name() == "tts_audio_start":
+                self.events.append("audio_start")
+            elif data.get_name() == "tts_audio_end":
+                self.events.append("audio_end")
+                ten_env.stop_test()
+
+        def on_audio_frame(self, _ten_env: TenEnvTester, _audio_frame) -> None:
+            self.events.append("audio_frame")
+
+    tester = DelayedAudioTester()
+    config = {
+        "params": {
+            "api_key": "test_api_key_for_delayed_audio",
+            "model": "cosyvoice-v1",
+            "sample_rate": 16000,
+            "voice": "longxiaochun",
+        },
+    }
+    tester.set_test_mode_single("cosy_tts_python", json.dumps(config))
+    tester.run()
+
+    mock_instance.complete.assert_awaited_once_with(request_id)
+    assert tester.events == ["audio_start", "audio_frame", "audio_end"]
 
 
 if __name__ == "__main__":

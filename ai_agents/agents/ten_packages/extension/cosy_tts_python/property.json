@@ -1,11 +1,12 @@
 {
     "dump": false,
     "dump_path": "./",
+    "headers": {},
     "params": {
         "api_key": "${env:COSY_TTS_API_KEY|}",
-        "model": "cosyvoice-v3",
+        "model": "cosyvoice-v3-flash",
         "sample_rate": 16000,
-        "voice": "loongluna_v2",
-        "url": "${env:COSY_TTS_URL|}"
-    }
+        "voice": "longanyang"
+    },
+    "url": "${env:COSY_TTS_URL|}"
 }
