@@ -53,7 +53,7 @@ def test_vendor_metadata_omits_empty_values():
     assert all(metadata.values())
 
 
-def test_vendor_metadata_uses_lang_parameter_name():
+def test_metadata_uses_lang_parameter_name():
     from rime_tts.config import RimeTTSConfig
     from rime_tts.extension import RimeTTSExtension
 
@@ -62,10 +62,14 @@ def test_vendor_metadata_uses_lang_parameter_name():
     config.update_params()
     extension.config = config
 
-    metadata = extension.vendor_metadata()
+    vendor_metadata = extension.vendor_metadata()
+    metadata = extension.update_metadata(None, None)
 
+    assert "lang" not in vendor_metadata
     assert metadata["lang"] == "eng"
+    assert "language" not in vendor_metadata
     assert "language" not in metadata
+    assert extension.update_metadata(None, {"lang": "spa"})["lang"] == "spa"
 
 
 # ================ test params passthrough ================
