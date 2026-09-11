@@ -142,10 +142,21 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             "key": self.config.api_key,
             "url": self.config.base_url,
             "model": self.config.params.get("modelId", ""),
-            "lang": self.config.params.get("lang", ""),
             "api_key": self.config.api_key,
         }
         return {key: value for key, value in metadata.items() if value}
+
+    def update_metadata(
+        self, request_id: str | None, metadata: dict | None
+    ) -> dict:
+        updated = super().update_metadata(request_id, metadata)
+        if self.config is None:
+            return updated
+
+        language = self.config.params.get("lang")
+        if isinstance(language, str) and language and not updated.get("lang"):
+            updated["lang"] = language
+        return updated
 
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sampling_rate
