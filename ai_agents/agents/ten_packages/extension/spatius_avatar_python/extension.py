@@ -320,6 +320,12 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         """Return the configured Spatius region."""
         return (self.config.region or "").strip()
 
+    def _reporting_region(self) -> str:
+        """Return the SDK session's region when available."""
+        if self.session is not None:
+            return (self.session.config.region or "").strip()
+        return self._region()
+
     def get_target_sample_rate(self) -> list[int]:
         """Return the configured sample rate expected by spatius SDK."""
         return [self.config.sample_rate]
@@ -368,7 +374,8 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         connection_id = await self.session.start()
         self.connection_id = str(connection_id)
         ten_env.log_info(
-            f"[Spatius] Connected successfully (connection_id={connection_id})"
+            f"[Spatius] Connected successfully (connection_id={connection_id}, "
+            f"region={self._reporting_region()})"
         )
 
     def _ogg_opus_encoder_config(self) -> OggOpusEncoderConfig | None:
@@ -444,7 +451,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 else ""
             ),
             "model": self.config.spatius_avatar_id,
-            "region": self._region(),
+            "region": self._reporting_region(),
             "mode": self.config.audio_format,
             "avatar_id": self.config.spatius_avatar_id,
             "avatar_session_id": self.connection_id,
