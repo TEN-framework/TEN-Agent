@@ -80,6 +80,9 @@ class SpekoASRConfig(BaseModel):
                 raise ValueError("unsupported routing objective")
             return
         if mode == "explicit":
+            # TEN recursively merges property.json defaults into graph params.
+            # An explicit route must not retain the default auto objective.
+            self.routing.pop("objective", None)
             model = str(self.routing.get("model", ""))
             provider = str(self.routing.get("provider", ""))
             if not model or (not provider and "/" not in model):

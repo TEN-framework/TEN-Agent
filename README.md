@@ -243,7 +243,7 @@ cd agents/examples/voice-assistant-realtime
 
 ##### 6. Start the web server
 
-Run `task build` if you changed any local source code. This step is required for compiled languages (for example, TypeScript or Go) and not needed for Python.
+Run `task install` before the first launch and after changing dependencies or Go source code. It installs the TEN, Python, and frontend dependencies and builds the Go API server. Python-only source changes do not require reinstalling.
 
 ```bash
 task install

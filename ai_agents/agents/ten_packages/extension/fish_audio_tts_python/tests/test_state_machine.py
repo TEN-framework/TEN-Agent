@@ -13,7 +13,7 @@ This test verifies that:
 """
 import asyncio
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
@@ -238,8 +238,8 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
             return mock_get_request2(text)
 
     mock_instance.get = mock_get
-    mock_instance.cancel = MagicMock()
-    mock_instance.clean = MagicMock()
+    mock_instance.cancel = AsyncMock()
+    mock_instance.clean = AsyncMock()
 
     # Create tester
     tester = StateMachineExtensionTester()
@@ -301,8 +301,8 @@ def test_request_state_transitions(MockFishAudioTTSClient):
         yield None, EVENT_TTS_END
 
     mock_instance.get = mock_get
-    mock_instance.cancel = MagicMock()
-    mock_instance.clean = MagicMock()
+    mock_instance.cancel = AsyncMock()
+    mock_instance.clean = AsyncMock()
 
     # Create simple tester
     class StateTransitionTester(ExtensionTester):

@@ -3,9 +3,9 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
 import os
 import time
-import traceback
 from typing import Any
 
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
@@ -41,7 +41,10 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._first_audio_at: float | None = None
         self._total_audio_bytes = 0
         self._finalized = False
+        self._audio_end_sent = False
+        self._cancelled = False
         self._stopped = False
+        self._permanent_error: SpekoRouterError | None = None
         self._recorders: dict[str, PCMWriter] = {}
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -74,11 +77,18 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         self._stopped = True
-        await self._close_client()
-        for recorder in self._recorders.values():
-            await recorder.flush()
-        self._recorders.clear()
-        await super().on_stop(ten_env)
+        task = self.current_task
+        await self._cancel_current_task()
+        if task is not None and task is not asyncio.current_task():
+            await asyncio.gather(task, return_exceptions=True)
+        try:
+            await self._close_client()
+        finally:
+            try:
+                for request_id in list(self._recorders):
+                    await self._flush_recorder(request_id)
+            finally:
+                await super().on_stop(ten_env)
 
     def vendor(self) -> str:
         return "speko"
@@ -87,13 +97,16 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         if self.config is None:
             return {}
         metadata: dict[str, Any] = {
+            "key": self.config.api_key,
+            "api_key": self.config.api_key,
+            "language": self.config.language,
             "base_url": self.config.base_url,
             "routing": self.config.routing,
         }
         if self._route:
             metadata["route"] = self._route
             metadata["model"] = self._route.get("model", "")
-        return metadata
+        return {key: value for key, value in metadata.items() if value}
 
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate if self.config else 24000
@@ -102,6 +115,17 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         return self.config.channels if self.config else 1
 
     async def request_tts(self, text_input: TTSTextInput) -> None:
+        # TEN flush cancels current_task; keep network work in that child task
+        # so interruption cannot leave a stream reading a closed client.
+        task = asyncio.create_task(self._request_tts(text_input))
+        self.current_task = task
+        try:
+            await task
+        finally:
+            if self.current_task is task:
+                self.current_task = None
+
+    async def _request_tts(self, text_input: TTSTextInput) -> None:
         if self.config is None or self._stopped:
             return
 
@@ -114,50 +138,62 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            text = text_input.text.strip()
+            if self._permanent_error is not None:
+                raise self._permanent_error
+            text = text_input.text
             if text:
                 await self._stream_text(text, text_input.request_id)
 
             if text_input.text_input_end:
                 await self._finalize_request(TTSAudioEndReason.REQUEST_END)
         except SpekoRouterError as error:
-            await self._handle_router_error(error)
+            if self._cancelled or self._stopped:
+                return
+            await self._handle_router_error(error, text_input.text_input_end)
         except Exception as error:
-            self.ten_env.log_error(
-                f"Speko TTS request failed: {traceback.format_exc()}"
-            )
-            await self.on_disconnected(
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=str(error),
-                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-            )
-            await self._finalize_request(
-                TTSAudioEndReason.ERROR,
-                error=ModuleError(
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=str(error),
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+            if self._cancelled or self._stopped:
+                return
+            await self._handle_router_error(
+                SpekoRouterError("relay_error", str(error), retryable=True),
+                text_input.text_input_end,
             )
 
     async def cancel_tts(self) -> None:
         request_id = self.current_request_id
-        if request_id is None or self._finalized:
+        if request_id is None or self._audio_end_sent or self._cancelled:
             return
         self._finalized = True
-        if self.client is not None:
-            await self.client.cancel()
-            self.client = None
-        await self.on_disconnected(code=0, message="cancelled")
-        await self._ensure_audio_start()
-        await self.send_tts_audio_end(
-            request_id=request_id,
-            request_event_interval_ms=self._request_interval_ms(),
-            request_total_audio_duration_ms=self._audio_duration_ms(),
-            reason=TTSAudioEndReason.INTERRUPTED,
-        )
-        await self._flush_recorder(request_id)
+        self._cancelled = True
+        client, self.client = self.client, None
+        try:
+            if client is not None:
+                await client.cancel()
+        except asyncio.CancelledError:
+            if not self._stopped:
+                raise
+        except Exception as error:
+            router_error = (
+                error
+                if isinstance(error, SpekoRouterError)
+                else SpekoRouterError("relay_error", str(error), retryable=True)
+            )
+            await self.send_tts_error(
+                request_id, self._make_module_error(router_error)
+            )
+        finally:
+            try:
+                if not self._stopped:
+                    await self.on_disconnected(code=0, message="cancelled")
+                    await self._ensure_audio_start()
+                    self._audio_end_sent = True
+                    await self.send_tts_audio_end(
+                        request_id=request_id,
+                        request_event_interval_ms=self._request_interval_ms(),
+                        request_total_audio_duration_ms=self._audio_duration_ms(),
+                        reason=TTSAudioEndReason.INTERRUPTED,
+                    )
+            finally:
+                await self._flush_recorder(request_id)
 
     async def _begin_request(self, text_input: TTSTextInput) -> None:
         if self.client is not None:
@@ -169,6 +205,8 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._first_audio_at = None
         self._total_audio_bytes = 0
         self._finalized = False
+        self._audio_end_sent = False
+        self._cancelled = False
         await self._setup_recorder(text_input.request_id)
 
     async def _ensure_client(self) -> SpekoTTSClient:
@@ -203,8 +241,10 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
 
     async def _stream_text(self, text: str, request_id: str) -> None:
         client = await self._ensure_client()
-        self.metrics_add_input_characters(len(text))
+        self.metrics_add_output_characters(len(text))
         async for event in client.stream_text(text):
+            if self._cancelled or self._stopped:
+                return
             if event.type == SpekoTTSEventType.TTFB:
                 if not self._audio_start_sent:
                     await self._ensure_audio_start()
@@ -237,50 +277,96 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         if request_id is None or self._finalized:
             return
         self._finalized = True
-        await self._ensure_audio_start()
-        await self.send_tts_audio_end(
-            request_id=request_id,
-            request_event_interval_ms=self._request_interval_ms(),
-            request_total_audio_duration_ms=self._audio_duration_ms(),
-            reason=reason,
-            extra_metadata={"router_usage": self._router_usage},
-        )
-        await self._close_client()
-        await self.send_usage_metrics(
-            request_id,
-            extra_metadata={"router_usage": self._router_usage},
-        )
-        await self._flush_recorder(request_id)
-        await self.finish_request(request_id, reason=reason, error=error)
+        cancelled = False
+        try:
+            try:
+                await self._close_client()
+            except Exception as close_error:
+                if self._cancelled or self._stopped:
+                    return
+                router_error = (
+                    close_error
+                    if isinstance(close_error, SpekoRouterError)
+                    else SpekoRouterError(
+                        "relay_error", str(close_error), retryable=True
+                    )
+                )
+                reason = TTSAudioEndReason.ERROR
+                error = self._make_module_error(router_error)
+                await self.on_disconnected(
+                    code=error.code,
+                    message=error.message,
+                    vendor_info=error.vendor_info,
+                )
+            if self._cancelled:
+                return
+            await self._ensure_audio_start()
+            self._audio_end_sent = True
+            await self.send_tts_audio_end(
+                request_id=request_id,
+                request_event_interval_ms=self._request_interval_ms(),
+                request_total_audio_duration_ms=self._audio_duration_ms(),
+                reason=reason,
+                extra_metadata={"router_usage": self._router_usage},
+            )
+            await self.send_usage_metrics(
+                request_id,
+                extra_metadata={"router_usage": self._router_usage},
+            )
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+        finally:
+            # Flush owns interruption state; do not finish a cancelled request
+            # as a successful request while cancel_tts is emitting its end.
+            if not cancelled and not self._cancelled:
+                try:
+                    await self._flush_recorder(request_id)
+                finally:
+                    await self.finish_request(
+                        request_id, reason=reason, error=error
+                    )
 
-    async def _handle_router_error(self, error: SpekoRouterError) -> None:
-        self.ten_env.log_error(
-            f"vendor_error: code={error.code}, message={error.message}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-        module_code = self._module_error_code(error)
-        module_error = ModuleError(
+    def _make_module_error(self, error: SpekoRouterError) -> ModuleError:
+        if not error.retryable and error.code in {
+            "authentication_failed",
+            "insufficient_credit",
+            "route_not_found",
+            "capability_unsupported",
+        }:
+            self._permanent_error = error
+        return ModuleError(
             module=ModuleType.TTS,
-            code=module_code.value,
+            code=self._module_error_code(error).value,
             message=error.message,
             vendor_info=ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=error.code,
-                message=error.message,
+                vendor=self.vendor(), code=error.code, message=error.message
             ),
         )
+
+    async def _handle_router_error(
+        self, error: SpekoRouterError, final_input: bool
+    ) -> None:
+        module_error = self._make_module_error(error)
         await self.on_disconnected(
-            code=module_code.value,
+            code=module_error.code,
             message=error.message,
             vendor_info=module_error.vendor_info,
         )
         if self._finalized:
             await self.send_tts_error(self.current_request_id, module_error)
-            return
-        await self._finalize_request(
-            TTSAudioEndReason.ERROR,
-            error=module_error,
-        )
+        elif final_input:
+            await self._finalize_request(
+                TTSAudioEndReason.ERROR, error=module_error
+            )
+        else:
+            # The remaining chunks still belong to the same TEN request.
+            client, self.client = self.client, None
+            try:
+                if client is not None:
+                    await client.close(drain=False)
+            finally:
+                await self.send_tts_error(self.current_request_id, module_error)
 
     async def _ensure_audio_start(self) -> None:
         if self._audio_start_sent or self.current_request_id is None:
@@ -294,13 +380,15 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
     async def _close_client(self) -> None:
         if self.client is None:
             return
-        client = self.client
+        client, self.client = self.client, None
+        request_id = self.current_request_id
         try:
             await client.close()
         finally:
-            self._router_usage = client.usage or self._router_usage
-            self.client = None
-        await self.on_disconnected(code=0, message="closed")
+            if self.current_request_id == request_id:
+                self._router_usage = client.usage or self._router_usage
+        if self.current_request_id == request_id and self.client is None:
+            await self.on_disconnected(code=0, message="closed")
 
     def _configure_frame(self) -> dict[str, Any]:
         assert self.config is not None

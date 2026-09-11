@@ -10,7 +10,7 @@ from urllib.parse import urlparse, urlunparse
 
 import websockets
 from websockets.asyncio.client import ClientConnection
-from websockets.exceptions import InvalidStatus
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 
 class SpekoRouterError(Exception):
@@ -80,6 +80,7 @@ class SpekoTTSClient:
         self.usage: dict[str, Any] = {}
         self._ws: ClientConnection | None = None
         self._ready = False
+        self._cancelled = False
 
     @property
     def is_ready(self) -> bool:
@@ -88,6 +89,7 @@ class SpekoTTSClient:
     async def connect(self) -> None:
         if self.is_ready:
             return
+        self._cancelled = False
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Idempotency-Key": uuid.uuid4().hex,
@@ -97,6 +99,7 @@ class SpekoTTSClient:
                 self.url,
                 additional_headers=headers,
                 open_timeout=self.ready_timeout_sec,
+                close_timeout=2.0,
             )
             await self._ws.send(
                 json.dumps(self.configure, separators=(",", ":"))
@@ -117,19 +120,28 @@ class SpekoTTSClient:
             self.route = dict(event.get("route", {}))
             self._ready = True
         except InvalidStatus as error:
-            status = error.response.status_code
-            code = (
-                "authentication_failed"
-                if status in (401, 403)
-                else "relay_error"
-            )
             await self._close_socket()
+            try:
+                event = json.loads(error.response.body)
+            except (ValueError, TypeError):
+                event = {}
+            if isinstance(event, dict) and isinstance(event.get("error"), dict):
+                raise SpekoRouterError.from_event(event) from error
+            status = error.response.status_code
+            code = {
+                400: "invalid_request",
+                401: "authentication_failed",
+                403: "authentication_failed",
+                402: "insufficient_credit",
+                404: "route_not_found",
+                429: "rate_limited",
+            }.get(status, "relay_error")
             raise SpekoRouterError(
                 code,
                 f"Speko Router WebSocket upgrade failed ({status})",
                 retryable=status >= 500 or status == 429,
             ) from error
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             await self._close_socket()
             raise
 
@@ -139,22 +151,27 @@ class SpekoTTSClient:
                 "relay_error", "Speko TTS session is not ready", retryable=True
             )
 
-        await self._ws.send(
+        websocket = self._ws
+        await websocket.send(
             json.dumps(
                 {"type": "input.append", "text": text},
                 separators=(",", ":"),
             )
         )
-        await self._ws.send('{"type":"input.commit"}')
+        await websocket.send('{"type":"input.commit"}')
         sent_at = time.monotonic()
         sequence: int | None = None
         first_audio = True
 
-        while True:
+        while not self._cancelled:
             try:
                 raw = await asyncio.wait_for(
-                    self._ws.recv(), timeout=self.receive_timeout_sec
+                    websocket.recv(), timeout=self.receive_timeout_sec
                 )
+            except ConnectionClosed:
+                if self._cancelled:
+                    return
+                raise
             except asyncio.TimeoutError as error:
                 raise SpekoRouterError(
                     "request_timeout",
@@ -162,6 +179,8 @@ class SpekoTTSClient:
                     retryable=True,
                 ) from error
 
+            if self._cancelled:
+                return
             if isinstance(raw, bytes):
                 if sequence is None:
                     raise SpekoRouterError(
@@ -175,6 +194,8 @@ class SpekoTTSClient:
                         SpekoTTSEventType.TTFB,
                         int((time.monotonic() - sent_at) * 1000),
                     )
+                if self._cancelled:
+                    return
                 yield SpekoTTSEvent(SpekoTTSEventType.AUDIO, raw)
                 continue
 
@@ -207,6 +228,7 @@ class SpekoTTSClient:
                 )
 
     async def cancel(self) -> None:
+        self._cancelled = True
         if self._ws is not None and self._ready:
             try:
                 await self._ws.send('{"type":"input.cancel"}')
@@ -227,10 +249,11 @@ class SpekoTTSClient:
             await self._close_socket()
 
     async def _drain_close(self) -> None:
-        assert self._ws is not None
+        websocket = self._ws
+        assert websocket is not None
         try:
-            while True:
-                raw = await asyncio.wait_for(self._ws.recv(), timeout=2.0)
+            while not self._cancelled:
+                raw = await asyncio.wait_for(websocket.recv(), timeout=2.0)
                 if isinstance(raw, bytes):
                     continue
                 event = self._decode_event(raw)
@@ -246,12 +269,12 @@ class SpekoTTSClient:
 
     async def _close_socket(self) -> None:
         self._ready = False
-        if self._ws is not None:
+        websocket, self._ws = self._ws, None
+        if websocket is not None:
             try:
-                await self._ws.close()
+                await websocket.close()
             except Exception:
                 pass
-            self._ws = None
 
     @staticmethod
     def _decode_event(raw: str | bytes) -> dict[str, Any]:

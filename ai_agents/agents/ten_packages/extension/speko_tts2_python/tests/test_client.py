@@ -193,3 +193,89 @@ async def test_close_surfaces_terminal_router_error():
 
     assert caught.value.code == "provider_error"
     assert websocket.closed is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "status,code,retryable",
+    [
+        (402, "insufficient_credit", False),
+        (429, "rate_limited", True),
+        (503, "provider_unavailable", True),
+    ],
+)
+async def test_upgrade_preserves_classified_error(status, code, retryable):
+    from unittest.mock import MagicMock
+    from websockets.exceptions import InvalidStatus
+
+    response = MagicMock(status_code=status, reason_phrase="denied")
+    response.body = json.dumps(
+        {
+            "error": {
+                "code": code,
+                "message": "classified denial",
+                "retryable": retryable,
+            }
+        }
+    ).encode()
+    client = make_client()
+    with patch(
+        "client.websockets.connect",
+        AsyncMock(side_effect=InvalidStatus(response)),
+    ):
+        with pytest.raises(SpekoRouterError) as caught:
+            await client.connect()
+    assert caught.value.code == code
+    assert caught.value.retryable is retryable
+    assert not client.is_ready
+
+
+@pytest.mark.asyncio
+async def test_cancel_during_handshake_closes_socket():
+    websocket = FakeWebSocket()
+    client = make_client()
+    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+        connecting = asyncio.create_task(client.connect())
+        await asyncio.sleep(0)
+        connecting.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await connecting
+    assert websocket.closed
+    assert not client.is_ready
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("consume_audio", [False, True])
+async def test_cancel_stops_buffered_audio_without_reading_closed_socket(
+    consume_audio,
+):
+    websocket = FakeWebSocket(
+        json.dumps({"type": "session.ready"}),
+        json.dumps({"type": "utterance.started", "sequence": 1}),
+        b"audio",
+    )
+    client = make_client()
+    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+        await client.connect()
+    stream = client.stream_text("hello")
+    assert (await anext(stream)).type == SpekoTTSEventType.TTFB
+    if consume_audio:
+        assert (await anext(stream)).type == SpekoTTSEventType.AUDIO
+    await client.cancel()
+    assert [event async for event in stream] == []
+    assert websocket.closed
+
+
+@pytest.mark.asyncio
+async def test_cancel_discards_a_receive_completing_during_close():
+    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+    client = make_client()
+    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+        await client.connect()
+    stream = client.stream_text("hello")
+    receiving = asyncio.create_task(anext(stream))
+    await asyncio.sleep(0)
+    await client.cancel()
+    websocket.messages.put_nowait(b"late audio")
+    with pytest.raises(StopAsyncIteration):
+        await receiving

@@ -16,7 +16,7 @@ else
 fi
 
 # Only websocket TTS extensions report connection status.
-if [[ "${EXTENSION_NAME}" == "bytedance_tts" || "${EXTENSION_NAME}" == "bytedance_tts_duplex" || "${EXTENSION_NAME}" == "minimax_tts_websocket" || "${EXTENSION_NAME}" == "minimax_tts_websocket_python" || "${EXTENSION_NAME}" == "rime_tts" ]]; then
+if [[ "${EXTENSION_NAME}" == "bytedance_tts" || "${EXTENSION_NAME}" == "bytedance_tts_duplex" || "${EXTENSION_NAME}" == "minimax_tts_websocket" || "${EXTENSION_NAME}" == "minimax_tts_websocket_python" || "${EXTENSION_NAME}" == "rime_tts" || "${EXTENSION_NAME}" == "speko_tts2_python" ]]; then
     export ENABLE_CONNECTION_STATUS="True"
 else
     export ENABLE_CONNECTION_STATUS="False"

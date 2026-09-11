@@ -41,3 +41,34 @@ corresponding final transcript.
 
 For an explicit route, set `routing` to
 `{"mode":"explicit","provider":"deepgram","model":"nova-3"}`.
+
+
+## Testing
+
+From the extension directory, with TEN runtime/base packages installed and
+available on `PYTHONPATH`, run the client, extension lifecycle, and package
+contract regressions:
+
+```bash
+./tests/bin/start
+```
+
+From `ai_agents/`, set `SPEKO_API_KEY` and run the live guarder:
+
+```bash
+task asr-guarder-test EXTENSION=speko_asr_python
+```
+
+Run ASR and TTS guarders sequentially. The guarder uses `tests/configs` and
+contacts the hosted Router; it requires a funded key and an available route.
+For reproducible provider checks, copy the configs to a temporary directory,
+set `params.routing` to an explicit supported provider/model, then invoke the
+installed guarder’s `tests/bin/start` with `--extension_name speko_asr_python`
+and `--config_dir /absolute/path/to/configs`. Keep invalid-key configs invalid.
+Client/lifecycle unit tests use mocked transport and do not require credentials.
+
+Transient disconnects reconnect on subsequent audio ingress; failed sends are
+not replayed. Finalize acknowledges already-finalized input without waiting
+for a duplicate transcript. Fallback timestamps retain session position while
+resetting per-turn audio accounting. Permanent admission denials require correcting
+the cause and restarting the extension.

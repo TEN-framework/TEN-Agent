@@ -75,6 +75,8 @@ class SpekoASRClient:
         self._ws: ClientConnection | None = None
         self._listener_task: asyncio.Task[None] | None = None
         self._finalize_waiter: asyncio.Future[None] | None = None
+        self._audio_generation = 0
+        self._final_generation = -1
         self._ready = False
         self._closing = False
 
@@ -96,6 +98,7 @@ class SpekoASRClient:
                 self.url,
                 additional_headers=headers,
                 open_timeout=self.ready_timeout_sec,
+                close_timeout=2.0,
             )
             configure_frame = json.dumps(self.configure, separators=(",", ":"))
             await self._ws.send(configure_frame)
@@ -113,22 +116,34 @@ class SpekoASRClient:
                 )
             self.request_id = str(event.get("request_id", ""))
             self.route = dict(event.get("route", {}))
+            self._audio_generation = 0
+            self._final_generation = -1
             self._ready = True
             await self.on_event(event)
             self._listener_task = asyncio.create_task(self._listen())
         except InvalidStatus as error:
+            await self._close_socket()
+            try:
+                event = json.loads(error.response.body)
+            except (ValueError, TypeError):
+                event = {}
+            if isinstance(event, dict) and isinstance(event.get("error"), dict):
+                raise SpekoRouterError.from_event(event) from error
             status = error.response.status_code
-            code = (
-                "authentication_failed"
-                if status in (401, 403)
-                else "relay_error"
-            )
+            code = {
+                400: "invalid_request",
+                401: "authentication_failed",
+                403: "authentication_failed",
+                402: "insufficient_credit",
+                404: "route_not_found",
+                429: "rate_limited",
+            }.get(status, "relay_error")
             raise SpekoRouterError(
                 code,
                 f"Speko Router WebSocket upgrade failed ({status})",
                 retryable=status >= 500 or status == 429,
             ) from error
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             await self._close_socket()
             raise
 
@@ -137,6 +152,8 @@ class SpekoASRClient:
             raise SpekoRouterError(
                 "relay_error", "Speko ASR session is not ready", retryable=True
             )
+        if audio:
+            self._audio_generation += 1
         await self._ws.send(audio)
 
     async def commit(self) -> None:
@@ -144,16 +161,18 @@ class SpekoASRClient:
             raise SpekoRouterError(
                 "relay_error", "Speko ASR session is not ready", retryable=True
             )
-        if self._finalize_waiter and not self._finalize_waiter.done():
-            await self._finalize_waiter
+        if self._final_generation == self._audio_generation:
             return
-
-        self._finalize_waiter = asyncio.get_running_loop().create_future()
-        await self._ws.send('{"type":"input.commit"}')
+        waiter = self._finalize_waiter
+        owner = waiter is None or waiter.done()
+        if owner:
+            waiter = asyncio.get_running_loop().create_future()
+            self._finalize_waiter = waiter
         try:
+            if owner:
+                await self._ws.send('{"type":"input.commit"}')
             await asyncio.wait_for(
-                asyncio.shield(self._finalize_waiter),
-                timeout=self.finalize_timeout_sec,
+                asyncio.shield(waiter), timeout=self.finalize_timeout_sec
             )
         except asyncio.TimeoutError as error:
             raise SpekoRouterError(
@@ -161,15 +180,32 @@ class SpekoASRClient:
                 "Timed out waiting for a final Speko transcript",
                 retryable=True,
             ) from error
+        finally:
+            if owner:
+                if not waiter.done():
+                    waiter.cancel()
+                if self._finalize_waiter is waiter:
+                    self._finalize_waiter = None
 
-    async def close(self) -> None:
+    async def close(self, *, drain: bool = True) -> None:
         self._closing = True
         if self._ws is not None and self._ready:
             try:
                 await self._ws.send('{"type":"session.close"}')
             except Exception:
                 pass
-        await self._close_socket()
+        task = self._listener_task
+        try:
+            if (
+                drain
+                and task is not None
+                and task is not asyncio.current_task()
+            ):
+                await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+        except asyncio.TimeoutError:
+            pass
+        finally:
+            await self._close_socket()
 
     async def _listen(self) -> None:
         error: SpekoRouterError | None = None
@@ -191,10 +227,13 @@ class SpekoASRClient:
                     self.usage = dict(event.get("usage", {}))
                 elif event_type == "session.closed":
                     self.usage = dict(event.get("usage", {}))
+                    await self.on_event(event)
                     break
 
+                audio_generation = self._audio_generation
                 await self.on_event(event)
                 if event_type == "transcript.final":
+                    self._final_generation = audio_generation
                     waiter = self._finalize_waiter
                     if waiter is not None and not waiter.done():
                         waiter.set_result(None)
@@ -224,12 +263,12 @@ class SpekoASRClient:
         if task is not None and task is not asyncio.current_task():
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
-        if self._ws is not None:
+        websocket, self._ws = self._ws, None
+        if websocket is not None:
             try:
-                await self._ws.close()
+                await websocket.close()
             except Exception:
                 pass
-            self._ws = None
 
     @staticmethod
     def _decode_text_event(raw: str | bytes) -> dict[str, Any]:
