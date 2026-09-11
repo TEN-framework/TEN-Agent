@@ -1,4 +1,4 @@
 pytest==8.3.4
 agora-token-builder>=1.0.0
-spatius[opus]==1.0.4
+spatius[opus]==1.1.1
 protobuf>=5.28.3,<6

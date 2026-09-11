@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "spatius_avatar_python",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "dependencies": [
     {
       "type": "system",
@@ -89,6 +89,10 @@
             },
             "audio_format": {
               "type": "string"
+            },
+            "extra_params": {
+              "type": "object",
+              "properties": {}
             }
           }
         }

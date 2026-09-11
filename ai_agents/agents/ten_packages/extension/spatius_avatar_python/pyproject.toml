@@ -1,9 +1,9 @@
 [project]
 name = "spatius-avatar-python"
-version = "0.2.4"
+version = "0.2.5"
 requires-python = ">=3.10"
 dependencies = [
     "agora-token-builder>=1.0.0",
     "protobuf>=5.28.3,<6",
-    "spatius[opus]==1.0.4",
+    "spatius[opus]==1.1.1",
 ]
