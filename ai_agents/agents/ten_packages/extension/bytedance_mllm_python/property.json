@@ -1,0 +1,25 @@
+{
+  "params": {
+    "app_id": "${env:DOUBAO_REALTIME_APP_ID}",
+    "access_key": "${env:DOUBAO_REALTIME_ACCESS_KEY}",
+    "model": "1.2.1.1",
+    "speaker": "zh_female_vv_jupiter_bigtts",
+    "bot_name": "豆包",
+    "prompt": "",
+    "input_sample_rate": 16000,
+    "output_sample_rate": 24000,
+    "output_audio_format": "pcm_s16le",
+    "asr": {
+      "extra": {}
+    },
+    "tts": {
+      "extra": {}
+    },
+    "dialog": {
+      "extra": {
+        "model": "1.2.1.1"
+      }
+    }
+  }
+}
+

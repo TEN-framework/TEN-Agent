@@ -1,0 +1,105 @@
+{
+  "type": "extension",
+  "name": "bytedance_mllm_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "requirements.txt",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/mllm-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_url": {
+              "type": "string"
+            },
+            "app_id": {
+              "type": "string"
+            },
+            "access_key": {
+              "type": "string"
+            },
+            "resource_id": {
+              "type": "string"
+            },
+            "app_key": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "bot_name": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "speaking_style": {
+              "type": "string"
+            },
+            "dialog_id": {
+              "type": "string"
+            },
+            "input_sample_rate": {
+              "type": "int32"
+            },
+            "output_sample_rate": {
+              "type": "int32"
+            },
+            "output_audio_format": {
+              "type": "string"
+            },
+            "verbose": {
+              "type": "bool"
+            },
+            "asr": {
+              "type": "object",
+              "properties": {}
+            },
+            "tts": {
+              "type": "object",
+              "properties": {}
+            },
+            "dialog": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
