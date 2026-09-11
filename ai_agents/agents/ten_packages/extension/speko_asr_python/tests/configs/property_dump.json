@@ -1,0 +1,8 @@
+{
+  "dump": true,
+  "dump_path": "/tmp/speko_asr_guarder.pcm",
+  "params": {
+    "api_key": "${env:SPEKO_API_KEY|}",
+    "language": "en-US"
+  }
+}

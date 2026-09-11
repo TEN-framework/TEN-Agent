@@ -19,9 +19,9 @@ from ten_runtime import (
 )
 from typing_extensions import override
 
-
 TTS_CONNECTION_STATUS_CONFIG_FILE = "property_basic_audio_setting1.json"
 SUPPORTED_WEBSOCKET_TTS_EXTENSIONS = {
+    "speko_tts2_python",
     "bytedance_tts",
     "bytedance_tts_duplex",
     "minimax_tts_websocket",

@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "speko_asr_python",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Speko Router ASR Python Extension"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Streaming speech recognition routed through Speko"
+      }
+    }
+  },
+  "tags": ["python", "speko", "asr", "router"],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "auto_connect": {"type": "bool"},
+        "dump": {"type": "bool"},
+        "dump_path": {"type": "string"},
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "base_url": {"type": "string"},
+            "sample_rate": {"type": "int32"},
+            "channels": {"type": "int32"},
+            "language": {"type": "string"},
+            "routing": {"type": "object", "properties": {}},
+            "options": {"type": "object", "properties": {}},
+            "ready_timeout_sec": {"type": "float64"},
+            "finalize_timeout_sec": {"type": "float64"},
+            "buffer_duration_ms": {"type": "int32"}
+          }
+        }
+      }
+    }
+  },
+  "scripts": {"test": "tests/bin/start"},
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  }
+}

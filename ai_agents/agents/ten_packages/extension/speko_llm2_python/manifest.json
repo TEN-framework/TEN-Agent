@@ -1,0 +1,62 @@
+{
+  "type": "extension",
+  "name": "speko_llm2_python",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Speko Router LLM2 Python Extension"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Language model responses routed through Speko"
+      }
+    }
+  },
+  "tags": ["python", "speko", "llm", "router"],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/llm-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "api_key": {"type": "string"},
+        "base_url": {"type": "string"},
+        "prompt": {"type": "string"},
+        "max_output_tokens": {"type": "int32"},
+        "temperature": {"type": "float64"},
+        "top_p": {"type": "float64"},
+        "timeout_sec": {"type": "float64"},
+        "routing": {"type": "object", "properties": {}}
+      }
+    }
+  },
+  "scripts": {"test": "tests/bin/start"},
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  }
+}

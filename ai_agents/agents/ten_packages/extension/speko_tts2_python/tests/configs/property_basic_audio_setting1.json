@@ -1,0 +1,9 @@
+{
+  "dump": true,
+  "dump_path": "/tmp/speko_tts_guarder",
+  "params": {
+    "api_key": "${env:SPEKO_API_KEY|}",
+    "sample_rate": 16000,
+    "channels": 1
+  }
+}

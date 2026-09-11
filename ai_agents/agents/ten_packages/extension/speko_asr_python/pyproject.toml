@@ -1,0 +1,9 @@
+[project]
+name = "speko-asr-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.13.4",
+    "typing-extensions>=4.15.0",
+    "websockets>=14.0,<16",
+]

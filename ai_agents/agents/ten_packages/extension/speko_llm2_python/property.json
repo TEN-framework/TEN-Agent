@@ -1,0 +1,12 @@
+{
+  "api_key": "${env:SPEKO_API_KEY|}",
+  "base_url": "https://router.speko.dev",
+  "prompt": "You are a helpful assistant.",
+  "max_output_tokens": 512,
+  "temperature": 0.7,
+  "timeout_sec": 60.0,
+  "routing": {
+    "mode": "auto",
+    "objective": "balanced"
+  }
+}

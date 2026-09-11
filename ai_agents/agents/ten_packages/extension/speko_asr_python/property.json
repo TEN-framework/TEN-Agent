@@ -1,0 +1,20 @@
+{
+  "auto_connect": true,
+  "dump": false,
+  "dump_path": "/tmp/speko_asr_in.pcm",
+  "params": {
+    "api_key": "${env:SPEKO_API_KEY|}",
+    "base_url": "https://router.speko.dev",
+    "sample_rate": 16000,
+    "channels": 1,
+    "language": "en-US",
+    "routing": {
+      "mode": "auto",
+      "objective": "balanced"
+    },
+    "options": {},
+    "ready_timeout_sec": 10.0,
+    "finalize_timeout_sec": 10.0,
+    "buffer_duration_ms": 5000
+  }
+}
