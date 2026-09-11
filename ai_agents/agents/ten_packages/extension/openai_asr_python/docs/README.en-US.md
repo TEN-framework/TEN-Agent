@@ -1,13 +1,13 @@
 # OpenAI ASR Python Extension
 
-A Python extension for OpenAI's Automatic Speech Recognition (ASR) service, providing real-time speech-to-text conversion capabilities with full async support using OpenAI's beta realtime API.
+A Python extension for OpenAI's Automatic Speech Recognition (ASR) service, providing real-time speech-to-text conversion capabilities with full async support using OpenAI's Realtime transcription API (GA).
 
 ## Features
 
 - **Full Async Support**: Built with complete asynchronous architecture for high-performance speech recognition
 - **Real-time Streaming**: Supports real-time audio streaming with low latency using OpenAI's WebSocket API
-- **OpenAI Beta API**: Uses OpenAI's beta realtime transcription API for cutting-edge performance
-- **Multiple Audio Formats**: Supports PCM16, G711 U-law, and G711 A-law audio formats
+- **OpenAI Realtime API**: Uses OpenAI's GA Realtime transcription API via `session.update`
+- **PCM16 Audio**: Accepts arbitrary input sample rates and resamples to 24 kHz PCM16 before sending
 - **Audio Dumping**: Optional audio recording for debugging and analysis
 - **Configurable Logging**: Adjustable log levels for debugging
 - **Error Handling**: Comprehensive error handling with detailed logging
@@ -37,25 +37,27 @@ The extension requires the following configuration parameters:
 
 ```json
 {
-  "api_key": "your_openai_api_key",
-  "organization": "your_organization_id",
-  "project": "your_project_id",
   "params": {
+    "api_key": "your_openai_api_key",
     "input_audio_format": "pcm16",
     "input_audio_transcription": {
-      "model": "whisper-1"
+      "model": "whisper-1",
+      "prompt": "",
+      "language": "en"
     },
     "turn_detection": {
-      "enabled": true
-    },
-    "input_audio_noise_reduction": {
-      "enabled": true
+      "type": "server_vad",
+      "threshold": 0.5,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500
     }
   },
   "dump": false,
   "log_level": "INFO"
 }
 ```
+
+Optional connection settings such as `organization`, `project`, and `base_url` belong under `params`.
 
 ## API
 
@@ -144,9 +146,8 @@ The extension supports various OpenAI transcription models:
 
 ## Audio Format Support
 
-- **PCM16**: 16-bit PCM audio format
-- **G711 U-law**: G711 U-law compressed audio
-- **G711 A-law**: G711 A-law compressed audio
+- **PCM16** (recommended): The extension resamples incoming audio to 24 kHz PCM16 before sending to OpenAI. Set `input_audio_format` to `"pcm16"`.
+- **G711 U-law / A-law**: Accepted in configuration for forward compatibility, but the extension currently always sends resampled PCM16 regardless of this setting.
 
 ## Troubleshooting
 

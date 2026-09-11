@@ -4,5 +4,6 @@ version = "0.4.3"
 requires-python = ">=3.10"
 dependencies = [
     "google-cloud-texttospeech==2.27.0",
+    "protobuf==5.29.6",
     "pydantic>=2",
 ]

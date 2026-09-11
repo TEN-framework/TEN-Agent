@@ -92,8 +92,7 @@ def test_reconnect(patch_smallest_ws):
 
             # On 4th attempt, allow connection to succeed
             # Reset closed state and exception for successful connection
-            patch_smallest_ws.ws.closed = False
-            patch_smallest_ws.ws._exception = None
+            patch_smallest_ws.prepare_connection()
 
             # Schedule transcript message after a short delay
             def delayed_transcript():
@@ -233,13 +232,7 @@ def test_reconnect_after_ws_close(patch_smallest_ws):
             nonlocal connect_attempts
             connect_attempts += 1
 
-            ws = patch_smallest_ws.ws
-            ws.closed = False
-            ws._exception = None
-            # Each connection starts with a fresh message buffer so a new
-            # message loop does not replay the previous session's messages.
-            with patch_smallest_ws.messages_lock:
-                patch_smallest_ws.messages.clear()
+            ws = patch_smallest_ws.prepare_connection()
 
             if connect_attempts == 1:
                 # Simulate the vendor dropping the socket mid-session.

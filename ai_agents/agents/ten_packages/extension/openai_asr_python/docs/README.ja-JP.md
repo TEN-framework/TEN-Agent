@@ -1,13 +1,13 @@
 # OpenAI ASR Python 拡張
 
-OpenAI の自動音声認識 (ASR) サービスのための Python 拡張で、OpenAI の beta リアルタイム API を使用してリアルタイム音声テキスト変換機能を提供し、完全な非同期操作をサポートします。
+OpenAI の自動音声認識 (ASR) サービスのための Python 拡張で、OpenAI Realtime 転写 API（GA）を使用してリアルタイム音声テキスト変換機能を提供し、完全な非同期操作をサポートします。
 
 ## 機能
 
 - **完全非同期サポート**: 高性能音声認識のための完全な非同期アーキテクチャで構築
 - **リアルタイムストリーミング**: OpenAI の WebSocket API を使用した低遅延リアルタイム音声ストリーミング
-- **OpenAI Beta API**: 最先端のパフォーマンスのための OpenAI の beta リアルタイム転写 API を使用
-- **複数の音声形式**: PCM16、G711 U-law、G711 A-law 音声形式をサポート
+- **OpenAI Realtime API**: GA 版 `session.update` 経由で OpenAI Realtime 転写 API を使用
+- **PCM16 音声**: 任意の入力サンプリングレートを受け付け、送信前に 24 kHz PCM16 にリサンプリング
 - **音声ダンプ**: デバッグと分析のためのオプション音声録音
 - **設定可能なログ**: デバッグのための調整可能なログレベル
 - **エラーハンドリング**: 詳細なログ記録による包括的なエラー処理
@@ -37,25 +37,27 @@ OpenAI の自動音声認識 (ASR) サービスのための Python 拡張で、O
 
 ```json
 {
-  "api_key": "your_openai_api_key",
-  "organization": "your_organization_id",
-  "project": "your_project_id",
   "params": {
+    "api_key": "your_openai_api_key",
     "input_audio_format": "pcm16",
     "input_audio_transcription": {
-      "model": "whisper-1"
+      "model": "whisper-1",
+      "prompt": "",
+      "language": "en"
     },
     "turn_detection": {
-      "enabled": true
-    },
-    "input_audio_noise_reduction": {
-      "enabled": true
+      "type": "server_vad",
+      "threshold": 0.5,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500
     }
   },
   "dump": false,
   "log_level": "INFO"
 }
 ```
+
+`organization`、`project`、`base_url` などのオプション接続パラメータは `params` 配下に配置します。
 
 ## API
 
@@ -144,9 +146,8 @@ pytest tests/
 
 ## 音声形式サポート
 
-- **PCM16**: 16 ビット PCM 音声形式
-- **G711 U-law**: G711 U-law 圧縮音声
-- **G711 A-law**: G711 A-law 圧縮音声
+- **PCM16**（推奨）: 拡張は入力音声を 24 kHz PCM16 にリサンプリングしてから OpenAI に送信します。`input_audio_format` は `"pcm16"` に設定してください。
+- **G711 U-law / A-law**: 将来互換のため設定では受け付けますが、拡張は現在この設定に関わらず常にリサンプリング済み PCM16 を送信します。
 
 ## トラブルシューティング
 

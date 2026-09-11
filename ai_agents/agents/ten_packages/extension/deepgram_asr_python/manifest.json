@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "deepgram_asr_python",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "dependencies": [
     {
       "type": "system",

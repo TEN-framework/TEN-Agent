@@ -737,9 +737,14 @@ class VolcengineASRClient:
 
                     # Handle error responses from server
                     if response.code != 0:
-                        # Trigger ASR error callback for server error responses
+                        error_message = (
+                            response.payload_msg.get("error_message")
+                            if isinstance(response.payload_msg, dict)
+                            else None
+                        )
                         error = ServerErrorResponse(
-                            f"Server error response: code={response.code}",
+                            error_message
+                            or f"Server error response: code={response.code}",
                             response.code,
                         )
                         callback_close = self._handle_asr_error_callback(error)

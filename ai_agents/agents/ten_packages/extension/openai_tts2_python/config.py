@@ -1,9 +1,22 @@
 from typing import Any
 import copy
+import math
 from pathlib import Path
 from pydantic import Field
 from ten_ai_base import utils
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
+
+
+def _safe_float(value: Any, default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    try:
+        converted = float(value)
+    except (TypeError, ValueError):
+        return default
+    if not math.isfinite(converted):
+        return default
+    return converted
 
 
 class OpenAITTSConfig(AsyncTTS2HttpConfig):
@@ -34,8 +47,12 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
             self.params["model"] = "gpt-4o-mini-tts"
         if "voice" not in self.params:
             self.params["voice"] = "coral"
-        if "speed" not in self.params:
-            self.params["speed"] = 1.0
+        speed = self.params["speed"] if "speed" in self.params else 1.0
+        self.params["speed"] = _safe_float(speed, 1.0)
+        if "api_key" in self.params and not isinstance(
+            self.params["api_key"], str
+        ):
+            self.params["api_key"] = ""
         if "instructions" not in self.params:
             self.params["instructions"] = ""
 
@@ -46,20 +63,19 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         # Use fixed value
         self.params["response_format"] = "pcm"
 
-        # Set endpoint URL from base_url if url is not provided
+        # Remove endpoint-only params after selecting the endpoint.
+        param_url = self.params.pop("url", None)  # pylint: disable=no-member
+        base_url = self.params.pop(  # pylint: disable=no-member
+            "base_url", "https://api.openai.com/v1"
+        )
         if not self.url:
-            if "url" in self.params:
-                self.url = self.params["url"]
-                self.params.pop("url", None)  # pylint: disable=no-member
+            if isinstance(param_url, str) and param_url.strip():
+                self.url = param_url
             else:
-                base_url = self.params.get(  # pylint: disable=no-member
-                    "base_url", "https://api.openai.com/v1"
-                )
-                # Remove trailing slash from base_url
+                if not isinstance(base_url, str) or not base_url.strip():
+                    base_url = "https://api.openai.com/v1"
                 base_url = base_url.rstrip("/")
                 self.url = f"{base_url}/audio/speech"
-                # Remove base_url from params since it's been used to set url
-                self.params.pop("base_url", None)  # pylint: disable=no-member
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
@@ -81,6 +97,8 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate OpenAI-specific configuration."""
+        if not isinstance(self.url, str) or not self.url.strip():
+            raise ValueError("URL is required for OpenAI TTS")
         # Check if API key is provided in params or Authorization header
         has_api_key_in_params = (
             "api_key" in self.params and self.params["api_key"]

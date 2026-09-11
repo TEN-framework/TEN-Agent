@@ -1,13 +1,13 @@
 # OpenAI ASR Python 확장
 
-OpenAI의 자동 음성 인식(ASR) 서비스를 위한 Python 확장으로, OpenAI의 beta 실시간 API를 사용하여 실시간 음성-텍스트 변환 기능을 제공하며 완전한 비동기 작업을 지원합니다.
+OpenAI의 자동 음성 인식(ASR) 서비스를 위한 Python 확장으로, OpenAI Realtime 전사 API(GA)를 사용하여 실시간 음성-텍스트 변환 기능을 제공하며 완전한 비동기 작업을 지원합니다.
 
 ## 기능
 
 - **완전한 비동기 지원**: 고성능 음성 인식을 위한 완전한 비동기 아키텍처로 구축
 - **실시간 스트리밍**: OpenAI의 WebSocket API를 사용한 낮은 지연 시간의 실시간 오디오 스트리밍
-- **OpenAI Beta API**: 최첨단 성능을 위한 OpenAI의 beta 실시간 전사 API 사용
-- **다중 오디오 형식**: PCM16, G711 U-law, G711 A-law 오디오 형식 지원
+- **OpenAI Realtime API**: GA `session.update`를 통해 OpenAI Realtime 전사 API 사용
+- **PCM16 오디오**: 임의의 입력 샘플링 레이트를 수용하며 전송 전 24 kHz PCM16으로 리샘플링
 - **오디오 덤프**: 디버깅 및 분석을 위한 선택적 오디오 녹음
 - **구성 가능한 로깅**: 디버깅을 위한 조정 가능한 로그 레벨
 - **오류 처리**: 상세한 로깅을 통한 포괄적인 오류 처리
@@ -37,25 +37,27 @@ OpenAI의 자동 음성 인식(ASR) 서비스를 위한 Python 확장으로, Ope
 
 ```json
 {
-  "api_key": "your_openai_api_key",
-  "organization": "your_organization_id",
-  "project": "your_project_id",
   "params": {
+    "api_key": "your_openai_api_key",
     "input_audio_format": "pcm16",
     "input_audio_transcription": {
-      "model": "whisper-1"
+      "model": "whisper-1",
+      "prompt": "",
+      "language": "en"
     },
     "turn_detection": {
-      "enabled": true
-    },
-    "input_audio_noise_reduction": {
-      "enabled": true
+      "type": "server_vad",
+      "threshold": 0.5,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500
     }
   },
   "dump": false,
   "log_level": "INFO"
 }
 ```
+
+`organization`, `project`, `base_url` 등 선택적 연결 매개변수는 `params` 아래에 둡니다.
 
 ## API
 
@@ -144,9 +146,8 @@ pytest tests/
 
 ## 오디오 형식 지원
 
-- **PCM16**: 16비트 PCM 오디오 형식
-- **G711 U-law**: G711 U-law 압축 오디오
-- **G711 A-law**: G711 A-law 압축 오디오
+- **PCM16** (권장): 확장은 입력 오디오를 24 kHz PCM16으로 리샘플링한 뒤 OpenAI로 전송합니다. `input_audio_format`을 `"pcm16"`으로 설정하세요.
+- **G711 U-law / A-law**: 향후 호환을 위해 구성에서 허용되지만, 확장은 현재 이 설정과 관계없이 항상 리샘플링된 PCM16을 전송합니다.
 
 ## 문제 해결
 

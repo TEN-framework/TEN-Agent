@@ -158,7 +158,13 @@ class ConnectionStatusTester(AsyncExtensionTester):
     def _validate_event_payload(
         self, ten_env: AsyncTenEnvTester, event: dict[str, Any]
     ) -> None:
-        expected_fields = ["id", "module", "vendor", "current", "last"]
+        expected_fields = [
+            "id",
+            "module",
+            "vendor_info",
+            "current",
+            "last",
+        ]
         missing = [field for field in expected_fields if field not in event]
         if missing:
             self._stop_test_with_error(
@@ -185,8 +191,11 @@ class ConnectionStatusTester(AsyncExtensionTester):
             )
             return
 
-        if not event.get("vendor"):
-            self._stop_test_with_error(ten_env, "Missing vendor in event")
+        vendor_info = event.get("vendor_info")
+        if not isinstance(vendor_info, dict) or not vendor_info.get("vendor"):
+            self._stop_test_with_error(
+                ten_env, "Missing vendor_info.vendor in event"
+            )
 
 
 def test_connection_status(extension_name: str, config_dir: str) -> None:

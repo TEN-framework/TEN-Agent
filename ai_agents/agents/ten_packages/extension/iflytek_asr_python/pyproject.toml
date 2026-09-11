@@ -8,7 +8,7 @@
 [project]
 name = "iflytek-asr-python"
 description = "TEN Framework ASR extension for iFLYTEK realtime transcription"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
     "websockets>=14.0",

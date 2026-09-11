@@ -85,6 +85,12 @@ class SmallestTTSConfig(AsyncTTS2HttpConfig):
         if config.params and "api_key" in config.params:
             config.params["api_key"] = utils.encrypt(config.params["api_key"])
 
+        # Redact sensitive headers (e.g. Authorization) before logging —
+        # `headers.Authorization` is a supported auth path merged into the
+        # actual HTTP request, so it must not reach the key-point log in
+        # plaintext.
+        config.headers = utils.redact_headers(config.headers) or {}
+
         return f"{config}"
 
     def validate(self) -> None:

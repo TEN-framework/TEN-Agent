@@ -13,6 +13,8 @@
 
 ## 설정
 
+버전 0.2.0부터 공급자 및 연결 설정은 반드시 `params` 객체 안에 둡니다. 0.1.0의 최상위 필드는 허용하지 않습니다. `dump`와 `dump_path`는 최상위 속성으로 유지됩니다.
+
 서비스 연결에는 `url`과 `biz_id`가 필요합니다. 기본 속성은 `IFLYTEK_ASR_URL` 및 `IFLYTEK_BIZ_ID` 환경 변수를 사용할 수 있습니다. 입력은 설정된 `sample_rate`의 모노 16비트 PCM이어야 합니다. 여러 언어는 `zh|en`처럼 `|`로 구분합니다.
 
 운영 설정에는 `finalize_timeout`, `reconnect_delay`, `reconnect_max_delay`, `reconnect_max_attempts`, `buffer_max_bytes`(기본 10 MB)가 있습니다. `dump=true`로 설정하면 `dump_path`에서 PCM 디렉터리 또는 파일을 지정할 수 있습니다. 최초 연결 및 중간 재연결 실패는 NON_FATAL로 보고하고 제한된 재시도를 계속하며, 재시도를 모두 소진하면 FATAL로 보고합니다.

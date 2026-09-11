@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import json
 import time
 from typing import Any
 from typing_extensions import override
@@ -42,6 +43,7 @@ from .openai_asr_client import (
     Error,
     Session,
 )
+from .openai_asr_client.schemas import build_ga_session_update
 from .config import OpenAIASRConfig
 from ten_ai_base.dumper import Dumper
 
@@ -224,8 +226,9 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     # openai asr client event handler
     @override
     async def on_asr_start(self, response: Session[TranscriptionParam]):
+        ga_payload = build_ga_session_update(response.session)
         self.ten_env.log_info(
-            f"vendor_status_changed: on_asr_start {response.model_dump_json()}",
+            f"vendor_status_changed: on_asr_start {json.dumps(ga_payload)}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.sent_user_audio_duration_ms_before_last_reset += (

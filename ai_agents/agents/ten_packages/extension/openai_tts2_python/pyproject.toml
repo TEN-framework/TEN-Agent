@@ -1,6 +1,6 @@
 [project]
 name = "openai-tts2-python"
-version = "0.6.9"
+version = "0.6.10"
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.28.1",

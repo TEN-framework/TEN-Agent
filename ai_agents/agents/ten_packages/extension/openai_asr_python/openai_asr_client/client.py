@@ -17,6 +17,7 @@ from .schemas import (
     TranscriptionResultCommitted,
     TranscriptionResultCompleted,
     TranscriptionResultDelta,
+    build_ga_session_update,
 )
 from .ws_client import WebSocketClient
 
@@ -114,7 +115,6 @@ class OpenAIAsrClient(WebSocketClient):
 
         kwargs["additional_headers"] = [
             ("Authorization", f"Bearer {self.api_key}"),
-            ("OpenAI-Beta", "realtime=v1"),
         ]
         if self.organization:
             kwargs["additional_headers"].append(
@@ -142,14 +142,10 @@ class OpenAIAsrClient(WebSocketClient):
 
     async def _update_session(self):
         self.params_ready_event.clear()
-        session = Session[TranscriptionParam](
-            type="transcription_session.update",
-            event_id=None,
-            session=self._params,
-        )
-        self.logger.debug("Queue transcription_session.update")
+        session_update = build_ga_session_update(self._params)
+        self.logger.debug("Queue session.update")
         await self.send(
-            session.model_dump_json(exclude_none=True),
+            json.dumps(session_update),
             priority=0,
         )
 
@@ -173,16 +169,18 @@ class OpenAIAsrClient(WebSocketClient):
 
     async def _handle_event(self, message: dict):
         _type = message.get("type")
-        if _type == "transcription_session.updated":
+        if _type == "session.updated":
             # Keep send_pcm_data blocked during flush so ordering is preserved.
             async with self._pending_lock:
                 await self._flush_pending_audio_locked()
                 self.params_ready_event.set()
+            session_update = build_ga_session_update(self._params)
+            self.logger.debug("Session updated: %s", json.dumps(session_update))
             await self._call_listener(
                 self._listener.on_asr_start,
                 Session[TranscriptionParam](
-                    type="transcription_session.update",
-                    event_id=None,
+                    type="session.updated",
+                    event_id=message.get("event_id"),
                     session=self._params,
                 ),
             )

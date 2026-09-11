@@ -229,6 +229,61 @@ def test_url_and_base_url_configuration(
     print("✅ URL and base_url configuration test passed successfully.")
 
 
+def test_invalid_param_values_use_safe_defaults():
+    """Invalid free-form params must not leave the client unusable."""
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    config = OpenAITTSConfig(
+        params={
+            "api_key": "test_key",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+            "speed": "not-a-number",
+            "url": 8080,
+            "base_url": "https://api.custom.com/v1/",
+        }
+    )
+    config.update_params()
+
+    assert config.params["speed"] == 1.0
+    assert config.url == "https://api.custom.com/v1/audio/speech"
+    assert "url" not in config.params
+    assert "base_url" not in config.params
+
+
+def test_speed_rejects_bool_and_non_finite_values():
+    """Speed must be a finite numeric value."""
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    for value in (False, "nan", "inf"):
+        config = OpenAITTSConfig(params={"speed": value})
+        config.update_params()
+        assert config.params["speed"] == 1.0
+
+
+def test_validate_rejects_empty_url():
+    """An empty top-level URL must fail before the first request."""
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    config = OpenAITTSConfig(
+        url="",
+        params={
+            "api_key": "test_key",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+        },
+    )
+    config.update_params()
+    config.url = ""
+
+    try:
+        config.validate()
+    except ValueError as exc:
+        assert str(exc) == "URL is required for OpenAI TTS"
+    else:
+        raise AssertionError("Expected empty URL validation to fail")
+
+
 @patch("openai_tts2_python.openai_tts.AsyncClient")
 @patch("openai_tts2_python.openai_tts.Timeout")
 @patch("openai_tts2_python.openai_tts.Limits")
@@ -391,8 +446,7 @@ def test_vendor_metadata_does_not_convert_api_key_to_authorization():
     metadata = extension.vendor_metadata()
 
     assert metadata["authorization"] == ""
-    assert metadata["api_key"]
-    assert metadata["api_key"] != "test_api_key_123"
+    assert metadata["api_key"] == "test_api_key_123"
     assert "key" not in metadata
 
 
@@ -415,8 +469,7 @@ def test_vendor_metadata_returns_raw_config_authorization_header():
     metadata = extension.vendor_metadata()
 
     assert metadata["authorization"] == "Bearer header_key"
-    assert metadata["api_key"]
-    assert metadata["api_key"] != "test_api_key_123"
+    assert metadata["api_key"] == "test_api_key_123"
     assert "key" not in metadata
 
 

@@ -138,12 +138,14 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         if self.config is None:
             return {}
 
-        return {
+        metadata = {
             "key": self.config.api_key,
             "url": self.config.base_url,
             "model": self.config.params.get("modelId", ""),
+            "lang": self.config.params.get("lang", ""),
             "api_key": self.config.api_key,
         }
+        return {key: value for key, value in metadata.items() if value}
 
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sampling_rate

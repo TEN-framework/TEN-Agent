@@ -11,19 +11,21 @@ ref:
 
 https://platform.openai.com/docs/guides/speech-to-text#streaming-the-transcription-of-an-ongoing-audio-recording
 
-https://platform.openai.com/docs/guides/realtime?use-case=transcription#connect-with-websockets
-
-!!! this is a beta api, the schemas are not stable !!!
+https://platform.openai.com/docs/guides/realtime-transcription
 """
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Literal
 
-from openai.types.beta.realtime.transcription_session_update_param import (
-    SessionTurnDetection,
-    SessionInputAudioTranscription,
-    SessionInputAudioNoiseReduction,
+from openai.types.realtime.audio_transcription_param import (
+    AudioTranscriptionParam,
+)
+from openai.types.realtime.realtime_transcription_session_audio_input_param import (
+    NoiseReduction,
+)
+from openai.types.realtime.realtime_transcription_session_audio_input_turn_detection_param import (
+    RealtimeTranscriptionSessionAudioInputTurnDetectionParam,
 )
 
 SessionType = TypeVar("SessionType")
@@ -45,17 +47,69 @@ class Error(BaseModel):
 
 class TranscriptionSessionUpdateParam(BaseModel):
     input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"]
-    input_audio_transcription: SessionInputAudioTranscription
-    turn_detection: SessionTurnDetection | None = None
-    input_audio_noise_reduction: SessionInputAudioNoiseReduction | None = None
+    input_audio_transcription: AudioTranscriptionParam
+    turn_detection: (
+        RealtimeTranscriptionSessionAudioInputTurnDetectionParam | None
+    ) = None
+    input_audio_noise_reduction: NoiseReduction | None = None
     include: list[str] | None = None
-    client_secret: str | None = None
 
 
-# for openai beta realtime api(wss), we must connect with the server first,
-# then send the transcription session update param to the server.
-# so we need to define a schema for the transcription session update param.
+# User-facing config schema. The extension keeps the flat property.json shape
+# for backward compatibility and converts it to GA session.update payloads.
 TranscriptionParam = TranscriptionSessionUpdateParam
+
+# pcm16 only describes 16-bit PCM encoding; GA Realtime requires rate=24000
+# for audio/pcm (see RealtimeAudioFormatsParam). The extension resamples
+# input audio to 24 kHz before sending, so this must match actual payload.
+_AUDIO_FORMAT_TO_GA = {
+    "pcm16": {"type": "audio/pcm", "rate": 24000},
+    "g711_ulaw": {"type": "audio/pcmu"},
+    "g711_alaw": {"type": "audio/pcma"},
+}
+
+
+def _to_plain_dict(value: Any) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        plain = value
+    elif hasattr(value, "model_dump"):
+        plain = value.model_dump(exclude_none=True)
+    else:
+        plain = dict(value)
+    return {k: v for k, v in plain.items() if v is not None} or None
+
+
+def _set_optional_field(target: dict[str, Any], key: str, value: Any) -> None:
+    if value is None:
+        return
+    plain = _to_plain_dict(value)
+    if plain is not None:
+        target[key] = plain
+
+
+def build_ga_session_update(params: TranscriptionParam) -> dict[str, Any]:
+    audio_input: dict[str, Any] = {
+        "format": dict(_AUDIO_FORMAT_TO_GA[params.input_audio_format]),
+    }
+
+    _set_optional_field(
+        audio_input, "transcription", params.input_audio_transcription
+    )
+    _set_optional_field(audio_input, "turn_detection", params.turn_detection)
+    _set_optional_field(
+        audio_input, "noise_reduction", params.input_audio_noise_reduction
+    )
+
+    session: dict[str, Any] = {
+        "type": "transcription",
+        "audio": {"input": audio_input},
+    }
+    if params.include is not None:
+        session["include"] = params.include
+
+    return {"type": "session.update", "session": session}
 
 
 class TranscriptionResultDelta(BaseModel):

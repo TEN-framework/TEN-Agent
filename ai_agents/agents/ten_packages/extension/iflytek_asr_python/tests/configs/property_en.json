@@ -1,12 +1,14 @@
 {
-  "url": "${env:IFLYTEK_ASR_URL}",
-  "app_id": "${env:IFLYTEK_APP_ID}",
-  "biz_id": "${env:IFLYTEK_BIZ_ID}",
-  "language": "en-US",
-  "sample_rate": 16000,
-  "connect_timeout": 10.0,
-  "finalize_timeout": 5.0,
-  "reconnect_delay": 0.5,
-  "reconnect_max_delay": 8.0,
-  "reconnect_max_attempts": 5
+  "params": {
+    "url": "${env:IFLYTEK_ASR_URL}",
+    "app_id": "${env:IFLYTEK_APP_ID}",
+    "biz_id": "${env:IFLYTEK_BIZ_ID}",
+    "language": "en-US",
+    "sample_rate": 16000,
+    "connect_timeout": 10.0,
+    "finalize_timeout": 5.0,
+    "reconnect_delay": 0.5,
+    "reconnect_max_delay": 8.0,
+    "reconnect_max_attempts": 5
+  }
 }

@@ -292,7 +292,7 @@ class AsrReconnectionTester(AsyncExtensionTester):
             error_code: int = json_data.get("code", 0)
             self.error_codes.append(error_code)
 
-            is_fatal = error_code == ModuleErrorCode.FATAL_ERROR.value
+            is_fatal = error_code == int(ModuleErrorCode.FATAL_ERROR.value)
 
             error_message: str = json_data.get("message", "")
 
@@ -372,7 +372,7 @@ def test_reconnection(extension_name: str, config_dir: str) -> None:
         # Check that fatal error is present in error codes
         fatal_error_index = -1
         for i, code in enumerate(tester.error_codes):
-            if code == ModuleErrorCode.FATAL_ERROR.value:
+            if code == int(ModuleErrorCode.FATAL_ERROR.value):
                 fatal_error_index = i
                 break
 
@@ -397,9 +397,7 @@ def test_reconnection(extension_name: str, config_dir: str) -> None:
         # Verify all received errors are non-fatal (should retry on connection failure)
         # Note: ModuleErrorCode is a str Enum, so we need to convert to int for comparison
         non_fatal_code = int(ModuleErrorCode.NON_FATAL_ERROR.value)
-        assert all(
-            code == non_fatal_code for code in tester.error_codes
-        ), (
+        assert all(code == non_fatal_code for code in tester.error_codes), (
             f"All errors should be non-fatal (code={non_fatal_code}), "
             f"but found unexpected codes in sequence: {tester.error_codes}"
         )

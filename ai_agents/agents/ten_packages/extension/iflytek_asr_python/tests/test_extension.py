@@ -74,10 +74,12 @@ def create_extension() -> tuple[IFlytekAsrExtension, FakeTenEnv, FakeClient]:
     client = FakeClient()
     extension.ten_env = ten_env  # type: ignore[assignment]
     extension.config = IFlytekAsrConfig(
-        url="ws://127.0.0.1:9990/tuling/ast/v3",
-        biz_id="tenant-1",
-        sample_rate=16000,
-        language="zh",
+        params={
+            "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+            "biz_id": "tenant-1",
+            "sample_rate": 16000,
+            "language": "zh",
+        }
     )
     extension.client = client  # type: ignore[assignment]
     extension._should_reconnect = False
@@ -399,12 +401,14 @@ def test_network_errors_are_sanitized_before_logging_and_reporting() -> None:
     async def run() -> None:
         extension, ten_env, _ = create_extension()
         extension.config = IFlytekAsrConfig(
-            url=(
-                "wss://user:password@example.com/tuling/ast/v3"
-                "?token=secret-token"
-            ),
-            app_id="sensitive-app-id",
-            biz_id="sensitive-business-id",
+            params={
+                "url": (
+                    "wss://user:password@example.com/tuling/ast/v3"
+                    "?token=secret-token"
+                ),
+                "app_id": "sensitive-app-id",
+                "biz_id": "sensitive-business-id",
+            }
         )
         raw_message = (
             f"failed to connect {extension.config.url}\n"

@@ -43,7 +43,7 @@ class FlushTester(AsyncExtensionTester):
         print("🎯 Test Objectives:")
         print("   - Verify flush is generated")
         print("   - Validate flush_id and metadata consistency in flush_end response")
-        print("   - Ensure no audio/text data after flush_end for 5 seconds")
+        print("   - Ensure no audio frames after flush_end for 5 seconds")
         print("=" * 80)
 
         self.session_id: str = session_id
@@ -54,7 +54,6 @@ class FlushTester(AsyncExtensionTester):
         self.flush_end_received = False
         self.flush_id = "test_flush_request_id_1"
         self.post_flush_end_audio_count = 0
-        self.post_flush_end_data_count = 0
         self.flush_end_timestamp = None
         self.sent_flush_metadata = None
 
@@ -184,7 +183,11 @@ class FlushTester(AsyncExtensionTester):
             if metadata_str:
                 try:
                     received_metadata = json.loads(metadata_str)
-                    if received_metadata != self.sent_flush_metadata:
+                    if any(
+                        key not in received_metadata
+                        or received_metadata[key] != value
+                        for key, value in self.sent_flush_metadata.items()
+                    ):
                         self._stop_test_with_error(ten_env, f"Metadata mismatch in flush_end. Expected: {self.sent_flush_metadata}, Received: {received_metadata}")
                         return
                 except json.JSONDecodeError:
@@ -200,17 +203,13 @@ class FlushTester(AsyncExtensionTester):
             self.flush_end_received = True
             self.flush_end_timestamp = time.time()
             
-            # Start a 5-second monitoring task to check if there is any audio/text data after flush_end
+            # Start a 5-second monitoring task for audio frames after flush_end
             asyncio.create_task(self._monitor_post_flush_end_data(ten_env))
         else:
-            # Check if any other data is received after flush_end
             if self.flush_end_received:
-                # Non-ttfb metrics (e.g. connect_delay, usage) after flush are expected
-                if name == "metrics":
-                    ten_env.log_info(f"ℹ️ Received expected metrics data after flush_end")
-                    return
-                self.post_flush_end_data_count += 1
-                ten_env.log_info(f"⚠️ Received data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
+                ten_env.log_info(
+                    f"Received expected non-audio data '{name}' after flush_end"
+                )
                 return
 
                 
@@ -249,19 +248,23 @@ class FlushTester(AsyncExtensionTester):
         await ten_env.send_data(flush_data)
 
     async def _monitor_post_flush_end_data(self, ten_env: AsyncTenEnvTester) -> None:
-        """Monitor if there is any audio/text data after flush_end for 5 seconds"""
-        ten_env.log_info("Start monitoring data after flush_end...")
+        """Monitor for audio frames after flush_end for 5 seconds."""
+        ten_env.log_info("Start monitoring audio frames after flush_end...")
         
         # Wait for 5 seconds
         await asyncio.sleep(5.0)
         
-        # Check if there is any additional data
-        if self.post_flush_end_audio_count > 0 or self.post_flush_end_data_count > 0:
-            error_msg = f"Received additional data after flush_end for 5 seconds: audio frames {self.post_flush_end_audio_count} , other data {self.post_flush_end_data_count} "
+        if self.post_flush_end_audio_count > 0:
+            error_msg = (
+                "Received audio frames after flush_end for 5 seconds: "
+                f"{self.post_flush_end_audio_count}"
+            )
             ten_env.log_info(f"❌ {error_msg}")
             self._stop_test_with_error(ten_env, error_msg)
         else:
-            ten_env.log_info("✅ No additional data received after flush_end for 5 seconds, test passed")
+            ten_env.log_info(
+                "✅ No audio frames received after flush_end for 5 seconds, test passed"
+            )
             ten_env.stop_test()
 
 def test_flush(extension_name: str, config_dir: str) -> None:

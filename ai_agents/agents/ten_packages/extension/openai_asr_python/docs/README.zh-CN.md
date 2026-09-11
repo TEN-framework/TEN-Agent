@@ -1,13 +1,13 @@
 # OpenAI ASR Python 扩展
 
-一个用于 OpenAI 自动语音识别 (ASR) 服务的 Python 扩展，提供实时语音转文本转换功能，完全支持异步操作，使用 OpenAI 的 beta 实时 API。
+一个用于 OpenAI 自动语音识别 (ASR) 服务的 Python 扩展，提供实时语音转文本转换功能，完全支持异步操作，使用 OpenAI Realtime 转录 API（GA 正式版）。
 
 ## 功能特性
 
 - **完全异步支持**: 采用完整的异步架构，实现高性能语音识别
 - **实时流式处理**: 使用 OpenAI 的 WebSocket API 支持低延迟实时音频流
-- **OpenAI Beta API**: 使用 OpenAI 的 beta 实时转录 API，提供前沿性能
-- **多种音频格式**: 支持 PCM16、G711 U-law 和 G711 A-law 音频格式
+- **OpenAI Realtime API**: 通过 GA 版 `session.update` 使用 OpenAI Realtime 转录 API
+- **PCM16 音频**: 接受任意输入采样率，发送前重采样为 24 kHz PCM16
 - **音频转储**: 可选的音频录制功能，用于调试和分析
 - **可配置日志**: 可调整的日志级别，便于调试
 - **错误处理**: 全面的错误处理和详细日志记录
@@ -37,25 +37,27 @@
 
 ```json
 {
-  "api_key": "your_openai_api_key",
-  "organization": "your_organization_id",
-  "project": "your_project_id",
   "params": {
+    "api_key": "your_openai_api_key",
     "input_audio_format": "pcm16",
     "input_audio_transcription": {
-      "model": "whisper-1"
+      "model": "whisper-1",
+      "prompt": "",
+      "language": "en"
     },
     "turn_detection": {
-      "enabled": true
-    },
-    "input_audio_noise_reduction": {
-      "enabled": true
+      "type": "server_vad",
+      "threshold": 0.5,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500
     }
   },
   "dump": false,
   "log_level": "INFO"
 }
 ```
+
+`organization`、`project`、`base_url` 等可选连接参数应放在 `params` 下。
 
 ## API
 
@@ -144,9 +146,8 @@ pytest tests/
 
 ## 音频格式支持
 
-- **PCM16**: 16 位 PCM 音频格式
-- **G711 U-law**: G711 U-law 压缩音频
-- **G711 A-law**: G711 A-law 压缩音频
+- **PCM16**（推荐）：扩展会将输入音频重采样为 24 kHz PCM16 后发送给 OpenAI。请将 `input_audio_format` 设为 `"pcm16"`。
+- **G711 U-law / A-law**：配置中可接受以便向前兼容，但扩展目前无论此项如何设置，实际始终发送重采样后的 PCM16。
 
 ## 故障排除
 

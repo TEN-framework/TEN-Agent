@@ -195,3 +195,56 @@ def test_validate():
     cfg.update_params()
     cfg.validate()  # should not raise
     print("✅ Validate test passed.")
+
+
+# ================ test to_str sensitive handling ================
+def test_to_str_masks_authorization_header():
+    """to_str() must not leak an Authorization header in plaintext.
+
+    headers.Authorization is a supported auth path merged into the actual
+    HTTP request, so the key-point log (which stringifies the whole config)
+    must not contain it verbatim.
+    """
+    from smallest_tts_python.config import SmallestTTSConfig
+
+    config = SmallestTTSConfig(
+        headers={"Authorization": "Bearer header_secret_token"},
+        params={"api_key": "test_api_key_123"},
+    )
+
+    rendered = config.to_str(sensitive_handling=True)
+
+    assert "Bearer header_secret_token" not in rendered
+    assert "test_api_key_123" not in rendered
+    print("Authorization header masking test passed.")
+
+
+def test_to_str_masks_api_key_header_variants():
+    """Case/variant coverage for the other header names Smallest accepts."""
+    from smallest_tts_python.config import SmallestTTSConfig
+
+    for header_name in ("api-key", "X-Api-Key", "xi-api-key"):
+        config = SmallestTTSConfig(headers={header_name: "secret_header_value"})
+
+        rendered = config.to_str(sensitive_handling=True)
+
+        assert (
+            "secret_header_value" not in rendered
+        ), f"{header_name} was not redacted"
+    print("API-key header variant masking test passed.")
+
+
+def test_to_str_without_sensitive_handling_keeps_raw_values():
+    """sensitive_handling=False is an explicit opt-out and must not redact."""
+    from smallest_tts_python.config import SmallestTTSConfig
+
+    config = SmallestTTSConfig(
+        headers={"Authorization": "Bearer header_secret_token"},
+        params={"api_key": "test_api_key_123"},
+    )
+
+    rendered = config.to_str(sensitive_handling=False)
+
+    assert "Bearer header_secret_token" in rendered
+    assert "test_api_key_123" in rendered
+    print("Non-sensitive to_str test passed.")

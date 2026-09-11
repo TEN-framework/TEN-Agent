@@ -8,15 +8,10 @@ from ten_ai_base.tts2_http import (
     AsyncTTS2HttpConfig,
     AsyncTTS2HttpClient,
 )
-from ten_ai_base import utils
 from ten_runtime import AsyncTenEnv
 
 from .config import OpenAITTSConfig
 from .openai_tts import OpenAITTSClient
-
-
-def _mask_metadata_secret(value: str) -> str:
-    return utils.encrypt(value) if value else value
 
 
 class OpenAITTSExtension(AsyncTTS2HttpExtension):
@@ -62,9 +57,7 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
         return {
             "url": self.config.url or "",
             "model": self.config.params.get("model", ""),
-            "api_key": _mask_metadata_secret(
-                self.config.params.get("api_key", "")
-            ),
+            "api_key": self.config.params.get("api_key", ""),
             "authorization": authorization,
             "voice": self.config.params.get("voice", ""),
         }

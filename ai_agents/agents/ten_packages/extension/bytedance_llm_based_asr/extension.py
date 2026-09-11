@@ -175,6 +175,16 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.enable_utterance_grouping: bool = True
 
         self._update_configs_lock: asyncio.Lock = asyncio.Lock()
+        # Serialises the whole stop+start swap (update_configs vs reconnect).
+        # Acquire before _send_lock when both are needed.
+        self._swap_lock: asyncio.Lock = asyncio.Lock()
+        # Short critical section for one send/finalize against the current client.
+        # Acquire _update_configs_lock / _swap_lock before this lock when both
+        # are needed.
+        self._send_lock: asyncio.Lock = asyncio.Lock()
+        # >0 means a stop/start swap is in progress: is_connected() is False so
+        # the base class Keep-buffers audio instead of racing send_audio.
+        self._connection_swap_depth: int = 0
 
     @override
     def vendor(self) -> str:
@@ -363,14 +373,47 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if self.log_id_dumper_manager:
             await self.log_id_dumper_manager.stop()
 
+    async def _replace_connection(self) -> None:
+        """Stop then start the ASR connection under the swap gate.
+
+        ``_swap_lock`` makes stop+start atomic end-to-end so update_configs and
+        error-driven reconnect cannot interleave and leak a live client.
+        Increments ``_connection_swap_depth`` so ``is_connected()`` is False and
+        the base class buffers frames instead of racing send_audio against
+        teardown. Holds ``_send_lock`` only around ``stop_connection`` so an
+        in-flight send/finalize finishes; network connect runs outside the
+        send lock.
+        """
+        async with self._swap_lock:
+            self._connection_swap_depth += 1
+            try:
+                async with self._send_lock:
+                    if self.stopped:
+                        return
+                    await self.stop_connection()
+                if self.stopped:
+                    return
+                await self.start_connection()
+            finally:
+                self._connection_swap_depth -= 1
+
+    async def _stop_connection_gated(self) -> None:
+        """Stop under the swap gate, waiting for any in-flight send/finalize."""
+        async with self._swap_lock:
+            self._connection_swap_depth += 1
+            try:
+                async with self._send_lock:
+                    await self.stop_connection()
+            finally:
+                self._connection_swap_depth -= 1
+
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         """Clean up resources when extension is deinitialized."""
         await super().on_deinit(ten_env)
 
-        # Stop connection first to ensure proper cleanup order
-        # This ensures client resources are cleaned up before other resources
-        await self.stop_connection()
+        # Stop connection first to ensure proper cleanup order.
+        await self._stop_connection_gated()
 
         if self.audio_dumper:
             try:
@@ -405,6 +448,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         #     ):
         #         return True  # Still consider connected during finalize grace period
 
+        if self._connection_swap_depth > 0:
+            return False
         return (
             self.connected and self.client is not None and self.client.connected
         )
@@ -413,22 +458,19 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
-        """Send audio frame to ASR service."""
-        if not self.is_connected():
-            self.ten_env.log_warn(
-                "Not connected to ASR service, attempting to reconnect..."
-            )
-            try:
-                await self.start_connection()
-                if not self.is_connected():
-                    self.ten_env.log_error("Failed to reconnect to ASR service")
-                    return False
-            except Exception as e:
-                self.ten_env.log_error(f"Failed to reconnect: {e}")
+        """Send audio frame to ASR service.
+
+        Does not start connections: reconnect is owned by ``_handle_reconnect``
+        / ``update_configs``. While disconnected or mid-swap this returns False
+        so the base class can Keep-buffer frames instead of racing teardown.
+        """
+        buf = None
+        try:
+            if not self.is_connected():
                 return False
 
-        buf = frame.lock_buf()
-        try:
+            buf = frame.lock_buf()
+
             # Update session_id if changed
             if self.session_id != session_id:
                 self.session_id = session_id
@@ -436,55 +478,67 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Get audio data from frame
             audio_data = bytes(buf)
 
-            # Dump audio if enabled (original audio_dumper, unchanged)
+            # Dump outside _send_lock so slow dump does not block reconnect.
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
 
-            # Dump audio to log_id_dumper if enabled (manager handles rename if needed)
             if self.log_id_dumper_manager:
                 await self.log_id_dumper_manager.push_bytes(audio_data)
 
-            self.audio_timeline.add_user_audio(
-                int(len(buf) / (self.input_audio_sample_rate() / 1000 * 2))
-            )
+            async with self._send_lock:
+                client = self.client
+                if not self.is_connected() or client is None:
+                    return False
 
-            # Send audio to ASR service
-            await self.client.send_audio(audio_data)
+                self.audio_timeline.add_user_audio(
+                    int(len(buf) / (self.input_audio_sample_rate() / 1000 * 2))
+                )
+
+                await client.send_audio(audio_data)
             return True
 
         except Exception as e:
-            if self.stopped:
+            if self.stopped or not self.is_connected():
                 return False
             self.ten_env.log(LogLevel.ERROR, f"Error sending audio: {e}")
             await self._handle_error(e)
             return False
         finally:
-            frame.unlock_buf(buf)
+            if buf is not None:
+                frame.unlock_buf(buf)
 
     @override
     async def finalize(self, session_id: str | None) -> None:
         """Finalize current ASR session."""
-        if not self.is_connected():
-            return
+        # Capture errors under the lock, then handle outside: _handle_error may
+        # call _handle_reconnect which also needs _send_lock for stop.
+        finalize_error: Exception | None = None
+        async with self._send_lock:
+            client = self.client
+            if not self.is_connected() or client is None:
+                return
 
-        try:
-            self.last_finalize_timestamp = int(
-                asyncio.get_event_loop().time() * 1000
-            )
-            self.ten_env.log_debug(
-                f"Finalize start at {self.last_finalize_timestamp}"
-            )
-
-            await self.client.finalize()
-
-            # Record silence audio in timeline (client sends silence data)
-            if self.config:
-                self.audio_timeline.add_silence_audio(
-                    self.config.get_mute_pkg_duration_ms()
+            try:
+                self.last_finalize_timestamp = int(
+                    asyncio.get_event_loop().time() * 1000
                 )
-        except Exception as e:
-            self.ten_env.log_error(f"Error finalizing session: {e}")
-            await self._handle_error(e)
+                self.ten_env.log_debug(
+                    f"Finalize start at {self.last_finalize_timestamp}"
+                )
+
+                await client.finalize()
+
+                # Record silence audio in timeline (client sends silence data)
+                if self.config:
+                    self.audio_timeline.add_silence_audio(
+                        self.config.get_mute_pkg_duration_ms()
+                    )
+            except Exception as e:
+                self.ten_env.log_error(f"Error finalizing session: {e}")
+                finalize_error = e
+
+        if finalize_error is not None:
+            await self._handle_error(finalize_error)
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
@@ -508,31 +562,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def _handle_error(self, error: Exception) -> None:
         """Handle ASR errors."""
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
-
-        # Always send error regardless of whether it's reconnectable
-        await self.send_asr_error(
-            ModuleError(
-                module=ModuleType.ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=str(error),
-            ),
-            ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=str(error_code),
-                message=str(error),
-            ),
-        )
-
-        # If error is reconnectable and not stopped, attempt reconnection
-        if is_reconnectable_error(error_code) and not self.stopped:
-            await self._handle_reconnect()
+        await self._on_asr_error(error_code, str(error))
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic with exponential backoff (min delay: 0.5s, max delay: max_retry_delay).
 
         - First retry: 0.5s delay
         - Subsequent retries: exponential backoff (base 0.5s) with min 0.5s and cap at max_retry_delay
-        - Unlimited retries unless stopped
+        - One attempt per call; further retries require another error callback
+          (send_audio no longer starts connections while disconnected)
         """
         if self._reconnecting:
             return
@@ -560,13 +598,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             if delay > 0:
                 await asyncio.sleep(delay)
 
+            if self.stopped:
+                return
+
             try:
-                await self.stop_connection()
-                await self.start_connection()
+                await self._replace_connection()
             except Exception as e:
                 self.ten_env.log_error(f"Reconnection failed: {e}")
-                if not self.stopped:
-                    await self._handle_reconnect()
         finally:
             self._reconnecting = False
 
@@ -831,23 +869,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             # Check if this is an error response
             if result.code != 0:
-                # This is an ASR error response, handle it through send_asr_error
-                error_message = "Unknown ASR error"
-                if result.payload_msg and "error_message" in result.payload_msg:
-                    error_message = result.payload_msg["error_message"]
-
-                await self.send_asr_error(
-                    ModuleError(
-                        module=ModuleType.ASR,
-                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        message=error_message,
-                    ),
-                    ModuleErrorVendorInfo(
-                        vendor=self.vendor(),
-                        code=str(result.code),
-                        message=error_message,
-                    ),
-                )
                 return
 
             # Create ASR result data for successful response
@@ -1031,11 +1052,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             code=ModuleErrorCode.NON_FATAL_ERROR.value,
             message=error_message,
         )
-        vendor_info = ModuleErrorVendorInfo(
-            vendor=self.vendor(),
-            code=str(error_code),
-            message=error_message,
-        )
+        vendor_info = None
+        if str(error_code) != str(ModuleErrorCode.FATAL_ERROR.value):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(error_code),
+                message=error_message,
+            )
         await self.send_asr_error(module_error, vendor_info)
 
         # If error is reconnectable and not stopped, attempt reconnection
@@ -1066,17 +1089,16 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self, exception: Exception
     ) -> tuple[int, str]:
         """Handle ASR communication errors (WebSocket stage)."""
-        # Check if this is a server error response with a specific error code
-        if hasattr(exception, "code"):
+        if isinstance(exception, websockets.exceptions.ConnectionClosed):
+            close_frame = exception.rcvd or exception.sent
+            error_code = int(close_frame.code) if close_frame else 1006
+            error_message = str(exception)
+        elif hasattr(exception, "code"):
             # This is a server error response (like ServerErrorResponse)
             # Keep the original error code for proper retry logic
             error_code = getattr(
                 exception, "code", ModuleErrorCode.NON_FATAL_ERROR.value
             )
-            error_message = str(exception)
-        elif isinstance(exception, websockets.exceptions.ConnectionClosed):
-            # Connection closed - this might be retryable depending on context
-            error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.InvalidMessage):
             # Invalid message format - might be retryable
@@ -1232,8 +1254,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_KEY_POINT,
         )
 
-        await self.stop_connection()
-        await self.start_connection()
+        await self._replace_connection()
 
         return True, ""
 

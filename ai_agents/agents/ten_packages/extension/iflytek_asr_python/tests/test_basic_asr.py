@@ -10,10 +10,12 @@ def test_on_init_loads_property_and_constructs_vendor_client() -> None:
     async def run() -> None:
         ten_env = FakeTenEnv(
             {
-                "url": "ws://127.0.0.1:9990/tuling/ast/v3",
-                "app_id": "app-1",
-                "biz_id": "tenant-1",
-                "language": "zh-CN",
+                "params": {
+                    "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+                    "app_id": "app-1",
+                    "biz_id": "tenant-1",
+                    "language": "zh-CN",
+                }
             }
         )
         extension = IFlytekAsrExtension("iflytek")

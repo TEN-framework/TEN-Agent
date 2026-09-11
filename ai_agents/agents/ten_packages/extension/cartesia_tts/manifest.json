@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "cartesia_tts",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "dependencies": [
     {
       "type": "system",

@@ -1,7 +1,7 @@
 typing_extensions
 pytest
 websockets>=14.0
-openai>=1.99.3
+openai>=2.44.0,<3
 numpy>=1.24.0
 pydantic
 # the latest version need cmake and C++ 14 or above compiler

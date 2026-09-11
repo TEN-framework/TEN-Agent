@@ -13,6 +13,8 @@
 
 ## 設定
 
+バージョン 0.2.0 以降、ベンダーおよび接続設定は必ず `params` オブジェクトに格納します。0.1.0 のトップレベル項目は受け付けません。`dump` と `dump_path` はトップレベルのままです。
+
 接続には `url` と `biz_id` が必要です。既定では `IFLYTEK_ASR_URL` と `IFLYTEK_BIZ_ID` 環境変数を使用できます。入力は設定した `sample_rate` のモノラル 16-bit PCM としてください。複数言語は `zh|en` のように `|` で区切ります。
 
 運用向け設定は `finalize_timeout`、`reconnect_delay`、`reconnect_max_delay`、`reconnect_max_attempts`、`buffer_max_bytes`（既定 10 MB）です。`dump=true` の場合、`dump_path` で PCM のディレクトリまたはファイルを指定できます。初回接続と途中の再接続の失敗は NON_FATAL として有限回再試行し、再試行回数を超過すると FATAL として報告されます。

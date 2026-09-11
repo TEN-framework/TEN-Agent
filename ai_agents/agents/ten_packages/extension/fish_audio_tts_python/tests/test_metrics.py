@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import asyncio
 
 from ten_runtime import (
@@ -94,7 +94,7 @@ def test_ttfb_metric_is_sent(MockFishAudioTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockFishAudioTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.

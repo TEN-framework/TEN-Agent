@@ -18,15 +18,17 @@ from iflytek_asr_python.protocol import (
 @pytest.fixture
 def config() -> IFlytekAsrConfig:
     return IFlytekAsrConfig(
-        url="ws://127.0.0.1:9990/tuling/ast/v3",
-        app_id="app-1",
-        biz_id="tenant-1",
-        language="zh|en",
-        engine={"wfep_param_nOnlineSpkdia_on": "2"},
-        res_id_list=["tenant-2"],
-        hotwords="zh-科大讯飞;en-Agora",
-        hotword_weight=4.0,
-        voiceprints={"10001": "dm9pY2VwcmludA=="},
+        params={
+            "url": "ws://127.0.0.1:9990/tuling/ast/v3",
+            "app_id": "app-1",
+            "biz_id": "tenant-1",
+            "language": "zh|en",
+            "engine": {"wfep_param_nOnlineSpkdia_on": "2"},
+            "res_id_list": ["tenant-2"],
+            "hotwords": "zh-科大讯飞;en-Agora",
+            "hotword_weight": 4.0,
+            "voiceprints": {"10001": "dm9pY2VwcmludA=="},
+        }
     )
 
 

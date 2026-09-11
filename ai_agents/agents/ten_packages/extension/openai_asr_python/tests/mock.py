@@ -17,11 +17,6 @@ from ten_packages.extension.openai_asr_python.openai_asr_client import (
     TranscriptionResultCompleted,
     TranscriptionResultDelta,
 )
-from ten_packages.extension.openai_asr_python.openai_asr_client.schemas import (
-    SessionTurnDetection,
-    SessionInputAudioTranscription,
-    SessionInputAudioNoiseReduction,
-)
 
 
 class MockClient(object):
@@ -98,19 +93,18 @@ class MockClient(object):
         voice_id = str(uuid.uuid4())
         await self.listener.on_asr_start(
             Session(
-                type="conversation.item.input_audio_transcription.start",
+                type="session.updated",
                 event_id="event_123",
                 session=TranscriptionParam(
                     input_audio_format="pcm16",
-                    input_audio_transcription=SessionInputAudioTranscription(
-                        model="whisper-1",
-                        prompt="Please transcribe the following audio into text. Output in English.",
-                        language="en",
-                    ),
+                    input_audio_transcription={
+                        "model": "whisper-1",
+                        "prompt": "Please transcribe the following audio into text. Output in English.",
+                        "language": "en",
+                    },
                     turn_detection=None,
                     input_audio_noise_reduction=None,
                     include=None,
-                    client_secret=None,
                 ),
             )
         )

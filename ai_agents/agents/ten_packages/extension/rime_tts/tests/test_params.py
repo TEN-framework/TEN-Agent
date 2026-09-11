@@ -35,6 +35,39 @@ from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
 
+def test_vendor_metadata_omits_empty_values():
+    from rime_tts.config import RimeTTSConfig
+    from rime_tts.extension import RimeTTSExtension
+
+    extension = RimeTTSExtension("tts")
+    config = RimeTTSConfig(params={"modelId": "", "lang": ""})
+    config.update_params()
+    extension.config = config
+
+    metadata = extension.vendor_metadata()
+
+    assert "key" not in metadata
+    assert "model" not in metadata
+    assert "lang" not in metadata
+    assert "api_key" not in metadata
+    assert all(metadata.values())
+
+
+def test_vendor_metadata_uses_lang_parameter_name():
+    from rime_tts.config import RimeTTSConfig
+    from rime_tts.extension import RimeTTSExtension
+
+    extension = RimeTTSExtension("tts")
+    config = RimeTTSConfig(params={"lang": "eng"})
+    config.update_params()
+    extension.config = config
+
+    metadata = extension.vendor_metadata()
+
+    assert metadata["lang"] == "eng"
+    assert "language" not in metadata
+
+
 # ================ test params passthrough ================
 class ExtensionTesterForPassthrough(ExtensionTester):
     """A simple tester that just starts and stops, to allow checking constructor calls."""

@@ -1,13 +1,13 @@
 # OpenAI ASR Python 擴充
 
-一個用於 OpenAI 自動語音識別 (ASR) 服務的 Python 擴充，提供即時語音轉文字轉換功能，完全支援非同步操作，使用 OpenAI 的 beta 即時 API。
+一個用於 OpenAI 自動語音識別 (ASR) 服務的 Python 擴充，提供即時語音轉文字轉換功能，完全支援非同步操作，使用 OpenAI Realtime 轉錄 API（GA 正式版）。
 
 ## 功能特性
 
 - **完全非同步支援**: 採用完整的非同步架構，實現高效能語音識別
 - **即時串流處理**: 使用 OpenAI 的 WebSocket API 支援低延遲即時音訊串流
-- **OpenAI Beta API**: 使用 OpenAI 的 beta 即時轉錄 API，提供前沿效能
-- **多種音訊格式**: 支援 PCM16、G711 U-law 和 G711 A-law 音訊格式
+- **OpenAI Realtime API**: 透過 GA 版 `session.update` 使用 OpenAI Realtime 轉錄 API
+- **PCM16 音訊**: 接受任意輸入取樣率，傳送前重採樣為 24 kHz PCM16
 - **音訊轉儲**: 可選的音訊錄製功能，用於除錯和分析
 - **可設定日誌**: 可調整的日誌級別，便於除錯
 - **錯誤處理**: 全面的錯誤處理和詳細日誌記錄
@@ -37,25 +37,27 @@
 
 ```json
 {
-  "api_key": "your_openai_api_key",
-  "organization": "your_organization_id",
-  "project": "your_project_id",
   "params": {
+    "api_key": "your_openai_api_key",
     "input_audio_format": "pcm16",
     "input_audio_transcription": {
-      "model": "whisper-1"
+      "model": "whisper-1",
+      "prompt": "",
+      "language": "en"
     },
     "turn_detection": {
-      "enabled": true
-    },
-    "input_audio_noise_reduction": {
-      "enabled": true
+      "type": "server_vad",
+      "threshold": 0.5,
+      "prefix_padding_ms": 300,
+      "silence_duration_ms": 500
     }
   },
   "dump": false,
   "log_level": "INFO"
 }
 ```
+
+`organization`、`project`、`base_url` 等可選連線參數應放在 `params` 下。
 
 ## API
 
@@ -144,9 +146,8 @@ pytest tests/
 
 ## 音訊格式支援
 
-- **PCM16**: 16 位 PCM 音訊格式
-- **G711 U-law**: G711 U-law 壓縮音訊
-- **G711 A-law**: G711 A-law 壓縮音訊
+- **PCM16**（建議）：擴充會將輸入音訊重採樣為 24 kHz PCM16 後傳送給 OpenAI。請將 `input_audio_format` 設為 `"pcm16"`。
+- **G711 U-law / A-law**：設定中可接受以便向前相容，但擴充目前無論此項如何設定，實際始終傳送重採樣後的 PCM16。
 
 ## 故障排除
 

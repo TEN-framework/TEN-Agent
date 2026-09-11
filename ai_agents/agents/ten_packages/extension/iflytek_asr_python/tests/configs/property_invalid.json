@@ -1,12 +1,14 @@
 {
-  "url": "ws://127.0.0.1:1/tuling/ast/v3",
-  "app_id": "invalid",
-  "biz_id": "invalid",
-  "language": "en-US",
-  "sample_rate": 16000,
-  "connect_timeout": 0.2,
-  "finalize_timeout": 0.2,
-  "reconnect_delay": 0.5,
-  "reconnect_max_delay": 8.0,
-  "reconnect_max_attempts": 100
+  "params": {
+    "url": "ws://127.0.0.1:1/tuling/ast/v3",
+    "app_id": "invalid",
+    "biz_id": "invalid",
+    "language": "en-US",
+    "sample_rate": 16000,
+    "connect_timeout": 0.2,
+    "finalize_timeout": 0.2,
+    "reconnect_delay": 0.5,
+    "reconnect_max_delay": 8.0,
+    "reconnect_max_attempts": 100
+  }
 }

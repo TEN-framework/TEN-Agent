@@ -255,7 +255,7 @@ cd agents/examples/voice-assistant-realtime
 
 ##### 6. Avvia il server web
 
-Esegui `task build` se hai modificato il codice locale. È obbligatorio per i linguaggi compilati (TypeScript, Go, ecc.) e facoltativo per Python.
+Esegui `task install` prima del primo avvio e dopo aver modificato le dipendenze o il codice sorgente Go. Questo comando installa le dipendenze TEN, Python e frontend e compila il server API Go. Le modifiche al solo codice Python non richiedono una nuova installazione.
 
 ```bash
 task install

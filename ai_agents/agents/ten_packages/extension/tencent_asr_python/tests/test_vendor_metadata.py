@@ -18,6 +18,7 @@ def test_vendor_metadata_from_config():
 
     metadata = ext.vendor_metadata()
 
+    assert metadata["appid"] == "1250000000"
     assert metadata["key"] == "secret-id"
     assert metadata["model"] == "16k_en"
     assert metadata["url"] == "wss://asr.cloud.tencent.com/asr/v2"
