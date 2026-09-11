@@ -1,0 +1,12 @@
+{
+  "api_key": "${env:CEKURA_API_KEY|}",
+  "agent_id": 0,
+  "assistant_id": "",
+  "base_url": "https://api.cekura.ai",
+  "auto_flush": true,
+  "auto_flush_interval_ms": 5000,
+  "metric_ids": "",
+  "collect_latency": true,
+  "collect_transcripts": true,
+  "collect_tool_calls": true
+}

@@ -804,6 +804,19 @@
     },
     {
       "type": "extension",
+      "name": "cekura_metrics_python",
+      "version": "0.1.0",
+      "hash": "1001e0dac91508bd721de22e02a143c7d2a89767846ab09b25fb18b85cbcc8b6",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/cekura_metrics_python"
+    },
+    {
+      "type": "extension",
       "name": "weatherapi_tool_python",
       "version": "0.1.0",
       "hash": "372a4ffffd03992ee2e7a50b0fe83d534b4ed49c0d15099fb0c9cf5ea5cc926c",

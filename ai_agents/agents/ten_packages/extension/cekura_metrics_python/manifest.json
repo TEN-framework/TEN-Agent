@@ -1,0 +1,249 @@
+{
+  "type": "extension",
+  "name": "cekura_metrics_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "data_in": [
+      {
+        "name": "transcript",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            },
+            "start_time": {
+              "type": "float64"
+            },
+            "end_time": {
+              "type": "float64"
+            }
+          },
+          "required": ["text", "role"]
+        }
+      },
+      {
+        "name": "llm_response",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "latency_ms": {
+              "type": "float64"
+            },
+            "tokens_in": {
+              "type": "int64"
+            },
+            "tokens_out": {
+              "type": "int64"
+            },
+            "model": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "tts_audio",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "latency_ms": {
+              "type": "float64"
+            },
+            "duration_ms": {
+              "type": "float64"
+            },
+            "vendor": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "metrics",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "asr_result",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "is_final": {
+              "type": "bool"
+            },
+            "latency_ms": {
+              "type": "float64"
+            },
+            "confidence": {
+              "type": "float64"
+            },
+            "vendor": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "tool_call",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "arguments": {
+              "type": "string"
+            },
+            "result": {
+              "type": "string"
+            },
+            "success": {
+              "type": "bool"
+            },
+            "latency_ms": {
+              "type": "float64"
+            }
+          },
+          "required": ["name"]
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "on_user_joined",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "on_user_left",
+        "property": {
+          "properties": {}
+        }
+      },
+      {
+        "name": "session_start",
+        "property": {
+          "properties": {
+            "session_id": {
+              "type": "string"
+            },
+            "channel_name": {
+              "type": "string"
+            },
+            "customer_number": {
+              "type": "string"
+            },
+            "metadata": {
+              "type": "string"
+            }
+          },
+          "required": ["session_id"]
+        }
+      },
+      {
+        "name": "session_end",
+        "property": {
+          "properties": {
+            "session_id": {
+              "type": "string"
+            },
+            "ended_reason": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "metrics_sent",
+        "property": {
+          "properties": {
+            "session_id": {
+              "type": "string"
+            },
+            "success": {
+              "type": "bool"
+            },
+            "call_log_id": {
+              "type": "int64"
+            }
+          }
+        }
+      }
+    ],
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "int64"
+        },
+        "assistant_id": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "auto_flush": {
+          "type": "bool"
+        },
+        "auto_flush_interval_ms": {
+          "type": "int64"
+        },
+        "metric_ids": {
+          "type": "string"
+        },
+        "collect_latency": {
+          "type": "bool"
+        },
+        "collect_transcripts": {
+          "type": "bool"
+        },
+        "collect_tool_calls": {
+          "type": "bool"
+        }
+      }
+    }
+  }
+}

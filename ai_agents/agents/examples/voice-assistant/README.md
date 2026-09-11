@@ -43,6 +43,18 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 - `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
 - `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
 
+### Optional: Cekura observability
+
+The default `voice_assistant` graph includes the **`cekura_metrics`** extension. If `CEKURA_API_KEY` is not set, it stays disabled and the demo runs unchanged.
+
+When enabled, set:
+
+- `CEKURA_API_KEY` — required to POST observability payloads.
+- **`CEKURA_ASSISTANT_ID`** *or* set numeric `agent_id` in `tenapp/property.json` on the `cekura_metrics` node (the example uses `assistant_id`: `${env:CEKURA_ASSISTANT_ID|}` with `agent_id` 0).
+- `CEKURA_METRIC_IDS` — optional comma-separated Cekura metric ids.
+
+See `ten_packages/extension/cekura_metrics_python/README.md` for graph details and notes on what is and isn't captured when `main_python` is left unmodified.
+
 ## Setup
 
 ### 1. Set Environment Variables

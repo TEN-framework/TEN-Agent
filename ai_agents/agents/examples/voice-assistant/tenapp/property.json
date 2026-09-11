@@ -87,6 +87,24 @@
             },
             {
               "type": "extension",
+              "name": "cekura_metrics",
+              "addon": "cekura_metrics_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:CEKURA_API_KEY|}",
+                "agent_id": 0,
+                "assistant_id": "${env:CEKURA_ASSISTANT_ID|}",
+                "base_url": "https://api.cekura.ai",
+                "auto_flush": true,
+                "auto_flush_interval_ms": 5000,
+                "metric_ids": "${env:CEKURA_METRIC_IDS|}",
+                "collect_latency": true,
+                "collect_transcripts": true,
+                "collect_tool_calls": true
+              }
+            },
+            {
+              "type": "extension",
               "name": "weatherapi_tool_python",
               "addon": "weatherapi_tool_python",
               "extension_group": "default",
@@ -801,6 +819,54 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "cekura_metrics",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "metrics",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    },
+                    {
+                      "extension": "tts"
+                    },
+                    {
+                      "extension": "llm"
                     }
                   ]
                 }
