@@ -15,8 +15,7 @@ class FashionAIClient:
         self.ten_env = ten_env
 
     async def connect(self):
-        # pylint: disable=protected-access
-        ssl_context = ssl._create_unverified_context()
+        ssl_context = ssl.create_default_context()
         self.websocket = await websockets.connect(self.uri, ssl=ssl_context)
         asyncio.create_task(
             self.listen()

@@ -233,10 +233,8 @@ class XfyunWSRecognition:
             ws_url = self._create_url()
             self.ten_env.log_info(f"Connecting to: {ws_url}")
 
-            # Create SSL context that doesn't verify certificates (similar to original)
+            # Create an SSL context with standard certificate verification.
             ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
 
             # Connect to WebSocket with timeout
             self.websocket = await websockets.connect(
