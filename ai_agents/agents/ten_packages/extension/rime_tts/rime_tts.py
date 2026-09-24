@@ -13,7 +13,7 @@ from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleVendorException,
 )
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.struct import TTSTextInput

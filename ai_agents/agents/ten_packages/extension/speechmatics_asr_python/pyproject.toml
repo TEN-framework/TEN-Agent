@@ -1,6 +1,6 @@
 [project]
 name = "speechmatics-asr-python"
-version = "0.2.6"
+version = "0.2.7"
 requires-python = ">=3.10"
 dependencies = [
     "aiofiles>=25.1.0",

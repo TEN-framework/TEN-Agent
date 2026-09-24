@@ -24,6 +24,7 @@ from ten_runtime import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from ten_ai_base.dumper import Dumper
@@ -192,7 +193,10 @@ class ElevenLabsASRExtension(
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_debug(f"ElevenLabs ASR result: {message_data}")
+        self.ten_env.log_debug(
+            f"ElevenLabs ASR result: {message_data}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         try:
             message_type = message_data.get("message_type", "")
             text = message_data.get("text", "")

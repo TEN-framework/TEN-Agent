@@ -18,7 +18,11 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_runtime import AsyncTenEnv
 
 from .config import TencentTTSConfig
@@ -196,6 +200,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if self.client is None:
                 self.client = TencentTTSClient(
@@ -265,7 +270,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             if t.text.strip() != "":
                 self.ten_env.log_debug(
                     f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 # Track character metrics
                 self.metrics_add_output_characters(len(t.text))

@@ -14,6 +14,7 @@ from .const import TIMEOUT_CODE
 from websockets.protocol import State
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 from ten_ai_base.timeline import AudioTimeline
 from ten_runtime import (
@@ -194,7 +195,10 @@ class XfyunWSRecognition:
             code = message_data.get("code")
             sid = message_data.get("sid")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            self._log_debug(f"[{timestamp}] message: {message}")
+            self._log_debug(
+                f"[{timestamp}] message: {message}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
+            )
 
             if self.ten_env:
                 self.ten_env.log_debug(

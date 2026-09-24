@@ -26,6 +26,7 @@ from .word import (
     get_sentence_start_ms,
 )
 from ten_ai_base.timeline import AudioTimeline
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 
 # from .language_utils import get_speechmatics_language
 
@@ -584,7 +585,10 @@ class SpeechmaticsASRClient:
             asyncio.create_task(self._emit_error(error, None))
 
     def _handle_end_transcript(self, msg):
-        self.ten_env.log_info(f"_handle_end_transcript, msg: {msg}")
+        self.ten_env.log_info(
+            f"_handle_end_transcript, msg: {msg}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         if self.on_asr_close:
             asyncio.create_task(self.on_asr_close())
 

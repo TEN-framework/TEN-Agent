@@ -13,6 +13,7 @@ from .const import TIMEOUT_CODE
 from collections import OrderedDict
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 from ten_ai_base.timeline import AudioTimeline
 from websockets.exceptions import ConnectionClosed
@@ -216,7 +217,10 @@ class XfyunWSRecognition:
         try:
             message_data = json.loads(message)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            self._log_debug(f"[{timestamp}] message: {message}")
+            self._log_debug(
+                f"[{timestamp}] message: {message}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
+            )
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {message}",
                 category=LOG_CATEGORY_VENDOR,

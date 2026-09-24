@@ -17,7 +17,11 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from .config import DeepgramTTSConfig
 
 from .deepgram_tts import (
@@ -202,6 +206,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 f"Requesting TTS for text: {t.text}, "
                 f"text_input_end: {t.text_input_end} "
                 f"request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             await self._ensure_client()
@@ -284,7 +289,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {text} "
             f"of request_id: {t.request_id}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         if not t.text_input_end and not self.config.per_sentence_flush:
             data = self.client.get(text, flush=False)

@@ -28,6 +28,7 @@ from ten_runtime import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from ten_ai_base.dumper import Dumper
@@ -243,7 +244,7 @@ class EZAIASRExtension(AsyncASRBaseExtension, DeepgramASRRecognitionCallback):
         """Process ASR recognition result"""
         assert self.config is not None
 
-        self.ten_env.log_info(text)
+        self.ten_env.log_info(text, category=LOG_CATEGORY_TRANSCRIPTS)
         self.ten_env.log_info(str(final))
 
         if final:

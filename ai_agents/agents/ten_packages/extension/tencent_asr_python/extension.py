@@ -28,6 +28,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from .tencent_asr_client import (
@@ -477,7 +478,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             language=language,
             words=[],
         )
-        self.ten_env.log_debug(f"asr_result: {asr_result.model_dump_json()}")
+        self.ten_env.log_debug(
+            f"asr_result: {asr_result.model_dump_json()}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
 
         await self.send_asr_result(asr_result)
 

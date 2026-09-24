@@ -1,6 +1,6 @@
 [project]
 name = "tencent-asr-python"
-version = "0.3.4"
+version = "0.3.5"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",

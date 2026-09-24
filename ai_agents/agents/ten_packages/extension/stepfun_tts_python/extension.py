@@ -20,7 +20,7 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.struct import TTSTextResult
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS
 
 from .config import StepFunTTSConfig
 from .stepfun_tts import (
@@ -205,7 +205,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             # If client is None, it means the connection was dropped or never initialized.
             # Attempt to re-establish the connection.
             self.ten_env.log_info(
-                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
+                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if self.client is None:
                 self.ten_env.log_error(
@@ -297,7 +298,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
             # Send TTS request - audio data will be handled via callback
             self.ten_env.log_info(
-                f"Calling client.get() with TTSTextInput: {t.text}"
+                f"Calling client.get() with TTSTextInput: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.client.get(t)
             self.ten_env.log_info(

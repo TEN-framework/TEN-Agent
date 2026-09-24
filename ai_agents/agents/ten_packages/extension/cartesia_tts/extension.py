@@ -21,7 +21,11 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension, RequestState
-from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from .config import CartesiaTTSConfig
 
 from .cartesia_tts import (
@@ -860,7 +864,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_debug(
                     f"send_text_to_tts_server: {prepared_text} "
                     f"request_id={t.request_id}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 self.metrics_add_output_characters(len(prepared_text))
 

@@ -10,7 +10,7 @@ import aiohttp
 
 from .config import CartesiaTTSConfig
 from ten_runtime import AsyncTenEnv
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTSTextInput, TTSWord
 
 CARTESIA_API_VERSION = "2025-04-16"

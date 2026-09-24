@@ -13,7 +13,7 @@ import oci.ai_speech
 import oci.ai_speech.models
 
 from ten_runtime import AsyncTenEnv
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 
 from .config import OracleTTSConfig
 
