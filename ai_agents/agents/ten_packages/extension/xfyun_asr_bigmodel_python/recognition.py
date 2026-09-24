@@ -153,9 +153,9 @@ class XfyunWSRecognition:
             ten_env=self.ten_env, threshold=1280
         )
 
-    def _log_debug(self, message):
+    def _log_debug(self, message, category=None):
         """Unified logging method"""
-        self.ten_env.log_debug(message)
+        self.ten_env.log_debug(message, category=category)
 
     def _create_url(self):
         """Generate WebSocket connection URL"""
