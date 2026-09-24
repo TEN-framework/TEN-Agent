@@ -31,6 +31,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from .openai_asr_client import (
@@ -262,7 +263,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     ):
         self.ten_env.log_error(
             f"vendor_error: on_asr_client_error {str(error)}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         await self.send_asr_error(
@@ -293,7 +294,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     async def on_asr_delta(self, response: TranscriptionResultDelta):
         self.ten_env.log_info(
             f"vendor_result: on_asr_delta: {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         self.incompleted_transcript += response.delta
 
@@ -314,7 +315,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     async def on_asr_completed(self, response: TranscriptionResultCompleted):
         self.ten_env.log_debug(
             f"vendor_result: on_asr_completed: {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
@@ -348,7 +349,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     async def on_asr_committed(self, response: TranscriptionResultCommitted):
         self.ten_env.log_info(
             f"vendor_result: on_asr_committed: {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         self.incompleted_transcript = ""
@@ -357,7 +358,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     async def on_other_event(self, response: dict):
         self.ten_env.log_info(
             f"vendor_result: on_other_event: {response}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
     @override
