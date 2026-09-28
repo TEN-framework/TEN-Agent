@@ -21,7 +21,6 @@ from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
     LOG_CATEGORY_TRANSCRIPTS,
-    LOG_CATEGORY_VENDOR,
 )
 from ten_runtime import AsyncTenEnv
 
@@ -289,7 +288,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),

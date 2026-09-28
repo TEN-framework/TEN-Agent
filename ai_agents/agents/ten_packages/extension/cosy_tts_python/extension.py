@@ -9,7 +9,7 @@ import os
 import traceback
 
 from websocket import WebSocketConnectionClosedException
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.helper import generate_file_name, PCMWriter
 from ten_ai_base.message import (
     ModuleError,
@@ -163,7 +163,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         """
         try:
             self.ten_env.log_info(
-                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end}, request_id: {t.request_id}, current_request_id: {self.current_request_id}"
+                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end}, request_id: {t.request_id}, current_request_id: {self.current_request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if self.client is None:
@@ -211,7 +212,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             # Get audio stream from Cosy TTS
             self.ten_env.log_debug(
                 f"send_text_to_tts_server: {t.text} of request_id: {t.request_id}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if (
@@ -273,7 +274,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),

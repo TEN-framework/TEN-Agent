@@ -203,7 +203,7 @@ class XfyunWSRecognition:
             if self.ten_env:
                 self.ten_env.log_debug(
                     f"vendor_result: on_recognized: {message}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
             if code != 0:

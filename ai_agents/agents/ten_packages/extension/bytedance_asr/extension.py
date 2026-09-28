@@ -19,6 +19,7 @@ from ten_ai_base.message import (
 
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 
@@ -215,7 +216,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
 
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {sentence}, language: {language}, full_json: {result[0]}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if len(sentence) == 0:

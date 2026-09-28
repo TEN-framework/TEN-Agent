@@ -497,7 +497,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_start {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 
@@ -513,7 +513,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_change {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 
@@ -529,7 +529,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_end {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 

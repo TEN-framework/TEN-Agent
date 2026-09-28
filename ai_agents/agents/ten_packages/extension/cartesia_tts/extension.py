@@ -463,7 +463,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(
                 f"transcription: {len(words)} words, request_id={request_id}, "
                 f"text={cur_text[:80]}, end={text_input_end}",
-                category=LOG_CATEGORY_KEY_POINT,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if (
@@ -746,6 +746,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"request_tts: text={t.text}, end={t.text_input_end}, "
                 f"request_id={t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if self.client is None:

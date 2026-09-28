@@ -308,7 +308,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except StepFunTTSTaskFailedException as e:
             self.ten_env.log_error(
-                f"StepFunTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}"
+                f"StepFunTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             # Use the same error handling logic as the callback mechanism
             if t.text_input_end:
@@ -331,7 +332,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
-                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.send_tts_error(
                 self.current_request_id or "",
@@ -350,7 +352,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.send_tts_error(
                 self.current_request_id or "",
@@ -519,7 +522,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             transcription_str = transcription.model_dump_json()
             self.ten_env.log_info(
                 f"send tts_text_result: {transcription_str} of request id: {transcription.request_id}",
-                category=LOG_CATEGORY_KEY_POINT,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             await self.send_tts_text_result(transcription)

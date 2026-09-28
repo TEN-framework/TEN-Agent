@@ -448,7 +448,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         except ModuleVendorException as e:
             self.sent_tts = False
             self.ten_env.log_error(
-                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),
@@ -467,7 +468,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 )
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),

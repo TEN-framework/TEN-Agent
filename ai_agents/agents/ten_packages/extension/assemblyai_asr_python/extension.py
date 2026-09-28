@@ -227,7 +227,8 @@ class AssemblyAIASRExtension(
 
             self.ten_env.log_debug(
                 f"AssemblyAI ASR result: {text}, is_final: {all_final}, "
-                f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}"
+                f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if self.config is not None:

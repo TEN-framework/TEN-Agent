@@ -223,7 +223,7 @@ class OracleTTS:
 
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {text} of request_id: {request_id}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         max_retries = 3

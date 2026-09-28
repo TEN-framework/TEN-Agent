@@ -23,6 +23,7 @@ from ten_ai_base.asr import (
 
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 
@@ -807,7 +808,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Skip utterances with invalid timestamps
             if utterance.start_time == -1 or utterance.end_time == -1:
                 self.ten_env.log_warn(
-                    f"Skipping utterance with invalid timestamps: {utterance.text}"
+                    f"Skipping utterance with invalid timestamps: {utterance.text}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 continue
 
@@ -878,7 +880,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 full_json = "{}"
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {full_json}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             result_level_asr_info = self._result_level_asr_info_fields(result)
@@ -914,7 +916,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     # Skip utterances with invalid timestamps
                     if utterance.start_time == -1 or utterance.end_time == -1:
                         self.ten_env.log_warn(
-                            f"Skipping utterance with invalid timestamps: {utterance.text}"
+                            f"Skipping utterance with invalid timestamps: {utterance.text}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
                         continue
 
@@ -965,7 +968,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 for utterance in result.utterances:
                     if utterance.start_time == -1 or utterance.end_time == -1:
                         self.ten_env.log_warn(
-                            f"Skipping utterance with invalid timestamps: {utterance.text}"
+                            f"Skipping utterance with invalid timestamps: {utterance.text}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
 
                 # Group and merge consecutive utterances with the same definite value

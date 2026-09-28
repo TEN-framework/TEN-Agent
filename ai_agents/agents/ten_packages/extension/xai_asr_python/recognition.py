@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 import websockets
 from websockets.protocol import State
 
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.timeline import AudioTimeline
 from ten_runtime import AsyncTenEnv
 
@@ -129,7 +129,7 @@ class XAIASRRecognition:
                 event = json.loads(message)
                 self.ten_env.log_debug(
                     f"vendor_result: on_recognized: {message}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 event_type = event.get("type", "")
                 if event_type == "transcript.created":

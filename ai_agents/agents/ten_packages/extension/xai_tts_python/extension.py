@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import traceback
 
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
     ModuleError,
@@ -269,7 +269,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             await self._handle_connection_error(e, t.text_input_end)
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),

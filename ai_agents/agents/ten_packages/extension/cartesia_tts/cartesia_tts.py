@@ -434,7 +434,7 @@ class CartesiaTTSClient:
         self.ten_env.log_debug(
             f"send_text_to_tts_server: context_id={context_id}, "
             f"text={t.text[:80]}, text_input_end={t.text_input_end}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         try:
@@ -691,7 +691,7 @@ class CartesiaTTSClient:
         self.ten_env.log_debug(
             f"receive_words: context_id={context_id}, "
             f"{len(words)} words, text={text[:80]}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         # is_final=False here; the extension will determine finality
         await self.words_queue.put((words, context_id, text, False))
