@@ -130,11 +130,13 @@ class TencentAsrClient(WebSocketClient):
 
     @override
     async def on_message(self, message: str | bytes):
-        self.logger.info(f"🔄 Received message: {message}")
+        self.logger.info("Received ASR message: length=%d", len(message))
         try:
             response = ResponseData[Any].model_validate_json(message)
         except Exception as e:
-            self.logger.error(f"💥 An error occurred: {e}")
+            self.logger.error(
+                "Failed to parse ASR message: error_type=%s", type(e).__name__
+            )
             response = ResponseData[str](
                 code=9999,
                 message="error",
@@ -148,7 +150,7 @@ class TencentAsrClient(WebSocketClient):
             response.voice_id = self._params.voice_id
 
         if response.code != 0:
-            self.logger.error(f"💥 An error occurred: {response.message}")
+            self.logger.error("ASR server error: code=%s", response.code)
             await self._call_listener(self._listener.on_asr_fail, response)
             return
 
@@ -159,7 +161,9 @@ class TencentAsrClient(WebSocketClient):
                 message
             )
         except Exception as e:
-            self.logger.error(f"💥 An error occurred: {e}")
+            self.logger.error(
+                "Failed to parse ASR result: error_type=%s", type(e).__name__
+            )
             response = ResponseData[str](
                 code=9999,
                 message="error",
@@ -168,7 +172,12 @@ class TencentAsrClient(WebSocketClient):
             )
             await self._call_listener(self._listener.on_asr_error, response, e)
             return
-        self.logger.info(f"Response: {response}")
+        self.logger.info(
+            "ASR response: code=%s, voice_id=%s, final=%s",
+            response.code,
+            response.voice_id,
+            response.final,
+        )
         if response.final:
             await self._call_listener(self._listener.on_asr_complete, response)
             return
@@ -198,7 +207,7 @@ class TencentAsrClient(WebSocketClient):
 
     @override
     async def on_error(self, error: Exception):
-        self.logger.error(f"💥 An error occurred: {error}")
+        self.logger.error("ASR client error: error_type=%s", type(error).__name__)
         response = ResponseData[str](
             code=9998,
             message="error",

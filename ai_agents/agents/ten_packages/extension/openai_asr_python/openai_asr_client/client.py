@@ -221,12 +221,14 @@ class OpenAIAsrClient(WebSocketClient):
 
     @override
     async def on_message(self, message: str | bytes):
-        self.logger.debug(f"🔄 Received message: {message}")
+        self.logger.debug("Received ASR message: length=%d", len(message))
         try:
             message = json.loads(message)
         except Exception as e:
             msg = f"💥 An error occurred to parse message: {message}"
-            self.logger.error(msg)
+            self.logger.error(
+                "Failed to parse ASR message: error_type=%s", type(e).__name__
+            )
             await self._call_listener(
                 self._listener.on_asr_client_error, msg, e
             )
@@ -236,9 +238,7 @@ class OpenAIAsrClient(WebSocketClient):
 
         _type = message.get("type")
         if _type is None:
-            self.logger.error(
-                f"💥 An error occurred. unknown message type: {message}"
-            )
+            self.logger.error("Unknown ASR message type")
             return
 
         if _type == "error":
@@ -261,7 +261,7 @@ class OpenAIAsrClient(WebSocketClient):
 
     @override
     async def on_error(self, error: Exception):
-        self.logger.error(f"💥 An error occurred: {error}")
+        self.logger.error("ASR client error: error_type=%s", type(error).__name__)
         await self._call_listener(
             self._listener.on_asr_client_error, str(error), error
         )
