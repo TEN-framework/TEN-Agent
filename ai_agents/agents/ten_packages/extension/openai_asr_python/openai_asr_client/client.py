@@ -261,7 +261,9 @@ class OpenAIAsrClient(WebSocketClient):
 
     @override
     async def on_error(self, error: Exception):
-        self.logger.error("ASR client error: error_type=%s", type(error).__name__)
+        self.logger.error(
+            "ASR client error: error_type=%s", type(error).__name__
+        )
         await self._call_listener(
             self._listener.on_asr_client_error, str(error), error
         )

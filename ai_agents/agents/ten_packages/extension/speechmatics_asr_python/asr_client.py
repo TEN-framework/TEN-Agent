@@ -516,8 +516,8 @@ class SpeechmaticsASRClient:
                         )
 
                     self.ten_env.log_info(
-            f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'",
-            category=LOG_CATEGORY_TRANSCRIPTS,
+                        f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'",
+                        category=LOG_CATEGORY_TRANSCRIPTS,
                     )
 
                     word_payload = self.get_words(self.cache_words)
@@ -563,8 +563,8 @@ class SpeechmaticsASRClient:
                     )
 
                 self.ten_env.log_info(
-            f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'",
-            category=LOG_CATEGORY_TRANSCRIPTS,
+                    f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
                 word_payload = self.get_words(self.cache_words)

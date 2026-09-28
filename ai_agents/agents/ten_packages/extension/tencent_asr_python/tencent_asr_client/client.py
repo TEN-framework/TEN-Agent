@@ -207,7 +207,9 @@ class TencentAsrClient(WebSocketClient):
 
     @override
     async def on_error(self, error: Exception):
-        self.logger.error("ASR client error: error_type=%s", type(error).__name__)
+        self.logger.error(
+            "ASR client error: error_type=%s", type(error).__name__
+        )
         response = ResponseData[str](
             code=9998,
             message="error",

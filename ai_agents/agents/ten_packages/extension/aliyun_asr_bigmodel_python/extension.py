@@ -301,8 +301,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         try:
             sentence = result.get_sentence()
             self.ten_env.log_debug(
-            f"vendor_result: on_event: {sentence}",
-            category=LOG_CATEGORY_TRANSCRIPTS,
+                f"vendor_result: on_event: {sentence}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if (
                 isinstance(sentence, dict)

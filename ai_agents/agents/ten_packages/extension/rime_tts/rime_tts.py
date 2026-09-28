@@ -343,8 +343,8 @@ class RimeTTSynthesizer:
             elif message_type == RIME_MESSAGE_TYPE_TIMESTAMPS:
                 # Handle timestamps (optional, for debugging)
                 self.ten_env.log_debug(
-            f"RIME TTS timestamps: {data.get('word_timestamps', {})}",
-            category=LOG_CATEGORY_TRANSCRIPTS,
+                    f"RIME TTS timestamps: {data.get('word_timestamps', {})}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
             elif message_type == RIME_MESSAGE_TYPE_DONE:
                 context_id = data.get("contextId")

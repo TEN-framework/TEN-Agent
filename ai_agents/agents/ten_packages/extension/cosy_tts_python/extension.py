@@ -9,7 +9,11 @@ import os
 import traceback
 
 from websocket import WebSocketConnectionClosedException
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_ai_base.helper import generate_file_name, PCMWriter
 from ten_ai_base.message import (
     ModuleError,
