@@ -622,6 +622,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.get_total_user_audio_duration()
         )
         self.audio_timeline.reset()
+
         self.connected = True
         self._clear_deferred_vendor_final_tokens()
         if self.reconnect_manager:
@@ -636,19 +637,23 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.connected = False
             return
 
+        is_normal_close = vendor_code in (0, 1000)
         self.ten_env.log_info(
             f"vendor connection closed: code={vendor_code}, message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
 
+        # Normal close is a disconnect only — do not attach vendor error info
+        # or inflate ASR error stats.
         vendor_info = None
-        if vendor_code not in (0, 1000):
+        if not is_normal_close:
             vendor_info = ModuleErrorVendorInfo(
                 vendor=self.vendor(),
                 code=str(vendor_code),
                 message=vendor_message,
             )
+
         await self.on_disconnected(
             code=0, message="closed", vendor_info=vendor_info
         )
@@ -675,28 +680,81 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             )
             await self._handle_reconnect()
 
+    @staticmethod
+    def _is_normal_websocket_close(exc: Exception) -> bool:
+        """True for clean WS shutdown (1000 OK / ConnectionClosedOK)."""
+        try:
+            from websockets.exceptions import (
+                ConnectionClosed,
+                ConnectionClosedOK,
+            )
+
+            if isinstance(exc, ConnectionClosedOK):
+                return True
+            if isinstance(exc, ConnectionClosed):
+                return getattr(exc, "code", None) in (0, 1000)
+        except ImportError:
+            pass
+        return False
+
     async def _handle_exception(self, e: Exception):
+        # Normal close must not enter ASR error stats (may also arrive via CLOSE).
+        if self._is_normal_websocket_close(e):
+            self.ten_env.log_info(
+                f"soniox connection closed normally: {type(e).__name__} {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return
+
         self.ten_env.log_error(
             f"soniox connection exception: {type(e)} {str(e)}"
         )
         await self._handle_error(-1, str(e))
 
-    async def _handle_error(self, error_code: int, error_message: str):
+    async def _handle_error(
+        self,
+        error_code: int,
+        error_message: str,
+        request_id: str | None = None,
+        error_type: str | None = None,
+    ):
         # Vendor ERROR events are reported here; on_disconnected is emitted from
         # _handle_close when the websocket actually closes.
+        request_id_str = str(request_id) if request_id else None
+        error_type_str = str(error_type) if error_type else None
+
+        log_parts = [
+            f"code: {error_code}",
+            f"message: {error_message}",
+        ]
+        if error_type_str:
+            log_parts.append(f"error_type: {error_type_str}")
+        if request_id_str:
+            log_parts.append(f"request_id: {request_id_str}")
+
         self.ten_env.log_error(
-            f"vendor_error: code: {error_code}, message: {error_message}",
+            f"vendor_error: {', '.join(log_parts)}",
             category=LOG_CATEGORY_VENDOR,
         )
         error_msg = f"soniox error {error_code}: {error_message}"
+        if request_id_str:
+            error_msg = f"{error_msg} (request_id={request_id_str})"
+
         module_error_code = SonioxASRErrorFilter.get_module_error_code(
             error_code, error_message
         )
+        error_metadata: dict[str, Any] = {}
+        if request_id_str:
+            error_metadata["request_id"] = request_id_str
+        if error_type_str:
+            error_metadata["error_type"] = error_type_str
+
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
                 code=module_error_code,
                 message=error_msg,
+                metadata=error_metadata,
             ),
             ModuleErrorVendorInfo(
                 vendor="soniox",

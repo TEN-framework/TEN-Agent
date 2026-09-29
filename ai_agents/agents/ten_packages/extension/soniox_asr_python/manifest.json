@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "soniox_asr_python",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "dependencies": [
     {
       "type": "system",

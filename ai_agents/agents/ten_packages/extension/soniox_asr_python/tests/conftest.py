@@ -216,10 +216,18 @@ def patch_soniox_ws():
                     tokens, final_audio_proc_ms, total_audio_proc_ms
                 )
 
-        async def trigger_error(error_code, error_message):
+        async def trigger_error(
+            error_code,
+            error_message,
+            request_id=None,
+            error_type=None,
+        ):
             if "error" in websocket_client_instance._callbacks:
                 await websocket_client_instance._callbacks["error"](
-                    error_code, error_message
+                    error_code,
+                    error_message,
+                    request_id,
+                    error_type,
                 )
 
         async def trigger_exception(exception):
