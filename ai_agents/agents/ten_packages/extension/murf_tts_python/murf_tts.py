@@ -7,6 +7,7 @@ from typing import Any
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
 
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleVendorException,
