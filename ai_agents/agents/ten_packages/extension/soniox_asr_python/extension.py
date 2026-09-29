@@ -682,23 +682,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     @staticmethod
     def _is_normal_websocket_close(exc: Exception) -> bool:
-        """True for clean WS shutdown (1000 OK / ConnectionClosedOK)."""
-        try:
-            from websockets.exceptions import (
-                ConnectionClosed,
-                ConnectionClosedOK,
-            )
-
-            if isinstance(exc, ConnectionClosedOK):
-                return True
-            if isinstance(exc, ConnectionClosed):
-                return getattr(exc, "code", None) in (0, 1000)
-        except ImportError:
-            pass
-        return False
+        """True only for intentional normal closure (1000), not going-away (1001)."""
+        return SonioxWebsocketClient.is_normal_close(exc)
 
     async def _handle_exception(self, e: Exception):
-        # Normal close must not enter ASR error stats (may also arrive via CLOSE).
+        # Normal close (1000) must not enter ASR error stats.
+        # 1001 going-away is a transient service failure → NON_FATAL_ERROR.
         if self._is_normal_websocket_close(e):
             self.ten_env.log_info(
                 f"soniox connection closed normally: {type(e).__name__} {e}",

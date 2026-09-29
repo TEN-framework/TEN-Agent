@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Callable, Optional, Any
 
 import websockets
+from websockets.exceptions import ConnectionClosed
 
 
 @dataclass
@@ -124,18 +125,12 @@ class SonioxWebsocketClient:
             if self.state != self.State.STOPPING:
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
-            # Normal WebSocket close (1000 OK / ConnectionClosedOK) is a
-            # disconnect, not an ASR error — emit CLOSE once, never EXCEPTION.
-            from websockets.exceptions import (
-                ConnectionClosed,
-                ConnectionClosedOK,
-            )
-
-            is_normal_close = isinstance(e, ConnectionClosedOK) or (
-                isinstance(e, ConnectionClosed)
-                and getattr(e, "code", None) in (1000,)
-            )
-            if self.state != self.State.STOPPING and not is_normal_close:
+            # Only 1000 (normal closure) is a silent disconnect.
+            # 1001 (going away) is ConnectionClosedOK in websockets but is a
+            # transient service departure — still emit EXCEPTION.
+            if self.state != self.State.STOPPING and not self.is_normal_close(
+                e
+            ):
                 await self._call(SonioxWebsocketEvents.EXCEPTION, e)
             close_code, close_message = self._extract_close_info(e)
             if self.state != self.State.STOPPING:
@@ -156,9 +151,18 @@ class SonioxWebsocketClient:
             self._stop_keepalive_task()
 
     @staticmethod
-    def _extract_close_info(e: Exception | None) -> tuple[int, str]:
-        from websockets.exceptions import ConnectionClosed
+    def is_normal_close(exc: Exception) -> bool:
+        """True only for intentional normal closure (code 1000 / 0).
 
+        websockets maps both 1000 and 1001 onto ConnectionClosedOK; 1001
+        (going away) must not be treated as an error-free close.
+        """
+        return isinstance(exc, ConnectionClosed) and getattr(
+            exc, "code", None
+        ) in (0, 1000)
+
+    @staticmethod
+    def _extract_close_info(e: Exception | None) -> tuple[int, str]:
         if isinstance(e, ConnectionClosed):
             return e.code, e.reason or "closed"
         return 0, "closed"
