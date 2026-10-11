@@ -1,6 +1,6 @@
 # TTS Guarder Test Guide
 
-As of: 2026-10-10
+As of: 2026-10-11
 
 This document describes how to run Guarder Test for TTS
 
@@ -52,7 +52,11 @@ the cumulative PCM clock. MiniMax also compares TEN word timestamps with
 untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
 for the validation rules and their limits.
 
+See [adding a TTS timing test](tests/ADDING_TTS_TIMING_HOOK.md) for extension
+setup, the vendor object interface, registry entries, and verification steps.
+
 Only `minimax_tts_websocket_duplex` installs a vendor timing hook. The hook
 applies to the alignment test's matching connections and restores the client
-dependency afterward. Other vendors and other cases receive no hook; their
-existing behavior is unchanged.
+dependency afterward. Unregistered vendors receive no hook, and other Guarder
+cases retain their behavior. Cartesia uses the strengthened generic alignment
+checks without a vendor hook.

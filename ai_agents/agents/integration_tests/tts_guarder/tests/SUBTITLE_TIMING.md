@@ -50,11 +50,10 @@ consolidation preserves the existing checks and enable/skip behavior. Tests
 sharing one extension module must run sequentially; parallel vendor runs require separate
 processes and installed app directories.
 
-To support another vendor, add one module implementing `install`,
-`begin_request`, and `reference`, then register its class in `HOOK_FACTORIES`.
-Its reference method returns the common `RequestTimingReference`; protocol
-capture and interpretation stay together in that vendor module. The alignment
-test also needs the vendor in its supported list and a prepared subtitle config.
+See [adding a TTS timing test](ADDING_TTS_TIMING_HOOK.md) for the vendor object
+interface, required extension configuration, registry entry, and verification
+commands. Protocol capture and reference calculation stay together in one vendor
+module.
 
 | Observation point | Information read |
 | --- | --- |
