@@ -3,14 +3,16 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file in the root directory of this source tree.
 #
-"""Capture only MiniMax audio settings, raw subtitles, and sentence offsets."""
+"""Observe MiniMax wire facts and calculate request-relative word times."""
 
 import json
 from copy import deepcopy
+from dataclasses import dataclass
+from fractions import Fraction
 from importlib import import_module
 from threading import RLock
 
-from .base import CapturedSubtitle, CapturedTiming
+from .base import ReferenceWord, RequestTimingReference
 from .transport import ObservedWebSockets
 
 DEFAULT_URL = "wss://api.minimax.cn/ws/v1/t2a_v2_bidi"
@@ -19,8 +21,22 @@ CLIENT_MODULE = (
 )
 
 
+@dataclass(frozen=True)
+class _CapturedSubtitle:
+    sentence_start_bytes: int
+    payload: dict
+
+
+@dataclass(frozen=True)
+class _CapturedTiming:
+    audio_setting: dict
+    pcm_bytes: int
+    subtitles: tuple[_CapturedSubtitle, ...]
+    error: str | None = None
+
+
 class MiniMaxTimingHook:
-    """Capture facts for the test's current sequential TEN request."""
+    """Capture facts and provide references for sequential TEN requests."""
 
     def __init__(self):
         self.audio_setting = {}
@@ -76,19 +92,81 @@ class MiniMaxTimingHook:
             subtitle = data.get("subtitle")
             if subtitle and subtitle.get("timestamped_words"):
                 self.subtitles.append(
-                    CapturedSubtitle(
+                    _CapturedSubtitle(
                         self.sentence_start_bytes, deepcopy(subtitle)
                     )
                 )
 
-    def capture(self, request_id):
+    def reference(self, request_id):
+        return _build_reference(self._capture(request_id))
+
+    def _capture(self, request_id):
         with self.lock:
             error = self.error
             if request_id != self.request_id:
                 error = "MiniMax capture belongs to another request"
-            return CapturedTiming(
+            return _CapturedTiming(
                 deepcopy(self.audio_setting),
                 self.pcm_bytes,
                 tuple(deepcopy(self.subtitles)),
                 error,
             )
+
+
+def _merge_words(subtitle):
+    words = []
+    for item in subtitle["timestamped_words"]:
+        if (
+            words
+            and item.get("word_begin") is not None
+            and item.get("word_end") is not None
+            and (item["word_begin"], item["word_end"])
+            == (words[-1].get("word_begin"), words[-1].get("word_end"))
+        ):
+            words[-1]["time_end"] = item["time_end"]
+        else:
+            words.append(dict(item))
+    return words
+
+
+def _build_reference(capture):
+    setting = capture.audio_setting
+    sample_rate = setting.get("sample_rate", 0)
+    channels = setting.get("channels", setting.get("channel", 1))
+    error = capture.error
+    captions = []
+    try:
+        if setting.get("format", "pcm") != "pcm":
+            error = "MiniMax timing reference requires PCM audio"
+        elif sample_rate > 0 and channels > 0 and not error:
+            for subtitle in capture.subtitles:
+                sentence_ms = Fraction(
+                    subtitle.sentence_start_bytes * 1000,
+                    2 * channels * sample_rate,
+                )
+                captions.append(
+                    tuple(
+                        ReferenceWord(
+                            " " if item["word"] == "[SPACE]" else item["word"],
+                            sentence_ms + Fraction(str(item["time_begin"])),
+                            sentence_ms + Fraction(str(item["time_end"])),
+                        )
+                        for item in _merge_words(subtitle.payload)
+                    )
+                )
+    except (
+        ArithmeticError,
+        AttributeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        error = "MiniMax reference calculation failed: " + type(exc).__name__
+    return RequestTimingReference(
+        "MiniMax",
+        sample_rate,
+        channels,
+        capture.pcm_bytes,
+        tuple(captions),
+        error,
+    )

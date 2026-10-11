@@ -1,6 +1,6 @@
 # Subtitle timing checks
 
-As of: 2026-10-10
+As of: 2026-10-11
 
 Run with `--enable_subtitle_alignment=True`. The test observes two sequential
 requests through public TEN messages and audio frames. Each request has its own
@@ -29,23 +29,32 @@ The hook records only the actual `task_start` audio setting, original subtitle
 payloads, and cumulative audio byte positions at sentence boundaries. Audio
 chunks are counted from their hex length; their content is not retained or
 decoded. The public TEN test input resets capture for each sequential request.
-The hook does not track connection ownership, task submission, flush ACKs, or
-reconnection lifecycle.
+The capture callbacks do not track connection ownership, task submission,
+flush ACKs, or reconnection lifecycle, and do not calculate word times.
 
-`reference_calculators/minimax_duplex.py` separately interprets captured facts:
-it merges duplicate word indexes, handles space markers, and converts sentence
-offsets plus original word times into request-relative references. The common
-checker compares those references with TEN output. Request completion continues
+The same vendor object implements `reference(request_id)` in
+`timing_hooks/minimax_duplex.py`. After capture, this method merges duplicate
+word indexes, handles space markers, and converts sentence offsets plus original
+word times into request-relative references. Capture and calculation use separate
+functions in that vendor module; no separate calculator package or reference
+source wrapper is required. The common checker compares those references with
+TEN output. Request completion continues
 to be observed through public TEN audio/text end events. Nonzero first-word
 offsets must be retained. Capture and calculation errors fail the timing check
 without changing the extension's wire path.
 
 The dependency binding is restored when the runner exits, including failure
 paths. Only MiniMax Duplex is registered. Other vendors do not import or
-install its hook, and other Guarder cases do not inject any hook. Existing
-enable/skip behavior and generic checks remain the same. Tests sharing one
-extension module must run sequentially; parallel vendor runs require separate
+install its hook, and other Guarder cases do not inject any hook. This module
+consolidation preserves the existing checks and enable/skip behavior. Tests
+sharing one extension module must run sequentially; parallel vendor runs require separate
 processes and installed app directories.
+
+To support another vendor, add one module implementing `install`,
+`begin_request`, and `reference`, then register its class in `HOOK_FACTORIES`.
+Its reference method returns the common `RequestTimingReference`; protocol
+capture and interpretation stay together in that vendor module. The alignment
+test also needs the vendor in its supported list and a prepared subtitle config.
 
 | Observation point | Information read |
 | --- | --- |
