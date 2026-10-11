@@ -52,8 +52,9 @@ the cumulative PCM clock. MiniMax also compares TEN word timestamps with
 untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
 for the validation rules and their limits.
 
-See [adding a TTS timing test](tests/ADDING_TTS_TIMING_HOOK.md) for extension
-setup, the vendor object interface, registry entries, and verification steps.
+See [adding a TTS extension](tests/SUBTITLE_TIMING.md#adding-a-tts-extension)
+for extension setup, the vendor object interface, registry entries, and
+verification steps.
 
 Only `minimax_tts_websocket_duplex` installs a vendor timing hook. The hook
 applies to the alignment test's matching connections and restores the client
