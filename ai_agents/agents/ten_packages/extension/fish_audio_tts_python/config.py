@@ -39,9 +39,6 @@ class FishAudioTTSConfig(BaseModel):
         if "opus_bitrate" in self.params:
             del self.params["opus_bitrate"]
 
-        if "chunk_length" in self.params:
-            del self.params["chunk_length"]
-
         if "backend" in self.params:
             self.backend = self.params["backend"]
             del self.params["backend"]

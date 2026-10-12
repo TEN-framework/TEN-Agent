@@ -51,6 +51,7 @@ class FishAudioTTSClient:
         self._session_request_id = ""
         self._session_active = False
         self._session_texts: list[str] = []
+        self._session_first_text_flushed = False
         self._session_audio_seen = False
         self._replay_request_id = ""
         self._replay_texts: list[str] = []
@@ -90,10 +91,10 @@ class FishAudioTTSClient:
         }
 
     def _build_request(self) -> dict[str, object]:
-        request: dict[str, object] = {"text": "", "chunk_length": 200}
+        request: dict[str, object] = {"text": ""}
         request.update(self.config.params)
         request["text"] = ""
-        request["chunk_length"] = 200
+        request.setdefault("chunk_length", 200)
         return request
 
     @staticmethod
@@ -196,8 +197,17 @@ class FishAudioTTSClient:
         self._session_request_id = request_id
         self._session_active = True
         self._session_texts = []
+        self._session_first_text_flushed = False
         self._session_audio_seen = False
         self._session_stop_requested = False
+
+    async def _send_text(self, text: str) -> None:
+        await self._send({"event": "text", "text": text})
+        if text.strip() and not self._session_first_text_flushed:
+            # Flush the first non-empty chunk so short LLM output starts
+            # synthesizing without changing the server's production threshold.
+            await self._send({"event": "flush"})
+            self._session_first_text_flushed = True
 
     async def _receive_loop(self, websocket: ClientConnection) -> None:
         try:
@@ -271,7 +281,7 @@ class FishAudioTTSClient:
                 await self._ensure_connection()
                 await self._start_session(request_id)
                 for replay_text in texts:
-                    await self._send({"event": "text", "text": replay_text})
+                    await self._send_text(replay_text)
                 self._session_texts = texts
                 if stop_requested:
                     await self._send({"event": "stop"})
@@ -324,10 +334,10 @@ class FishAudioTTSClient:
             await self._start_session(request_id)
             if self._replay_request_id == request_id:
                 for replay_text in self._replay_texts:
-                    await self._send({"event": "text", "text": replay_text})
+                    await self._send_text(replay_text)
                 self._replay_request_id = ""
                 self._replay_texts = []
-            await self._send({"event": "text", "text": text})
+            await self._send_text(text)
             self._session_texts.append(text)
 
             if not text_input_end:
@@ -428,6 +438,7 @@ class FishAudioTTSClient:
         self._session_active = False
         self._session_request_id = ""
         self._session_texts = []
+        self._session_first_text_flushed = False
         self._session_audio_seen = False
 
     def _clear_pending_events(self) -> None:

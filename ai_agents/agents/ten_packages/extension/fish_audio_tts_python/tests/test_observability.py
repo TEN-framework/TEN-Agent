@@ -129,7 +129,8 @@ def test_traceparent_is_sent_and_response_headers_are_logged():
         assert events[:2] == ["request_start", "connect"]
         assert session.sent_messages[0]["event"] == "start"
         assert session.sent_messages[1] == {"event": "text", "text": "hello"}
-        assert session.sent_messages[2] == {"event": "stop"}
+        assert session.sent_messages[2] == {"event": "flush"}
+        assert session.sent_messages[3] == {"event": "stop"}
 
         await client.clean()
 
@@ -201,6 +202,7 @@ def test_appended_text_reuses_one_websocket_session():
         assert [message["event"] for message in session.sent_messages] == [
             "start",
             "text",
+            "flush",
             "text",
             "stop",
         ]
