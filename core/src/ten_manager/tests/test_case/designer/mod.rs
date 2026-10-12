@@ -11,6 +11,7 @@ pub mod doc_link;
 pub mod env;
 pub mod exec;
 pub mod extensions;
+pub mod file_content;
 pub mod graphs;
 pub mod help_text;
 pub mod manifest;
