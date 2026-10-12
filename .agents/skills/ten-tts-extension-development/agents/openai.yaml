@@ -1,0 +1,4 @@
+interface:
+  display_name: "TEN TTS Extension Development"
+  short_description: "Build TEN TTS extensions from provider APIs or SDKs"
+  default_prompt: "Use $ten-tts-extension-development to build a production-quality TEN TTS extension from this provider API or SDK, with the correct transport lifecycle and focused tests."
