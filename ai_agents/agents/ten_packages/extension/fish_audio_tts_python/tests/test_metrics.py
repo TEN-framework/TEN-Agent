@@ -32,11 +32,18 @@ from fish_audio_tts_python.fish_audio_tts import (
 
 # ================ test metrics ================
 def _invoke_on_text_send(MockFishAudioTTSClient) -> None:
-    """Simulate the real client's on_text_send callback for mocked clients."""
+    """Simulate the real client's on_text_send callback for mocked clients.
+
+    The extension must wire this callback: without it there is no text-send
+    anchor, so tts_audio_start and the TTFB metric are skipped silently.
+    """
     call = MockFishAudioTTSClient.call_args
-    callback = call.kwargs.get("on_text_send") if call else None
-    if callback is not None:
-        callback()
+    assert call is not None, "FishAudioTTSClient was never constructed"
+    callback = call.kwargs.get("on_text_send")
+    assert (
+        callback is not None
+    ), "fish_audio_tts_python must pass on_text_send to FishAudioTTSClient"
+    callback()
 
 
 class ExtensionTesterMetrics(ExtensionTester):

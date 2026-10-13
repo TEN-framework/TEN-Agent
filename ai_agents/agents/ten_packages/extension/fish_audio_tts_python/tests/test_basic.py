@@ -127,6 +127,7 @@ def test_dump_functionality(MockFishAudioTTSClient):
 
     # This async generator simulates the TTS client's get() method
     async def mock_get_audio_stream(text: str, **_kwargs):
+        _invoke_on_text_send(MockFishAudioTTSClient)
         yield (fake_audio_chunk_1, EVENT_TTS_RESPONSE)
         await asyncio.sleep(0.01)
         yield (fake_audio_chunk_2, EVENT_TTS_RESPONSE)
@@ -194,11 +195,18 @@ def test_dump_functionality(MockFishAudioTTSClient):
 
 # ================ test flush logic ================
 def _invoke_on_text_send(MockFishAudioTTSClient) -> None:
-    """Simulate the real client's on_text_send callback for mocked clients."""
+    """Simulate the real client's on_text_send callback for mocked clients.
+
+    The extension must wire this callback: without it there is no text-send
+    anchor, so tts_audio_start and the TTFB metric are skipped silently.
+    """
     call = MockFishAudioTTSClient.call_args
-    callback = call.kwargs.get("on_text_send") if call else None
-    if callback is not None:
-        callback()
+    assert call is not None, "FishAudioTTSClient was never constructed"
+    callback = call.kwargs.get("on_text_send")
+    assert (
+        callback is not None
+    ), "fish_audio_tts_python must pass on_text_send to FishAudioTTSClient"
+    callback()
 
 
 class ExtensionTesterFlush(ExtensionTester):

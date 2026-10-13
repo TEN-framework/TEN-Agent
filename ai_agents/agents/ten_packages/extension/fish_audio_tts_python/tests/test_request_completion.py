@@ -468,3 +468,30 @@ def test_audio_end_failure_is_retrieved_without_waiter() -> None:
         )
 
     asyncio.run(run_test())
+
+
+def test_first_audio_without_text_send_anchor_logs_error() -> None:
+    """A missing on_text_send callback must surface instead of staying quiet."""
+
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.current_request_id = "request-without-anchor"
+        extension.first_chunk = True
+        extension.sent_ts = None
+        extension.send_tts_audio_start = AsyncMock()
+        extension.send_tts_ttfb_metrics = AsyncMock()
+        extension.send_tts_audio_data = AsyncMock()
+
+        await extension._on_audio_chunk(
+            b"\x01\x02" * 8, "request-without-anchor"
+        )
+
+        extension.ten_env.log_error.assert_called_once()
+        message = extension.ten_env.log_error.call_args.args[0]
+        assert "on_text_send" in message
+        extension.send_tts_audio_start.assert_not_awaited()
+        extension.send_tts_ttfb_metrics.assert_not_awaited()
+        extension.send_tts_audio_data.assert_awaited_once()
+        assert extension.first_chunk is False
+
+    asyncio.run(run_test())

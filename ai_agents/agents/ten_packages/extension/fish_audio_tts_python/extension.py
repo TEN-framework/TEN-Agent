@@ -208,6 +208,19 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         "backend": self.config.params.get("backend", ""),
                     },
                 )
+            else:
+                # Without the text-send timestamp there is no TTFB anchor, so
+                # tts_audio_start, the TTFB metric, and the audio frame
+                # metadata it registers would all be dropped silently. Log
+                # loudly instead: the client is expected to invoke the
+                # on_text_send callback before the first text payload reaches
+                # the socket.
+                self.ten_env.log_error(
+                    "Fish Audio TTS: first audio chunk arrived without a "
+                    "text-send timestamp; on_text_send callback is not wired, "
+                    "so tts_audio_start and TTFB metrics are skipped for "
+                    f"request {request_id}"
+                )
             self.first_chunk = False
 
         if self.config and self.config.dump and request_id in self.recorder_map:
