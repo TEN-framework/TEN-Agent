@@ -41,6 +41,7 @@ class SpatiusParams(TypedDict, total=False):
     sample_rate: int | str
     session_expire_minutes: int | str
     audio_format: str
+    extra_params: dict[str, str]
 
 
 @dataclass
@@ -61,6 +62,7 @@ class SpatiusConfig(BaseConfig):
     sample_rate: int = 24000
     session_expire_minutes: int = 30
     audio_format: str = DEFAULT_AUDIO_FORMAT
+    extra_params: dict[str, str] = field(default_factory=dict)
 
     channel: str = ""
     params: SpatiusParams = field(default_factory=dict)
@@ -110,6 +112,10 @@ class SpatiusConfig(BaseConfig):
 
         if "audio_format" in self.params:
             self.audio_format = self.params["audio_format"]
+
+        if "extra_params" in self.params:
+            # Copy to avoid aliasing the caller's dict.
+            self.extra_params = dict(self.params["extra_params"])
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
@@ -265,7 +271,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 f"{self._masked_api_key()}, "
                 f"app_id={self.config.spatius_app_id}, "
                 f"avatar_id={self.config.spatius_avatar_id}, "
-                f"region={self._region() or '(sdk default)'}, "
+                f"region={self._region() or '(auto)'}, "
                 f"agora_uid={self.config.agora_uid}, "
                 f"agora_token={self._masked_agora_token()}, "
                 f"agora_appid={self.config.agora_appid}, "
@@ -274,7 +280,8 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 f"sample_rate={self.config.sample_rate}, "
                 f"audio_format={self.config.audio_format}, "
                 "session_expire_minutes="
-                f"{self.config.session_expire_minutes}"
+                f"{self.config.session_expire_minutes}, "
+                f"extra_params={sorted(self.config.extra_params)}"
             )
             return True
 
@@ -313,6 +320,12 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         """Return the configured Spatius region."""
         return (self.config.region or "").strip()
 
+    def _reporting_region(self) -> str:
+        """Return the SDK session's region when available."""
+        if self.session is not None:
+            return (self.session.config.region or "").strip()
+        return self._region()
+
     def get_target_sample_rate(self) -> list[int]:
         """Return the configured sample rate expected by spatius SDK."""
         return [self.config.sample_rate]
@@ -343,6 +356,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             "audio_format": AudioFormat(self.config.audio_format),
             "ogg_opus_encoder": self._ogg_opus_encoder_config(),
             "agora_egress": agora_egress,
+            "extra_params": dict(self.config.extra_params),
             "transport_frames": self._on_frame_received,
             "on_error": self._on_error,
             "on_close": self._on_close,
@@ -360,7 +374,8 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         connection_id = await self.session.start()
         self.connection_id = str(connection_id)
         ten_env.log_info(
-            f"[Spatius] Connected successfully (connection_id={connection_id})"
+            f"[Spatius] Connected successfully (connection_id={connection_id}, "
+            f"region={self._reporting_region()})"
         )
 
     def _ogg_opus_encoder_config(self) -> OggOpusEncoderConfig | None:
@@ -436,7 +451,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 else ""
             ),
             "model": self.config.spatius_avatar_id,
-            "region": self._region(),
+            "region": self._reporting_region(),
             "mode": self.config.audio_format,
             "avatar_id": self.config.spatius_avatar_id,
             "avatar_session_id": self.connection_id,
