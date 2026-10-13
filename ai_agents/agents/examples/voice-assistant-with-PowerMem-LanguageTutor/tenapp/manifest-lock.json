@@ -1,0 +1,402 @@
+{
+  "manifest_lock_version": "1",
+  "dependencies": {
+    "agora_rtc": {
+      "addon_name": "agora_rtc",
+      "download_url": null,
+      "name": "agora_rtc",
+      "source": "remote",
+      "system_addon": false,
+      "type": "extension",
+      "version": "0.23.9-t1"
+    },
+    "aliyun_asr": {
+      "addon_name": "aliyun_asr",
+      "download_url": null,
+      "name": "aliyun_asr",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "aliyun_asr_bigmodel_python": {
+      "addon_name": "aliyun_asr_bigmodel_python",
+      "download_url": null,
+      "name": "aliyun_asr_bigmodel_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "assemblyai_asr_python": {
+      "addon_name": "assemblyai_asr_python",
+      "download_url": null,
+      "name": "assemblyai_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "aws_asr_python": {
+      "addon_name": "aws_asr_python",
+      "download_url": null,
+      "name": "aws_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "azure_asr_python": {
+      "addon_name": "azure_asr_python",
+      "download_url": null,
+      "name": "azure_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "azure_tts_python": {
+      "addon_name": "azure_tts_python",
+      "download_url": null,
+      "name": "azure_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "bytedance_asr": {
+      "addon_name": "bytedance_asr",
+      "download_url": null,
+      "name": "bytedance_asr",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "bytedance_llm_based_asr": {
+      "addon_name": "bytedance_llm_based_asr",
+      "download_url": null,
+      "name": "bytedance_llm_based_asr",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "bytedance_tts_duplex": {
+      "addon_name": "bytedance_tts_duplex",
+      "download_url": null,
+      "name": "bytedance_tts_duplex",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "cartesia_tts": {
+      "addon_name": "cartesia_tts",
+      "download_url": null,
+      "name": "cartesia_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "coze_llm2_python": {
+      "addon_name": "coze_llm2_python",
+      "download_url": null,
+      "name": "coze_llm2_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "cosy_tts_python": {
+      "addon_name": "cosy_tts_python",
+      "download_url": null,
+      "name": "cosy_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "deepgram_asr_python": {
+      "addon_name": "deepgram_asr_python",
+      "download_url": null,
+      "name": "deepgram_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "dify_llm2_python": {
+      "addon_name": "dify_llm2_python",
+      "download_url": null,
+      "name": "dify_llm2_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "extension_group": "dify",
+      "version": null
+    },
+    "dubverse_tts": {
+      "addon_name": "dubverse_tts",
+      "download_url": null,
+      "name": "dubverse_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "elevenlabs_tts2_python": {
+      "addon_name": "elevenlabs_tts2_python",
+      "download_url": null,
+      "name": "elevenlabs_tts2_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "fish_audio_tts_python": {
+      "addon_name": "fish_audio_tts_python",
+      "download_url": null,
+      "name": "fish_audio_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "gladia_asr_python": {
+      "addon_name": "gladia_asr_python",
+      "download_url": null,
+      "name": "gladia_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "google_asr_python": {
+      "addon_name": "google_asr_python",
+      "download_url": null,
+      "name": "google_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "google_tts_python": {
+      "addon_name": "google_tts_python",
+      "download_url": null,
+      "name": "google_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "groq_tts_python": {
+      "addon_name": "groq_tts_python",
+      "download_url": null,
+      "name": "groq_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "humeai_tts_python": {
+      "addon_name": "humeai_tts_python",
+      "download_url": null,
+      "name": "humeai_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "message_collector2": {
+      "addon_name": "message_collector2",
+      "download_url": null,
+      "name": "message_collector2",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "minimax_tts_websocket_python": {
+      "addon_name": "minimax_tts_websocket_python",
+      "download_url": null,
+      "name": "minimax_tts_websocket_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "neuphonic_tts": {
+      "addon_name": "neuphonic_tts",
+      "download_url": null,
+      "name": "neuphonic_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "openai_asr_python": {
+      "addon_name": "openai_asr_python",
+      "download_url": null,
+      "name": "openai_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "openai_llm2_python": {
+      "addon_name": "openai_llm2_python",
+      "download_url": null,
+      "name": "openai_llm2_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "openai_tts2_python": {
+      "addon_name": "openai_tts2_python",
+      "download_url": null,
+      "name": "openai_tts2_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "polly_tts": {
+      "addon_name": "polly_tts",
+      "download_url": null,
+      "name": "polly_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "rime_http_tts": {
+      "addon_name": "rime_http_tts",
+      "download_url": null,
+      "name": "rime_http_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "rime_tts": {
+      "addon_name": "rime_tts",
+      "download_url": null,
+      "name": "rime_tts",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "soniox_asr_python": {
+      "addon_name": "soniox_asr_python",
+      "download_url": null,
+      "name": "soniox_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "speechmatics_asr_python": {
+      "addon_name": "speechmatics_asr_python",
+      "download_url": null,
+      "name": "speechmatics_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "stepfun_tts_python": {
+      "addon_name": "stepfun_tts_python",
+      "download_url": null,
+      "name": "stepfun_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "streamid_adapter": {
+      "addon_name": "streamid_adapter",
+      "download_url": null,
+      "name": "streamid_adapter",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "ten_ai_base": {
+      "addon_name": null,
+      "download_url": null,
+      "name": "ten_ai_base",
+      "source": "remote",
+      "system_addon": true,
+      "type": "system",
+      "version": "0.7"
+    },
+    "ten_runtime_go": {
+      "addon_name": null,
+      "download_url": null,
+      "name": "ten_runtime_go",
+      "source": "remote",
+      "system_addon": true,
+      "type": "system",
+      "version": "0.11"
+    },
+    "tencent_asr_python": {
+      "addon_name": "tencent_asr_python",
+      "download_url": null,
+      "name": "tencent_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "tencent_tts_python": {
+      "addon_name": "tencent_tts_python",
+      "download_url": null,
+      "name": "tencent_tts_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "weatherapi_tool_python": {
+      "addon_name": "weatherapi_tool_python",
+      "download_url": null,
+      "name": "weatherapi_tool_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "xfyun_asr_bigmodel_python": {
+      "addon_name": "xfyun_asr_bigmodel_python",
+      "download_url": null,
+      "name": "xfyun_asr_bigmodel_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "xfyun_asr_dialect_python": {
+      "addon_name": "xfyun_asr_dialect_python",
+      "download_url": null,
+      "name": "xfyun_asr_dialect_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    },
+    "xfyun_asr_python": {
+      "addon_name": "xfyun_asr_python",
+      "download_url": null,
+      "name": "xfyun_asr_python",
+      "source": "local",
+      "system_addon": false,
+      "type": "extension",
+      "version": null
+    }
+  }
+}

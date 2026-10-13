@@ -1,0 +1,246 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "language_tutor",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "language_tutor_channel",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false,
+                "agora_asr_vendor_name": "microsoft",
+                "agora_asr_language": "en-US",
+                "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+                "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+                "agora_asr_session_control_file_path": "session_control.conf"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US",
+                  "model": "nova-3"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hello! I'm your Language Learning Companion. I can help you learn a new language by remembering your progress, vocabulary, and providing personalized lessons.",
+                "max_memory_length": 20
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hello! I'm your Language Learning Companion. I can help you learn a new language by remembering your vocabulary, grammar lessons, and providing personalized practice. Let's start learning together!",
+                "agent_id": "language_tutor_agent",
+                "user_id": "student",
+                "enable_memorization": true,
+                "enable_user_memory": true,
+                "memory_save_interval_turns": 3,
+                "memory_idle_timeout_seconds": 60.0,
+                "powermem_config": {
+                  "vector_store": {
+                    "provider": "oceanbase",
+                    "config": {
+                      "collection_name": "${env:OCEANBASE_COLLECTION}",
+                      "host": "${env:OCEANBASE_HOST}",
+                      "port": "${env:OCEANBASE_PORT}",
+                      "user": "${env:OCEANBASE_USER}",
+                      "password": "${env:OCEANBASE_PASSWORD}",
+                      "db_name": "${env:OCEANBASE_DATABASE}"
+                    }
+                  },
+                  "llm": {
+                    "provider": "${env:LLM_PROVIDER}",
+                    "config": {
+                      "api_key": "${env:LLM_API_KEY}",
+                      "model": "${env:LLM_MODEL}"
+                    }
+                  },
+                  "embedder": {
+                    "provider": "${env:EMBEDDING_PROVIDER}",
+                    "config": {
+                      "api_key": "${env:EMBEDDING_API_KEY}",
+                      "model": "${env:EMBEDDING_MODEL}",
+                      "embedding_dims": "${env:EMBEDDING_DIMS}"
+                    }
+                  }
+                },
+                "custom_system_prompt": "You are a helpful language learning companion. You help users learn languages by:\n\n1. Remembering vocabulary words they've learned (store as memory with tags like 'vocabulary', 'spanish', 'beginner')\n2. Tracking grammar concepts covered (store as 'grammar', 'topic')\n3. Providing personalized practice based on their level\n4. Reviewing previously learned material to reinforce memory\n\nWhen a user learns a new word, acknowledge it and ask them to practice using it in a sentence.\nWhen they make mistakes, gently correct them and explain the grammar rule.\nBefore each lesson, briefly review what was covered in previous sessions if available in memory.\n\nYour goal is to make language learning engaging, personalized, and effective through consistent memory of the user's progress."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": ["on_user_joined", "on_user_left"],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": ["tool_register"],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.env
+.env.local
+
+# Build outputs
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary
+*.tmp
+*.bak
+*~
+session_control.conf
