@@ -534,6 +534,15 @@ impl Graph {
         let mut new_base_dir: Option<String> = None;
         let subgraph = load_graph_from_uri(import_uri, current_base_dir, &mut new_base_dir).await?;
 
+        // `load_graph_from_uri` only deserializes the file, so an imported
+        // subgraph has not been through the pre-flatten passes yet. Run them
+        // here, otherwise `names`, selectors and reversed connections written
+        // inside the subgraph reach the flattening logic unlowered.
+        let pre_flattened_subgraph = subgraph.apply_pre_flatten_passes().map_err(|e| {
+            anyhow::anyhow!("Failed to process subgraph '{}': {}", subgraph_node.name, e)
+        })?;
+        let subgraph = pre_flattened_subgraph.unwrap_or(subgraph);
+
         Self::process_loaded_subgraph(
             subgraph_node,
             &subgraph,
