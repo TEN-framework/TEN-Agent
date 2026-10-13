@@ -25,16 +25,18 @@ class RecordingWebSocket:
     the observed event sequence stays deterministic without races.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, timeline: list[str] | None = None) -> None:
         self.response = SimpleNamespace(headers={})
         self.sent: list[dict] = []
         self.close_calls = 0
         self._incoming: list[dict] = []
         self._closed = asyncio.Event()
+        self.timeline = timeline if timeline is not None else []
 
     async def send(self, message: bytes) -> None:
         payload = ormsgpack.unpackb(message)
         self.sent.append(payload)
+        self.timeline.append(f"send:{payload.get('event')}")
         if payload.get("event") == "stop":
             self._incoming.append({"event": "finish", "reason": "stop"})
 
@@ -230,3 +232,55 @@ def test_flush_mode_is_not_forwarded_to_vendor_request() -> None:
     client = FishAudioTTSClient(config, MagicMock())
     request = client._build_request()
     assert "flush_mode" not in request
+
+
+# ================ on_text_send contract ================
+def test_client_invokes_on_text_send_before_each_text_payload() -> None:
+    """The extension's TTFB anchor depends on this client contract.
+
+    The mocked-client tests replace FishAudioTTSClient entirely, so no mock
+    exercised this callback and their assertions silently lost coverage when
+    the TTFB anchor moved to text-send time. Lock the real behaviour: the
+    callback fires immediately before the text payload goes over the socket.
+    """
+    timeline: list[str] = []
+
+    async def run() -> list[str]:
+        websocket = RecordingWebSocket(timeline)
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            return_value=FakeConnect(websocket),
+        ):
+            client = FishAudioTTSClient(
+                _config(),
+                MagicMock(),
+                on_text_send=lambda: timeline.append("on_text_send"),
+            )
+            for text, text_input_end in (
+                ("Hello", False),
+                (" world", True),
+            ):
+                async for _event in client.get(
+                    text,
+                    request_id="req",
+                    text_input_end=text_input_end,
+                ):
+                    pass
+            await client.clean()
+        return timeline
+
+    recorded = asyncio.run(run())
+
+    callback_indexes = [
+        index for index, entry in enumerate(recorded) if entry == "on_text_send"
+    ]
+    text_send_indexes = [
+        index for index, entry in enumerate(recorded) if entry == "send:text"
+    ]
+
+    assert len(callback_indexes) == 2, recorded
+    assert len(text_send_indexes) == 2, recorded
+    for callback_index, text_send_index in zip(
+        callback_indexes, text_send_indexes
+    ):
+        assert callback_index < text_send_index, recorded
