@@ -107,7 +107,7 @@ The realtime voice assistant is configured in `tenapp/property.json`:
               "addon": "openai_mllm_python",
               "property": {
                 "api_key": "${env:OPENAI_API_KEY}",
-                "model": "gpt-realtime",
+                "model": "gpt-realtime-2.1",
                 "voice": "alloy",
                 "language": "en",
                 "vad_type": "semantic_vad",
