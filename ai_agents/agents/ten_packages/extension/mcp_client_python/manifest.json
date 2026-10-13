@@ -23,6 +23,9 @@
       "properties": {
         "url": {
           "type": "string"
+        },
+        "command": {
+          "type": "string"
         }
       }
     }
