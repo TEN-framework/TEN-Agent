@@ -1,7 +1,11 @@
-from typing import Any
+from typing import Any, Literal, get_args
 import copy
 from ten_ai_base import utils
 from pydantic import BaseModel, Field
+
+
+FlushMode = Literal["off", "first_chunk", "every_sentence"]
+FLUSH_MODES: tuple[str, ...] = get_args(FlushMode)
 
 
 class FishAudioTTSConfig(BaseModel):
@@ -11,6 +15,7 @@ class FishAudioTTSConfig(BaseModel):
     dump: bool = False
     dump_path: str = "/tmp"
     backend: str = "speech-1.5"
+    flush_mode: FlushMode = "first_chunk"
     params: dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:
@@ -42,6 +47,16 @@ class FishAudioTTSConfig(BaseModel):
         if "backend" in self.params:
             self.backend = self.params["backend"]
             del self.params["backend"]
+
+        if "flush_mode" in self.params:
+            flush_mode = self.params["flush_mode"]
+            del self.params["flush_mode"]
+            if flush_mode not in FLUSH_MODES:
+                raise ValueError(
+                    f"Invalid flush_mode {flush_mode!r}; allowed values are "
+                    f"{', '.join(FLUSH_MODES)}"
+                )
+            self.flush_mode = flush_mode
 
         if "text" in self.params:
             del self.params["text"]

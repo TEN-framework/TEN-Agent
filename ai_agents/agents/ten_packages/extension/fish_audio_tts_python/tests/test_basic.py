@@ -193,6 +193,14 @@ def test_dump_functionality(MockFishAudioTTSClient):
 
 
 # ================ test flush logic ================
+def _invoke_on_text_send(MockFishAudioTTSClient) -> None:
+    """Simulate the real client's on_text_send callback for mocked clients."""
+    call = MockFishAudioTTSClient.call_args
+    callback = call.kwargs.get("on_text_send") if call else None
+    if callback is not None:
+        callback()
+
+
 class ExtensionTesterFlush(ExtensionTester):
     def __init__(self):
         super().__init__()
@@ -298,6 +306,7 @@ def test_flush_logic(MockFishAudioTTSClient):
     mock_instance.clean = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str, **_kwargs):
+        _invoke_on_text_send(MockFishAudioTTSClient)
         for _ in range(20):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.

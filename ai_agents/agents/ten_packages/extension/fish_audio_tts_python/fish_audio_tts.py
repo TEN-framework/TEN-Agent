@@ -18,6 +18,10 @@ EVENT_TTS_FLUSH = 5
 EVENT_TTS_RECONNECT = 6
 MAX_RECONNECT_ATTEMPTS = 3
 
+# Sentence terminators used by "every_sentence" flush mode. Kept in sync with
+# the elevenlabs per_sentence_flush check in conversational_agent.
+SENTENCE_ENDINGS = (".", "?", "!", "。", "？", "！")
+
 
 class FishAudioTTSClient:
     def __init__(
@@ -105,13 +109,13 @@ class FishAudioTTSClient:
         for name, value in items:
             name = name.lower()
             normalized[name] = (
-                f"{normalized[name]}, {value}"
-                if name in normalized
-                else value
+                f"{normalized[name]}, {value}" if name in normalized else value
             )
         return normalized
 
-    async def _capture_response_headers(self, websocket: ClientConnection) -> None:
+    async def _capture_response_headers(
+        self, websocket: ClientConnection
+    ) -> None:
         response = getattr(websocket, "response", None)
         headers = getattr(response, "headers", None)
         if headers is None:
@@ -201,11 +205,34 @@ class FishAudioTTSClient:
         self._session_audio_seen = False
         self._session_stop_requested = False
 
-    async def _send_text(self, text: str) -> None:
-        await self._send({"event": "text", "text": text})
-        if text.strip() and not self._session_first_text_flushed:
+    def _should_flush(self, text: str, is_last: bool) -> bool:
+        """Decide whether a text chunk should be followed by a flush event.
+
+        The protocol-level flush only nudges the server to start synthesizing
+        earlier; it never waits for a receipt. Empty text never flushes, and
+        the final chunk is followed by ``stop`` (which flushes server-side),
+        so emitting a flush there would only add a pointless round-trip.
+        """
+        if not text.strip():
+            return False
+        if is_last:
+            return False
+
+        mode = self.config.flush_mode
+        if mode == "off":
+            return False
+        if mode == "first_chunk":
             # Flush the first non-empty chunk so short LLM output starts
             # synthesizing without changing the server's production threshold.
+            return not self._session_first_text_flushed
+        if mode == "every_sentence":
+            # Only look at this chunk; no cross-event buffering.
+            return text.rstrip().endswith(SENTENCE_ENDINGS)
+        return False
+
+    async def _send_text(self, text: str, is_last: bool = False) -> None:
+        await self._send({"event": "text", "text": text})
+        if self._should_flush(text, is_last):
             await self._send({"event": "flush"})
             self._session_first_text_flushed = True
 
@@ -234,8 +261,6 @@ class FishAudioTTSClient:
                     self._session_active = False
                     error = str(data.get("error", "Unknown Fish Audio error"))
                     await self._events.put(self._error_event_text(error))
-        except asyncio.CancelledError:
-            raise
         except Exception as error:
             if not self._is_closing:
                 self.ten_env.log_warn(
@@ -280,8 +305,11 @@ class FishAudioTTSClient:
                 await self._reset_connection(notify=False)
                 await self._ensure_connection()
                 await self._start_session(request_id)
-                for replay_text in texts:
-                    await self._send_text(replay_text)
+                for index, replay_text in enumerate(texts):
+                    await self._send_text(
+                        replay_text,
+                        is_last=stop_requested and index == len(texts) - 1,
+                    )
                 self._session_texts = texts
                 if stop_requested:
                     await self._send({"event": "stop"})
@@ -313,7 +341,9 @@ class FishAudioTTSClient:
         )
         return error_message.encode("utf-8"), event
 
-    async def _drain_ready_events(self) -> AsyncIterator[tuple[bytes | None, int]]:
+    async def _drain_ready_events(
+        self,
+    ) -> AsyncIterator[tuple[bytes | None, int]]:
         while True:
             try:
                 yield self._events.get_nowait()
@@ -337,7 +367,7 @@ class FishAudioTTSClient:
                     await self._send_text(replay_text)
                 self._replay_request_id = ""
                 self._replay_texts = []
-            await self._send_text(text)
+            await self._send_text(text, is_last=text_input_end)
             self._session_texts.append(text)
 
             if not text_input_end:
@@ -431,7 +461,11 @@ class FishAudioTTSClient:
                 await context.__aexit__(None, None, None)
             except Exception:
                 pass
-        if notify and self._connection_reported and self.on_connection_disconnected:
+        if (
+            notify
+            and self._connection_reported
+            and self.on_connection_disconnected
+        ):
             await self.on_connection_disconnected(code=0, message="closed")
         self._context_entered = False
         self._connection_reported = False

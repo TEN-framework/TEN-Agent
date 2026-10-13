@@ -16,9 +16,7 @@ from fish_audio_tts_python.fish_audio_tts import (
 class FakeSession:
     def __init__(self, events: list[str]) -> None:
         self.events = events
-        self.response = SimpleNamespace(
-            headers=DuplicateHeaders()
-        )
+        self.response = SimpleNamespace(headers=DuplicateHeaders())
         self.sent_messages: list[dict] = []
         self.received = False
 
@@ -129,12 +127,14 @@ def test_traceparent_is_sent_and_response_headers_are_logged():
         assert events[:2] == ["request_start", "connect"]
         assert session.sent_messages[0]["event"] == "start"
         assert session.sent_messages[1] == {"event": "text", "text": "hello"}
-        assert session.sent_messages[2] == {"event": "flush"}
-        assert session.sent_messages[3] == {"event": "stop"}
+        # The final chunk is followed by stop, which flushes server-side, so
+        # no protocol-level flush is emitted for it.
+        assert session.sent_messages[2] == {"event": "stop"}
 
         await client.clean()
 
     asyncio.run(run_test())
+
 
 def test_request_start_callback_runs_before_sdk_tts():
     async def run_test() -> None:
@@ -207,7 +207,9 @@ def test_appended_text_reuses_one_websocket_session():
             "stop",
         ]
         assert all(event[1] == EVENT_TTS_RESPONSE for event in first)
-        assert sum(event[1] == EVENT_TTS_RESPONSE for event in first + second) == 2
+        assert (
+            sum(event[1] == EVENT_TTS_RESPONSE for event in first + second) == 2
+        )
         assert second[-1] == (None, EVENT_TTS_END)
 
     asyncio.run(run_test())

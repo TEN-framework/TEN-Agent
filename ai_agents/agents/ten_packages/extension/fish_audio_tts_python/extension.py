@@ -177,7 +177,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         if self.sent_ts is None:
             self.sent_ts = time.monotonic()
 
-    async def _on_audio_chunk(self, audio_chunk: bytes, request_id: str) -> None:
+    async def _on_audio_chunk(
+        self, audio_chunk: bytes, request_id: str
+    ) -> None:
         if self.current_request_id != request_id:
             self.ten_env.log_debug(
                 f"Dropping Fish Audio audio for stale request_id: {request_id}"
@@ -200,7 +202,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     request_id=request_id,
                     ttfb_ms=ttfb,
                     extra_metadata={
-                        "reference_id": self.config.params.get("reference_id", ""),
+                        "reference_id": self.config.params.get(
+                            "reference_id", ""
+                        ),
                         "backend": self.config.params.get("backend", ""),
                     },
                 )

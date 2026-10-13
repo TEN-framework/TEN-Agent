@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "fish_audio_tts_python",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "dependencies": [
     {
       "type": "system",
