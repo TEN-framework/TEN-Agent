@@ -119,8 +119,15 @@ def test_traceparent_is_sent_and_response_headers_are_logged():
         assert len(span_id) == 16
         assert flags == "01"
 
-        ten_env.log_info.assert_called_once()
-        log_message = ten_env.log_info.call_args.args[0]
+        # The handshake and every outbound event are logged too, so pick the
+        # response-header entry instead of relying on call order.
+        header_logs = [
+            call.args[0]
+            for call in ten_env.log_info.call_args_list
+            if "WebSocket response headers" in call.args[0]
+        ]
+        assert len(header_logs) == 1
+        log_message = header_logs[0]
         assert "us-east-1" in log_message
         assert trace_id in log_message
         assert "x-request-id" in log_message

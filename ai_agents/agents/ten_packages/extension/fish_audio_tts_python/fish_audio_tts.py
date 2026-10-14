@@ -204,11 +204,15 @@ class FishAudioTTSClient:
             payload = ormsgpack.packb(message)
             # Log every outbound protocol event so the exact stream sent to the
             # vendor (start/text/flush/stop) can be reconstructed from the log.
+            # Only event names, sizes and counts are recorded: the utterance
+            # text stays out of vendor diagnostics and is logged under the
+            # transcript category instead.
             # Logged before the TTFB marker so measuring stays accurate.
             self.ten_env.log_info(
                 "vendor_send: "
                 f"event={message.get('event')}, bytes={len(payload)}, "
-                f"payload={message}",
+                f"keys={sorted(message.keys())}, "
+                f"text_chars={len(message.get('text') or '')}",
                 category=LOG_CATEGORY_VENDOR,
             )
             if message.get("event") == "text" and self.on_text_send is not None:
@@ -328,6 +332,9 @@ class FishAudioTTSClient:
                 await self._reset_connection(notify=False)
                 await self._ensure_connection()
                 await self._start_session(request_id)
+                # _start_session() clears the finalization flag, so restore it:
+                # a further drop on this connection must still replay the stop.
+                self._session_stop_requested = stop_requested
                 for index, replay_text in enumerate(texts):
                     await self._send_text(
                         replay_text,

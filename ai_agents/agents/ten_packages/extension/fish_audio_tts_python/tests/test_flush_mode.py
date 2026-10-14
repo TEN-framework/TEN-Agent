@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import ormsgpack
 import pytest
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
 from fish_audio_tts_python.config import FishAudioTTSConfig
 from fish_audio_tts_python.fish_audio_tts import FishAudioTTSClient
@@ -236,6 +237,36 @@ def test_flush_mode_is_not_forwarded_to_vendor_request() -> None:
     client = FishAudioTTSClient(config, MagicMock())
     request = client._build_request()
     assert "flush_mode" not in request
+
+
+def test_vendor_send_logs_omit_user_text() -> None:
+    """Vendor diagnostics must not persist the utterance text."""
+
+    async def run() -> list[str]:
+        websocket = RecordingWebSocket()
+        ten_env = MagicMock()
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            return_value=FakeConnect(websocket),
+        ):
+            client = FishAudioTTSClient(_config(flush_mode="off"), ten_env)
+            async for _event in client.get(
+                "hello secret phrase",
+                request_id="req",
+                text_input_end=True,
+            ):
+                pass
+            await client.clean()
+        return [
+            call.args[0]
+            for call in ten_env.log_info.call_args_list
+            if call.kwargs.get("category") == LOG_CATEGORY_VENDOR
+        ]
+
+    messages = asyncio.run(run())
+    assert messages
+    for message in messages:
+        assert "secret" not in message
 
 
 # ================ on_text_send contract ================
