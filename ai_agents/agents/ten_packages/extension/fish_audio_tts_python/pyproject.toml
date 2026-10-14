@@ -1,6 +1,6 @@
 [project]
 name = "fish-audio-tts-python"
-version = "0.4.9"
+version = "0.4.10"
 requires-python = ">=3.10"
 dependencies = [
     "ormsgpack>=1.5.0",

@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 
 import ormsgpack
 import pytest
-from pydantic import ValidationError
 
 from fish_audio_tts_python.config import FishAudioTTSConfig
 from fish_audio_tts_python.fish_audio_tts import FishAudioTTSClient
@@ -204,16 +203,17 @@ def test_update_params_extracts_flush_mode_from_params() -> None:
     assert "flush_mode" not in config.params
 
 
-def test_update_params_rejects_invalid_flush_mode() -> None:
+def test_update_params_falls_back_on_invalid_flush_mode() -> None:
+    """An invalid value must not abort init; it falls back to the default."""
     config = FishAudioTTSConfig(api_key="test-key")
     config.params["flush_mode"] = "sometimes"
 
-    with pytest.raises(ValueError) as excinfo:
-        config.update_params()
+    config.update_params()
 
-    message = str(excinfo.value)
+    assert config.flush_mode == "first_chunk"
+    assert config.flush_mode_warning is not None
     for allowed in ("off", "first_chunk", "every_sentence"):
-        assert allowed in message
+        assert allowed in config.flush_mode_warning
     assert "flush_mode" not in config.params
 
 
@@ -222,9 +222,13 @@ def test_model_validation_accepts_known_flush_mode() -> None:
     assert config.flush_mode == "every_sentence"
 
 
-def test_model_validation_rejects_unknown_flush_mode() -> None:
-    with pytest.raises(ValidationError):
-        FishAudioTTSConfig(flush_mode="sometimes")
+def test_unknown_flush_mode_falls_back_without_raising() -> None:
+    config = FishAudioTTSConfig(flush_mode="sometimes")
+
+    config.update_params()
+
+    assert config.flush_mode == "first_chunk"
+    assert config.flush_mode_warning is not None
 
 
 def test_flush_mode_is_not_forwarded_to_vendor_request() -> None:

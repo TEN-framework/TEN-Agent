@@ -69,6 +69,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 config_json_str
             )
             self.config.update_params()
+            if self.config.flush_mode_warning:
+                ten_env.log_error(self.config.flush_mode_warning)
 
             ten_env.log_info(
                 f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",

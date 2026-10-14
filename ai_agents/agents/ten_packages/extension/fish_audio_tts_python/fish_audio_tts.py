@@ -141,9 +141,23 @@ class FishAudioTTSClient:
         self._is_closing = False
         if self.on_connection_connecting is not None:
             await self.on_connection_connecting()
+        headers = self._build_headers()
+        # The handshake is an outbound request too; log the endpoint and the
+        # routing headers with the credential masked.
+        redacted_headers = {
+            name: (
+                "<redacted>" if name.lower() == "authorization" else value
+            )
+            for name, value in headers.items()
+        }
+        self.ten_env.log_info(
+            "vendor_send: handshake "
+            f"url={self.websocket_url}, headers={redacted_headers}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self._connect_context = connect(
             self.websocket_url,
-            additional_headers=self._build_headers(),
+            additional_headers=headers,
         )
         self._connect_task = asyncio.create_task(
             self._connect_context.__aenter__()
@@ -188,6 +202,15 @@ class FishAudioTTSClient:
             raise ConnectionError("Fish Audio WebSocket is not connected")
         async with self._send_lock:
             payload = ormsgpack.packb(message)
+            # Log every outbound protocol event so the exact stream sent to the
+            # vendor (start/text/flush/stop) can be reconstructed from the log.
+            # Logged before the TTFB marker so measuring stays accurate.
+            self.ten_env.log_info(
+                "vendor_send: "
+                f"event={message.get('event')}, bytes={len(payload)}, "
+                f"payload={message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             if message.get("event") == "text" and self.on_text_send is not None:
                 # Mark TTFB immediately before the first text payload is sent.
                 # The extension callback is idempotent for subsequent chunks.
