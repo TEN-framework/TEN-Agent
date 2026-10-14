@@ -1,0 +1,9 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "api_key": "${env:GANDR_TTS_API_KEY|}",
+        "voice": "gandr-mia",
+        "model": "tts-1"
+    }
+}
