@@ -519,6 +519,19 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             return
         self.request_seq_id_map.pop(request_id, None)
 
+    def _cleanup_stale_request_states(self, keep_request_id: str) -> None:
+        """Drop the counters of requests that are no longer current.
+
+        Interrupted or failed requests can end without a terminal subtitle,
+        so their counters are released when the next request starts. Keeping
+        them until then stops repeated failures from accumulating entries for
+        the lifetime of the extension, and a late terminal timestamp for the
+        live request can still continue its sequence instead of restarting.
+        """
+        for request_id in list(self.request_seq_id_map):
+            if request_id != keep_request_id:
+                self.request_seq_id_map.pop(request_id, None)
+
     # ── Request handling ──────────────────────────────────────────────
 
     async def _handle_completed_request(
@@ -557,6 +570,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             request_id=self.current_request_id or "",
             reason=reason,
         )
+
+        if reason != TTSAudioEndReason.REQUEST_END:
+            # An interrupted request never receives a terminal subtitle, so
+            # its counter is released here. A request that completed after
+            # audio end keeps it until that terminal subtitle arrives.
+            self._cleanup_request_state(self.current_request_id)
 
     async def _reset_tts_request_info(self) -> None:
         """Reset per-request state."""
@@ -761,6 +780,13 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
             if t.request_id != self.current_request_id:
                 self.ten_env.log_debug(f"New TTS request: {t.request_id}")
+
+                # Release the counters of earlier requests. The counter of
+                # the request that is becoming current is retained until its
+                # terminal subtitle: an error can terminate a request before
+                # the vendor's final timestamp arrives, and restarting that
+                # terminal result at zero would move the sequence backwards.
+                self._cleanup_stale_request_states(t.request_id)
 
                 # Apply buffered config update on new request
                 async with self.config_update_lock:
