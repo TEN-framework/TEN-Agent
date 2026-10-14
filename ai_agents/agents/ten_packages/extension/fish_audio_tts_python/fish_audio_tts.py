@@ -145,9 +145,7 @@ class FishAudioTTSClient:
         # The handshake is an outbound request too; log the endpoint and the
         # routing headers with the credential masked.
         redacted_headers = {
-            name: (
-                "<redacted>" if name.lower() == "authorization" else value
-            )
+            name: ("<redacted>" if name.lower() == "authorization" else value)
             for name, value in headers.items()
         }
         self.ten_env.log_info(
