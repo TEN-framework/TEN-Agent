@@ -265,7 +265,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         request_id=request_id,
                         reason=TTSAudioEndReason.ERROR,
                     )
-                    self._cleanup_request_state(request_id)
 
             async def fatal_error_callback(error_message: str):
                 await self.send_tts_error(
@@ -508,6 +507,11 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 last_text_end_ms = words[-1].start_ms + words[-1].duration_ms
             self.metrics_add_input_characters(len(cur_text))
             await self.send_tts_text_result(transcript_result)
+            if text_input_end:
+                # Keep the sequence counter alive until the terminal subtitle
+                # has been emitted. Audio completion can race the final
+                # timestamp message from the vendor.
+                self._cleanup_request_state(request_id)
 
     def _cleanup_request_state(self, request_id: str | None) -> None:
         """Release per-request bookkeeping once the request is finished."""
@@ -553,7 +557,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             request_id=self.current_request_id or "",
             reason=reason,
         )
-        self._cleanup_request_state(self.current_request_id)
 
     async def _reset_tts_request_info(self) -> None:
         """Reset per-request state."""
