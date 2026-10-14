@@ -173,10 +173,15 @@ def inject_websocket_mocks(patch_soniox_ws, mocks: dict[str, Callable]) -> None:
 
 @pytest.fixture(scope="function")
 def patch_soniox_ws():
+    from ..websocket import SonioxWebsocketClient
+
     # Use relative import from tests directory perspective
     patch_target = "soniox_asr_python.extension.SonioxWebsocketClient"
 
     with patch(patch_target) as MockWebsocketClient:
+        MockWebsocketClient.is_normal_close.side_effect = (
+            SonioxWebsocketClient.is_normal_close
+        )
         websocket_client_instance = MagicMock()
 
         # Store callbacks registered via on() method

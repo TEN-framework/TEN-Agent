@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Callable, Optional, Any
 
 import websockets
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosed, ConnectionClosedOK
 
 
 @dataclass
@@ -125,9 +125,7 @@ class SonioxWebsocketClient:
             if self.state != self.State.STOPPING:
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
-            # Only 1000 (normal closure) is a silent disconnect.
-            # 1001 (going away) is ConnectionClosedOK in websockets but is a
-            # transient service departure — still emit EXCEPTION.
+            # Completed normal close handshakes are not ASR failures.
             if self.state != self.State.STOPPING and not self.is_normal_close(
                 e
             ):
@@ -152,14 +150,8 @@ class SonioxWebsocketClient:
 
     @staticmethod
     def is_normal_close(exc: Exception) -> bool:
-        """True only for intentional normal closure (code 1000 / 0).
-
-        websockets maps both 1000 and 1001 onto ConnectionClosedOK; 1001
-        (going away) must not be treated as an error-free close.
-        """
-        return isinstance(exc, ConnectionClosed) and getattr(
-            exc, "code", None
-        ) in (0, 1000)
+        """A completed normal handshake is not an ASR error."""
+        return isinstance(exc, ConnectionClosedOK)
 
     @staticmethod
     def _extract_close_info(e: Exception | None) -> tuple[int, str]:

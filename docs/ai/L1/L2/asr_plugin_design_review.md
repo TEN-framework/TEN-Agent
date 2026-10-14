@@ -463,6 +463,14 @@ The following patterns cause reconnect storms and are prohibited:
 
 - Transient network failures **MUST** use `NON_FATAL_ERROR` and a backoff
   policy.
+- `websockets.exceptions.ConnectionClosedOK` **MUST NOT** emit an ASR
+  `error`, including normal code-1000 and code-1001 handshakes. Still report
+  the disconnected connection state and apply the session reconnect policy;
+  a normal transport close does not necessarily mean an intentional stop.
+- `ConnectionClosedError` **MUST** remain a failure even when its received
+  close code is `1000`: an incomplete close handshake is not a normal close.
+  Classify by exception type, not by close code alone. This explicitly
+  exempts `ConnectionClosedOK` from the transient-failure error requirement.
 - Authentication, authorization, and invalid configuration **MUST** use
   `FATAL_ERROR` and must not retry indefinitely.
 - A bounded retry strategy **MUST** escalate to fatal when its ceiling is
@@ -511,7 +519,8 @@ Use only these framework-level severities:
 | Scenario | `ModuleErrorCode` |
 | -------- | ----------------- |
 | Invalid or missing config, 401/403, unrecoverable protocol error | `FATAL_ERROR` (`-1000`) |
-| Network disconnect, timeout, temporary server failure | `NON_FATAL_ERROR` (`1000`) |
+| Abnormal network disconnect, timeout, temporary server failure | `NON_FATAL_ERROR` (`1000`) |
+| Completed normal WebSocket close (`ConnectionClosedOK`) | No ASR error; report disconnected state |
 | Retry ceiling reached | `FATAL_ERROR` (`-1000`) |
 
 Vendor-originated errors **MUST** include:

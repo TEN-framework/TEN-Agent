@@ -17,7 +17,7 @@ from ..websocket import SonioxWebsocketClient, SonioxWebsocketEvents
 
 
 def _connection_closed_ok(code: int = 1000, reason: str = "OK"):
-    return ConnectionClosedOK(Close(code, reason), None)
+    return ConnectionClosedOK(Close(code, reason), Close(code, reason), True)
 
 
 def _connection_closed_error(code: int = 1006, reason: str = "abnormal"):
@@ -43,12 +43,12 @@ def test_is_normal_websocket_close_rejects_abnormal():
     )
 
 
-def test_is_normal_websocket_close_rejects_going_away_1001():
-    """1001 is ConnectionClosedOK in websockets but must not be silent."""
+def test_is_normal_websocket_close_accepts_going_away_1001():
+    """Completed 1001 handshakes are not ASR failures."""
     going_away = _connection_closed_ok(1001, "going away")
     assert isinstance(going_away, ConnectionClosedOK)
-    assert SonioxWebsocketClient.is_normal_close(going_away) is False
-    assert SonioxASRExtension._is_normal_websocket_close(going_away) is False
+    assert SonioxWebsocketClient.is_normal_close(going_away) is True
+    assert SonioxASRExtension._is_normal_websocket_close(going_away) is True
 
 
 @pytest.mark.asyncio
@@ -64,12 +64,13 @@ async def test_handle_exception_skips_error_on_normal_close():
 
 
 @pytest.mark.asyncio
-async def test_handle_exception_reports_abnormal_close_as_error():
+@pytest.mark.parametrize("code", [1006, 1000])
+async def test_handle_exception_reports_abnormal_close_as_error(code):
     ext = SonioxASRExtension("test")
     ext.ten_env = MagicMock()
     ext.send_asr_error = AsyncMock()
 
-    await ext._handle_exception(_connection_closed_error())
+    await ext._handle_exception(_connection_closed_error(code))
 
     ext.send_asr_error.assert_awaited_once()
     vendor_info = ext.send_asr_error.await_args.args[1]
@@ -77,18 +78,14 @@ async def test_handle_exception_reports_abnormal_close_as_error():
 
 
 @pytest.mark.asyncio
-async def test_handle_exception_reports_going_away_1001_as_error():
+async def test_handle_exception_skips_going_away_1001():
     ext = SonioxASRExtension("test")
     ext.ten_env = MagicMock()
     ext.send_asr_error = AsyncMock()
 
     await ext._handle_exception(_connection_closed_ok(1001, "going away"))
 
-    ext.send_asr_error.assert_awaited_once()
-    error = ext.send_asr_error.await_args.args[0]
-    assert "going away" in error.message or "1001" in str(
-        ext.send_asr_error.await_args
-    )
+    ext.send_asr_error.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -122,17 +119,22 @@ async def test_websocket_normal_close_emits_close_not_exception():
 
 
 @pytest.mark.asyncio
-async def test_connect_going_away_1001_emits_exception_and_close():
-    """Actual connect()/recv path: 1001 must emit EXCEPTION then CLOSE."""
+@pytest.mark.parametrize("phase", ["connect", "receive"])
+async def test_incomplete_handshake_reports_asr_error(phase):
+    """Code 1000 with a failed handshake must reach ASR error reporting."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
         json.dumps({"api_key": "x"}),
     )
     events: list[tuple] = []
-    going_away = _connection_closed_ok(1001, "going away")
+    failure = _connection_closed_error(1000, "OK")
+    ext = SonioxASRExtension("test")
+    ext.ten_env = MagicMock()
+    ext.send_asr_error = AsyncMock()
 
     async def on_exception(e):
         events.append(("exception", e))
+        await ext._handle_exception(e)
 
     async def on_open(_ts):
         events.append(("open",))
@@ -149,10 +151,12 @@ async def test_connect_going_away_1001_emits_exception_and_close():
             return None
 
         async def recv(self):
-            raise going_away
+            raise failure
 
     class FakeConnectCM:
         async def __aenter__(self):
+            if phase == "connect":
+                raise failure
             return FakeWs()
 
         async def __aexit__(self, exc_type, exc, tb):
@@ -164,23 +168,24 @@ async def test_connect_going_away_1001_emits_exception_and_close():
     ):
         await client.connect()
 
-    assert len(events) == 3
-    assert events[0] == ("open",)
-    assert events[1][0] == "exception"
-    assert isinstance(events[1][1], ConnectionClosedOK)
-    assert events[1][1].code == 1001
-    assert events[2] == ("close", 1001, "going away")
+    expected = [("exception", failure), ("close", 1000, "OK")]
+    if phase == "receive":
+        expected.insert(0, ("open",))
+    assert events == expected
+    ext.send_asr_error.assert_awaited_once()
+    assert ext.send_asr_error.await_args.args[0].code == 1000
 
 
 @pytest.mark.asyncio
-async def test_connect_normal_close_1000_emits_close_not_exception():
-    """Actual connect()/recv path: 1000 must emit CLOSE only."""
+@pytest.mark.parametrize("code", [1000, 1001])
+async def test_connect_normal_close_emits_close_not_exception(code):
+    """Actual connect()/recv path: ConnectionClosedOK emits CLOSE only."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
         json.dumps({"api_key": "x"}),
     )
     events: list[tuple] = []
-    normal = _connection_closed_ok(1000, "OK")
+    normal = _connection_closed_ok(code, "OK")
 
     async def on_exception(e):
         events.append(("exception", e))
@@ -217,10 +222,11 @@ async def test_connect_normal_close_1000_emits_close_not_exception():
 
     assert events[0] == ("open",)
     assert "exception" not in [e[0] for e in events]
-    assert events[-1] == ("close", 1000, "OK")
+    assert events[-1] == ("close", code, "OK")
 
 
-def test_normal_close_reconnect_does_not_send_error(patch_soniox_ws):
+@pytest.mark.parametrize("code", [1000, 1001])
+def test_normal_close_reconnect_does_not_send_error(patch_soniox_ws, code):
     from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
     from ten_runtime import (
         AsyncExtensionTester,
@@ -293,8 +299,11 @@ def test_normal_close_reconnect_does_not_send_error(patch_soniox_ws):
     async def custom_connect():
         await patch_soniox_ws.websocket_client.trigger_open()
         await asyncio.sleep(0.15)
-        # Simulate server normal close (1000 OK) without EXCEPTION.
-        await patch_soniox_ws.websocket_client.trigger_close(1000, "OK")
+        # Exercise the real classifier through the patched client class.
+        await patch_soniox_ws.websocket_client.trigger_exception(
+            _connection_closed_ok(code)
+        )
+        await patch_soniox_ws.websocket_client.trigger_close(code, "OK")
 
     mocks = create_fake_websocket_mocks(
         patch_soniox_ws, on_connect=custom_connect
@@ -316,7 +325,8 @@ def test_normal_close_reconnect_does_not_send_error(patch_soniox_ws):
     assert tester.saw_disconnect
 
 
-def test_going_away_1001_reports_non_fatal_error(patch_soniox_ws):
+@pytest.mark.parametrize("code", [1000, 1001])
+def test_abnormal_close_reports_non_fatal_error(patch_soniox_ws, code):
     from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
     from ten_runtime import (
         AsyncExtensionTester,
@@ -377,7 +387,7 @@ def test_going_away_1001_reports_non_fatal_error(patch_soniox_ws):
                         TenError.create(
                             error_code=TenErrorCode.ErrorCodeGeneric,
                             error_message=(
-                                "expected NON_FATAL error on 1001 going away"
+                                "expected NON_FATAL error on abnormal close"
                             ),
                         )
                     )
@@ -390,9 +400,11 @@ def test_going_away_1001_reports_non_fatal_error(patch_soniox_ws):
         await patch_soniox_ws.websocket_client.trigger_open()
         await asyncio.sleep(0.15)
         await patch_soniox_ws.websocket_client.trigger_exception(
-            _connection_closed_ok(1001, "going away")
+            _connection_closed_error(code, "incomplete handshake")
         )
-        await patch_soniox_ws.websocket_client.trigger_close(1001, "going away")
+        await patch_soniox_ws.websocket_client.trigger_close(
+            code, "incomplete handshake"
+        )
 
     mocks = create_fake_websocket_mocks(
         patch_soniox_ws, on_connect=custom_connect
@@ -412,4 +424,5 @@ def test_going_away_1001_reports_non_fatal_error(patch_soniox_ws):
     err = tester.run()
     assert err is None, f"going away test failed: {err.error_message()}"
     assert tester.saw_disconnect
-    assert tester.errors, "expected ASR error for 1001 going away"
+    assert tester.errors, "expected ASR error for abnormal close"
+    assert tester.errors[0]["code"] == 1000
