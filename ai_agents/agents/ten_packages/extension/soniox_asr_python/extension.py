@@ -105,6 +105,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self._pending_close_finalize = False
         self._needs_reconnect = False
+        self._fatal_error = False
         self._suppress_close_status = False
         self._last_final_time_ms: int = 0
         self._last_final_wall_ms: int = 0
@@ -252,7 +253,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = SonioxASRConfig.model_validate_json("{}")
-            await self.send_asr_error(
+            await self._report_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
@@ -264,7 +265,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
-        if self._needs_reconnect:
+        if self._needs_reconnect and not self._fatal_error:
             self._needs_reconnect = False
             self.uuid = self._get_uuid()
             self._clear_deferred_vendor_final_tokens()
@@ -304,6 +305,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.websocket = None
         self.ws_task = None
         if ws:
+            if task is asyncio.current_task():
+                # CLOSE is already running; do not wait for this task to exit.
+                await ws.stop(wait=False)
+                return
             if suppress_status:
                 self._suppress_close_status = True
             await ws.stop()
@@ -312,9 +317,16 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 await task
             except Exception:
                 pass
+        self._suppress_close_status = False
 
     @override
     async def start_connection(self) -> None:
+        if self._fatal_error:
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Connection disabled after fatal error",
+            )
+            return
         assert self.config is not None
         self.ten_env.log_info("start_connection")
 
@@ -325,7 +337,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 code=ModuleErrorCode.FATAL_ERROR.value,
                 message="Missing required api_key",
             )
-            await self.send_asr_error(error)
+            await self._report_error(error)
             await self.on_disconnected(code=error.code, message=error.message)
             return
 
@@ -340,7 +352,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 code=ModuleErrorCode.FATAL_ERROR.value,
                 message=str(e),
             )
-            await self.send_asr_error(error)
+            await self._report_error(error)
             await self.on_disconnected(code=error.code, message=error.message)
             return
 
@@ -349,7 +361,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 await self.audio_dumper.start()
         except Exception as e:
             self.ten_env.log_error(f"Failed to start audio dumper: {e}")
-            await self.send_asr_error(
+            await self._report_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
@@ -596,13 +608,15 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _handle_reconnect(self) -> None:
         """Schedule one reconnect attempt; further retries come from _handle_close."""
+        if self.stopped or self._fatal_error:
+            return
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
             return
 
         await self.reconnect_manager.handle_reconnect(
             connection_func=self.start_connection,
-            error_handler=self.send_asr_error,
+            error_handler=self._report_error,
         )
 
     # WebSocket event handlers
@@ -662,6 +676,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self._pending_close_finalize = False
             await self._finalize_end("disconnect")
 
+            if self._fatal_error:
+                return
+
             if (
                 self.config.finalize_reconnect_mode
                 == FinalizeReconnectMode.IMMEDIATE
@@ -674,7 +691,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return
 
         # Intentional close-finalize reconnects call start_connection() directly.
-        if not self.stopped:
+        if not self.stopped and not self._fatal_error:
             self.ten_env.log_warn(
                 "Soniox connection closed unexpectedly. Reconnecting..."
             )
@@ -738,7 +755,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         if error_type_str:
             error_metadata["error_type"] = error_type_str
 
-        await self.send_asr_error(
+        await self._report_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
                 code=module_error_code,
@@ -751,6 +768,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 message=error_message,
             ),
         )
+
+    async def _report_error(
+        self,
+        error: ModuleError,
+        vendor_info: ModuleErrorVendorInfo | None = None,
+    ) -> None:
+        if error.code == int(ModuleErrorCode.FATAL_ERROR.value):
+            # Latch before reporting so concurrent close/audio callbacks cannot retry.
+            self._fatal_error = True
+            self._needs_reconnect = False
+        await self.send_asr_error(error, vendor_info)
 
     async def _handle_finished(
         self, final_audio_proc_ms: int, total_audio_proc_ms: int

@@ -142,7 +142,7 @@ def create_fake_websocket_mocks(
             await before_send_callback()
         await asyncio.sleep(0)
 
-    async def default_fake_stop():
+    async def default_fake_stop(**_kwargs):
         await asyncio.sleep(0)
 
     return {
