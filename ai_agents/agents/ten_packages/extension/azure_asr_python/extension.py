@@ -17,6 +17,9 @@ from .const import (
     MODULE_NAME_ASR,
     FATAL_ERROR_CODES,
     AZURE_LANGUAGE_ID_MODE_KEY,
+    DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC,
+    DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC,
+    RECONNECT_MAX_ATTEMPTS,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -56,6 +59,18 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         # Reconnection manager with unlimited retries and backoff strategy
         self.reconnect_manager: ReconnectManager | None = None
+        self._recognizer_epoch: int = 0
+        # Session (recognizer) vs transport (Connection websocket) are separate on Azure.
+        self._transport_connected: bool = False
+        self._transport_connected_epoch: int = 0
+        self._transport_recovery_task: asyncio.Task[None] | None = None
+        self._transport_recovery_in_flight: bool = False
+        self._reconnect_in_flight: bool = False
+        self._expected_disconnect: bool = False
+        self._expected_disconnect_reported: bool = False
+        self._init_failed: bool = False
+        self._transport_handshake_ready: asyncio.Event = asyncio.Event()
+        self._finalize_reconnect_task: asyncio.Task[None] | None = None
 
     @override
     def vendor(self) -> str:
@@ -73,7 +88,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         await super().on_init(ten_env)
 
         # Initialize reconnection manager
-        self.reconnect_manager = ReconnectManager(logger=ten_env)
+        self.reconnect_manager = ReconnectManager(
+            logger=ten_env, max_attempts=RECONNECT_MAX_ATTEMPTS
+        )
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -95,6 +112,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             ten_env.log_error(
                 f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
             )
+            self._init_failed = True
             self.config = AzureASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -106,6 +124,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await self._cancel_finalize_reconnect()
+        await self._cancel_transport_recovery()
         await super().on_deinit(ten_env)
 
         if self.audio_dumper:
@@ -113,8 +133,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def start_connection(self) -> None:
+        if self._init_failed:
+            return
         assert self.config is not None
         self.ten_env.log_info("start_connection")
+        self._expected_disconnect = False
+        self._expected_disconnect_reported = False
+        self._reset_transport_handshake_state()
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -209,7 +234,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
             for phrase in self.config.phrase_list:
                 phrase_list_grammar.addPhrase(phrase)
 
-        await self._register_azure_event_handlers()
+        self._recognizer_epoch += 1
+        recognizer_epoch = self._recognizer_epoch
+        await self._register_azure_event_handlers(recognizer_epoch)
 
         # Record timestamp before starting continuous recognition
         self.connection_start_timestamp = int(datetime.now().timestamp() * 1000)
@@ -234,36 +261,41 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 f"Unknown finalize mode: {self.config.finalize_mode}"
             )
 
-    async def _register_azure_event_handlers(self):
+    async def _register_azure_event_handlers(self, recognizer_epoch: int):
         loop = asyncio.get_running_loop()
         assert self.client is not None
         self.client.recognizing.connect(
             lambda evt: loop.call_soon_threadsafe(
                 asyncio.create_task,
-                self._azure_event_handler_on_recognizing(evt),
+                self._azure_event_handler_on_recognizing(evt, recognizer_epoch),
             )
         )
         self.client.recognized.connect(
             lambda evt: loop.call_soon_threadsafe(
                 asyncio.create_task,
-                self._azure_event_handler_on_recognized(evt),
+                self._azure_event_handler_on_recognized(evt, recognizer_epoch),
             )
         )
         self.client.session_started.connect(
             lambda evt: loop.call_soon_threadsafe(
                 asyncio.create_task,
-                self._azure_event_handler_on_session_started(evt),
+                self._azure_event_handler_on_session_started(
+                    evt, recognizer_epoch
+                ),
             )
         )
         self.client.session_stopped.connect(
             lambda evt: loop.call_soon_threadsafe(
                 asyncio.create_task,
-                self._azure_event_handler_on_session_stopped(evt),
+                self._azure_event_handler_on_session_stopped(
+                    evt, recognizer_epoch
+                ),
             )
         )
         self.client.canceled.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_canceled(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_canceled(evt, recognizer_epoch),
             )
         )
         self.client.speech_start_detected.connect(
@@ -282,13 +314,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.connection = speechsdk.Connection.from_recognizer(self.client)
         self.connection.connected.connect(
             lambda evt: loop.call_soon_threadsafe(
-                asyncio.create_task, self._azure_event_handler_on_connected(evt)
+                asyncio.create_task,
+                self._azure_event_handler_on_connected(evt, recognizer_epoch),
             )
         )
         self.connection.disconnected.connect(
             lambda evt: loop.call_soon_threadsafe(
                 asyncio.create_task,
-                self._azure_event_handler_on_disconnected(evt),
+                self._azure_event_handler_on_disconnected(
+                    evt, recognizer_epoch
+                ),
             )
         )
 
@@ -318,9 +353,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
         await self.send_asr_result(asr_result)
 
     async def _azure_event_handler_on_recognizing(
-        self, evt: speechsdk.SpeechRecognitionEventArgs
+        self, evt: speechsdk.SpeechRecognitionEventArgs, recognizer_epoch: int
     ):
         """Handle the recognizing event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            return
+
         assert self.config is not None
 
         text = evt.result.text
@@ -365,9 +403,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
 
     async def _azure_event_handler_on_recognized(
-        self, evt: speechsdk.SpeechRecognitionEventArgs
+        self, evt: speechsdk.SpeechRecognitionEventArgs, recognizer_epoch: int
     ):
         """Handle the recognized event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            return
+
         assert self.config is not None
 
         text = evt.result.text
@@ -411,9 +452,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
 
     async def _azure_event_handler_on_session_started(
-        self, evt: speechsdk.SessionEventArgs
+        self, evt: speechsdk.SessionEventArgs, recognizer_epoch: int
     ):
         """Handle the session started event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            return
+
         self.ten_env.log_debug(
             f"azure event callback on_session_started, session_id: {evt.session_id}"
         )
@@ -424,28 +468,58 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.connected = True
 
     async def _azure_event_handler_on_session_stopped(
-        self, evt: speechsdk.SessionEventArgs
+        self, evt: speechsdk.SessionEventArgs, recognizer_epoch: int
     ):
         """Handle the session stopped event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            self.ten_env.log_debug(
+                f"ignore stale on_session_stopped, epoch {recognizer_epoch} != {self._recognizer_epoch}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return
+
+        if self._transport_recovery_in_flight:
+            # stop_connection() inside recovery will drive session_stopped; transport
+            # disconnected already reported vendor loss — do not start a second reconnect.
+            self.ten_env.log_debug(
+                "ignore on_session_stopped during transport recovery",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            self.connected = False
+            return
+
         self.ten_env.log_info(
             f"vendor_status_changed: on_session_stopped, session_id: {evt.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
 
-        await self.on_disconnected(code=0, message="closed")
+        expected_disconnect = self._expected_disconnect
+        self._expected_disconnect = False
+        if expected_disconnect:
+            if not self._expected_disconnect_reported:
+                await self.on_disconnected(code=0, message="closed")
+            self._expected_disconnect_reported = False
+            if not self.stopped:
+                self._schedule_finalize_reconnect()
+            return
 
+        await self.on_disconnected(code=0, message="closed")
         if not self.stopped:
             self.ten_env.log_warn(
                 "vendor_error: azure session stopped unexpectedly. Reconnecting...",
                 category=LOG_CATEGORY_VENDOR,
             )
-            await self._handle_reconnect()
+            await self._request_unexpected_reconnect(immediate=True)
 
     async def _azure_event_handler_on_canceled(
-        self, evt: speechsdk.SpeechRecognitionCanceledEventArgs
+        self,
+        evt: speechsdk.SpeechRecognitionCanceledEventArgs,
+        recognizer_epoch: int,
     ):
         """Handle the canceled event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            return
 
         cancellation_details = evt.cancellation_details
 
@@ -514,10 +588,28 @@ class AzureASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
 
+    def _connected_callback_may_publish(self, recognizer_epoch: int) -> bool:
+        return not self.stopped and recognizer_epoch == self._recognizer_epoch
+
+    def _discard_stale_connected_callback(self, recognizer_epoch: int) -> None:
+        if self._transport_connected_epoch == recognizer_epoch:
+            self._reset_transport_handshake_state()
+
     async def _azure_event_handler_on_connected(
-        self, evt: speechsdk.ConnectionEventArgs
+        self, evt: speechsdk.ConnectionEventArgs, recognizer_epoch: int
     ):
         """Handle the connected event from Azure ASR."""
+        if not self._connected_callback_may_publish(recognizer_epoch):
+            return
+
+        self._transport_connected = True
+        self._transport_connected_epoch = recognizer_epoch
+        self._transport_handshake_ready.set()
+        await self._cancel_transport_recovery()
+        if not self._connected_callback_may_publish(recognizer_epoch):
+            self._discard_stale_connected_callback(recognizer_epoch)
+            return
+
         connection_delay_ms = (
             int(datetime.now().timestamp() * 1000)
             - self.connection_start_timestamp
@@ -529,6 +621,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
 
         await self.send_connect_delay_metrics(connection_delay_ms)
+        if not self._connected_callback_may_publish(recognizer_epoch):
+            self._discard_stale_connected_callback(recognizer_epoch)
+            return
 
         # Notify reconnect manager that connection is successful
         if self.reconnect_manager:
@@ -537,14 +632,113 @@ class AzureASRExtension(AsyncASRBaseExtension):
         await self.on_connected()
 
     async def _azure_event_handler_on_disconnected(
-        self, evt: speechsdk.ConnectionEventArgs
+        self, evt: speechsdk.ConnectionEventArgs, recognizer_epoch: int
     ):
         """Handle the disconnected event from Azure ASR."""
+        if recognizer_epoch != self._recognizer_epoch:
+            return
+
         self.ten_env.log_info(
             f"vendor_status_changed: on_disconnected, session_id: {evt.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
+        self._transport_connected = False
+        if self._expected_disconnect:
+            if not self._expected_disconnect_reported:
+                await self.on_disconnected(code=0, message="closed")
+                self._expected_disconnect_reported = True
+            return
+
         await self.on_disconnected(code=0, message="closed")
+        if not self.stopped:
+            await self._request_unexpected_reconnect(immediate=False)
+
+    async def _cancel_transport_recovery(self) -> None:
+        task = self._transport_recovery_task
+        self._transport_recovery_task = None
+        if task is asyncio.current_task():
+            return
+        if task is None or task.done():
+            return
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+    async def _request_unexpected_reconnect(self, *, immediate: bool) -> None:
+        """Single extension entry for reconnect after unexpected vendor loss."""
+        if self.stopped or self._reconnect_in_flight:
+            return
+        if immediate:
+            await self._cancel_transport_recovery()
+            await self._handle_reconnect()
+            return
+        await self._schedule_transport_recovery()
+
+    async def _schedule_transport_recovery(self) -> None:
+        if self.stopped or self._transport_recovery_in_flight:
+            return
+
+        await self._cancel_transport_recovery()
+        if self.stopped:
+            return
+
+        recognizer_epoch = self._recognizer_epoch
+        task = asyncio.create_task(
+            self._transport_recovery_after_grace(recognizer_epoch)
+        )
+        self._transport_recovery_task = task
+        task.add_done_callback(self._clear_transport_recovery_task)
+
+    def _clear_transport_recovery_task(self, task: asyncio.Task[None]) -> None:
+        if self._transport_recovery_task is task:
+            self._transport_recovery_task = None
+
+    def _grace_sec(self) -> float:
+        if self.config is None:
+            return float(DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC)
+        return float(self.config.transport_reconnect_grace_sec)
+
+    async def _transport_recovery_after_grace(
+        self, scheduled_epoch: int
+    ) -> None:
+        grace_sec = self._grace_sec()
+        await asyncio.sleep(grace_sec)
+
+        if (
+            self.stopped
+            or self._transport_connected
+            or self._reconnect_in_flight
+            or scheduled_epoch != self._recognizer_epoch
+        ):
+            return
+
+        self.ten_env.log_warn(
+            "vendor_error: Azure transport disconnected and SDK did not reconnect "
+            f"within {grace_sec}s. Reconnecting...",
+            category=LOG_CATEGORY_VENDOR,
+        )
+        self._transport_recovery_in_flight = True
+        try:
+            await self.stop_connection()
+            if self.stopped:
+                return
+            await self._handle_reconnect()
+        except Exception as e:
+            self.ten_env.log_error(
+                f"vendor_error: transport recovery failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+        finally:
+            self._transport_recovery_in_flight = False
+
+        if (
+            not self.stopped
+            and not self._transport_connected
+            and not self._reconnect_in_flight
+        ):
+            if self.reconnect_manager and self.reconnect_manager.can_retry():
+                await self._schedule_transport_recovery()
+            else:
+                await self._emit_reconnect_ceiling_fatal()
 
     async def _handle_finalize_disconnect(self):
         assert self.config is not None
@@ -555,7 +749,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
             )
             return
 
+        await self._cancel_transport_recovery()
+        self._expected_disconnect = True
+        self._expected_disconnect_reported = False
         self.connected = False
+        self._transport_connected = False
 
         # Close the stream first so the SDK pump thread exits cleanly
         # before calling stop_continuous_recognition.
@@ -586,33 +784,155 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
         self.ten_env.log_debug("finalize mute pkg completed")
 
-    async def _handle_reconnect(self):
-        """
-        Handle a single reconnection attempt using the ReconnectManager.
-        Connection success is determined by the _azure_event_handler_on_connected callback.
+    def _reset_transport_handshake_state(self) -> None:
+        self._transport_connected = False
+        self._transport_connected_epoch = 0
+        self._transport_handshake_ready.clear()
 
-        This method should be called repeatedly (e.g., after session_stopped events)
-        until either connection succeeds or max attempts are reached.
-        """
-        if not self.reconnect_manager:
-            self.ten_env.log_error("ReconnectManager not initialized")
-            return
+    def _handshake_timeout_sec(self) -> float:
+        return float(DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC)
 
-        # Attempt a single reconnection
-        success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection,
-            error_handler=self.send_asr_error,
+    def _transport_handshake_complete(self, expected_epoch: int) -> bool:
+        return (
+            self._transport_connected
+            and self._transport_connected_epoch == expected_epoch
+            and self._recognizer_epoch == expected_epoch
         )
 
-        if success:
-            self.ten_env.log_debug(
-                "Reconnection attempt initiated successfully"
+    async def _wait_for_transport_handshake(self, expected_epoch: int) -> bool:
+        if self._transport_handshake_complete(expected_epoch):
+            return True
+        timeout_sec = self._handshake_timeout_sec()
+        try:
+            await asyncio.wait_for(
+                self._transport_handshake_ready.wait(), timeout=timeout_sec
             )
-        else:
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn(
+                f"vendor_error: Azure transport handshake timed out after "
+                f"{timeout_sec}s (expected epoch {expected_epoch})",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return False
+        return self._transport_handshake_complete(expected_epoch)
+
+    async def _teardown_failed_handshake_attempt(self, message: str) -> None:
+        """Vendor start returned without a usable transport handshake."""
+        await self.stop_connection()
+        if self.stopped:
+            return
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=message,
+        )
+
+    async def _emit_reconnect_ceiling_fatal(self) -> None:
+        if self.stopped:
+            return
+        self.stopped = True
+        message = "Azure ASR reconnect attempts exhausted"
+        await self.send_asr_error(
+            ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=message,
+            ),
+        )
+
+    async def _cancel_finalize_reconnect(self) -> None:
+        task = self._finalize_reconnect_task
+        self._finalize_reconnect_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+    def _schedule_finalize_reconnect(self) -> None:
+        if self.stopped:
+            return
+        task = self._finalize_reconnect_task
+        if task is not None and not task.done():
+            return
+        task = asyncio.create_task(self._reconnect_after_finalize())
+        self._finalize_reconnect_task = task
+        task.add_done_callback(self._clear_finalize_reconnect_task)
+
+    def _clear_finalize_reconnect_task(self, task: asyncio.Task[None]) -> None:
+        if self._finalize_reconnect_task is task:
+            self._finalize_reconnect_task = None
+
+    async def _reconnect_after_finalize(self) -> None:
+        if self.stopped:
+            return
+        try:
+            await self.stop_connection()
+            if self.stopped:
+                return
+            await self.start_connection()
+            expected_epoch = self._recognizer_epoch
+            if not await self._wait_for_transport_handshake(expected_epoch):
+                await self._teardown_failed_handshake_attempt(
+                    "Azure transport handshake timed out after finalize reconnect"
+                )
+                if not self.stopped and self.reconnect_manager:
+                    if self.reconnect_manager.can_retry():
+                        await self._handle_reconnect()
+                    else:
+                        await self._emit_reconnect_ceiling_fatal()
+        except Exception as e:
+            self.ten_env.log_error(
+                f"vendor_error: post-finalize reconnect failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            if not self.stopped:
+                await self._request_unexpected_reconnect(immediate=True)
+
+    async def _handle_reconnect(self) -> bool:
+        """
+        Handle a single reconnection attempt using the ReconnectManager.
+        Returns True only after the vendor transport handshake completes.
+        """
+        if self._reconnect_in_flight:
+            self.ten_env.log_debug("reconnect already in flight")
+            return False
+
+        if not self.reconnect_manager:
+            self.ten_env.log_error("ReconnectManager not initialized")
+            return False
+
+        if not self.reconnect_manager.can_retry():
+            await self._emit_reconnect_ceiling_fatal()
+            return False
+
+        self._reconnect_in_flight = True
+        try:
+            initiated = await self.reconnect_manager.handle_reconnect(
+                connection_func=self.start_connection,
+                error_handler=self.send_asr_error,
+            )
+
+            if not initiated:
+                info = self.reconnect_manager.get_attempts_info()
+                self.ten_env.log_debug(
+                    f"Reconnection attempt failed. Status: {info}"
+                )
+                return False
+
+            expected_epoch = self._recognizer_epoch
+            if await self._wait_for_transport_handshake(expected_epoch):
+                self.ten_env.log_debug("Reconnection handshake completed")
+                return True
+
+            await self._teardown_failed_handshake_attempt(
+                "Azure transport handshake timed out during reconnect"
+            )
             info = self.reconnect_manager.get_attempts_info()
             self.ten_env.log_debug(
-                f"Reconnection attempt failed. Status: {info}"
+                f"Reconnection handshake failed. Status: {info}"
             )
+            return False
+        finally:
+            self._reconnect_in_flight = False
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:
@@ -626,7 +946,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def stop_connection(self) -> None:
+        finalize_task = self._finalize_reconnect_task
+        if finalize_task is not asyncio.current_task():
+            await self._cancel_finalize_reconnect()
+        await self._cancel_transport_recovery()
         self.connected = False
+        # Retire callbacks from the recognizer being torn down before stop returns.
+        self._recognizer_epoch += 1
+        self._reset_transport_handshake_state()
 
         if self.stream:
             self.stream.close()
@@ -646,11 +973,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 {"stop_continuous_recognition_ms": stop_duration_ms}
             )
 
+        self.connection = None
         self.ten_env.log_info("azure connection stopped")
 
     @override
     def is_connected(self) -> bool:
-        return self.connected and self.client is not None
+        return (
+            self.connected
+            and self._transport_connected
+            and self.client is not None
+        )
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:

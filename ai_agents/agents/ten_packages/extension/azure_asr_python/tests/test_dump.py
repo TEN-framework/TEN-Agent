@@ -16,7 +16,7 @@ from ten_runtime import (
 import json
 
 # We must import it, which means this test fixture will be automatically executed
-from .mock import patch_azure_ws  # noqa: F401
+from .mock import patch_azure_ws, trigger_vendor_live  # noqa: F401
 
 
 class AzureAsrExtensionTester(AsyncExtensionTester):
@@ -68,8 +68,7 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 def test_dump(patch_azure_ws):
     def fake_start_continuous_recognition():
         def triggerSessionStarted():
-            event = SimpleNamespace(session_id="123")
-            patch_azure_ws.event_handlers["session_started"](event)
+            trigger_vendor_live(patch_azure_ws.event_handlers, session_id="123")
 
         threading.Timer(0.4, triggerSessionStarted).start()
         return None

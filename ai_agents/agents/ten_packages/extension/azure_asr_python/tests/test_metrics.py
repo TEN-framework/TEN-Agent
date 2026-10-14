@@ -17,7 +17,7 @@ import json
 from ..extension import AzureASRExtension
 
 # We must import it, which means this test fixture will be automatically executed
-from .mock import patch_azure_ws  # noqa: F401
+from .mock import patch_azure_ws, trigger_vendor_live  # noqa: F401
 
 
 class AzureAsrExtensionTester(AsyncExtensionTester):
@@ -188,6 +188,11 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
                 f"metrics is not in data_dict: {data_dict}",
             )
 
+            metrics = data_dict.get("metrics", {})
+            if "ttfw" not in metrics and "ttlw" not in metrics:
+                # e.g. connect_delay from on_connected — not session-scoped
+                return
+
             self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "metadata" in data_dict,
@@ -201,7 +206,6 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
                 f"session_id is not 123: {session_id}",
             )
 
-            metrics = data_dict["metrics"]
             if "ttfw" in metrics:
                 self.ttfw = metrics["ttfw"]
             if "ttlw" in metrics:
@@ -224,8 +228,7 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 def test_metrics(patch_azure_ws):
     def fake_start_continuous_recognition():
         def triggerSessionStarted():
-            event = SimpleNamespace(session_id="123")
-            patch_azure_ws.event_handlers["session_started"](event)
+            trigger_vendor_live(patch_azure_ws.event_handlers, session_id="123")
 
             threading.Timer(1.0, triggerRecognizing).start()
             threading.Timer(2.0, triggerRecognizing).start()
