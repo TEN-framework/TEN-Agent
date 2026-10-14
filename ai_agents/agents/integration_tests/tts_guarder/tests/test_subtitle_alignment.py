@@ -30,7 +30,15 @@ from .subtitle_timing import (
 from .timing_hooks import install_timing_hook
 
 TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
-SUPPORTED_TTS_EXTENSIONS = {"cartesia_tts", "minimax_tts_websocket_duplex"}
+SUPPORTED_TTS_EXTENSIONS = {
+    "cartesia_tts",
+    "minimax_tts_websocket_duplex",
+    "elevenlabs_multiple_context_tts_python",
+    "bytedance_tts",
+    "bytedance_tts_duplex",
+    "minimax_tts_websocket",
+    "soul_tts_python",
+}
 REQUEST_IDS = ["subtitle_alignment_first", "subtitle_alignment_second"]
 
 

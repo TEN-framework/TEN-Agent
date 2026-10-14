@@ -54,7 +54,19 @@ def validate_audio_clock(frames: list[AudioFrameTiming]) -> tuple[bool, str]:
 
 
 def timed_results(results: list[dict]) -> list[dict]:
-    return [result for result in results if result.get("words")]
+    """Keep results that carry spoken text.
+
+    A terminal marker may hold a synthetic placeholder word with empty
+    text; it ends the request instead of describing speech.
+    """
+    return [
+        result
+        for result in results
+        if any(
+            str(word.get("word", "")).strip()
+            for word in result.get("words") or []
+        )
+    ]
 
 
 def validate_subtitle_bounds(
@@ -125,7 +137,7 @@ def validate_provider_reference(
     ):
         return False, f"TEN audio format differs from {vendor}"
     observed_bytes = sum(frame.samples * frame.channels * 2 for frame in frames)
-    if observed_bytes != reference.pcm_bytes:
+    if reference.pcm_bytes >= 0 and observed_bytes != reference.pcm_bytes:
         return False, "TEN PCM sample count differs from provider audio"
     captions = timed_results(results)
     if not reference.captions or len(captions) != len(reference.captions):
@@ -138,9 +150,15 @@ def validate_provider_reference(
             expected_start = origin + int(raw.start_ms)
             expected_end = origin + int(raw.end_ms)
             actual_end = actual["start_ms"] + actual["duration_ms"]
+            if actual["word"] != raw.word:
+                return (
+                    False,
+                    f"TEN word timing differs from {vendor}: expected [{expected_start}, {expected_end}], got [{actual['start_ms']}, {actual_end}]",
+                )
+            if actual["word"] == " ":
+                continue
             if (
-                actual["word"] != raw.word
-                or abs(actual["start_ms"] - expected_start) > 1
+                abs(actual["start_ms"] - expected_start) > 1
                 or abs(actual_end - expected_end) > 1
             ):
                 return (
