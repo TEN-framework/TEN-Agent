@@ -46,6 +46,9 @@ class ElevenLabsTimingHook:
             self.request_id = request_id
             self.pcm_bytes = 0
             self.groups = []
+            # Alignment times are relative to each generation request, so the
+            # origin must not carry over from the previous request.
+            self.origin = None
             self.error = None
 
     def observe_send(self, payload):

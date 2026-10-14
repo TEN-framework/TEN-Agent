@@ -60,9 +60,9 @@ for extension setup, the vendor object interface, registry entries, and
 verification steps.
 
 Only `minimax_tts_websocket_duplex`, `cartesia_tts`,
-`elevenlabs_multiple_context_tts_python`, and `bytedance_tts` install a vendor
-timing hook. A hook applies to the alignment test's matching connections and
-restores the client dependency afterward. Unregistered vendors receive no hook,
-and other Guarder cases retain their behavior. `bytedance_tts_duplex`,
-`minimax_tts_websocket`, and `soul_tts_python` use the strengthened generic
-alignment checks without a vendor hook.
+`elevenlabs_multiple_context_tts_python`, `bytedance_tts`, and
+`bytedance_tts_duplex` install a vendor timing hook. A hook applies to the
+alignment test's matching connections and restores the client dependency
+afterward. Unregistered vendors receive no hook, and other Guarder cases retain
+their behavior. `minimax_tts_websocket` and `soul_tts_python` use the
+strengthened generic alignment checks without a vendor hook.

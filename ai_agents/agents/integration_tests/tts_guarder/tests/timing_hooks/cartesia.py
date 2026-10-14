@@ -6,6 +6,7 @@
 
 import base64
 import json
+import unicodedata
 from dataclasses import dataclass
 from fractions import Fraction
 from importlib import import_module
@@ -120,26 +121,28 @@ class CartesiaTimingHook:
             )
 
 
-def _add_spacing(words):
-    """Mirror Cartesia's public subtitle spacing behavior."""
-    result = []
-    previous = None
-    for word in words:
-        if previous is not None and _needs_space(previous.word, word.word):
-            result.append(ReferenceWord(" ", word.start_ms, word.start_ms))
-        result.append(word)
-        previous = word
-    return tuple(result)
-
-
 def _add_spacing_groups(groups):
-    """Mirror spacing both within and between Cartesia timestamp groups."""
+    """Mirror spacing both within and between Cartesia timestamp groups.
+
+    The client prepends one space to every timestamp group after the first
+    one, whatever the group starts with, and inserts a space between two
+    words of a group only when its own spacing rules allow it.
+    """
     result = []
     previous = None
     for group in groups:
         current = []
-        for word in group:
-            if previous is not None and _needs_space(previous.word, word.word):
+        group_prefix = previous is not None
+        if group_prefix:
+            current.append(
+                ReferenceWord(" ", group[0].start_ms, group[0].start_ms)
+            )
+        for index, word in enumerate(group):
+            if (
+                not (group_prefix and index == 0)
+                and previous is not None
+                and _needs_space(previous.word, word.word)
+            ):
                 current.append(ReferenceWord(" ", word.start_ms, word.start_ms))
             current.append(word)
             previous = word
@@ -159,7 +162,23 @@ def _needs_space(previous, current):
         return False
     if current[0] in ".,!?;:%)]}，。！？；：、％》」』】":
         return False
+    if _is_cjk(previous[-1]) or _is_cjk(current[0]):
+        return False
+    if unicodedata.category(current[0]).startswith("P"):
+        return False
     return True
+
+
+def _is_cjk(character):
+    """Mirror the client's CJK blocks, which never take a word space."""
+    code = ord(character)
+    return (
+        0x3400 <= code <= 0x4DBF
+        or 0x4E00 <= code <= 0x9FFF
+        or 0xF900 <= code <= 0xFAFF
+        or 0x3040 <= code <= 0x30FF
+        or 0xAC00 <= code <= 0xD7AF
+    )
 
 
 class _WebSocketProxy:
