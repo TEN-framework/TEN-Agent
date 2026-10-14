@@ -53,6 +53,21 @@ def validate_audio_clock(frames: list[AudioFrameTiming]) -> tuple[bool, str]:
     return True, "Audio timestamps follow cumulative PCM samples (within 1ms)"
 
 
+def spoken_words(words: list) -> list:
+    """Words up to the last one that carries text.
+
+    A provider may append padding whitespace after the last spoken word.
+    It is not speech, so it must not extend the subtitle range or change
+    the word count.
+    """
+    last = -1
+    for index, word in enumerate(words):
+        text = word["word"] if isinstance(word, dict) else word.word
+        if str(text).strip():
+            last = index
+    return words[: last + 1] if last >= 0 else []
+
+
 def timed_results(results: list[dict]) -> list[dict]:
     """Keep results that carry spoken text.
 
@@ -86,18 +101,24 @@ def validate_subtitle_bounds(
     for result in captions:
         start = result.get("start_ms", -1)
         duration = result.get("duration_ms", 0)
+        spoken = spoken_words(result["words"])
+        spoken_end = (
+            spoken[-1]["start_ms"] + spoken[-1]["duration_ms"]
+            if spoken
+            else start
+        )
         if (
             duration < 0
             or start < first.timestamp_ms - 1
             or start > audio_end + 1
-            or start + duration > audio_end + 1
+            or spoken_end > audio_end + 1
         ):
             return False, "Subtitle range lies outside the PCM timeline"
         if previous_start is not None and start <= previous_start:
             return False, "Subtitle starts are not strictly ascending"
         previous_start = start
         previous_word = None
-        for word in result["words"]:
+        for word in spoken:
             word_start = word.get("start_ms", -1)
             word_duration = word.get("duration_ms", -1)
             word_end = word_start + word_duration
@@ -144,9 +165,11 @@ def validate_provider_reference(
         return False, "TEN subtitle count differs from provider subtitles"
     origin = frames[0].timestamp_ms
     for result, expected_words in zip(captions, reference.captions):
-        if len(result["words"]) != len(expected_words):
+        spoken = spoken_words(result["words"])
+        expected = spoken_words(expected_words)
+        if len(spoken) != len(expected):
             return False, "TEN word count differs from provider words"
-        for actual, raw in zip(result["words"], expected_words):
+        for actual, raw in zip(spoken, expected):
             expected_start = origin + int(raw.start_ms)
             expected_end = origin + int(raw.end_ms)
             actual_end = actual["start_ms"] + actual["duration_ms"]

@@ -69,18 +69,6 @@ class ElevenLabsTimingHook:
                 if self.origin is None:
                     self.origin = starts[0]
                 origin = self.origin
-                # Mirror the extension: whitespace that reaches past the
-                # delivered audio is padding, whitespace inside it is a
-                # word separator and must be kept.
-                if self.sample_rate > 0:
-                    audio_ms = self.pcm_bytes * 1000 / (2 * self.sample_rate)
-                    while chars and chars[-1].isspace():
-                        end_ms = starts[-1] + durations[-1] - origin
-                        if end_ms <= audio_ms + 1:
-                            break
-                        chars = chars[:-1]
-                        starts = starts[:-1]
-                        durations = durations[:-1]
                 if not chars:
                     return
                 chars_words = []
