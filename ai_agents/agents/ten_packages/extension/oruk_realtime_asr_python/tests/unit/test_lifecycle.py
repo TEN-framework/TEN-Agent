@@ -350,6 +350,143 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(e._ready_event.is_set())
         e.send_connect_delay_metrics.assert_not_called()
 
+    async def test_close_waiting_for_ack_cannot_disconnect_replacement(self):
+        e = self.new()
+        e._finalize_pending = True
+        e._schedule_reconnect = Mock()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def acknowledge():
+            entered.set()
+            await release.wait()
+
+        e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+        callback = rt._TurnCallback(e, e._generation)
+        pending = asyncio.create_task(callback.on_close(1000, "old closed"))
+        await asyncio.wait_for(entered.wait(), 1)
+        e._generation += 1
+        e._reset_turn()
+        replacement = Mock(is_connected=Mock(return_value=True))
+        e.connection = replacement
+        release.set()
+        await asyncio.wait_for(pending, 1)
+        self.assertIs(e.connection, replacement)
+        self.assertFalse(e._turn_done.is_set())
+        e.on_disconnected.assert_not_called()
+        e._schedule_reconnect.assert_not_called()
+
+    async def test_buffer_bytes_track_inflight_flush_and_arrival(self):
+        e = self.new()
+        e._flushing = True
+        e.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=960)
+        )
+        frames = [
+            Mock(get_buf=Mock(return_value=b"\0" * 320)) for _ in range(4)
+        ]
+        for frame in frames[:3]:
+            await e._handle_audio_frame(e.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+        sent = []
+
+        async def send(frame, _session):
+            sent.append(frame)
+            if frame is frames[1]:
+                entered.set()
+                await release.wait()
+            return True
+
+        e.send_audio = AsyncMock(side_effect=send)
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        self.assertEqual(e.buffered_frames_size, 320)
+        await e._handle_audio_frame(e.ten_env, frames[3])
+        self.assertEqual(e.buffered_frames_size, 640)
+        self.assertEqual(e.buffered_frames.qsize(), 2)
+        release.set()
+        await asyncio.wait_for(flushing, 1)
+        self.assertEqual(sent, frames)
+        self.assertEqual(e.buffered_frames_size, 0)
+        self.assertEqual(e.dropped_audio_frames, 0)
+
+    async def test_failed_flush_restore_reapplies_buffer_cap(self):
+        e = self.new()
+        e._flushing = True
+        e.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=640)
+        )
+        frames = [
+            Mock(get_buf=Mock(return_value=b"\0" * 320)) for _ in range(3)
+        ]
+        for frame in frames[:2]:
+            await e._handle_audio_frame(e.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send(_frame, _session):
+            entered.set()
+            await release.wait()
+            return False
+
+        e.send_audio = AsyncMock(side_effect=send)
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        await e._handle_audio_frame(e.ten_env, frames[2])
+        self.assertEqual(e.buffered_frames_size, 640)
+        release.set()
+        with self.assertRaises(ConnectionError):
+            await asyncio.wait_for(flushing, 1)
+        self.assertEqual(e.buffered_frames_size, 640)
+        self.assertEqual(e.buffered_frames.qsize(), 2)
+        self.assertIs(e.buffered_frames.get_nowait(), frames[1])
+        self.assertIs(e.buffered_frames.get_nowait(), frames[2])
+        self.assertEqual(e.dropped_audio_frames, 1)
+        self.assertEqual(e._emitted_ms, 10)
+        e.audio_timeline.add_dropped_audio.assert_called_once_with(10.0)
+
+    async def test_oversize_during_flush_aborts_partial_turn(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        e.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=32000)
+        )
+        frame = Mock(
+            get_buf=Mock(return_value=b"\0" * 32000),
+            lock_buf=Mock(return_value=b"\0" * 32000),
+        )
+        await e._handle_audio_frame(e.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send(_audio):
+            entered.set()
+            await release.wait()
+
+        old = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=send),
+            close=AsyncMock(),
+        )
+        e.connection = old
+        e._flushing = True
+        callback = rt._TurnCallback(e, e._generation)
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        oversized = Mock(get_buf=Mock(return_value=b"\0" * 64000))
+        abort = asyncio.create_task(e._handle_audio_frame(e.ten_env, oversized))
+        await asyncio.sleep(0)
+        release.set()
+        await asyncio.wait_for(asyncio.gather(flushing, abort), 1)
+        old.close.assert_awaited_once()
+        await callback.on_final("late partial transcript")
+        e.send_asr_result.assert_not_called()
+        self.assertEqual(e._emitted_ms, 3000)
+        self.assertEqual(e.dropped_audio_frames, 1)
+        e.send_asr_error.assert_awaited_once()
+        e._reset_turn()
+        e._turn_bytes = 16000
+        await e.on_final("next turn")
+        result = e.send_asr_result.await_args.args[0]
+        self.assertEqual((result.start_ms, result.duration_ms), (3000, 500))
+
     async def test_replacement_keeps_original_finalize_ack_context(self):
         e = self.new()
         e.metadata = {"session_id": "finalize-a", "request_tag": "original"}

@@ -171,7 +171,49 @@ class OrukASRExtension(AsyncASRBaseExtension):
             audio_frame.ready.set()
             await audio_frame.release.wait()
             return
+        if not self._safe_is_connected() and audio_frame.get_buf():
+            if not self._retain_audio_frame(audio_frame):
+                message = "Orukeet buffered turn discarded: audio frame exceeds buffer limit"
+                await self.send_asr_error(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                        message=message,
+                    ),
+                    ModuleErrorVendorInfo(
+                        vendor=self.vendor(),
+                        code="audio_frame_too_large",
+                        message=message,
+                    ),
+                )
+            return
         await super()._handle_audio_frame(ten_env, audio_frame)
+
+    def _retain_audio_frame(self, frame):
+        byte_limit = self.buffer_strategy().byte_limit
+        byte_count = len(frame.get_buf())
+        if byte_count > byte_limit:
+            # Reject the buffered turn as a whole so older retained audio is
+            # never timestamped after this later, invalid input frame.
+            self._trim_buffered_audio(0)
+            self._record_dropped_audio(byte_count)
+            if self._flushing:
+                self._utterance.clear()
+                self._utterance_overflow = True
+            return False
+        self.buffered_frames.put_nowait(frame)
+        self.buffered_frames_size += byte_count
+        self._trim_buffered_audio(byte_limit)
+        return True
+
+    def _trim_buffered_audio(self, byte_limit):
+        # Queue edits contain no awaits: arrivals and a suspended flush cannot
+        # observe a frame removed from the queue but still counted as retained.
+        while self.buffered_frames_size > byte_limit:
+            frame = self.buffered_frames.get_nowait()
+            byte_count = len(frame.get_buf())
+            self.buffered_frames_size -= byte_count
+            self._record_dropped_audio(byte_count)
 
     def _release_boundary(self):
         if self._active_boundary is not None:
@@ -202,7 +244,12 @@ class OrukASRExtension(AsyncASRBaseExtension):
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
+            self.buffered_frames_size -= len(frame.get_buf())
             if not await self.send_audio(frame, self.session_id):
+                if self._utterance_overflow:
+                    # The utterance policy already counted this rejection;
+                    # replaying it would count the same dropped frame twice.
+                    continue
                 pending = [frame]
                 while not self.buffered_frames.empty():
                     pending.append(self.buffered_frames.get_nowait())
@@ -211,6 +258,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 self.buffered_frames_size = sum(
                     len(x.get_buf()) for x in pending
                 )
+                self._trim_buffered_audio(self.buffer_strategy().byte_limit)
                 raise ConnectionError("Buffered audio could not be sent")
             self.sent_buffer_length += len(frame.get_buf())
             if self.first_audio_time is None:
@@ -416,6 +464,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 except Exception:
                     self.ten_env.log_error("Audio diagnostic dump failed")
             if self.stopped or self._init_failed:
+                return False
+            if self._utterance_overflow:
+                # A malformed incoming frame can invalidate the turn while
+                # this earlier frame is suspended in its diagnostic dump.
+                self._record_dropped_audio(len(audio_data))
                 return False
             if not self._utterance:
                 self._utterance_start_ms = int(

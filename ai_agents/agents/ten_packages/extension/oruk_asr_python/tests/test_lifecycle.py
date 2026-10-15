@@ -53,6 +53,9 @@ class Base:
     async def on_deinit(self, env):
         pass
 
+    def _safe_is_connected(self):
+        return self.is_connected()
+
     async def _handle_audio_frame(self, env, audio_frame):
         await self.send_audio(audio_frame, self.session_id)
 
@@ -118,6 +121,128 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
         )
         extension._connected = True
         return extension
+
+    async def test_keep_buffer_evictions_and_oversize_are_counted_once(self):
+        extension = self.new()
+        extension._connected = False
+        extension.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=640)
+        )
+        first, second, third = [self.frame(x) for x in ("a", "b", "c")]
+        for frame in (first, second, third):
+            await extension._handle_audio_frame(extension.ten_env, frame)
+        self.assertEqual(extension.buffered_frames_size, 640)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        self.assertIs(extension.buffered_frames.get_nowait(), second)
+        self.assertIs(extension.buffered_frames.get_nowait(), third)
+        extension.buffered_frames_size = 0
+        await extension._handle_audio_frame(
+            extension.ten_env, self.frame("large", b"\0" * 960)
+        )
+        self.assertTrue(extension.buffered_frames.empty())
+        self.assertEqual(extension.buffered_frames_size, 0)
+        self.assertEqual(extension.dropped_audio_frames, 2)
+        self.assertEqual(
+            [
+                call.args[0]
+                for call in extension.audio_timeline.add_dropped_audio.call_args_list
+            ],
+            [10, 30],
+        )
+
+    async def test_failed_flush_reapplies_bound_after_concurrent_arrival(self):
+        extension = self.new()
+        extension._flushing = True
+        extension.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=640)
+        )
+        first, second, third = [self.frame(x) for x in ("a", "b", "c")]
+        extension._retain_audio_frame(first)
+        extension._retain_audio_frame(second)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def fail_send(frame, session):
+            entered.set()
+            await release.wait()
+            return False
+
+        extension.send_audio = fail_send
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            self.assertEqual(extension.buffered_frames_size, 320)
+            await extension._handle_audio_frame(extension.ten_env, third)
+            self.assertEqual(extension.buffered_frames_size, 640)
+            self.assertEqual(extension.dropped_audio_frames, 0)
+        finally:
+            release.set()
+            with self.assertRaises(ConnectionError):
+                await asyncio.wait_for(flushing, 1)
+        self.assertEqual(extension.buffered_frames_size, 640)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        self.assertIs(extension.buffered_frames.get_nowait(), second)
+        self.assertIs(extension.buffered_frames.get_nowait(), third)
+        extension.audio_timeline.add_dropped_audio.assert_called_once_with(10)
+
+    async def test_oversize_aborts_partial_flush_without_replaying_inflight(
+        self,
+    ):
+        extension = self.new()
+        extension._flushing = True
+        extension.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=960)
+        )
+        for label in ("a", "b", "c"):
+            extension._retain_audio_frame(self.frame(label))
+        entered, release = asyncio.Event(), asyncio.Event()
+        calls = 0
+
+        async def dump(pcm):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                entered.set()
+                await release.wait()
+
+        extension.audio_dumper = Mock(push_bytes=dump)
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            await extension._handle_audio_frame(
+                extension.ten_env, self.frame("invalid", b"\0" * 1280)
+            )
+        finally:
+            release.set()
+            await asyncio.wait_for(flushing, 1)
+        self.assertFalse(extension._utterance)
+        self.assertTrue(extension.buffered_frames.empty())
+        self.assertEqual(extension.buffered_frames_size, 0)
+        self.assertEqual(extension.dropped_audio_frames, 3)
+        self.assertEqual(
+            [
+                call.args[0]
+                for call in extension.audio_timeline.add_dropped_audio.call_args_list
+            ],
+            [10, 40, 10],
+        )
+        extension.audio_timeline.add_user_audio.assert_called_once_with(10)
+        extension.send_asr_error.assert_awaited_once()
+        await extension.finalize("invalid")
+        extension.send_asr_result.assert_not_called()
+        extension.send_asr_finalize_end.assert_awaited_once()
+        self.assertFalse(extension._utterance_overflow)
+
+    async def test_flush_does_not_replay_counted_utterance_rejection(self):
+        extension = self.new()
+        extension._retain_audio_frame(self.frame("a"))
+        extension._retain_audio_frame(self.frame("b"))
+        with patch.object(local, "MAX_UTTERANCE_BYTES", 320):
+            await extension._flush_buffered_audio()
+        self.assertTrue(extension._utterance_overflow)
+        self.assertTrue(extension.buffered_frames.empty())
+        self.assertEqual(extension.buffered_frames_size, 0)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        extension.audio_timeline.add_dropped_audio.assert_called_once_with(10)
 
     def frame(self, session="a", pcm=b"\0\0" * 160):
         return Mock(
@@ -533,6 +658,7 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
 
         second = self.frame("b", b"\0\0" * 80)
         extension.buffered_frames.put_nowait(second)
+        extension.buffered_frames_size = len(second.get_buf())
         recognizer = Mock(
             loaded=True, recognize=Mock(return_value="second turn")
         )
@@ -600,6 +726,7 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
             ),
         )
         await e.buffered_frames.put(f)
+        e.buffered_frames_size = len(f.get_buf())
         task = asyncio.create_task(e.finalize(None))
         await asyncio.sleep(0)
         e.send_asr_result.assert_not_called()

@@ -38,7 +38,11 @@ The Oruk realtime socket commits **one turn per connection**: the extension
 streams PCM, emits interim results, and on finalize sends a commit to receive
 the final transcript, phrase-emotion estimates, and usage before the server
 closes. It then reconnects for the next turn. Audio that arrives during a
-reconnect is buffered (keep strategy) so the next utterance is not lost.
+reconnect is buffered with a 10 MiB limit. Overflow evicts the oldest queued
+frames and records their duration in drop metrics and subsequent timestamps.
+A single frame larger than the limit aborts the affected buffered turn, reports
+`audio_frame_too_large`, and preserves its duration before accepting a new turn.
+Any partial socket turn is closed so it cannot emit a misleading transcript.
 
 Phrase-emotion estimates and usage are reported via the vendor-metrics channel;
 estimates available before the final transcript are also attached to the final

@@ -224,7 +224,54 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             # metadata; future audio can then enter the next socket's buffer.
             await audio_frame.release.wait()
             return
+        if not self.is_connected():
+            # The native Keep buffer counts evictions but omits their duration.
+            # Own retention here so both metrics and later result offsets keep
+            # the original input timeline.
+            frame_size = len(audio_frame.get_buf())
+            if not frame_size:
+                return
+            byte_limit = self.buffer_strategy().byte_limit
+            if frame_size > byte_limit:
+                await self._abort_oversized_buffered_turn(audio_frame)
+                return
+            while self.buffered_frames_size + frame_size > byte_limit:
+                if self.buffered_frames.empty():
+                    break
+                discarded = self.buffered_frames.get_nowait()
+                self.buffered_frames_size -= len(discarded.get_buf())
+                self._record_dropped_frame(discarded)
+            self.buffered_frames.put_nowait(audio_frame)
+            self.buffered_frames_size += frame_size
+            return
         await super()._handle_audio_frame(ten_env, audio_frame)
+
+    async def _abort_oversized_buffered_turn(self, frame):
+        # A later dropped frame cannot move an older retained transcript's
+        # starting timestamp. Reject the affected turn as a whole instead.
+        context = self._snapshot_context()
+        finalize_context = self._turn_finalize_context
+        turn_done = self._turn_done
+        self._discard_buffered_audio()
+        self._record_dropped_frame(frame)
+        generation = self._generation
+        await self._close_current()
+        closed_generation = generation + 1
+        await self._finish_finalize(
+            turn_done, closed_generation, context=finalize_context
+        )
+        await self._emit_with_context(
+            context,
+            self.on_error,
+            "Oruk audio frame exceeds the reconnect buffer limit",
+            "audio_frame_too_large",
+            False,
+        )
+        if self._generation != closed_generation or self.connection is not None:
+            return
+        await self.on_disconnected(code=0, message="oversized audio frame")
+        if self._generation == closed_generation and self.connection is None:
+            self._schedule_reconnect()
 
     async def _flush_buffered_audio(self):
         epoch = self._buffer_epoch
@@ -234,6 +281,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
+            self.buffered_frames_size -= len(frame.get_buf())
             token = self._retained_frame.set(frame)
             try:
                 success = await self.send_audio(frame, self.session_id)
@@ -247,11 +295,15 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 pending = [frame]
                 while not self.buffered_frames.empty():
                     pending.append(self.buffered_frames.get_nowait())
+                retained_size = sum(len(x.get_buf()) for x in pending)
+                byte_limit = self.buffer_strategy().byte_limit
+                while retained_size > byte_limit and pending:
+                    discarded = pending.pop(0)
+                    retained_size -= len(discarded.get_buf())
+                    self._record_dropped_frame(discarded)
                 for queued in pending:
                     self.buffered_frames.put_nowait(queued)
-                self.buffered_frames_size = sum(
-                    len(x.get_buf()) for x in pending
-                )
+                self.buffered_frames_size = retained_size
                 raise ConnectionError("Buffered audio could not be sent")
             self.sent_buffer_length += len(frame.get_buf())
             if self.first_audio_time is None:
@@ -385,8 +437,16 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                         else status in {401, 403}
                     ),
                 )
+                if (
+                    self.stopped
+                    or self._fatal
+                    or generation != self._generation
+                    or self.connection is not None
+                ):
+                    return
                 await self.on_disconnected(code=0, message="connect failed")
-                self._schedule_reconnect()
+                if generation == self._generation and self.connection is None:
+                    self._schedule_reconnect()
 
     @override
     def is_connected(self) -> bool:
@@ -589,10 +649,17 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 # A failed turn must not be replayed as part of the next one.
                 self._discard_buffered_audio()
                 await self._close_current()
-                if self._generation != failed_generation + 1:
+                if (
+                    self._generation != failed_generation + 1
+                    or self.connection is not None
+                ):
                     return
                 await self.on_disconnected(code=0, message=message)
-                self._schedule_reconnect()
+                if (
+                    self._generation == failed_generation + 1
+                    and self.connection is None
+                ):
+                    self._schedule_reconnect()
             finally:
                 if callback_owned:
                     await self._finish_finalize(
@@ -715,6 +782,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def on_error(
         self, message: str, code: str | None, fatal: bool
     ) -> None:
+        generation, connection = self._generation, self.connection
+        turn_done = self._turn_done
+        finalize_context = self._turn_finalize_context
         if fatal:
             self._fatal = True
         self.ten_env.log_error(
@@ -744,20 +814,40 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             vendor_info,
         )
         if fatal:
+            if (
+                generation != self._generation
+                or self.connection is not connection
+            ):
+                return
             await self._close_current()
-            await self._finish_finalize()
+            if (
+                self._generation != generation + 1
+                or self.connection is not None
+            ):
+                return
+            await self._finish_finalize(turn_done, context=finalize_context)
+            if (
+                self._generation != generation + 1
+                or self.connection is not None
+            ):
+                return
             await self.on_disconnected(code=0, message="fatal vendor error")
 
     @override
     async def on_close(self, code: int, message: str) -> None:
         # Transport cleanup precedes callback delivery in the client.
+        generation = self._generation
+        turn_done = self._turn_done
         self.connection = None
         self._draining_connection = None
         self._ready_event.set()
         self._account_turn()
-        await self._finish_finalize()
+        await self._finish_finalize(turn_done, generation)
+        if generation != self._generation or self.connection is not None:
+            return
         await self.on_disconnected(code=code, message=message)
-        self._schedule_reconnect()
+        if generation == self._generation and self.connection is None:
+            self._schedule_reconnect()
 
     def _schedule_reconnect(self) -> None:
         if self.stopped or self._fatal or self._init_failed:

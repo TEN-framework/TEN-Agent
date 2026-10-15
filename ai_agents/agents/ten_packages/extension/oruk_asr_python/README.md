@@ -49,6 +49,12 @@ finalize received before `trigger_connect` discards that turn's startup-buffered
 audio and acknowledges it without loading the model. A later connection starts
 with subsequent audio only.
 
+The disconnected buffer retains the newest **10 MiB** of PCM16; evicted
+frames remain counted in the input timeline. A single frame larger than the
+buffer limit discards the buffered turn and emits `audio_frame_too_large`.
+If model startup is already draining that turn, its partial audio is also
+discarded and the next finalize acknowledges it without a transcript.
+
 A connected utterance is limited to **10 MiB** of PCM16 (about 5.5 minutes).
 Exceeding this limit emits one nonfatal `utterance_too_long` error and discards
 the whole turn. Audio is ignored until the next finalize, which acknowledges

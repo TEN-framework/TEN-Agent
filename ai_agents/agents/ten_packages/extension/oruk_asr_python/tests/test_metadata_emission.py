@@ -43,6 +43,163 @@ class NativeMetadataEmission(unittest.IsolatedAsyncioTestCase):
         )
         return request
 
+    def frame(self, session, byte_count=320):
+        pcm = b"\0" * byte_count
+        return Mock(
+            get_buf=Mock(return_value=pcm),
+            lock_buf=Mock(return_value=pcm),
+            unlock_buf=Mock(),
+            get_property_to_json=Mock(
+                return_value=(json.dumps({"session_id": session}), None)
+            ),
+        )
+
+    async def consume(self, extension, frames):
+        boundary = local_extension._FinalizeBoundary()
+        for frame in frames:
+            extension.audio_frames_queue.put_nowait(frame)
+        extension.audio_frames_queue.put_nowait(boundary)
+        consumer = asyncio.create_task(extension._audio_frame_consumer())
+        try:
+            await asyncio.wait_for(boundary.ready.wait(), 1)
+        finally:
+            extension.stopped = True
+            boundary.release.set()
+            await asyncio.wait_for(consumer, 1)
+            extension.stopped = False
+
+    async def test_keep_eviction_preserves_native_recovery_timestamps(self):
+        extension = self.new()
+        extension.buffer_strategy = Mock(
+            return_value=local_extension.ASRBufferConfigModeKeep(byte_limit=640)
+        )
+        await self.consume(extension, [self.frame(x) for x in ("a", "b", "c")])
+        self.assertEqual(extension.buffered_frames_size, 640)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        self.assertEqual(
+            extension.audio_timeline.get_total_user_audio_duration(), 10
+        )
+        extension.recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="retained audio")
+        )
+        extension._connected = True
+        await extension._flush_buffered_audio()
+        self.assertEqual(extension.buffered_frames_size, 0)
+        extension.finalize_id = "recovered"
+        await asyncio.wait_for(extension.finalize("c"), 1)
+        result = self.emitted(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (10, 20))
+        self.assertEqual(
+            extension.audio_timeline.get_total_user_audio_duration(), 30
+        )
+
+    async def test_oversize_keep_input_is_dropped_before_recovery(self):
+        extension = self.new()
+        extension.buffer_strategy = Mock(
+            return_value=local_extension.ASRBufferConfigModeKeep(byte_limit=640)
+        )
+        await self.consume(
+            extension, [self.frame("queued", 320), self.frame("large", 960)]
+        )
+        self.assertTrue(extension.buffered_frames.empty())
+        self.assertEqual(extension.buffered_frames_size, 0)
+        self.assertEqual(extension.dropped_audio_frames, 2)
+        await self.consume(extension, [self.frame("retained", 320)])
+        extension.recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="retained audio")
+        )
+        extension._connected = True
+        await extension._flush_buffered_audio()
+        extension.finalize_id = "recovered"
+        await asyncio.wait_for(extension.finalize("retained"), 1)
+        result = self.emitted(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (40, 10))
+        self.assertEqual(extension.dropped_audio_frames, 2)
+
+    async def test_oversize_during_flush_aborts_accepted_and_inflight_turn(
+        self,
+    ):
+        extension = self.new()
+        extension.buffer_strategy = Mock(
+            return_value=local_extension.ASRBufferConfigModeKeep(byte_limit=960)
+        )
+        await self.consume(extension, [self.frame(x) for x in ("a", "b", "c")])
+        extension.recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="next valid turn")
+        )
+        extension._connected = True
+        extension._flushing = True
+        entered, release = asyncio.Event(), asyncio.Event()
+        calls = 0
+
+        async def dump(pcm):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                entered.set()
+                await release.wait()
+
+        extension.audio_dumper = Mock(push_bytes=dump)
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            await self.consume(extension, [self.frame("invalid", 1280)])
+            self.assertEqual(extension.buffered_frames_size, 0)
+            self.assertTrue(extension._utterance_overflow)
+            self.assertFalse(extension._utterance)
+        finally:
+            release.set()
+            await asyncio.wait_for(flushing, 1)
+        extension._flushing = False
+        extension.finalize_id = "invalid-turn"
+        await asyncio.wait_for(extension.finalize("invalid"), 1)
+        self.assertEqual(self.emitted(extension, "asr_result"), [])
+        self.assertEqual(len(self.emitted(extension, "error")), 1)
+        self.assertEqual(extension.dropped_audio_frames, 3)
+        await self.consume(extension, [self.frame("next")])
+        extension.finalize_id = "next-turn"
+        await asyncio.wait_for(extension.finalize("next"), 1)
+        result = self.emitted(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (70, 10))
+        self.assertEqual(len(self.emitted(extension, "asr_finalize_end")), 2)
+
+    async def test_arrival_during_native_flush_uses_freed_capacity(self):
+        extension = self.new()
+        extension.buffer_strategy = Mock(
+            return_value=local_extension.ASRBufferConfigModeKeep(byte_limit=640)
+        )
+        await self.consume(extension, [self.frame("a"), self.frame("b")])
+        extension.recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="all three frames")
+        )
+        extension._connected = True
+        extension._flushing = True
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def dump(pcm):
+            if not entered.is_set():
+                entered.set()
+                await release.wait()
+
+        extension.audio_dumper = Mock(push_bytes=dump)
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            self.assertEqual(extension.buffered_frames_size, 320)
+            await self.consume(extension, [self.frame("c")])
+            self.assertEqual(extension.buffered_frames_size, 640)
+            self.assertEqual(extension.dropped_audio_frames, 0)
+        finally:
+            release.set()
+            await asyncio.wait_for(flushing, 1)
+        extension._flushing = False
+        self.assertEqual(extension.buffered_frames_size, 0)
+        extension.finalize_id = "complete"
+        await asyncio.wait_for(extension.finalize("c"), 1)
+        result = self.emitted(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (0, 30))
+        self.assertEqual(extension.dropped_audio_frames, 0)
+
     async def test_result_keeps_generated_fields_and_ack_echoes_input(self):
         extension = self.new()
         original = {
