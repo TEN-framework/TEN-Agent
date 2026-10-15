@@ -781,20 +781,143 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
 
     async def test_frame_unlocks_on_send_error(self):
         e = self.new()
+        e._schedule_reconnect = Mock()
         e.connection = Mock(
             is_connected=Mock(return_value=True),
             send_pcm=AsyncMock(side_effect=OSError()),
+            close=AsyncMock(),
         )
         f = Mock(lock_buf=Mock(return_value=b"\0\0" * 160))
         self.assertFalse(await e.send_audio(f, None))
         f.unlock_buf.assert_called_once()
         e.audio_timeline.add_user_audio.assert_not_called()
 
+    async def test_send_failure_recovers_open_socket_after_unlock(self):
+        for failure in (OSError("write failed"), asyncio.TimeoutError()):
+            with self.subTest(failure=type(failure).__name__):
+                e = self.new()
+                e._schedule_reconnect = Mock()
+                e._turn_bytes = 32000
+                e._finalize_pending = True
+                e._turn_finalize_context = e._snapshot_context()
+                frame = Mock(lock_buf=Mock(return_value=b"\0\0" * 160))
+
+                async def close():
+                    self.assertFalse(e._io_lock.locked())
+                    frame.unlock_buf.assert_called_once()
+
+                old_callback = rt._TurnCallback(e, e._generation)
+                connection = Mock(
+                    is_connected=Mock(return_value=True),
+                    send_pcm=AsyncMock(side_effect=failure),
+                    close=AsyncMock(side_effect=close),
+                )
+                e.connection = connection
+                self.assertFalse(await e.send_audio(frame, None))
+                connection.close.assert_awaited_once()
+                self.assertIsNone(e.connection)
+                e.on_disconnected.assert_awaited_once_with(
+                    code=0, message="Oruk audio send failed"
+                )
+                e._schedule_reconnect.assert_called_once()
+                e.send_asr_finalize_end.assert_awaited_once()
+                self.assertEqual(
+                    e.send_asr_error.await_args.args[1].code, "send_failed"
+                )
+                await old_callback.on_close(1000, "late")
+                self.assertEqual(e._emitted_ms, 1000)
+                e._reset_turn()
+                e._turn_bytes = 16000
+                await e.on_final("next turn")
+                result = e.send_asr_result.await_args.args[0]
+                self.assertEqual(
+                    (result.start_ms, result.duration_ms), (1000, 500)
+                )
+
+    async def test_send_failure_cannot_close_replacement_during_error_emit(
+        self,
+    ):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send_error(*_args):
+            self.assertFalse(e._io_lock.locked())
+            entered.set()
+            await release.wait()
+
+        e.send_asr_error = AsyncMock(side_effect=send_error)
+        old = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=OSError()),
+            close=AsyncMock(),
+        )
+        e.connection = old
+        e._turn_bytes = 32000
+        frame = Mock(lock_buf=Mock(return_value=b"\0\0" * 160))
+        pending = asyncio.create_task(e.send_audio(frame, None))
+        await entered.wait()
+        await e.on_close(1006, "old closed")
+        e._generation += 1
+        e._reset_turn()
+        replacement = Mock(
+            is_connected=Mock(return_value=True), close=AsyncMock()
+        )
+        e.connection = replacement
+        e._turn_bytes = 320
+        e.on_disconnected.reset_mock()
+        e._schedule_reconnect.reset_mock()
+        release.set()
+        self.assertFalse(await pending)
+        replacement.close.assert_not_called()
+        self.assertIs(e.connection, replacement)
+        self.assertEqual(e._emitted_ms, 1000)
+        self.assertFalse(e._turn_done.is_set())
+        e.on_disconnected.assert_not_called()
+        e._schedule_reconnect.assert_not_called()
+
+    async def test_send_failure_close_cannot_disconnect_replacement(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def close():
+            entered.set()
+            await release.wait()
+
+        old = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=OSError()),
+            close=AsyncMock(side_effect=close),
+        )
+        e.connection = old
+        e._turn_bytes = 32000
+        frame = Mock(lock_buf=Mock(return_value=b"\0\0" * 160))
+        pending = asyncio.create_task(e.send_audio(frame, None))
+        await entered.wait()
+        e._generation += 1
+        e._reset_turn()
+        replacement = Mock(
+            is_connected=Mock(return_value=True), close=AsyncMock()
+        )
+        e.connection = replacement
+        e._turn_bytes = 320
+        release.set()
+        self.assertFalse(await pending)
+        replacement.close.assert_not_called()
+        self.assertIs(e.connection, replacement)
+        self.assertEqual(e._emitted_ms, 1000)
+        self.assertFalse(e._turn_done.is_set())
+        e.on_disconnected.assert_not_called()
+        e._schedule_reconnect.assert_not_called()
+
     async def test_failed_flush_preserves_audio_in_order(self):
         e = self.new()
+        e._schedule_reconnect = Mock()
         e.connection = Mock(
             is_connected=Mock(return_value=True),
             send_pcm=AsyncMock(side_effect=OSError()),
+            close=AsyncMock(),
         )
         frames = [
             Mock(

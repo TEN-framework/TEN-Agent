@@ -481,9 +481,14 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     # replaying it on a later connection would mix turns.
                     while not self.buffered_frames.empty():
                         frame = self.buffered_frames.get_nowait()
-                        self.audio_timeline.add_dropped_audio(
+                        duration_ms = (
                             len(frame.get_buf())
+                            / self.input_audio_sample_rate()
+                            / self.input_audio_channels()
+                            / self.input_audio_sample_width()
+                            * 1000
                         )
+                        self.audio_timeline.add_dropped_audio(duration_ms)
                         self.dropped_audio_frames += 1
                     self.buffered_frames_size = 0
                 pcm = bytes(self._utterance)

@@ -41,6 +41,12 @@ class Base:
         ]:
             setattr(self, name, AsyncMock())
 
+    def input_audio_channels(self):
+        return 1
+
+    def input_audio_sample_width(self):
+        return 2
+
     async def on_init(self, env):
         self.ten_env = env
 
@@ -515,7 +521,7 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(extension.buffered_frames.empty())
         self.assertEqual(extension.buffered_frames_size, 0)
         self.assertEqual(extension.dropped_audio_frames, 1)
-        extension.audio_timeline.add_dropped_audio.assert_called_once_with(320)
+        extension.audio_timeline.add_dropped_audio.assert_called_once_with(10)
 
         second = self.frame("b", b"\0\0" * 80)
         extension.buffered_frames.put_nowait(second)

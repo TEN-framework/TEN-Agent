@@ -408,6 +408,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             connection = self.connection
             if connection is None or not connection.is_connected():
                 return False
+            generation = self._generation
+            turn_done = self._turn_done
             self._capture_metadata(frame, _session_id)
             buf = frame.lock_buf()
             try:
@@ -429,12 +431,47 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                         self.ten_env.log_error("Audio diagnostic dump failed")
                 return True
             except Exception:
-                await self.on_error(
-                    "Oruk audio send failed", "send_failed", False
+                context = (
+                    self._turn_finalize_context or self._snapshot_context()
                 )
-                return False
             finally:
                 frame.unlock_buf(buf)
+        # Closing also takes _io_lock. Recover only after the failed write has
+        # released it, and never let a delayed failure close a newer socket.
+        await self._recover_send_failure(
+            connection, generation, turn_done, context
+        )
+        return False
+
+    async def _recover_send_failure(
+        self, connection, generation, turn_done, context
+    ):
+        if (
+            self.stopped
+            or self._fatal
+            or self._generation != generation
+            or self.connection is not connection
+        ):
+            return
+        await self._emit_with_context(
+            context,
+            self.on_error,
+            "Oruk audio send failed",
+            "send_failed",
+            False,
+        )
+        if self._generation != generation or self.connection is not connection:
+            return
+        await self._close_current()
+        closed_generation = generation + 1
+        if self._generation != closed_generation or self.connection is not None:
+            return
+        await self._finish_finalize(turn_done)
+        if self._generation != closed_generation or self.connection is not None:
+            return
+        await self.on_disconnected(code=0, message="Oruk audio send failed")
+        if self._generation == closed_generation and self.connection is None:
+            self._schedule_reconnect()
 
     @override
     async def finalize(self, _session_id: str | None) -> None:

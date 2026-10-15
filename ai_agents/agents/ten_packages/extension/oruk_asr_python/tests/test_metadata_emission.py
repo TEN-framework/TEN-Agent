@@ -160,6 +160,7 @@ class NativeMetadataEmission(unittest.IsolatedAsyncioTestCase):
             results = self.emitted(extension, "asr_result")
             self.assertEqual(len(results), 1)
             self.assertEqual(results[0]["metadata"]["session_id"], "b")
+            self.assertEqual(results[0]["start_ms"], 10)
             self.assertEqual(
                 len(self.emitted(extension, "asr_finalize_end")), 2
             )
