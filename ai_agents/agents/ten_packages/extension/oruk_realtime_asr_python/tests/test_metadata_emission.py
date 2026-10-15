@@ -218,3 +218,111 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(extension._emitted_ms, 1500)
         self.assertEqual(len(self.outputs(extension, "asr_finalize_end")), 1)
+
+    async def test_buffered_timeout_keeps_native_timeline_continuous(self):
+        for accepted_bytes in (0, 32000):
+            with self.subTest(accepted_bytes=accepted_bytes):
+                extension = self.new_extension()
+                extension.metadata = {"session_id": "buffered-session"}
+                extension.session_id = "buffered-session"
+                extension.finalize_id = "buffered-finalize"
+                extension._turn_bytes = accepted_bytes
+                extension.connection = Mock(
+                    is_connected=Mock(return_value=False), close=AsyncMock()
+                )
+                extension._flushing = True
+                extension._schedule_reconnect = Mock()
+                extension.buffered_frames.put_nowait(
+                    Mock(get_buf=Mock(return_value=b"\0" * 32000))
+                )
+                callback = _TurnCallback(extension, extension._generation)
+                timeline = extension.audio_timeline
+                with (
+                    patch.object(module, "IO_TIMEOUT_SECONDS", 0.001),
+                    patch.object(
+                        timeline,
+                        "add_dropped_audio",
+                        wraps=timeline.add_dropped_audio,
+                    ) as dropped,
+                ):
+                    await extension.finalize("buffered-session")
+                dropped.assert_called_once_with(1000.0)
+                self.assertEqual(extension.dropped_audio_frames, 1)
+                self.assertTrue(extension.buffered_frames.empty())
+                await callback.on_close(1000, "late")
+                await callback.on_final("late transcript")
+                extension._reset_turn()
+                extension._turn_bytes = 16000
+                await extension.on_final("next turn")
+                results = self.outputs(extension, "asr_result")
+                self.assertEqual(len(results), 1)
+                expected_start = 1000 + accepted_bytes // 32
+                self.assertEqual(
+                    (results[0]["start_ms"], results[0]["duration_ms"]),
+                    (expected_start, 500),
+                )
+                self.assertEqual(extension._emitted_ms, expected_start + 500)
+                self.assertEqual(
+                    self.outputs(extension, "asr_finalize_end"),
+                    [
+                        {
+                            "finalize_id": "buffered-finalize",
+                            "metadata": {"session_id": "buffered-session"},
+                        }
+                    ],
+                )
+
+    async def test_partial_drops_accumulate_before_integer_result_offset(self):
+        extension = self.new_extension()
+        for byte_count in (304, 16):
+            extension.buffered_frames.put_nowait(
+                Mock(get_buf=Mock(return_value=b"\0" * byte_count))
+            )
+            extension._discard_buffered_audio()
+        extension._turn_bytes = 16000
+        await extension.on_final("after partial frames")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual(result["start_ms"], 10)
+        self.assertIsInstance(result["start_ms"], int)
+        self.assertEqual(result["duration_ms"], 500)
+        self.assertEqual(extension.dropped_audio_frames, 2)
+
+    async def test_replacement_keeps_original_finalize_ack_metadata(self):
+        extension = self.new_extension()
+        request_metadata = {
+            "session_id": "finalize-a",
+            "request_tag": "original",
+        }
+        extension.metadata = copy.deepcopy(request_metadata)
+        extension.session_id = "finalize-a"
+        extension.finalize_id = "request-a"
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def emit(data):
+            if data.get_name() == "error":
+                entered.set()
+                await release.wait()
+
+        extension.ten_env.send_data.side_effect = emit
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(side_effect=OSError("broken commit")),
+            close=AsyncMock(),
+        )
+        pending = asyncio.create_task(extension.finalize("finalize-a"))
+        await asyncio.wait_for(entered.wait(), 1)
+        extension._generation += 1
+        extension._reset_turn()
+        extension.metadata = {"session_id": "audio-b"}
+        extension.session_id = "audio-b"
+        replacement = Mock(close=AsyncMock())
+        extension.connection = replacement
+        release.set()
+        await asyncio.wait_for(pending, 1)
+        self.assertIs(extension.connection, replacement)
+        replacement.close.assert_not_called()
+        self.assertEqual(
+            self.outputs(extension, "asr_finalize_end"),
+            [{"finalize_id": "request-a", "metadata": request_metadata}],
+        )
+        self.assertEqual(extension.metadata, {"session_id": "audio-b"})

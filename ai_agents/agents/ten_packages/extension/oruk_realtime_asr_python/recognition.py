@@ -92,9 +92,13 @@ class OrukRealtimeConnection:
         self._close_code: int | None = None
 
     def is_connected(self) -> bool:
+        return self.is_active() and not self._committed
+
+    def is_active(self) -> bool:
+        """The established socket can still deliver a committed turn's result."""
         return (
             self._ready
-            and not self._committed
+            and not self._closing
             and self._socket is not None
             and not self._socket.closed
         )

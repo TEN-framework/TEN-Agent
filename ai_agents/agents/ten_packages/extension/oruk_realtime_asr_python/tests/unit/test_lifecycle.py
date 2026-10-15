@@ -26,6 +26,7 @@ class Base:
         self.session_id = "session-a"
         self.buffered_frames = asyncio.Queue()
         self.buffered_frames_size = 0
+        self.dropped_audio_frames = 0
         self.sent_buffer_length = 0
         self.first_audio_time = None
         self.ten_env = Mock()
@@ -47,6 +48,12 @@ class Base:
 
     async def on_deinit(self, env):
         pass
+
+    def input_audio_channels(self):
+        return 1
+
+    def input_audio_sample_width(self):
+        return 2
 
     async def _handle_audio_frame(self, env, audio_frame):
         await self.send_audio(audio_frame, self.session_id)
@@ -164,6 +171,173 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertIs(task, e._reconnect_task)
         await task
         e._reopen.assert_awaited_once()
+
+    async def test_actual_reopen_preserves_committed_socket_until_final(self):
+        e = self.new()
+        committed = asyncio.Event()
+        created = []
+
+        class Connection:
+            def __init__(self, **kwargs):
+                self.callback = kwargs["callback"]
+                self.active = False
+                self.committed = False
+                self.close = AsyncMock(side_effect=self.deactivate)
+                self.send_pcm = AsyncMock()
+                created.append(self)
+
+            def deactivate(self):
+                self.active = False
+
+            def is_active(self):
+                return self.active
+
+            def is_connected(self):
+                return self.active and not self.committed
+
+            async def start(self, **_kwargs):
+                self.active = True
+                await self.callback.on_open()
+
+            async def commit(self):
+                self.committed = True
+                committed.set()
+
+        async def metrics(_ms):
+            await committed.wait()
+
+        e.send_connect_delay_metrics = AsyncMock(side_effect=metrics)
+        e.buffered_frames.put_nowait(
+            Mock(
+                get_buf=Mock(return_value=b"\0\0" * 160),
+                lock_buf=Mock(return_value=b"\0\0" * 160),
+            )
+        )
+        with patch.object(rt, "OrukRealtimeConnection", Connection):
+            pending = asyncio.create_task(e.finalize("session-a"))
+            await asyncio.wait_for(committed.wait(), 1)
+            await asyncio.wait_for(e._reconnect_task, 1)
+            await asyncio.sleep(0.6)
+            await e.start_connection()
+            self.assertEqual(len(created), 1)
+            created[0].close.assert_not_called()
+            self.assertFalse(pending.done())
+            await created[0].callback.on_final("delayed final")
+            await asyncio.wait_for(pending, 1)
+        e.send_asr_finalize_end.assert_awaited_once()
+        self.assertEqual(
+            e.send_asr_result.await_args.args[0].text, "delayed final"
+        )
+
+    async def test_closed_draining_socket_does_not_count_as_active(self):
+        e = self.new()
+        old = Mock(
+            is_connected=Mock(return_value=False),
+            is_active=Mock(return_value=False),
+            close=AsyncMock(),
+        )
+        e.connection = old
+        e._draining_connection = old
+        replacement = Mock(start=AsyncMock(), close=AsyncMock())
+        with patch.object(
+            rt, "OrukRealtimeConnection", return_value=replacement
+        ):
+            await e.start_connection()
+        old.close.assert_awaited_once()
+        self.assertIs(e.connection, replacement)
+
+    async def test_discard_owns_inflight_rejected_buffer_frame(self):
+        e = self.new()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send(_frame, _session):
+            entered.set()
+            await release.wait()
+            return False
+
+        e.send_audio = AsyncMock(side_effect=send)
+        e.buffered_frames.put_nowait(
+            Mock(get_buf=Mock(return_value=b"\0" * 304))
+        )
+        e.buffered_frames.put_nowait(
+            Mock(get_buf=Mock(return_value=b"\0" * 16))
+        )
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await entered.wait()
+        e._discard_buffered_audio()
+        release.set()
+        await flushing
+        self.assertTrue(e.buffered_frames.empty())
+        self.assertEqual(e.dropped_audio_frames, 2)
+        self.assertEqual(e._emitted_ms, 10)
+        self.assertEqual(
+            sum(
+                call.args[0]
+                for call in e.audio_timeline.add_dropped_audio.call_args_list
+            ),
+            10,
+        )
+
+    async def test_late_open_cannot_mark_replacement_ready(self):
+        e = self.new()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def flush():
+            entered.set()
+            await release.wait()
+
+        e._flush_buffered_audio = AsyncMock(side_effect=flush)
+        e.connection = Mock()
+        opening = asyncio.create_task(e.on_open())
+        await entered.wait()
+        e._generation += 1
+        e.connection = Mock()
+        e._flushing = True
+        e._ready_event.clear()
+        release.set()
+        await opening
+        self.assertTrue(e._flushing)
+        self.assertFalse(e._ready_event.is_set())
+        e.send_connect_delay_metrics.assert_not_called()
+
+    async def test_replacement_keeps_original_finalize_ack_context(self):
+        e = self.new()
+        e.metadata = {"session_id": "finalize-a", "request_tag": "original"}
+        e.session_id = "finalize-a"
+        entered, release = asyncio.Event(), asyncio.Event()
+        acknowledgements = []
+
+        async def emit_error(*_args):
+            entered.set()
+            await release.wait()
+
+        async def acknowledge():
+            acknowledgements.append(copy.deepcopy(e.metadata))
+
+        e.send_asr_error = AsyncMock(side_effect=emit_error)
+        e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(side_effect=OSError("broken commit")),
+            close=AsyncMock(),
+        )
+        pending = asyncio.create_task(e.finalize("finalize-a"))
+        await asyncio.wait_for(entered.wait(), 1)
+        e._generation += 1
+        e._reset_turn()
+        e.metadata = {"session_id": "audio-b"}
+        e.session_id = "audio-b"
+        replacement = Mock(close=AsyncMock())
+        e.connection = replacement
+        release.set()
+        await asyncio.wait_for(pending, 1)
+        self.assertIs(e.connection, replacement)
+        replacement.close.assert_not_called()
+        self.assertEqual(
+            acknowledgements,
+            [{"session_id": "finalize-a", "request_tag": "original"}],
+        )
+        self.assertEqual(e.metadata, {"session_id": "audio-b"})
 
     async def test_finalize_drains_queued_audio_and_inflight_dump(self):
         e = self.new()
@@ -1171,8 +1345,15 @@ class Transport(unittest.IsolatedAsyncioTestCase):
         e._ready = True
         e._socket = Mock(closed=False)
         self.assertTrue(e.is_connected())
+        self.assertTrue(e.is_active())
         e._committed = True
         self.assertFalse(e.is_connected())
+        self.assertTrue(e.is_active())
+        e._socket.closed = True
+        self.assertFalse(e.is_active())
+        e._socket.closed = False
+        e._closing = True
+        self.assertFalse(e.is_active())
 
     async def test_committed_turn_rejects_audio(self):
         e = self.new()

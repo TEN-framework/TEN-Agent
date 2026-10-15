@@ -110,6 +110,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._emitted_ms = 0
         self._turn_accounted = False
         self._turn_finalize_context = None
+        self._draining_connection = None
+        self._buffer_epoch = 0
+        self._dropped_duration_ms = 0.0
 
     @property
     def metadata(self):
@@ -217,13 +220,19 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         await super()._handle_audio_frame(ten_env, audio_frame)
 
     async def _flush_buffered_audio(self):
+        epoch = self._buffer_epoch
         while not self.stopped:
             try:
                 frame = self.buffered_frames.get_nowait()
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
-            if not await self.send_audio(frame, self.session_id):
+            success = await self.send_audio(frame, self.session_id)
+            if epoch != self._buffer_epoch:
+                if not success:
+                    self._record_dropped_frame(frame)
+                return
+            if not success:
                 pending = [frame]
                 while not self.buffered_frames.empty():
                     pending.append(self.buffered_frames.get_nowait())
@@ -307,7 +316,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     code=0, message="connection disabled"
                 )
                 return
-            if self.is_connected():
+            if self._has_active_connection():
                 await self.on_connected()
                 return
             assert self.config is not None
@@ -366,12 +375,22 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             and self.connection.is_connected()
         )
 
+    def _has_active_connection(self) -> bool:
+        return self.is_connected() or (
+            not self.stopped
+            and not self._fatal
+            and self.connection is not None
+            and self.connection is self._draining_connection
+            and self.connection.is_active()
+        )
+
     async def _close_current(self) -> None:
         self._ready_event.set()
         self._generation += 1
         async with self._io_lock:
             self._account_turn()
             connection, self.connection = self.connection, None
+            self._draining_connection = None
         if connection is not None:
             await connection.close()
 
@@ -508,6 +527,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     # while it is still waiting for the next ready connection.
                     self._finalize_pending = True
                     self._turn_finalize_context = request_context
+                    self._draining_connection = connection
                     callback_owned = True
                     await asyncio.wait_for(
                         connection.commit(), timeout=IO_TIMEOUT_SECONDS
@@ -540,9 +560,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     return
                 # The boundary prevents later-turn audio entering this buffer.
                 # A failed turn must not be replayed as part of the next one.
-                while not self.buffered_frames.empty():
-                    self.buffered_frames.get_nowait()
-                self.buffered_frames_size = 0
+                self._discard_buffered_audio()
                 await self._close_current()
                 if self._generation != failed_generation + 1:
                     return
@@ -550,7 +568,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 self._schedule_reconnect()
             finally:
                 if callback_owned:
-                    await self._finish_finalize(turn_done)
+                    await self._finish_finalize(
+                        turn_done, context=request_context
+                    )
                 else:
                     await self._emit_with_context(
                         request_context, self.send_asr_finalize_end
@@ -568,25 +588,33 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             await self._ready_event.wait()
         return self.connection
 
-    async def _finish_finalize(self, turn_done=None, generation=None) -> None:
+    async def _finish_finalize(
+        self, turn_done=None, generation=None, context=None
+    ) -> None:
         (turn_done if turn_done is not None else self._turn_done).set()
         if generation is not None and generation != self._generation:
             return
         if self._finalize_pending:
             self._finalize_pending = False
             await self._emit_with_context(
-                self._turn_finalize_context, self.send_asr_finalize_end
+                context if context is not None else self._turn_finalize_context,
+                self.send_asr_finalize_end,
             )
 
     # ---- Vendor callbacks (OrukRealtimeCallback) ----
 
     @override
     async def on_open(self) -> None:
+        generation, connection = self._generation, self.connection
         self.ten_env.log_info(
             "Oruk realtime connection opened", category=LOG_CATEGORY_VENDOR
         )
         await self.on_connected()
+        if generation != self._generation or self.connection is not connection:
+            return
         await self._flush_buffered_audio()
+        if generation != self._generation or self.connection is not connection:
+            return
         self._flushing = False
         self._ready_event.set()
         await self.send_connect_delay_metrics(
@@ -697,6 +725,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def on_close(self, code: int, message: str) -> None:
         # Transport cleanup precedes callback delivery in the client.
         self.connection = None
+        self._draining_connection = None
         self._ready_event.set()
         self._account_turn()
         await self._finish_finalize()
@@ -713,12 +742,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def _reopen(self) -> None:
         async with self._reconnect_lock:
             for attempt in range(5):
-                if self.stopped or self._fatal or self.is_connected():
+                if self.stopped or self._fatal or self._has_active_connection():
                     return
                 if attempt:
                     await asyncio.sleep(min(0.5 * 2 ** (attempt - 1), 4.0))
                 await self.start_connection()
-                if self.is_connected():
+                if self._has_active_connection():
                     return
             if not self.stopped and not self._fatal:
                 await self.on_error(
@@ -736,6 +765,28 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._turn_bytes = 0
         self._turn_accounted = False
         self._turn_finalize_context = None
+        self._draining_connection = None
+
+    def _record_dropped_frame(self, frame):
+        duration_ms = (
+            len(frame.get_buf())
+            / self.input_audio_sample_rate()
+            / self.input_audio_channels()
+            / self.input_audio_sample_width()
+            * 1000
+        )
+        self.audio_timeline.add_dropped_audio(duration_ms)
+        self.dropped_audio_frames += 1
+        prior_offset = int(self._dropped_duration_ms)
+        self._dropped_duration_ms += duration_ms
+        # Round the cumulative duration once, rather than every short frame.
+        self._emitted_ms += int(self._dropped_duration_ms) - prior_offset
+
+    def _discard_buffered_audio(self):
+        self._buffer_epoch += 1
+        while not self.buffered_frames.empty():
+            self._record_dropped_frame(self.buffered_frames.get_nowait())
+        self.buffered_frames_size = 0
 
     def _account_turn(self, generation=None):
         if generation is not None and generation != self._generation:
