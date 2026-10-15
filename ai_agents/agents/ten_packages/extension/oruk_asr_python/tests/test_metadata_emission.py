@@ -6,6 +6,7 @@ import json
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
+from ten_ai_base.message import ModuleMetricKey
 from ten_runtime import Data
 
 from .. import extension as local_extension
@@ -199,6 +200,177 @@ class NativeMetadataEmission(unittest.IsolatedAsyncioTestCase):
         result = self.emitted(extension, "asr_result")[0]
         self.assertEqual((result["start_ms"], result["duration_ms"]), (0, 30))
         self.assertEqual(extension.dropped_audio_frames, 0)
+
+    async def test_connected_partial_finalize_metadata_keeps_session(self):
+        for supplied in ({}, {"request_tag": "x"}, {"session_id": "override"}):
+            with self.subTest(supplied=supplied):
+                extension = self.new()
+                extension.recognizer = Mock(
+                    loaded=True, recognize=Mock(return_value="spoken words")
+                )
+                extension._connected = True
+                await self.consume(extension, [self.frame("audio-session")])
+                request = Data.create("asr_finalize")
+                request.set_property_from_json(
+                    None,
+                    json.dumps(
+                        {"finalize_id": "request", "metadata": supplied}
+                    ),
+                )
+                pending = asyncio.create_task(
+                    extension.on_data(extension.ten_env, request)
+                )
+                boundary = await asyncio.wait_for(
+                    extension.audio_frames_queue.get(), 1
+                )
+                consumer = asyncio.create_task(
+                    extension._handle_audio_frame(extension.ten_env, boundary)
+                )
+                try:
+                    await asyncio.wait_for(pending, 1)
+                finally:
+                    boundary.release.set()
+                    await asyncio.wait_for(consumer, 1)
+                expected = {"session_id": "audio-session", **supplied}
+                result = self.emitted(extension, "asr_result")[0]
+                self.assertEqual(
+                    {key: result["metadata"][key] for key in expected}, expected
+                )
+                self.assertEqual(
+                    self.emitted(extension, "asr_finalize_end"),
+                    [{"finalize_id": "request", "metadata": expected}],
+                )
+                ttlw = [
+                    item
+                    for item in self.emitted(extension, "metrics")
+                    if ModuleMetricKey.ASR_TTLW in item["metrics"]
+                ]
+                self.assertEqual(len(ttlw), 1)
+                self.assertEqual(
+                    ttlw[0]["metadata"]["session_id"], expected["session_id"]
+                )
+
+    async def test_startup_partial_finalize_metadata_uses_drained_audio(self):
+        for supplied in (
+            None,
+            {},
+            {"request_tag": "x"},
+            {"session_id": "override"},
+        ):
+            with self.subTest(supplied=supplied):
+                extension = self.new()
+                extension.metadata = {"session_id": "previous-a"}
+                extension.session_id = "previous-a"
+                extension.recognizer = Mock(
+                    loaded=True, recognize=Mock(return_value="startup words")
+                )
+                extension._loading = True
+                extension._flushing = True
+                extension._ready_event.clear()
+                await self.consume(extension, [self.frame("audio-b")])
+                request = Data.create("asr_finalize")
+                payload = {"finalize_id": "startup-request"}
+                if supplied is not None:
+                    payload["metadata"] = supplied
+                request.set_property_from_json(None, json.dumps(payload))
+                pending = asyncio.create_task(
+                    extension.on_data(extension.ten_env, request)
+                )
+                boundary = await asyncio.wait_for(
+                    extension.audio_frames_queue.get(), 1
+                )
+                consumer = asyncio.create_task(
+                    extension._handle_audio_frame(extension.ten_env, boundary)
+                )
+                try:
+                    await asyncio.wait_for(boundary.ready.wait(), 1)
+                    await extension._flush_buffered_audio()
+                    extension._loading = False
+                    extension._flushing = False
+                    extension._connected = True
+                    extension._ready_event.set()
+                    await asyncio.wait_for(pending, 1)
+                finally:
+                    boundary.release.set()
+                    await asyncio.wait_for(consumer, 1)
+                expected = {"session_id": "audio-b", **(supplied or {})}
+                result = self.emitted(extension, "asr_result")[0]
+                self.assertEqual(
+                    {key: result["metadata"][key] for key in expected}, expected
+                )
+                self.assertEqual(
+                    self.emitted(extension, "asr_finalize_end"),
+                    [{"finalize_id": "startup-request", "metadata": expected}],
+                )
+                ttlw = [
+                    item
+                    for item in self.emitted(extension, "metrics")
+                    if ModuleMetricKey.ASR_TTLW in item["metrics"]
+                ]
+                self.assertEqual(len(ttlw), 1)
+                self.assertEqual(
+                    ttlw[0]["metadata"]["session_id"], expected["session_id"]
+                )
+
+    async def test_eviction_during_flush_preserves_start_and_elapsed_span(self):
+        for blocked_call, sizes in (
+            (1, (32000, 32000)),
+            (2, (16000, 16000, 32000)),
+        ):
+            with self.subTest(blocked_call=blocked_call):
+                extension = self.new()
+                extension.buffer_strategy = Mock(
+                    return_value=local_extension.ASRBufferConfigModeKeep(
+                        byte_limit=64000
+                    )
+                )
+                await self.consume(
+                    extension, [self.frame("a", size) for size in sizes]
+                )
+                extension.recognizer = Mock(
+                    loaded=True, recognize=Mock(return_value="retained words")
+                )
+                extension._connected = True
+                extension._flushing = True
+                entered, release = asyncio.Event(), asyncio.Event()
+                calls = 0
+
+                async def dump(pcm):
+                    nonlocal calls
+                    calls += 1
+                    if calls == blocked_call:
+                        entered.set()
+                        await release.wait()
+
+                extension.audio_dumper = Mock(push_bytes=dump)
+                flushing = asyncio.create_task(
+                    extension._flush_buffered_audio()
+                )
+                try:
+                    await asyncio.wait_for(entered.wait(), 1)
+                    await self.consume(extension, [self.frame("a", 64000)])
+                finally:
+                    release.set()
+                    await asyncio.wait_for(flushing, 1)
+                extension._flushing = False
+                extension.finalize_id = "retained-turn"
+                await asyncio.wait_for(extension.finalize("a"), 1)
+                result = self.emitted(extension, "asr_result")[0]
+                self.assertEqual(
+                    (result["start_ms"], result["duration_ms"]), (0, 4000)
+                )
+                self.assertEqual(extension.dropped_audio_frames, 1)
+                self.assertEqual(
+                    extension.audio_timeline.get_total_user_audio_duration(),
+                    4000,
+                )
+                await self.consume(extension, [self.frame("next", 16000)])
+                extension.finalize_id = "next-turn"
+                await asyncio.wait_for(extension.finalize("next"), 1)
+                result = self.emitted(extension, "asr_result")[1]
+                self.assertEqual(
+                    (result["start_ms"], result["duration_ms"]), (4000, 500)
+                )
 
     async def test_result_keeps_generated_fields_and_ack_echoes_input(self):
         extension = self.new()

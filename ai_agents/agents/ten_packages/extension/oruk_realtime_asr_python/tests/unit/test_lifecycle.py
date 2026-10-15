@@ -1400,6 +1400,46 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         result = e.send_asr_result.await_args.args[0]
         self.assertEqual((result.start_ms, result.duration_ms), (4000, 500))
 
+    async def test_connected_finalize_preserves_known_or_explicit_session(self):
+        for supplied in (
+            {},
+            {"request_tag": "x"},
+            {"session_id": "override", "request_tag": "x"},
+        ):
+            with self.subTest(metadata=supplied):
+                e = self.new()
+                e.metadata = {"session_id": "session-s"}
+                e.session_id = "session-s"
+                acknowledgements = []
+
+                async def commit():
+                    await e.on_final("connected transcript")
+
+                async def acknowledge():
+                    acknowledgements.append(copy.deepcopy(e.metadata))
+
+                e.connection = Mock(
+                    is_connected=Mock(return_value=True),
+                    commit=AsyncMock(side_effect=commit),
+                )
+                e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+                request = Mock(
+                    get_name=Mock(return_value="asr_finalize"),
+                    get_property_to_json=Mock(
+                        return_value=(json.dumps(supplied), None)
+                    ),
+                    get_property_string=Mock(
+                        return_value=("connected-finalize", None)
+                    ),
+                )
+                await e.on_data(e.ten_env, request)
+                expected = {"session_id": "session-s", **supplied}
+                result = e.send_asr_result.await_args.args[0]
+                self.assertEqual(
+                    {key: result.metadata[key] for key in expected}, expected
+                )
+                self.assertEqual(acknowledgements, [expected])
+
 
 class Transport(unittest.IsolatedAsyncioTestCase):
     def new(self):

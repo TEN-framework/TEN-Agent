@@ -76,6 +76,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
         # Current utterance PCM16 bytes and the stream offset where it began.
         self._utterance = bytearray()
         self._utterance_start_ms = 0
+        self._utterance_started = False
+        self._utterance_gap_ms = 0.0
 
     @property
     def metadata(self):
@@ -102,6 +104,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
             if isinstance(value, dict):
                 self.metadata = copy.deepcopy(value)
                 self.session_id = value.get("session_id", self.session_id)
+                if "session_id" not in value and self.session_id is not None:
+                    self.metadata["session_id"] = self.session_id
             if session_id is not None and self.metadata is None:
                 self.metadata = {"session_id": session_id}
                 self.session_id = session_id
@@ -346,6 +350,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
             self._flushing = True
             self._connected = True
             self._utterance.clear()
+            self._utterance_started = False
+            self._utterance_gap_ms = 0.0
             self._utterance_start_ms = int(
                 self.audio_timeline.get_total_user_audio_duration()
             )
@@ -401,6 +407,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
             boundary.release.set()
         self._connected = False
         self._utterance.clear()
+        self._utterance_started = False
+        self._utterance_gap_ms = 0.0
         task, self._inference_task = self._inference_task, None
         if task is not None and not task.done():
             task.cancel()
@@ -458,6 +466,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     ),
                 )
                 return False
+            if not self._utterance_started:
+                self._utterance_start_ms = int(
+                    self.audio_timeline.get_total_user_audio_duration()
+                )
+                self._utterance_started = True
             if self.audio_dumper:
                 try:
                     await self.audio_dumper.push_bytes(audio_data)
@@ -470,10 +483,6 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 # this earlier frame is suspended in its diagnostic dump.
                 self._record_dropped_audio(len(audio_data))
                 return False
-            if not self._utterance:
-                self._utterance_start_ms = int(
-                    self.audio_timeline.get_total_user_audio_duration()
-                )
             self._utterance.extend(audio_data)
             self.audio_timeline.add_user_audio(
                 len(audio_data) / 2 / self.config.sample_rate * 1000
@@ -547,9 +556,13 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 overflow = self._utterance_overflow
                 self._utterance_overflow = False
                 sample_rate = self.config.sample_rate
-                duration_ms = int(len(pcm) / 2 / sample_rate * 1000)
+                duration_ms = int(
+                    len(pcm) / 2 / sample_rate * 1000 + self._utterance_gap_ms
+                )
                 start_ms = self._utterance_start_ms
                 self._utterance_start_ms += duration_ms
+                self._utterance_started = False
+                self._utterance_gap_ms = 0.0
             finally:
                 self._audio_lock.release()
                 self._release_boundary()
@@ -636,6 +649,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
         )
         self.audio_timeline.add_dropped_audio(duration_ms)
         self.dropped_audio_frames += 1
+        if self._utterance_started:
+            self._utterance_gap_ms += duration_ms
 
     def _build_metadata(self) -> Dict[str, Any]:
         """Preserve caller fields, with authoritative generated ASR details."""

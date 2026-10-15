@@ -760,3 +760,79 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             (result["start_ms"], result["duration_ms"]), (4000, 500)
         )
+
+    async def test_connected_finalize_preserves_known_or_explicit_session(self):
+        for supplied in (
+            {},
+            {"request_tag": "x"},
+            {"session_id": "override", "request_tag": "x"},
+        ):
+            with self.subTest(metadata=supplied):
+                extension = self.new_extension()
+                frame = Mock(
+                    get_buf=Mock(return_value=b"\0" * 320),
+                    lock_buf=Mock(return_value=b"\0" * 320),
+                    get_property_to_json=Mock(
+                        return_value=(
+                            json.dumps({"session_id": "session-s"}),
+                            None,
+                        )
+                    ),
+                )
+
+                async def commit():
+                    await extension.on_final("connected transcript")
+
+                extension.connection = Mock(
+                    is_connected=Mock(return_value=True),
+                    send_pcm=AsyncMock(),
+                    commit=AsyncMock(side_effect=commit),
+                )
+                await extension._handle_audio_frame(extension.ten_env, frame)
+                request = Data.create("asr_finalize")
+                request.set_property_from_json(
+                    None,
+                    json.dumps(
+                        {
+                            "finalize_id": "connected-finalize",
+                            "metadata": supplied,
+                        }
+                    ),
+                )
+                pending = asyncio.create_task(
+                    extension.on_data(extension.ten_env, request)
+                )
+                boundary = await asyncio.wait_for(
+                    extension.audio_frames_queue.get(), 1
+                )
+                consumer = asyncio.create_task(
+                    extension._handle_audio_frame(extension.ten_env, boundary)
+                )
+                await asyncio.wait_for(pending, 1)
+                await asyncio.wait_for(consumer, 1)
+                expected = {"session_id": "session-s", **supplied}
+                result = self.outputs(extension, "asr_result")[0]
+                self.assertEqual(
+                    {key: result["metadata"][key] for key in expected}, expected
+                )
+                self.assertEqual(
+                    self.outputs(extension, "asr_finalize_end"),
+                    [
+                        {
+                            "finalize_id": "connected-finalize",
+                            "metadata": expected,
+                        }
+                    ],
+                )
+                ttlw = [
+                    item
+                    for item in self.outputs(extension, "metrics")
+                    if ModuleMetricKey.ASR_TTLW in item["metrics"]
+                ]
+                self.assertEqual(len(ttlw), 1)
+                self.assertEqual(
+                    ttlw[0]["metadata"]["session_id"], expected["session_id"]
+                )
+                self.assertEqual(
+                    supplied, {key: expected[key] for key in supplied}
+                )

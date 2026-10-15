@@ -735,6 +735,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         if explicit:
             metadata = metadata or {}
             metadata.update(request_metadata or {})
+        if session_id is not None:
+            metadata = metadata or {}
+            metadata.setdefault("session_id", session_id)
         return metadata, session_id
 
     async def _finish_finalize(
