@@ -61,9 +61,13 @@ the whole turn. Audio is ignored until the next finalize, which acknowledges
 the discarded turn; the following turn can proceed normally.
 
 Initial model acquisition and prewarming have a **120-second** deadline to
-allow a cold download. Audio draining, finalize readiness, and recognition each
-have a **30-second** deadline. A timeout emits a fatal error and disables the extension instance;
-subsequent finalize requests acknowledge promptly without starting more work.
+allow a cold download. Audio draining and finalize readiness each have a
+**30-second** deadline. CPU recognition has a separate deadline equal to the
+accepted audio duration, with a **30-second minimum** and **120-second maximum**.
+For example, 85.7 seconds of audio receives 85.7 seconds to finish inference;
+dropped audio does not increase this budget. A timeout emits a fatal error and
+disables the extension instance; subsequent finalize requests acknowledge
+promptly without starting more work.
 Startup, stop, and finalize do not wait indefinitely for native work. Python
 cannot interrupt an active download or ONNX call: its result is ignored and its
 model is released when that call returns. Restart the extension after a fatal timeout.

@@ -747,6 +747,35 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(extension.finalize("b"), 0.01)
         self.assertEqual(extension.send_asr_finalize_end.await_count, 2)
 
+    async def test_inference_deadline_scales_with_pcm_and_keeps_drain_bounded(
+        self,
+    ):
+        real_wait_for = asyncio.wait_for
+        for pcm_bytes, expected in (
+            (320, 30.0),
+            (2742240, 85.695),
+            (local.MAX_UTTERANCE_BYTES, 120.0),
+        ):
+            with self.subTest(pcm_bytes=pcm_bytes):
+                extension = self.new()
+                extension._utterance.extend(b"\0" * pcm_bytes)
+                extension._utterance_gap_ms = 300000
+                deadlines = []
+
+                async def wait_for(awaitable, timeout):
+                    deadlines.append(
+                        (awaitable is extension._inference_task, timeout)
+                    )
+                    return await real_wait_for(awaitable, timeout)
+
+                with patch.object(local.asyncio, "wait_for", wait_for):
+                    await extension.finalize("a")
+                self.assertEqual(deadlines, [(False, 30.0), (True, expected)])
+                extension.recognizer.recognize.assert_called_once()
+                extension.send_asr_result.assert_awaited_once()
+                extension.send_asr_finalize_end.assert_awaited_once()
+                extension.send_asr_error.assert_not_called()
+
     async def test_inference_timeout_closes_without_waiting_for_native_lock(
         self,
     ):
@@ -766,7 +795,7 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
         extension.recognizer = recognizer
         extension._utterance.extend(b"\0\0" * 160)
         try:
-            with patch.object(local, "FINALIZE_TIMEOUT_SECONDS", 0.03):
+            with patch.object(local, "RECOGNITION_TIMEOUT_MIN_SECONDS", 0.03):
                 await asyncio.wait_for(extension.finalize("a"), 0.3)
             self.assertTrue(entered.is_set())
             self.assertTrue(recognizer._closed)

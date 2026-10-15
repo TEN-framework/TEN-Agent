@@ -36,6 +36,8 @@ from .recognizer import OrukeetRecognizer
 MAX_UTTERANCE_BYTES = 10 * 1024 * 1024
 FINALIZE_TIMEOUT_SECONDS = 30.0
 MODEL_START_TIMEOUT_SECONDS = 120.0
+RECOGNITION_TIMEOUT_MIN_SECONDS = 30.0
+RECOGNITION_TIMEOUT_MAX_SECONDS = 120.0
 
 
 class _FinalizeBoundary:
@@ -620,9 +622,16 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     )
                 )
                 self._inference_task = task
-                text = await asyncio.wait_for(
-                    task, timeout=FINALIZE_TIMEOUT_SECONDS
+                # Native CPU work scales with accepted audio, unlike queue
+                # draining. Exclude dropped timeline gaps from this budget.
+                recognition_timeout = min(
+                    RECOGNITION_TIMEOUT_MAX_SECONDS,
+                    max(
+                        RECOGNITION_TIMEOUT_MIN_SECONDS,
+                        len(pcm) / 2 / sample_rate,
+                    ),
                 )
+                text = await asyncio.wait_for(task, timeout=recognition_timeout)
             except asyncio.TimeoutError:
                 await self._fail_session(
                     "Orukeet recognition timed out", "recognition_timeout"

@@ -219,6 +219,48 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(extension._emitted_ms, 1500)
         self.assertEqual(len(self.outputs(extension, "asr_finalize_end")), 1)
 
+    async def test_remote_close_waits_for_successful_send_before_next_result(
+        self,
+    ):
+        extension = self.new_extension()
+        extension.metadata = {"session_id": "session-a"}
+        extension.session_id = "session-a"
+        extension._turn_bytes = 32000
+        extension._schedule_reconnect = Mock()
+        written, release = asyncio.Event(), asyncio.Event()
+
+        async def write(_pcm):
+            written.set()
+            await release.wait()
+
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=write),
+        )
+        frame = Mock(
+            get_property_to_json=Mock(return_value=("", None)),
+            lock_buf=Mock(return_value=b"\0" * 16000),
+        )
+        pending = asyncio.create_task(extension.send_audio(frame, "session-a"))
+        await asyncio.wait_for(written.wait(), 1)
+        await _TurnCallback(extension, extension._generation).on_close(
+            1006, "remote close"
+        )
+        retiring = tuple(extension._remote_close_tasks)
+        self.assertFalse(extension._turn_accounted)
+        release.set()
+        self.assertTrue(await asyncio.wait_for(pending, 1))
+        await asyncio.wait_for(asyncio.gather(*retiring), 1)
+        extension._reset_turn()
+        extension._turn_bytes = 16000
+        await extension.on_final("next turn")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual(
+            (result["start_ms"], result["duration_ms"]), (1500, 500)
+        )
+        self.assertEqual(result["metadata"]["session_id"], "session-a")
+        self.assertEqual(extension._emitted_ms, 2000)
+
     async def test_buffered_timeout_keeps_native_timeline_continuous(self):
         for accepted_bytes in (0, 32000):
             with self.subTest(accepted_bytes=accepted_bytes):

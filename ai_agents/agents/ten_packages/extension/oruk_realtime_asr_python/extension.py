@@ -100,6 +100,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._finalize_request_lock = asyncio.Lock()
         self._finalize_boundaries: set[_FinalizeBoundary] = set()
         self._reconnect_task = None
+        self._remote_close_tasks: set[asyncio.Task] = set()
         self._generation = 0
         self._fatal = False
         self._init_failed = False
@@ -547,6 +548,15 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             except asyncio.CancelledError:
                 pass
         await self._close_current()
+        pending_closes = [
+            task
+            for task in self._remote_close_tasks
+            if task is not asyncio.current_task()
+        ]
+        if pending_closes:
+            for pending in pending_closes:
+                pending.cancel()
+            await asyncio.gather(*pending_closes, return_exceptions=True)
         await self._finish_finalize()
 
     @override
@@ -925,13 +935,37 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     @override
     async def on_close(self, code: int, message: str) -> None:
         # Transport cleanup precedes callback delivery in the client.
-        generation = self._generation
-        turn_done = self._turn_done
-        self.connection = None
-        self._draining_connection = None
-        self._ready_event.set()
-        self._account_turn()
-        await self._finish_finalize(turn_done, generation)
+        retirement = self._retire_remote_close(
+            self._generation,
+            self.connection,
+            self._turn_done,
+            self._turn_finalize_context,
+            code,
+            message,
+        )
+        if self._io_lock.locked():
+            # A transport may deliver close inline from send/commit. Let that
+            # write return and record its accepted bytes before retiring it.
+            task = asyncio.create_task(retirement)
+            self._remote_close_tasks.add(task)
+            task.add_done_callback(self._remote_close_tasks.discard)
+            return
+        await retirement
+
+    async def _retire_remote_close(
+        self, generation, connection, turn_done, context, code, message
+    ):
+        async with self._io_lock:
+            if (
+                generation != self._generation
+                or self.connection is not connection
+            ):
+                return
+            self.connection = None
+            self._draining_connection = None
+            self._ready_event.set()
+            self._account_turn(generation)
+        await self._finish_finalize(turn_done, generation, context=context)
         if generation != self._generation or self.connection is not None:
             return
         await self.on_disconnected(code=code, message=message)

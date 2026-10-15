@@ -473,6 +473,128 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         e.on_disconnected.assert_not_called()
         e._schedule_reconnect.assert_not_called()
 
+    async def test_remote_close_accounts_successful_inflight_send(self):
+        e = self.new()
+        e._turn_bytes = 32000
+        e._schedule_reconnect = Mock()
+        written, release = asyncio.Event(), asyncio.Event()
+
+        async def write(_pcm):
+            written.set()
+            await release.wait()
+
+        connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=write),
+        )
+        e.connection = connection
+        frame = Mock(
+            get_property_to_json=Mock(return_value=("", None)),
+            lock_buf=Mock(return_value=b"\0" * 16000),
+        )
+        sending = asyncio.create_task(e.send_audio(frame, "session-a"))
+        await asyncio.wait_for(written.wait(), 1)
+        await rt._TurnCallback(e, e._generation).on_close(1006, "remote")
+        retiring = tuple(e._remote_close_tasks)
+        self.assertEqual(len(retiring), 1)
+        self.assertFalse(e._turn_accounted)
+        release.set()
+        self.assertTrue(await asyncio.wait_for(sending, 1))
+        await asyncio.wait_for(asyncio.gather(*retiring), 1)
+        self.assertEqual(e._emitted_ms, 1500)
+        self.assertEqual(e._turn_bytes, 48000)
+        e._reset_turn()
+        e._turn_bytes = 16000
+        await e.on_final("next")
+        result = e.send_asr_result.await_args.args[0]
+        self.assertEqual((result.start_ms, result.duration_ms), (1500, 500))
+        self.assertEqual(e._emitted_ms, 2000)
+
+    async def test_remote_close_waiting_for_io_preserves_replacement(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        e.connection = Mock()
+        await e._io_lock.acquire()
+        await rt._TurnCallback(e, e._generation).on_close(1006, "old")
+        retiring = tuple(e._remote_close_tasks)
+        await asyncio.sleep(0)
+        e._generation += 1
+        e._reset_turn()
+        replacement = Mock()
+        e.connection = replacement
+        e._turn_bytes = 16000
+        e._io_lock.release()
+        await asyncio.wait_for(asyncio.gather(*retiring), 1)
+        self.assertIs(e.connection, replacement)
+        self.assertEqual(e._emitted_ms, 0)
+        self.assertFalse(e._turn_accounted)
+        e.send_asr_finalize_end.assert_not_called()
+        e.on_disconnected.assert_not_called()
+        e._schedule_reconnect.assert_not_called()
+
+    async def test_inline_transport_close_does_not_deadlock_io(self):
+        for operation in ("send", "commit", "close"):
+            with self.subTest(operation=operation):
+                e = self.new()
+                e._schedule_reconnect = Mock()
+                e._turn_bytes = 32000
+                callback = rt._TurnCallback(e, e._generation)
+
+                async def close_inline(*_args):
+                    await callback.on_close(1000, "inline close")
+
+                connection = Mock(
+                    is_connected=Mock(return_value=True),
+                    send_pcm=AsyncMock(side_effect=close_inline),
+                    commit=AsyncMock(side_effect=close_inline),
+                    close=AsyncMock(side_effect=close_inline),
+                )
+                e.connection = connection
+                if operation == "send":
+                    frame = Mock(
+                        get_property_to_json=Mock(return_value=("", None)),
+                        lock_buf=Mock(return_value=b"\0" * 16000),
+                    )
+                    self.assertTrue(
+                        await asyncio.wait_for(
+                            e.send_audio(frame, "session-a"), 1
+                        )
+                    )
+                elif operation == "commit":
+                    await asyncio.wait_for(e.finalize("session-a"), 1)
+                    e.send_asr_finalize_end.assert_awaited_once()
+                else:
+                    await asyncio.wait_for(e.stop_connection(), 1)
+                await asyncio.wait_for(
+                    asyncio.gather(*e._remote_close_tasks), 1
+                )
+                self.assertIsNone(e.connection)
+                self.assertEqual(
+                    e._emitted_ms, 1500 if operation == "send" else 1000
+                )
+
+    async def test_stop_cancels_deferred_close_waiting_for_ack(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        e._finalize_pending = True
+        e._turn_bytes = 32000
+        acknowledging = asyncio.Event()
+
+        async def acknowledge():
+            acknowledging.set()
+            await asyncio.Event().wait()
+
+        e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+        e.connection = Mock(close=AsyncMock())
+        await e._io_lock.acquire()
+        await e.on_close(1000, "remote")
+        retiring = tuple(e._remote_close_tasks)
+        e._io_lock.release()
+        await asyncio.wait_for(acknowledging.wait(), 1)
+        await asyncio.wait_for(e.stop_connection(), 1)
+        self.assertTrue(all(task.done() for task in retiring))
+        self.assertEqual(e._emitted_ms, 1000)
+
     async def test_buffer_bytes_track_inflight_flush_and_arrival(self):
         e = self.new()
         e._flushing = True
