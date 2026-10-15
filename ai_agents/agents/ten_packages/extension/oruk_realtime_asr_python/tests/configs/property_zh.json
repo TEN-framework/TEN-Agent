@@ -1,0 +1,9 @@
+{
+  "params": {
+    "key": "${env:ORUK_API_KEY|}",
+    "language": "zh",
+    "sample_rate": 16000,
+    "phrase_emotions": true,
+    "result_language_default": "zh-CN"
+  }
+}

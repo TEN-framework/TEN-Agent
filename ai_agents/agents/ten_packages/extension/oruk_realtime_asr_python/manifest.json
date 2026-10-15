@@ -1,0 +1,77 @@
+{
+  "type": "extension",
+  "name": "oruk_realtime_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "phrase_emotions": {
+              "type": "bool"
+            },
+            "diarize": {
+              "type": "bool"
+            },
+            "result_language_default": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "pyproject.toml",
+      "requirements.txt",
+      "docs/**",
+      "tests/**"
+    ]
+  }
+}

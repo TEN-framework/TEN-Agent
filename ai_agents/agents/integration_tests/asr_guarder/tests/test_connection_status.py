@@ -45,6 +45,8 @@ _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
         "azure_asr_python",
         "bytedance_llm_based_asr",
         "deepgram_asr_python",
+        "oruk_asr_python",
+        "oruk_realtime_asr_python",
         "smallest_asr_python",
         "rtzr_asr_python",
         "soniox_asr_python",
@@ -78,7 +80,9 @@ def validate_status_payload(payload: dict[str, Any]) -> None:
         "message",
         "metadata",
     ]
-    missing_fields = [field for field in required_fields if field not in payload]
+    missing_fields = [
+        field for field in required_fields if field not in payload
+    ]
     if missing_fields:
         raise AssertionError(
             f"connection_status_changed missing fields: {missing_fields}"
@@ -133,18 +137,17 @@ def assert_initial_connection_status_sequence(
     status_events: list[dict[str, Any]],
 ) -> None:
     currents = [event["current"] for event in status_events]
-    assert "connecting" in currents, (
-        f"missing connecting status in sequence: {currents}"
-    )
-    assert "connected" in currents, (
-        f"missing connected status in sequence: {currents}"
-    )
+    assert (
+        "connecting" in currents
+    ), f"missing connecting status in sequence: {currents}"
+    assert (
+        "connected" in currents
+    ), f"missing connected status in sequence: {currents}"
 
     connecting_index = currents.index("connecting")
     connected_index = currents.index("connected")
     assert connecting_index < connected_index, (
-        "connecting must appear before connected; "
-        f"sequence: {currents}"
+        "connecting must appear before connected; " f"sequence: {currents}"
     )
     assert_valid_connection_transitions(status_events)
 
@@ -160,12 +163,12 @@ def assert_reconnection_status_sequence(
     currents = [event["current"] for event in status_events]
     transitions = [(event["last"], event["current"]) for event in status_events]
 
-    assert "connecting" in currents, (
-        f"missing connecting status in reconnection sequence: {currents}"
-    )
-    assert "disconnected" in currents, (
-        f"missing disconnected status in reconnection sequence: {currents}"
-    )
+    assert (
+        "connecting" in currents
+    ), f"missing connecting status in reconnection sequence: {currents}"
+    assert (
+        "disconnected" in currents
+    ), f"missing disconnected status in reconnection sequence: {currents}"
 
     if expect_retry:
         assert currents.count("connecting") >= 2, (
@@ -177,9 +180,9 @@ def assert_reconnection_status_sequence(
             f"transitions: {transitions}"
         )
     else:
-        assert currents.count("connecting") >= 1, (
-            f"expected at least one connecting event, got: {currents}"
-        )
+        assert (
+            currents.count("connecting") >= 1
+        ), f"expected at least one connecting event, got: {currents}"
 
 
 class ConnectionStatusAsrTester(AsyncExtensionTester):
@@ -499,9 +502,9 @@ def test_connection_status(extension_name: str, config_dir: str) -> None:
     tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()
 
-    assert error is None, (
-        f"Test failed: {error.error_message() if error else 'Unknown error'}"
-    )
+    assert (
+        error is None
+    ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
     assert_initial_connection_status_sequence(tester.status_events)
 
 
@@ -527,9 +530,9 @@ def test_connection_status_reconnection(
     tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()
 
-    assert error is None, (
-        f"Test failed: {error.error_message() if error else 'Unknown error'}"
-    )
+    assert (
+        error is None
+    ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
 
     expect_retry = not tester.fatal_error_received
     assert_reconnection_status_sequence(
@@ -548,9 +551,7 @@ def test_connection_status_reconnection(
             "Non-fatal errors should trigger retries, but received "
             f"{tester.errors_received} errors."
         )
-        assert all(
-            code == non_fatal_code for code in tester.error_codes
-        ), (
+        assert all(code == non_fatal_code for code in tester.error_codes), (
             f"All errors should be non-fatal (code={non_fatal_code}), "
             f"but found unexpected codes: {tester.error_codes}"
         )

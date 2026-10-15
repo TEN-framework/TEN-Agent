@@ -1,0 +1,4 @@
+pydantic>=2.13.4
+numpy>=1.26,<3
+onnx-asr[cpu]==0.7.0
+huggingface-hub>=0.34,<2
