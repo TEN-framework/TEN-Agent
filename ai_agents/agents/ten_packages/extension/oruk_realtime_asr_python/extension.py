@@ -399,10 +399,20 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
 
     @override
     async def start_connection(self) -> None:
+        if not self._connection_allowed():
+            await self.on_disconnected(
+                code=0, message="awaiting trigger_connect"
+            )
+            return
         if self._init_failed or self._fatal or self.stopped:
             await self.on_disconnected(code=0, message="connection disabled")
             return
         async with self._connect_lock:
+            if not self._connection_allowed():
+                await self.on_disconnected(
+                    code=0, message="awaiting trigger_connect"
+                )
+                return
             if self._init_failed or self._fatal or self.stopped:
                 await self.on_disconnected(
                     code=0, message="connection disabled"
@@ -716,6 +726,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     )
 
     async def _connection_for_finalize(self):
+        if not self._connection_allowed():
+            self._discard_buffered_audio(capture_metadata=True)
+            return None
         while not self.is_connected():
             if self.stopped or self._fatal or self._init_failed:
                 return None
@@ -908,7 +921,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             self._schedule_reconnect()
 
     def _schedule_reconnect(self) -> None:
-        if self.stopped or self._fatal or self._init_failed:
+        if (
+            self.stopped
+            or self._fatal
+            or self._init_failed
+            or not self._connection_allowed()
+        ):
             return
         if self._reconnect_task is not None and not self._reconnect_task.done():
             return
@@ -917,7 +935,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def _reopen(self) -> None:
         async with self._reconnect_lock:
             for attempt in range(5):
-                if self.stopped or self._fatal or self._has_active_connection():
+                if (
+                    self.stopped
+                    or self._fatal
+                    or not self._connection_allowed()
+                    or self._has_active_connection()
+                ):
                     return
                 if attempt:
                     await asyncio.sleep(min(0.5 * 2 ** (attempt - 1), 4.0))
@@ -930,6 +953,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 )
 
     # ---- helpers ----
+
+    def _connection_allowed(self) -> bool:
+        return self.auto_connect or self._connection_requested
 
     def _reset_turn(self) -> None:
         # A waiting finalize retains the completed turn's event even when the
@@ -967,10 +993,13 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         for retained in self._buffered_sends.values():
             retained["gap"] = True
 
-    def _discard_buffered_audio(self):
+    def _discard_buffered_audio(self, capture_metadata=False):
         self._buffer_epoch += 1
         while not self.buffered_frames.empty():
-            self._record_dropped_frame(self.buffered_frames.get_nowait())
+            frame = self.buffered_frames.get_nowait()
+            if capture_metadata:
+                self._capture_metadata(frame)
+            self._record_dropped_frame(frame)
         for retained in self._buffered_sends.values():
             if retained["failed"] and not retained["discarded"]:
                 self._record_dropped_frame(retained["frame"])

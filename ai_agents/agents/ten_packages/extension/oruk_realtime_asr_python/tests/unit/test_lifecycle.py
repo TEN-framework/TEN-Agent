@@ -21,6 +21,8 @@ sys.path.insert(0, str(ROOT))
 class Base:
     def __init__(self, name):
         self.stopped = False
+        self.auto_connect = True
+        self._connection_requested = False
         self.uuid = "request-test"
         self.metadata = {"session_id": "session-a"}
         self.session_id = "session-a"
@@ -1439,6 +1441,40 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
                     {key: result.metadata[key] for key in expected}, expected
                 )
                 self.assertEqual(acknowledgements, [expected])
+
+    async def test_finalize_before_trigger_never_starts_transport(self):
+        e = self.new()
+        e.auto_connect = False
+        frame = Mock(
+            get_buf=Mock(return_value=b"\0" * 32000),
+            get_property_to_json=Mock(
+                return_value=(json.dumps({"session_id": "pretrigger"}), None)
+            ),
+        )
+        await e._handle_audio_frame(e.ten_env, frame)
+        e._finalize_metadata_explicit.set(False)
+        acknowledgements = []
+
+        async def acknowledge():
+            acknowledgements.append(copy.deepcopy(e.metadata))
+
+        e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+        with patch.object(rt, "OrukRealtimeConnection") as constructor:
+            await e.finalize(None)
+            await e.start_connection()
+            e._schedule_reconnect()
+            await e._reopen()
+            constructor.assert_not_called()
+        self.assertIsNone(e._reconnect_task)
+        self.assertTrue(e.buffered_frames.empty())
+        self.assertEqual(e.dropped_audio_frames, 1)
+        self.assertEqual(e._emitted_ms, 1000)
+        self.assertEqual(acknowledgements, [{"session_id": "pretrigger"}])
+        e._connection_requested = True
+        e._reopen = AsyncMock()
+        e._schedule_reconnect()
+        await e._reconnect_task
+        e._reopen.assert_awaited_once()
 
 
 class Transport(unittest.IsolatedAsyncioTestCase):

@@ -319,11 +319,10 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
                 audio_task, timeout=self.test_duration_seconds + 60
             )  # 60 seconds buffer
         except asyncio.TimeoutError:
-            ten_env.log_warn(
-                "Audio sender task timed out, forcing test completion"
-            )
             self.test_completed = True
-            ten_env.stop_test()
+            self._stop_test_with_error(
+                ten_env, "Long duration audio sender timed out"
+            )
         except Exception as e:
             ten_env.log_error(f"Error in audio sender task: {e}")
             self.test_completed = True
@@ -531,9 +530,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
                 f"✅ Final ASR result #{len(self.final_results)} received"
             )
 
-        # Check for test completion
-        if self.test_completed:
-            self._complete_test(ten_env)
+        # Results can still be arriving during the final drain. Only its
+        # matching acknowledgement can establish that transcript coverage is
+        # complete; the unchanged hard timeout fails a missing acknowledgement.
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -869,4 +868,73 @@ def test_long_duration_stream_completion_rejects_error_then_ack() -> None:
         )
     env.stop_test.assert_called_once()
     assert env.stop_test.call_args.args
+    assert tester.completion_time is None
+
+
+def test_long_duration_stream_completion_waits_for_drain_after_interim() -> (
+    None
+):
+    tester, env = _completion_test_setup()
+    tester.audio_sent_ms = 3000
+    tester.last_audio_batch_start_ms = 2000
+    tester.test_completed = True
+    tester.final_finalize_id = "final-drain"
+    older = _completion_test_result()
+    interim = _completion_test_result()
+    interim.update(final=False, start_ms=2000, duration_ms=200)
+    latest = _completion_test_result()
+    latest.update(start_ms=2000, duration_ms=900)
+    ack = {"finalize_id": "final-drain", "metadata": latest["metadata"]}
+
+    async def run() -> None:
+        # Even an interim before the first final, and a delayed older final,
+        # must leave the final drain pending rather than fail its coverage.
+        for result in (interim, older, latest):
+            await tester.on_data(
+                env, _completion_test_data("asr_result", result)
+            )
+            env.stop_test.assert_not_called()
+            assert not tester.failed
+            assert tester.completion_time is None
+        await tester.on_data(
+            env, _completion_test_data("asr_finalize_end", ack)
+        )
+
+    with patch.object(time, "time", return_value=405.0):
+        asyncio.run(run())
+    env.stop_test.assert_called_once_with()
+    assert tester.completion_time == 405.0
+
+
+def test_long_duration_stream_completion_requires_ack_after_latest_final() -> (
+    None
+):
+    tester, env = _completion_test_setup()
+    tester.test_completed = True
+    tester.final_finalize_id = "final-drain"
+    with patch.object(time, "time", return_value=405.0):
+        asyncio.run(
+            tester.on_data(
+                env,
+                _completion_test_data("asr_result", _completion_test_result()),
+            )
+        )
+    env.stop_test.assert_not_called()
+    assert not tester.failed
+    assert tester.completion_time is None
+
+
+def test_long_duration_stream_completion_sender_timeout_is_failure() -> None:
+    tester, env = _completion_test_setup()
+    tester.long_duration_audio_sender = AsyncMock()
+    with (
+        patch.object(os.path, "exists", return_value=True),
+        patch.object(
+            asyncio, "wait_for", new=AsyncMock(side_effect=asyncio.TimeoutError)
+        ),
+    ):
+        asyncio.run(tester.on_start(env))
+    env.stop_test.assert_called_once()
+    assert env.stop_test.call_args.args
+    assert tester.failed
     assert tester.completion_time is None

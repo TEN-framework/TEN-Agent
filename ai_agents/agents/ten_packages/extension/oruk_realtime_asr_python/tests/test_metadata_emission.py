@@ -836,3 +836,107 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(
                     supplied, {key: expected[key] for key in supplied}
                 )
+
+    async def test_finalize_before_trigger_discards_then_trigger_allows_recovery(
+        self,
+    ):
+        extension = self.new_extension()
+        extension.auto_connect = False
+        created = []
+
+        class Connection:
+            def __init__(self, **kwargs):
+                self.callback = kwargs["callback"]
+                self.active = False
+                self.send_pcm = AsyncMock()
+                self.close = AsyncMock()
+                created.append(self)
+
+            def is_connected(self):
+                return self.active
+
+            async def start(self, **_kwargs):
+                self.active = True
+                await self.callback.on_open()
+
+            async def commit(self):
+                await self.callback.on_final("after explicit trigger")
+
+        def audio(size, session):
+            return Mock(
+                get_buf=Mock(return_value=b"\0" * size),
+                lock_buf=Mock(return_value=b"\0" * size),
+                get_property_to_json=Mock(
+                    return_value=(json.dumps({"session_id": session}), None)
+                ),
+            )
+
+        async def finalize(finalize_id):
+            request = Data.create("asr_finalize")
+            request.set_property_from_json(
+                None, json.dumps({"finalize_id": finalize_id})
+            )
+            pending = asyncio.create_task(
+                extension.on_data(extension.ten_env, request)
+            )
+            boundary = await asyncio.wait_for(
+                extension.audio_frames_queue.get(), 1
+            )
+            consumer = asyncio.create_task(
+                extension._handle_audio_frame(extension.ten_env, boundary)
+            )
+            await asyncio.wait_for(pending, 1)
+            await asyncio.wait_for(consumer, 1)
+
+        with patch.object(module, "OrukRealtimeConnection", Connection):
+            await extension._handle_audio_frame(
+                extension.ten_env, audio(32000, "before-trigger")
+            )
+            await finalize("pretrigger-finalize")
+            await extension.start_connection()
+            extension._schedule_reconnect()
+            self.assertEqual(created, [])
+            self.assertIsNone(extension._reconnect_task)
+            self.assertTrue(extension.buffered_frames.empty())
+            self.assertEqual(extension.dropped_audio_frames, 1)
+            self.assertEqual(extension._emitted_ms, 1000)
+            self.assertEqual(
+                self.outputs(extension, "asr_finalize_end"),
+                [
+                    {
+                        "finalize_id": "pretrigger-finalize",
+                        "metadata": {"session_id": "before-trigger"},
+                    }
+                ],
+            )
+            trigger = Data.create("trigger_connect")
+            await extension.on_data(extension.ten_env, trigger)
+            self.assertTrue(extension._connection_requested)
+            self.assertEqual(len(created), 1)
+            await extension._handle_audio_frame(
+                extension.ten_env, audio(16000, "after-trigger")
+            )
+            await finalize("posttrigger-finalize")
+            created[0].send_pcm.assert_awaited_once_with(b"\0" * 16000)
+            result = self.outputs(extension, "asr_result")[0]
+            self.assertEqual(
+                (result["start_ms"], result["duration_ms"]), (1000, 500)
+            )
+            self.assertEqual(result["metadata"]["session_id"], "after-trigger")
+            self.assertEqual(
+                self.outputs(extension, "asr_finalize_end")[1],
+                {
+                    "finalize_id": "posttrigger-finalize",
+                    "metadata": {"session_id": "after-trigger"},
+                },
+            )
+            self.assertEqual(
+                len(self.outputs(extension, "asr_finalize_end")), 2
+            )
+            created[0].active = False
+            await created[0].callback.on_close(1000, "turn complete")
+            await asyncio.wait_for(extension._reconnect_task, 1)
+            self.assertEqual(len(created), 2)
+            self.assertTrue(extension.is_connected())
+            self.assertEqual(extension.dropped_audio_frames, 1)
+            await extension.stop_connection()
