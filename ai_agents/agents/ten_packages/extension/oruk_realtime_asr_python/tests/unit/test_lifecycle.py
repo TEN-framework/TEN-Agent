@@ -224,6 +224,102 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         await task
         e._reopen.assert_awaited_once()
 
+    async def test_turns_and_handshake_retry_use_distinct_request_headers(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        ten_id, session_id = e.uuid, e.session_id
+        sessions = []
+        for attempt in range(4):
+            socket = Mock(
+                closed=False,
+                send_json=AsyncMock(),
+                send_bytes=AsyncMock(),
+                close=AsyncMock(),
+            )
+            sessions.append(
+                Mock(
+                    closed=False,
+                    ws_connect=AsyncMock(
+                        return_value=socket,
+                        side_effect=(
+                            OSError("handshake failed")
+                            if attempt == 2
+                            else None
+                        ),
+                    ),
+                    close=AsyncMock(),
+                )
+            )
+        with (
+            patch.object(
+                transport.aiohttp, "ClientSession", side_effect=sessions
+            ),
+            patch.object(
+                transport.OrukRealtimeConnection,
+                "_receive_json",
+                AsyncMock(
+                    side_effect=[
+                        {"type": "session.created"},
+                        {"type": "session.updated"},
+                    ]
+                    * 3
+                ),
+            ),
+            patch.object(
+                transport.OrukRealtimeConnection,
+                "_receive_loop",
+                AsyncMock(),
+            ),
+        ):
+            for turn in range(2):
+                await e.start_connection()
+                connection = e.connection
+                frame = Mock(
+                    get_property_to_json=Mock(return_value=("", None)),
+                    lock_buf=Mock(return_value=b"\0" * 320),
+                )
+                self.assertTrue(await e.send_audio(frame, session_id))
+                pending = asyncio.create_task(e.finalize(session_id))
+
+                async def wait_for_commit():
+                    while not connection._committed:
+                        await asyncio.sleep(0)
+
+                await asyncio.wait_for(wait_for_commit(), 1)
+                await connection._dispatch(
+                    {
+                        "type": transport.TRANSCRIPT_PREFIX + "completed",
+                        "transcript": f"Turn {turn + 1}",
+                    }
+                )
+                await asyncio.wait_for(pending, 1)
+                await connection.close()
+                await e.on_close(1000, "turn complete")
+            await e._reopen()
+            self.assertTrue(e.is_connected())
+            await e._close_current()
+
+        request_ids = [
+            session.ws_connect.await_args.kwargs["headers"]["X-Request-ID"]
+            for session in sessions
+        ]
+        self.assertEqual(len(set(request_ids)), 4)
+        self.assertNotIn(ten_id, request_ids)
+        self.assertEqual((e.uuid, e.session_id), (ten_id, session_id))
+        self.assertEqual(e.send_asr_finalize_end.await_count, 2)
+        self.assertEqual(
+            [call.args[0].text for call in e.send_asr_result.await_args_list],
+            ["Turn 1", "Turn 2"],
+        )
+        self.assertEqual(
+            [
+                call.args[0].metadata["session_id"]
+                for call in e.send_asr_result.await_args_list
+            ],
+            [session_id, session_id],
+        )
+        e.send_asr_error.assert_awaited_once()
+
     async def test_actual_reopen_preserves_committed_socket_until_final(self):
         e = self.new()
         committed = asyncio.Event()
@@ -1475,6 +1571,33 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         e._schedule_reconnect()
         await e._reconnect_task
         e._reopen.assert_awaited_once()
+
+    async def test_partial_audio_metadata_keeps_interim_session(self):
+        for supplied in (
+            None,
+            {},
+            {"trace": "t"},
+            {"session_id": "override", "trace": "t"},
+        ):
+            with self.subTest(metadata=supplied):
+                e = self.new()
+                e.connection = Mock(
+                    is_connected=Mock(return_value=True), send_pcm=AsyncMock()
+                )
+                for metadata in ({"session_id": "session-s"}, supplied):
+                    raw = json.dumps(metadata) if metadata is not None else ""
+                    frame = Mock(
+                        lock_buf=Mock(return_value=b"\0" * 320),
+                        get_property_to_json=Mock(return_value=(raw, None)),
+                    )
+                    self.assertTrue(await e.send_audio(frame, e.session_id))
+                await e.on_interim("first words")
+                expected = {"session_id": "session-s", **(supplied or {})}
+                result = e.send_asr_result.await_args.args[0]
+                self.assertEqual(
+                    {key: result.metadata[key] for key in expected}, expected
+                )
+                self.assertEqual(e.session_id, expected["session_id"])
 
 
 class Transport(unittest.IsolatedAsyncioTestCase):

@@ -2,6 +2,7 @@ import asyncio
 import copy
 import json
 import os
+import uuid
 from contextvars import ContextVar
 from typing import Any, Dict
 
@@ -181,10 +182,25 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             pass
         return False
 
+    def _capture_audio_metadata(self, frame, session_id=None):
+        # Audio inherits the established session. Finalize metadata must stay
+        # raw until its preceding buffered audio has resolved the session.
+        self._capture_metadata(frame, session_id)
+        known_session = (
+            session_id if session_id is not None else self.session_id
+        )
+        if known_session is not None and (
+            self.metadata is None or "session_id" not in self.metadata
+        ):
+            metadata = copy.deepcopy(self.metadata) if self.metadata else {}
+            metadata["session_id"] = known_session
+            self.metadata = metadata
+            self.session_id = known_session
+
     @override
     async def on_audio_frame(self, ten_env, audio_frame):
         if self.metadata is None:
-            self._capture_metadata(audio_frame)
+            self._capture_audio_metadata(audio_frame)
         await super().on_audio_frame(ten_env, audio_frame)
 
     @override
@@ -442,7 +458,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             )
             self.connection = connection
             try:
-                await connection.start(request_id=self.uuid)
+                # Provider request IDs identify one socket attempt, whereas
+                # the TEN UUID remains stable across turns and reconnects.
+                await connection.start(request_id=uuid.uuid4().hex)
                 if self.stopped or generation != self._generation:
                     await connection.close()
                     if self.connection is connection:
@@ -555,7 +573,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 return False
             generation = self._generation
             turn_done = self._turn_done
-            self._capture_metadata(frame, _session_id)
+            self._capture_audio_metadata(frame, _session_id)
             buf = frame.lock_buf()
             try:
                 audio_data = bytes(buf)
@@ -998,7 +1016,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         while not self.buffered_frames.empty():
             frame = self.buffered_frames.get_nowait()
             if capture_metadata:
-                self._capture_metadata(frame)
+                self._capture_audio_metadata(frame)
             self._record_dropped_frame(frame)
         for retained in self._buffered_sends.values():
             if retained["failed"] and not retained["discarded"]:

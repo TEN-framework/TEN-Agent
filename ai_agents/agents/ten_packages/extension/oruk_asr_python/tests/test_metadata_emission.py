@@ -3,9 +3,11 @@
 import asyncio
 import copy
 import json
+import threading
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
+from ten_ai_base import asr as native_base
 from ten_ai_base.message import ModuleMetricKey
 from ten_runtime import Data
 
@@ -371,6 +373,146 @@ class NativeMetadataEmission(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(
                     (result["start_ms"], result["duration_ms"]), (4000, 500)
                 )
+
+    async def test_native_start_and_stop_finish_while_prewarm_is_stalled(self):
+        for mode in ("startup", "readiness"):
+            with self.subTest(mode=mode):
+                extension = self.new()
+                model = local_extension.OrukeetRecognizer(
+                    cache_dir=None, local_files_only=True
+                )
+                extension.recognizer = model
+                release, entered, finished = (
+                    threading.Event(),
+                    threading.Event(),
+                    threading.Event(),
+                )
+                original = model.prewarm
+
+                def load():
+                    entered.set()
+                    release.wait()
+                    model._recognizer = object()
+
+                def prewarm():
+                    try:
+                        original()
+                    finally:
+                        finished.set()
+
+                with (
+                    patch.object(
+                        native_base, "send_provide_features", new=AsyncMock()
+                    ),
+                    patch.object(model, "_load", side_effect=load),
+                    patch.object(model, "prewarm", side_effect=prewarm),
+                    patch.object(
+                        local_extension,
+                        "MODEL_START_TIMEOUT_SECONDS",
+                        0.02 if mode == "startup" else 2,
+                    ),
+                    patch.object(
+                        local_extension, "FINALIZE_TIMEOUT_SECONDS", 0.02
+                    ),
+                ):
+                    pending = asyncio.create_task(
+                        extension.on_start(extension.ten_env)
+                    )
+                    try:
+                        self.assertTrue(
+                            await asyncio.to_thread(entered.wait, 0.5)
+                        )
+                        if mode == "readiness":
+                            await asyncio.wait_for(
+                                extension.finalize(None), 0.5
+                            )
+                        await asyncio.wait_for(pending, 0.5)
+                        self.assertFalse(finished.is_set())
+                        self.assertTrue(extension._init_failed)
+                        self.assertIsNone(extension.recognizer)
+                        self.assertIsNone(extension._prewarm_task)
+                        self.assertTrue(model._closed)
+                        await asyncio.wait_for(
+                            extension.on_stop(extension.ten_env), 0.5
+                        )
+                    finally:
+                        release.set()
+                        self.assertTrue(
+                            await asyncio.to_thread(finished.wait, 0.5)
+                        )
+                        if not pending.done():
+                            await asyncio.wait_for(pending, 0.5)
+                self.assertFalse(extension.is_connected())
+                self.assertIsNone(model._recognizer)
+                errors = self.emitted(extension, "error")
+                self.assertEqual(len(errors), 1)
+                self.assertEqual(
+                    errors[0]["vendor_info"]["code"],
+                    (
+                        "model_load_timeout"
+                        if mode == "startup"
+                        else "readiness_timeout"
+                    ),
+                )
+                self.assertEqual(self.emitted(extension, "asr_result"), [])
+                self.assertNotIn(
+                    "connected",
+                    [
+                        item["current"]
+                        for item in self.emitted(
+                            extension, "connection_status_changed"
+                        )
+                    ],
+                )
+
+    async def test_repeated_pretrigger_finalize_resolves_each_buffer_session(
+        self,
+    ):
+        extension = self.new()
+        extension.auto_connect = False
+        cases = (
+            ("a", None),
+            ("b", None),
+            ("c", {"request_tag": "x"}),
+            ("d", {"session_id": "override"}),
+        )
+        for session, supplied in cases:
+            await self.consume(extension, [self.frame(session)])
+            request = Data.create("asr_finalize")
+            payload = {"finalize_id": "finalize-" + session}
+            if supplied is not None:
+                payload["metadata"] = supplied
+            request.set_property_from_json(None, json.dumps(payload))
+            pending = asyncio.create_task(
+                extension.on_data(extension.ten_env, request)
+            )
+            boundary = await asyncio.wait_for(
+                extension.audio_frames_queue.get(), 1
+            )
+            consumer = asyncio.create_task(
+                extension._handle_audio_frame(extension.ten_env, boundary)
+            )
+            try:
+                await asyncio.wait_for(pending, 1)
+            finally:
+                boundary.release.set()
+                await asyncio.wait_for(consumer, 1)
+        expected = [
+            {"session_id": session, **(supplied or {})}
+            for session, supplied in cases
+        ]
+        acks = self.emitted(extension, "asr_finalize_end")
+        self.assertEqual([item["metadata"] for item in acks], expected)
+        self.assertEqual(
+            [item["finalize_id"] for item in acks],
+            ["finalize-" + session for session, _ in cases],
+        )
+        self.assertEqual(extension.dropped_audio_frames, 4)
+        self.assertEqual(
+            extension.audio_timeline.get_total_user_audio_duration(), 40
+        )
+        self.assertEqual(self.emitted(extension, "asr_result"), [])
+        self.assertIsNone(extension.recognizer)
 
     async def test_result_keeps_generated_fields_and_ack_echoes_input(self):
         extension = self.new()

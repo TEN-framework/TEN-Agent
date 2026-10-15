@@ -940,3 +940,52 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(extension.is_connected())
             self.assertEqual(extension.dropped_audio_frames, 1)
             await extension.stop_connection()
+
+    async def test_partial_audio_metadata_preserves_interim_and_ttfw_session(
+        self,
+    ):
+        for supplied in (
+            None,
+            {},
+            {"trace": "t"},
+            {"session_id": "override", "trace": "t"},
+        ):
+            with self.subTest(metadata=supplied):
+                extension = self.new_extension()
+                extension.connection = Mock(
+                    is_connected=Mock(return_value=True), send_pcm=AsyncMock()
+                )
+
+                def frame(metadata):
+                    raw = json.dumps(metadata) if metadata is not None else ""
+                    return Mock(
+                        get_buf=Mock(return_value=b"\0" * 320),
+                        lock_buf=Mock(return_value=b"\0" * 320),
+                        get_property_to_json=Mock(return_value=(raw, None)),
+                    )
+
+                await extension._handle_audio_frame(
+                    extension.ten_env, frame({"session_id": "session-s"})
+                )
+                original = copy.deepcopy(supplied)
+                await extension._handle_audio_frame(
+                    extension.ten_env, frame(supplied)
+                )
+                await extension.on_interim("first words")
+                expected = {"session_id": "session-s", **(supplied or {})}
+                result = self.outputs(extension, "asr_result")[0]
+                self.assertFalse(result["final"])
+                self.assertEqual(
+                    {key: result["metadata"][key] for key in expected}, expected
+                )
+                ttfw = [
+                    item
+                    for item in self.outputs(extension, "metrics")
+                    if ModuleMetricKey.ASR_TTFW in item["metrics"]
+                ]
+                self.assertEqual(len(ttfw), 1)
+                self.assertEqual(
+                    ttfw[0]["metadata"]["session_id"], expected["session_id"]
+                )
+                self.assertEqual(extension.session_id, expected["session_id"])
+                self.assertEqual(supplied, original)

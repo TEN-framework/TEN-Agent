@@ -359,6 +359,108 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
                     (result.start_ms, result.duration_ms), (4000, 500)
                 )
 
+    async def test_prewarm_and_readiness_timeouts_retire_stalled_worker(self):
+        for mode in ("startup", "readiness"):
+            with self.subTest(mode=mode):
+                extension = self.new()
+                extension._connected = False
+                model = local.OrukeetRecognizer(
+                    cache_dir=None, local_files_only=True
+                )
+                extension.recognizer = model
+                release, entered, finished = (
+                    threading.Event(),
+                    threading.Event(),
+                    threading.Event(),
+                )
+                original = model.prewarm
+
+                def load():
+                    entered.set()
+                    release.wait()
+                    model._recognizer = object()
+
+                def prewarm():
+                    try:
+                        original()
+                    finally:
+                        finished.set()
+
+                with (
+                    patch.object(model, "_load", side_effect=load),
+                    patch.object(model, "prewarm", side_effect=prewarm),
+                    patch.object(
+                        local,
+                        "MODEL_START_TIMEOUT_SECONDS",
+                        0.02 if mode == "startup" else 2,
+                    ),
+                    patch.object(local, "FINALIZE_TIMEOUT_SECONDS", 0.02),
+                ):
+                    pending = asyncio.create_task(extension.start_connection())
+                    try:
+                        self.assertTrue(
+                            await asyncio.to_thread(entered.wait, 0.5)
+                        )
+                        if mode == "readiness":
+                            await asyncio.wait_for(
+                                extension.finalize(None), 0.5
+                            )
+                        await asyncio.wait_for(pending, 0.5)
+                        self.assertFalse(finished.is_set())
+                        self.assertTrue(extension._init_failed)
+                        self.assertIsNone(extension.recognizer)
+                        self.assertIsNone(extension._prewarm_task)
+                        self.assertTrue(model._closed)
+                        extension.on_connected.assert_not_called()
+                        extension.stopped = True
+                        await asyncio.wait_for(extension.stop_connection(), 0.5)
+                    finally:
+                        release.set()
+                        self.assertTrue(
+                            await asyncio.to_thread(finished.wait, 0.5)
+                        )
+                        if not pending.done():
+                            await asyncio.wait_for(pending, 0.5)
+                self.assertIsNone(model._recognizer)
+                self.assertFalse(extension.is_connected())
+                self.assertEqual(extension.send_asr_error.await_count, 1)
+
+    async def test_repeated_pretrigger_finalize_uses_each_buffer_session(self):
+        extension = self.new()
+        extension.recognizer = None
+        extension._connected = False
+        acknowledged = []
+
+        async def ack():
+            acknowledged.append(copy.deepcopy(extension.metadata))
+
+        extension.send_asr_finalize_end.side_effect = ack
+        cases = (
+            ("a", None),
+            ("b", None),
+            ("c", {"request_tag": "x"}),
+            ("d", {"session_id": "override"}),
+        )
+        for session, supplied in cases:
+            extension._retain_audio_frame(self.frame(session))
+            request = self.request(session)
+            request.get_property_to_json.return_value = (
+                json.dumps(supplied) if supplied is not None else None,
+                None,
+            )
+            await extension.on_data(extension.ten_env, request)
+        self.assertEqual(
+            acknowledged,
+            [
+                {"session_id": "a"},
+                {"session_id": "b"},
+                {"session_id": "c", "request_tag": "x"},
+                {"session_id": "override"},
+            ],
+        )
+        self.assertEqual(extension.dropped_audio_frames, 4)
+        extension.send_asr_result.assert_not_called()
+
     def frame(self, session="a", pcm=b"\0\0" * 160):
         return Mock(
             lock_buf=Mock(return_value=pcm),

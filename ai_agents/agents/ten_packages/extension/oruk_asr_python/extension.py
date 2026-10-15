@@ -35,6 +35,7 @@ from .recognizer import OrukeetRecognizer
 
 MAX_UTTERANCE_BYTES = 10 * 1024 * 1024
 FINALIZE_TIMEOUT_SECONDS = 30.0
+MODEL_START_TIMEOUT_SECONDS = 120.0
 
 
 class _FinalizeBoundary:
@@ -69,6 +70,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
         self._active_boundary = None
         self._pending_boundaries = set()
         self._inference_task = None
+        self._prewarm_task = None
         self._utterance_overflow = False
         self._ready_event = asyncio.Event()
         self._loading = False
@@ -149,6 +151,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     # Cold-start audio is held in the base's startup buffer;
                     # loading must finish draining it before metadata is frozen.
                     await self._wait_until_ready()
+                    if self.recognizer is None:
+                        self._discard_buffered_audio(capture_metadata=True)
                     # A request without metadata inherits the last frame that
                     # was actually drained, never a later turn's queued frame.
                     self._capture_metadata(data)
@@ -223,12 +227,30 @@ class OrukASRExtension(AsyncASRBaseExtension):
         if self._active_boundary is not None:
             self._active_boundary.release.set()
 
+    async def _cancel_prewarm(self):
+        task, self._prewarm_task = self._prewarm_task, None
+        if task is not None and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    def _discard_buffered_audio(self, capture_metadata=False):
+        while not self.buffered_frames.empty():
+            frame = self.buffered_frames.get_nowait()
+            if capture_metadata:
+                self._capture_metadata(frame)
+            self._record_dropped_audio(len(frame.get_buf()))
+        self.buffered_frames_size = 0
+
     async def _fail_session(self, message, code):
         self._init_failed = True
         self._connected = False
         if self.recognizer is not None:
             recognizer, self.recognizer = self.recognizer, None
             recognizer.close()
+        await self._cancel_prewarm()
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
@@ -335,13 +357,20 @@ class OrukASRExtension(AsyncASRBaseExtension):
         self._loading = True
         self._ready_event.clear()
         began = asyncio.get_running_loop().time()
+        prewarm_task = None
         try:
             if self.recognizer is None:
                 self.recognizer = OrukeetRecognizer(
                     cache_dir=self.config.cache_dir,
                     local_files_only=self.config.local_files_only,
                 )
-            await asyncio.to_thread(self.recognizer.prewarm)
+            prewarm_task = asyncio.create_task(
+                asyncio.to_thread(self.recognizer.prewarm)
+            )
+            self._prewarm_task = prewarm_task
+            await asyncio.wait_for(
+                prewarm_task, timeout=MODEL_START_TIMEOUT_SECONDS
+            )
             if self.stopped or self._init_failed:
                 await self.on_disconnected(
                     code=0, message="connection disabled"
@@ -364,6 +393,16 @@ class OrukASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_info(
                 "Orukeet model ready", category=LOG_CATEGORY_VENDOR
             )
+        except asyncio.TimeoutError:
+            await self._fail_session(
+                "Orukeet model loading timed out", "model_load_timeout"
+            )
+        except asyncio.CancelledError:
+            if self.recognizer is not None:
+                recognizer, self.recognizer = self.recognizer, None
+                recognizer.close()
+            if not (self.stopped or self._init_failed):
+                raise
         except Exception as e:
             if self.stopped or self._init_failed:
                 await self.on_disconnected(
@@ -387,6 +426,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
             self._init_failed = True
             await self.on_disconnected(code=error.code, message=error.message)
         finally:
+            if self._prewarm_task is prewarm_task:
+                self._prewarm_task = None
             self._loading = False
             self._ready_event.set()
 
@@ -409,6 +450,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
         self._utterance.clear()
         self._utterance_started = False
         self._utterance_gap_ms = 0.0
+        await self._cancel_prewarm()
         task, self._inference_task = self._inference_task, None
         if task is not None and not task.done():
             task.cancel()
@@ -506,6 +548,8 @@ class OrukASRExtension(AsyncASRBaseExtension):
             await self.send_asr_finalize_end()
             return
 
+        if self.recognizer is None:
+            self._discard_buffered_audio(capture_metadata=True)
         # TEN's result, metrics and finalize helpers all read self.metadata.
         # Keep their view task-local while the audio consumer accepts the next
         # turn, without replacing or restoring that consumer's live metadata.
@@ -545,10 +589,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     # With explicit connection control, finalize may precede
                     # trigger_connect. Drop this boundary's startup audio;
                     # replaying it on a later connection would mix turns.
-                    while not self.buffered_frames.empty():
-                        frame = self.buffered_frames.get_nowait()
-                        self._record_dropped_audio(len(frame.get_buf()))
-                    self.buffered_frames_size = 0
+                    self._discard_buffered_audio()
                 pcm = bytes(self._utterance)
                 if len(pcm) % 2:
                     pcm = pcm[:-1]

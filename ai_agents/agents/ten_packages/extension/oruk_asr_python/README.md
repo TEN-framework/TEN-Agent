@@ -60,12 +60,13 @@ Exceeding this limit emits one nonfatal `utterance_too_long` error and discards
 the whole turn. Audio is ignored until the next finalize, which acknowledges
 the discarded turn; the following turn can proceed normally.
 
-Audio draining, model readiness, and recognition each have a **30-second**
-deadline. A timeout emits a fatal error and disables the extension instance;
+Initial model acquisition and prewarming have a **120-second** deadline to
+allow a cold download. Audio draining, finalize readiness, and recognition each
+have a **30-second** deadline. A timeout emits a fatal error and disables the extension instance;
 subsequent finalize requests acknowledge promptly without starting more work.
-Stop and finalize do not wait indefinitely for native inference. Python cannot
-interrupt an active ONNX call: its result is ignored and its model is released
-when that call returns. Restart the extension after a fatal timeout.
+Startup, stop, and finalize do not wait indefinitely for native work. Python
+cannot interrupt an active download or ONNX call: its result is ignored and its
+model is released when that call returns. Restart the extension after a fatal timeout.
 
 Run these commands from `ai_agents/` in the supported Linux development image
 (`ghcr.io/ten-framework/ten_agent_build:0.7.14`):
