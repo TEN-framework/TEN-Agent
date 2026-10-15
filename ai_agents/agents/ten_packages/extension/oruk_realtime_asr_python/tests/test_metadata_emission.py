@@ -1031,3 +1031,101 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
                 )
                 self.assertEqual(extension.session_id, expected["session_id"])
                 self.assertEqual(supplied, original)
+
+    async def test_failed_readiness_ack_uses_buffered_audio_metadata(self):
+        for failure in ("timeout", "fatal", "stopped"):
+            for supplied in (
+                None,
+                {},
+                {"request_tag": "x"},
+                {"session_id": "override", "request_tag": "x"},
+            ):
+                with self.subTest(failure=failure, metadata=supplied):
+                    extension = self.new_extension()
+                    extension.metadata = {"session_id": "session-a"}
+                    extension.session_id = "session-a"
+                    extension._schedule_reconnect = Mock()
+                    audio_metadata = {
+                        "session_id": "session-b",
+                        "audio_tag": "buffered",
+                    }
+
+                    def audio(size, metadata):
+                        return Mock(
+                            get_buf=Mock(return_value=b"\0" * size),
+                            lock_buf=Mock(return_value=b"\0" * size),
+                            get_property_to_json=Mock(
+                                return_value=(json.dumps(metadata), None)
+                            ),
+                        )
+
+                    await extension._handle_audio_frame(
+                        extension.ten_env, audio(32000, audio_metadata)
+                    )
+                    extension._fatal = failure == "fatal"
+                    extension.stopped = failure == "stopped"
+                    properties = {"finalize_id": "finalize-b"}
+                    if supplied is not None:
+                        properties["metadata"] = supplied
+                    request = Data.create("asr_finalize")
+                    request.set_property_from_json(None, json.dumps(properties))
+                    original = copy.deepcopy(supplied)
+                    with patch.object(module, "IO_TIMEOUT_SECONDS", 0.001):
+                        pending = asyncio.create_task(
+                            extension.on_data(extension.ten_env, request)
+                        )
+                        if failure == "timeout":
+                            boundary = await asyncio.wait_for(
+                                extension.audio_frames_queue.get(), 1
+                            )
+                            consumer = asyncio.create_task(
+                                extension._handle_audio_frame(
+                                    extension.ten_env, boundary
+                                )
+                            )
+                        await asyncio.wait_for(pending, 1)
+                        if failure == "timeout":
+                            await asyncio.wait_for(consumer, 1)
+                    expected = (
+                        supplied
+                        if supplied and "session_id" in supplied
+                        else {**audio_metadata, **(supplied or {})}
+                    )
+                    self.assertEqual(
+                        self.outputs(extension, "asr_finalize_end"),
+                        [{"finalize_id": "finalize-b", "metadata": expected}],
+                    )
+                    if failure == "timeout":
+                        errors = self.outputs(extension, "error")
+                        self.assertEqual(len(errors), 1)
+                        self.assertEqual(
+                            errors[0]["metadata"]["session_id"],
+                            expected["session_id"],
+                        )
+                        if supplied and "request_tag" in supplied:
+                            self.assertEqual(
+                                errors[0]["metadata"]["request_tag"], "x"
+                            )
+                    self.assertEqual(supplied, original)
+                    self.assertTrue(extension.buffered_frames.empty())
+                    self.assertEqual(extension.dropped_audio_frames, 1)
+                    self.assertEqual(extension._emitted_ms, 1000)
+                    extension.stopped = extension._fatal = False
+                    extension._reset_turn()
+                    extension.connection = Mock(
+                        is_connected=Mock(return_value=True),
+                        send_pcm=AsyncMock(),
+                    )
+                    await extension._handle_audio_frame(
+                        extension.ten_env,
+                        audio(16000, {"session_id": "session-c"}),
+                    )
+                    await extension.on_final("next turn")
+                    result = self.outputs(extension, "asr_result")[0]
+                    self.assertEqual(
+                        (result["start_ms"], result["duration_ms"]), (1000, 500)
+                    )
+                    self.assertEqual(
+                        result["metadata"]["session_id"], "session-c"
+                    )
+                    self.assertEqual(extension._emitted_ms, 1500)

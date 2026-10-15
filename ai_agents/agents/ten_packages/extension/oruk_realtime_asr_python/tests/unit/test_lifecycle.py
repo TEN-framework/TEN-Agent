@@ -1660,6 +1660,80 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
                 )
                 self.assertEqual(acknowledgements, [expected])
 
+    async def test_failed_readiness_uses_buffered_session_for_finalize(self):
+        for failure in ("timeout", "fatal", "stopped"):
+            for supplied in (
+                None,
+                {},
+                {"request_tag": "x"},
+                {"session_id": "override", "request_tag": "x"},
+            ):
+                with self.subTest(failure=failure, metadata=supplied):
+                    e = self.new()
+                    e._schedule_reconnect = Mock()
+                    audio_metadata = {
+                        "session_id": "session-b",
+                        "audio_tag": "buffered",
+                    }
+                    frame = Mock(
+                        get_buf=Mock(return_value=b"\0" * 32000),
+                        get_property_to_json=Mock(
+                            return_value=(json.dumps(audio_metadata), None)
+                        ),
+                    )
+                    await e._handle_audio_frame(e.ten_env, frame)
+                    e._fatal = failure == "fatal"
+                    e.stopped = failure == "stopped"
+                    acknowledgements, errors = [], []
+
+                    async def acknowledge():
+                        acknowledgements.append(copy.deepcopy(e.metadata))
+
+                    async def report(*_args):
+                        errors.append(copy.deepcopy(e.metadata))
+
+                    e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+                    e.send_asr_error = AsyncMock(side_effect=report)
+                    request = Mock(
+                        get_name=Mock(return_value="asr_finalize"),
+                        get_property_to_json=Mock(
+                            return_value=(
+                                (
+                                    json.dumps(supplied)
+                                    if supplied is not None
+                                    else ""
+                                ),
+                                None,
+                            )
+                        ),
+                        get_property_string=Mock(
+                            return_value=("finalize-b", None)
+                        ),
+                    )
+                    with patch.object(rt, "IO_TIMEOUT_SECONDS", 0.001):
+                        await e.on_data(e.ten_env, request)
+                    expected = (
+                        supplied
+                        if supplied and "session_id" in supplied
+                        else {**audio_metadata, **(supplied or {})}
+                    )
+                    self.assertEqual(acknowledgements, [expected])
+                    self.assertEqual(
+                        errors, [expected] if failure == "timeout" else []
+                    )
+                    self.assertTrue(e.buffered_frames.empty())
+                    self.assertEqual(e.dropped_audio_frames, 1)
+                    self.assertEqual(e._emitted_ms, 1000)
+                    e._fatal = False
+                    e.stopped = False
+                    e._reset_turn()
+                    e._turn_bytes = 16000
+                    await e.on_final("next turn")
+                    result = e.send_asr_result.await_args.args[0]
+                    self.assertEqual(
+                        (result.start_ms, result.duration_ms), (1000, 500)
+                    )
+
     async def test_finalize_before_trigger_never_starts_transport(self):
         e = self.new()
         e.auto_connect = False

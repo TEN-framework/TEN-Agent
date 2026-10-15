@@ -658,6 +658,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             request_context = self._snapshot_context()
             explicit_metadata = self._finalize_metadata_explicit.get()
             context_resolved = False
+            buffer_discarded = False
             callback_owned = False
             generation = None
             requested_generation = self._generation
@@ -705,6 +706,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 if generation is not None and generation != self._generation:
                     return
                 if not context_resolved:
+                    # Readiness may fail before on_open captures this turn's
+                    # audio metadata. Claim its buffered frames before resolving
+                    # the fallback so the error and ack cannot inherit a prior
+                    # turn's session. Later audio is held behind the boundary.
+                    self._discard_buffered_audio(capture_metadata=True)
+                    buffer_discarded = True
                     request_context = self._resolve_finalize_context(
                         request_context, explicit_metadata
                     )
@@ -730,7 +737,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     return
                 # The boundary prevents later-turn audio entering this buffer.
                 # A failed turn must not be replayed as part of the next one.
-                self._discard_buffered_audio()
+                if not buffer_discarded:
+                    self._discard_buffered_audio()
                 await self._close_current()
                 if (
                     self._generation != failed_generation + 1
@@ -759,6 +767,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             return None
         while not self.is_connected():
             if self.stopped or self._fatal or self._init_failed:
+                self._discard_buffered_audio(capture_metadata=True)
                 return None
             if self.connection is None:
                 if self.buffered_frames.empty():
