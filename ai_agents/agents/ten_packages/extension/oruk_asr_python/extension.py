@@ -475,6 +475,17 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 )
                 return
             try:
+                if self.recognizer is None:
+                    # With explicit connection control, finalize may precede
+                    # trigger_connect. Drop this boundary's startup audio;
+                    # replaying it on a later connection would mix turns.
+                    while not self.buffered_frames.empty():
+                        frame = self.buffered_frames.get_nowait()
+                        self.audio_timeline.add_dropped_audio(
+                            len(frame.get_buf())
+                        )
+                        self.dropped_audio_frames += 1
+                    self.buffered_frames_size = 0
                 pcm = bytes(self._utterance)
                 if len(pcm) % 2:
                     pcm = pcm[:-1]
@@ -537,32 +548,35 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 return
 
             if text:
-                await self.send_asr_result(
-                    ASRResult(
-                        text=text,
-                        final=True,
-                        start_ms=start_ms,
-                        duration_ms=duration_ms,
-                        language=self.config.asr_result_language,
-                        words=[],
-                        metadata=self._build_metadata(),
+                metadata = self._build_metadata()
+                # The base shallow-merges self.metadata over result.metadata.
+                # Give it the enriched view only during result/metric emission;
+                # the finalize acknowledgement still echoes the request exactly.
+                token = self._finalize_context.set((metadata, self.session_id))
+                try:
+                    await self.send_asr_result(
+                        ASRResult(
+                            text=text,
+                            final=True,
+                            start_ms=start_ms,
+                            duration_ms=duration_ms,
+                            language=self.config.asr_result_language,
+                            words=[],
+                            metadata=metadata,
+                        )
                     )
-                )
+                finally:
+                    self._finalize_context.reset(token)
 
         finally:
             self._release_boundary()
             await self.send_asr_finalize_end()
 
     def _build_metadata(self) -> Dict[str, Any]:
-        """session_id at the root; vendor details nested under asr_info."""
-        base_metadata = copy.deepcopy(self.metadata) if self.metadata else {}
-        session_id = base_metadata.pop("session_id", None)
-        asr_info = base_metadata
-        asr_info["vendor"] = self.vendor()
-        asr_info["model"] = ORUKEET_MODEL
-
-        metadata: Dict[str, Any] = {}
-        if session_id is not None:
-            metadata["session_id"] = session_id
+        """Preserve caller fields, with authoritative generated ASR details."""
+        metadata = copy.deepcopy(self.metadata) if self.metadata else {}
+        supplied = metadata.get("asr_info")
+        asr_info = supplied if isinstance(supplied, dict) else {}
+        asr_info.update(vendor=self.vendor(), model=ORUKEET_MODEL)
         metadata["asr_info"] = asr_info
         return metadata

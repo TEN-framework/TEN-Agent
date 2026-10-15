@@ -7,6 +7,7 @@ Run: python -m unittest discover -s tests/unit -v
 import asyncio
 import copy
 import importlib
+import json
 import sys
 import types
 import unittest
@@ -473,6 +474,165 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
             await e.finalize("session-a")
         e.send_asr_finalize_end.assert_awaited_once()
         self.assertIsNone(e.connection)
+
+    async def test_commit_write_failure_closes_recovers_and_acks_once(self):
+        e = self.new()
+        connection = Mock(
+            is_connected=Mock(return_value=True), close=AsyncMock()
+        )
+
+        async def commit():
+            connection._committed = True
+            raise OSError("write failed while receiver remains open")
+
+        connection.commit = AsyncMock(side_effect=commit)
+        e.connection = connection
+        e._turn_bytes = 32000
+        e._schedule_reconnect = Mock()
+        await e.finalize("session-a")
+        connection.close.assert_awaited_once()
+        e.send_asr_finalize_end.assert_awaited_once()
+        e._schedule_reconnect.assert_called_once()
+        self.assertIsNone(e.connection)
+        self.assertFalse(e._finalize_pending)
+        self.assertEqual(
+            e.send_asr_error.await_args.args[1].code, "finalize_failed"
+        )
+        self.assertEqual(e._emitted_ms, 1000)
+
+    async def test_commit_failure_cannot_close_replacement_during_error_emit(
+        self,
+    ):
+        e = self.new()
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send_error(*_args):
+            entered.set()
+            await release.wait()
+
+        e.send_asr_error = AsyncMock(side_effect=send_error)
+        old = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(side_effect=OSError("failed")),
+            close=AsyncMock(),
+        )
+        e.connection = old
+        e._turn_bytes = 32000
+        e._schedule_reconnect = Mock()
+        pending = asyncio.create_task(e.finalize("session-a"))
+        await entered.wait()
+        await e.on_close(1006, "old closed")
+        e._generation += 1
+        e._reset_turn()
+        replacement = Mock(
+            is_connected=Mock(return_value=True), close=AsyncMock()
+        )
+        e.connection = replacement
+        e._turn_bytes = 320
+        e.on_disconnected.reset_mock()
+        release.set()
+        await pending
+        replacement.close.assert_not_called()
+        self.assertIs(e.connection, replacement)
+        self.assertEqual(e._emitted_ms, 1000)
+        self.assertFalse(e._turn_done.is_set())
+        e.on_disconnected.assert_not_called()
+        e.send_asr_finalize_end.assert_awaited_once()
+
+    async def test_timed_out_turn_advances_next_result_once(self):
+        e = self.new()
+        e._turn_bytes = 32000
+        old_callback = rt._TurnCallback(e, e._generation)
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(),
+            close=AsyncMock(),
+        )
+        e._schedule_reconnect = Mock()
+        with patch.object(rt, "IO_TIMEOUT_SECONDS", 0.001):
+            await e.finalize("session-a")
+        await old_callback.on_close(1000, "late close")
+        e._reset_turn()
+        e._turn_bytes = 16000
+        await e.on_final("next")
+        result = e.send_asr_result.await_args.args[0]
+        self.assertEqual((result.start_ms, result.duration_ms), (1000, 500))
+        self.assertEqual(e._emitted_ms, 1500)
+
+    async def test_late_final_after_timeout_does_not_finish_next_turn(self):
+        e = self.new()
+        e._turn_bytes = 32000
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def emit(_result):
+            entered.set()
+            await release.wait()
+
+        e.send_asr_result = AsyncMock(side_effect=emit)
+        e._finalize_pending = True
+        pending = asyncio.create_task(e.on_final("late final"))
+        await entered.wait()
+        await e._close_current()
+        await e._finish_finalize()
+        self.assertEqual(e._emitted_ms, 1000)
+        e._reset_turn()
+        e._turn_bytes = 16000
+        e._finalize_pending = True
+        release.set()
+        await pending
+        self.assertEqual(e._emitted_ms, 1000)
+        self.assertFalse(e._turn_done.is_set())
+        self.assertTrue(e._finalize_pending)
+        e.send_asr_finalize_end.assert_awaited_once()
+
+    async def test_reconnect_flush_cannot_replace_finalize_context(self):
+        e = self.new()
+        request_metadata = {
+            "session_id": "finalize-session",
+            "request": "finalize",
+        }
+        audio_metadata = {"session_id": "audio-session", "request": "audio"}
+        e.metadata = copy.deepcopy(request_metadata)
+        e.session_id = "finalize-session"
+        frame = Mock(
+            lock_buf=Mock(return_value=b"\0\0" * 160),
+            get_buf=Mock(return_value=b"\0\0" * 160),
+            get_property_to_json=Mock(
+                return_value=(json.dumps(audio_metadata), None)
+            ),
+        )
+        e.buffered_frames.put_nowait(frame)
+        ack_metadata = []
+
+        async def acknowledge():
+            ack_metadata.append(copy.deepcopy(e.metadata))
+
+        e.send_asr_finalize_end = AsyncMock(side_effect=acknowledge)
+
+        async def commit():
+            await e.on_final("buffered turn")
+
+        connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(),
+            commit=AsyncMock(side_effect=commit),
+        )
+
+        async def reopen():
+            e._generation += 1
+            e._reset_turn()
+            e._flushing = True
+            e.connection = connection
+            await e.on_open()
+
+        e._reopen = AsyncMock(side_effect=reopen)
+        await e.finalize("finalize-session")
+        await e._reconnect_task
+        self.assertEqual(ack_metadata, [request_metadata])
+        self.assertEqual(e.metadata, audio_metadata)
+        result = e.send_asr_result.await_args.args[0]
+        self.assertEqual(result.metadata["session_id"], "finalize-session")
+        self.assertEqual(result.metadata["request"], "finalize")
 
     async def test_final_then_close_only_completes_once(self):
         e = self.new()

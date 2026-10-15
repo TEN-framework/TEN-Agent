@@ -24,6 +24,7 @@ class Base:
         self.session_id = "session-a"
         self.buffered_frames = asyncio.Queue()
         self.buffered_frames_size = 0
+        self.dropped_audio_frames = 0
         self.sent_buffer_length = 0
         self.first_audio_time = None
         self.ten_env = Mock()
@@ -499,6 +500,76 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
                 ("finalize-2", "session-2"),
             ],
         )
+
+    async def test_disconnected_finalize_discards_only_its_startup_audio(self):
+        extension = self.new()
+        extension.recognizer = None
+        extension._connected = False
+        extension.config.cache_dir = None
+        extension.config.local_files_only = True
+        first = self.frame("a")
+        extension.buffered_frames.put_nowait(first)
+        extension.buffered_frames_size = len(first.get_buf())
+        await extension.on_data(extension.ten_env, self.request("a"))
+        extension.send_asr_finalize_end.assert_awaited_once()
+        self.assertTrue(extension.buffered_frames.empty())
+        self.assertEqual(extension.buffered_frames_size, 0)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        extension.audio_timeline.add_dropped_audio.assert_called_once_with(320)
+
+        second = self.frame("b", b"\0\0" * 80)
+        extension.buffered_frames.put_nowait(second)
+        recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="second turn")
+        )
+        with patch.object(local, "OrukeetRecognizer", return_value=recognizer):
+            await extension.start_connection()
+        await extension.on_data(extension.ten_env, self.request("b"))
+        self.assertEqual(recognizer.recognize.call_args.args[0].size, 80)
+        self.assertEqual(
+            extension.send_asr_result.await_args.args[0].metadata["session_id"],
+            "b",
+        )
+        self.assertEqual(extension.send_asr_finalize_end.await_count, 2)
+
+    async def test_generated_metadata_survives_base_shallow_merge(self):
+        extension = self.new()
+        original = {
+            "session_id": "a",
+            "trace": "caller",
+            "asr_info": {"vendor": "input", "model": "input", "custom": "kept"},
+        }
+        extension.metadata = copy.deepcopy(original)
+        extension.session_id = "a"
+        extension._utterance.extend(b"\0\0" * 160)
+        emitted, acknowledged = [], []
+
+        async def emit(result):
+            result.metadata.update(extension.metadata)
+            emitted.append(copy.deepcopy(result.metadata))
+
+        async def acknowledge():
+            acknowledged.append(copy.deepcopy(extension.metadata))
+
+        extension.send_asr_result.side_effect = emit
+        extension.send_asr_finalize_end.side_effect = acknowledge
+        await extension.finalize("a")
+        self.assertEqual(
+            emitted,
+            [
+                {
+                    "session_id": "a",
+                    "trace": "caller",
+                    "asr_info": {
+                        "vendor": "oruk",
+                        "model": "orukeet",
+                        "custom": "kept",
+                    },
+                }
+            ],
+        )
+        self.assertEqual(acknowledged, [original])
+        self.assertEqual(extension.metadata, original)
 
     async def test_local_finalize_waits_for_model_and_buffer_flush(self):
         e = local.OrukASRExtension("test")

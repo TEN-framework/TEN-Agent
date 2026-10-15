@@ -44,7 +44,10 @@ the model card at https://huggingface.co/oruk/orukeet.
 Invalid configuration prevents connection attempts. Each finalize request
 marks its position in the audio queue, drains preceding frames, and snapshots
 that turn before accepting subsequent audio. Overlapping finalize requests
-retain their individual boundaries and metadata.
+retain their individual boundaries and metadata. With `auto_connect=false`, a
+finalize received before `trigger_connect` discards that turn's startup-buffered
+audio and acknowledges it without loading the model. A later connection starts
+with subsequent audio only.
 
 A connected utterance is limited to **10 MiB** of PCM16 (about 5.5 minutes).
 Exceeding this limit emits one nonfatal `utterance_too_long` error and discards

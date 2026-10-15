@@ -2,6 +2,7 @@ import asyncio
 import copy
 import json
 import os
+from contextvars import ContextVar
 from typing import Any, Dict
 
 from typing_extensions import override
@@ -78,6 +79,11 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         )
 
     def __init__(self, name: str):
+        self._live_metadata = None
+        self._live_session_id = None
+        self._emission_context = ContextVar(
+            "oruk_realtime_emission", default=None
+        )
         super().__init__(name)
         self.config: OrukRealtimeASRConfig | None = None
         self.connection: OrukRealtimeConnection | None = None
@@ -102,6 +108,47 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._final_sent = False
         self._turn_bytes = 0
         self._emitted_ms = 0
+        self._turn_accounted = False
+        self._turn_finalize_context = None
+
+    @property
+    def metadata(self):
+        context = self._emission_context.get()
+        return context[0] if context is not None else self._live_metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self._live_metadata = value
+
+    @property
+    def session_id(self):
+        context = self._emission_context.get()
+        return context[1] if context is not None else self._live_session_id
+
+    @session_id.setter
+    def session_id(self, value):
+        self._live_session_id = value
+
+    def _snapshot_context(self):
+        return copy.deepcopy(self.metadata), self.session_id
+
+    async def _emit_with_context(self, context, method, *args):
+        # Scope the base helpers' mutable metadata view to this emission only.
+        # Socket/reconnect tasks are created outside this context.
+        token = self._emission_context.set(context)
+        try:
+            await method(*args)
+        finally:
+            self._emission_context.reset(token)
+
+    async def _emit_result(self, result):
+        # The native helper shallow-merges self.metadata over result.metadata.
+        # Present the already merged metadata so generated vendor fields survive.
+        context = (
+            copy.deepcopy(result.metadata),
+            result.metadata.get("session_id"),
+        )
+        await self._emit_with_context(context, self.send_asr_result, result)
 
     def _capture_metadata(self, message, session_id=None):
         try:
@@ -323,6 +370,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._ready_event.set()
         self._generation += 1
         async with self._io_lock:
+            self._account_turn()
             connection, self.connection = self.connection, None
         if connection is not None:
             await connection.close()
@@ -391,6 +439,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     @override
     async def finalize(self, _session_id: str | None) -> None:
         async with self._finalize_lock:
+            request_context = self._snapshot_context()
             callback_owned = False
             generation = None
             requested_generation = self._generation
@@ -421,6 +470,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     # Previous-socket callbacks cannot acknowledge this request
                     # while it is still waiting for the next ready connection.
                     self._finalize_pending = True
+                    self._turn_finalize_context = request_context
                     callback_owned = True
                     await asyncio.wait_for(
                         connection.commit(), timeout=IO_TIMEOUT_SECONDS
@@ -428,25 +478,46 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 await asyncio.wait_for(
                     turn_done.wait(), timeout=IO_TIMEOUT_SECONDS
                 )
-            except asyncio.TimeoutError:
+            except Exception as exc:
                 if generation is not None and generation != self._generation:
                     return
-                await self.on_error(
-                    "Oruk finalization timed out", "finalize_timeout", False
+                timed_out = isinstance(exc, asyncio.TimeoutError)
+                message = (
+                    "Oruk finalization timed out"
+                    if timed_out
+                    else "Oruk finalization failed"
                 )
+                failed_generation = self._generation
+                failed_connection = self.connection
+                await self._emit_with_context(
+                    request_context,
+                    self.on_error,
+                    message,
+                    "finalize_timeout" if timed_out else "finalize_failed",
+                    False,
+                )
+                if (
+                    self._generation != failed_generation
+                    or self.connection is not failed_connection
+                ):
+                    return
                 # The boundary prevents later-turn audio entering this buffer.
                 # A failed turn must not be replayed as part of the next one.
                 while not self.buffered_frames.empty():
                     self.buffered_frames.get_nowait()
                 self.buffered_frames_size = 0
                 await self._close_current()
-                await self.on_disconnected(code=0, message="finalize timeout")
+                if self._generation != failed_generation + 1:
+                    return
+                await self.on_disconnected(code=0, message=message)
                 self._schedule_reconnect()
             finally:
                 if callback_owned:
                     await self._finish_finalize(turn_done)
                 else:
-                    await self.send_asr_finalize_end()
+                    await self._emit_with_context(
+                        request_context, self.send_asr_finalize_end
+                    )
 
     async def _connection_for_finalize(self):
         while not self.is_connected():
@@ -460,11 +531,15 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             await self._ready_event.wait()
         return self.connection
 
-    async def _finish_finalize(self, turn_done=None) -> None:
+    async def _finish_finalize(self, turn_done=None, generation=None) -> None:
         (turn_done if turn_done is not None else self._turn_done).set()
+        if generation is not None and generation != self._generation:
+            return
         if self._finalize_pending:
             self._finalize_pending = False
-            await self.send_asr_finalize_end()
+            await self._emit_with_context(
+                self._turn_finalize_context, self.send_asr_finalize_end
+            )
 
     # ---- Vendor callbacks (OrukRealtimeCallback) ----
 
@@ -486,7 +561,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
 
     @override
     async def on_interim(self, text: str) -> None:
-        await self.send_asr_result(
+        await self._emit_result(
             ASRResult(
                 text=text,
                 final=False,
@@ -502,13 +577,15 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def on_final(self, text: str) -> None:
         if self._final_sent:
             return
+        generation = self._generation
+        turn_done = self._turn_done
         self._final_sent = True
         duration_ms = self._turn_duration_ms()
         if not text.strip():
-            self._emitted_ms += duration_ms
-            await self._finish_finalize()
+            self._account_turn(generation)
+            await self._finish_finalize(turn_done, generation)
             return
-        await self.send_asr_result(
+        await self._emit_result(
             ASRResult(
                 text=text,
                 final=True,
@@ -519,8 +596,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 metadata=self._build_metadata(with_phrases=True),
             )
         )
-        self._emitted_ms += duration_ms
-        await self._finish_finalize()
+        self._account_turn(generation)
+        await self._finish_finalize(turn_done, generation)
 
     @override
     async def on_phrase_emotion(self, event: dict[str, Any]) -> None:
@@ -528,11 +605,19 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         # Emotions that arrive after the final transcript are reported as vendor
         # metrics so they are not lost while keeping the text result immutable.
         if self._final_sent:
-            await self.send_vendor_metrics({"phrase_emotion": event})
+            await self._emit_with_context(
+                self._turn_finalize_context,
+                self.send_vendor_metrics,
+                {"phrase_emotion": event},
+            )
 
     @override
     async def on_usage(self, usage: dict[str, Any]) -> None:
-        await self.send_vendor_metrics({"usage": usage})
+        await self._emit_with_context(
+            self._turn_finalize_context,
+            self.send_vendor_metrics,
+            {"usage": usage},
+        )
 
     @override
     async def on_error(
@@ -549,7 +634,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             code=str(code) if code else "unknown",
             message=message,
         )
-        await self.send_asr_error(
+        context = self._emission_context.get()
+        if context is None:
+            context = self._turn_finalize_context
+        await self._emit_with_context(
+            context,
+            self.send_asr_error,
             ModuleError(
                 module=MODULE_NAME_ASR,
                 code=(
@@ -571,8 +661,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         # Transport cleanup precedes callback delivery in the client.
         self.connection = None
         self._ready_event.set()
-        if not self._final_sent:
-            self._emitted_ms += self._turn_duration_ms()
+        self._account_turn()
         await self._finish_finalize()
         await self.on_disconnected(code=code, message=message)
         self._schedule_reconnect()
@@ -608,22 +697,29 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._phrases = []
         self._final_sent = False
         self._turn_bytes = 0
+        self._turn_accounted = False
+        self._turn_finalize_context = None
+
+    def _account_turn(self, generation=None):
+        if generation is not None and generation != self._generation:
+            return
+        if not self._turn_accounted:
+            self._emitted_ms += self._turn_duration_ms()
+            self._turn_accounted = True
 
     def _turn_duration_ms(self) -> int:
         rate = self.config.sample_rate if self.config else SAMPLE_RATE
         return int(self._turn_bytes / 2 / rate * 1000)
 
     def _build_metadata(self, with_phrases: bool = False) -> Dict[str, Any]:
-        base_metadata = copy.deepcopy(self.metadata) if self.metadata else {}
-        session_id = base_metadata.pop("session_id", None)
-        asr_info = base_metadata
+        context = self._turn_finalize_context
+        source = context[0] if context is not None else self.metadata
+        metadata = copy.deepcopy(source) if source else {}
+        supplied_info = metadata.get("asr_info")
+        asr_info = supplied_info if isinstance(supplied_info, dict) else {}
         asr_info["vendor"] = self.vendor()
         asr_info["model"] = MODEL
-        if with_phrases and self._phrases:
+        if with_phrases:
             asr_info["phrases"] = copy.deepcopy(self._phrases)
-
-        metadata: Dict[str, Any] = {}
-        if session_id is not None:
-            metadata["session_id"] = session_id
         metadata["asr_info"] = asr_info
         return metadata
