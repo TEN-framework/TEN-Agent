@@ -22,6 +22,7 @@ from .const import EMOTION_PREFIX, MODEL, TRANSCRIPT_PREFIX
 
 _CHUNK_BYTES = 10_240
 _SUBPROTOCOL = "oruk-realtime"
+_MAX_TRANSCRIPT_CHARS = 128_000
 
 
 class OrukRealtimeCallback(Protocol):
@@ -86,6 +87,9 @@ class OrukRealtimeConnection:
         self._committed = False
         self._request_id: str = ""
         self._closing = False
+        self._interim_text = ""
+        self._final_received = False
+        self._close_code: int | None = None
 
     def is_connected(self) -> bool:
         return (
@@ -117,6 +121,9 @@ class OrukRealtimeConnection:
             )
 
         self._request_id = request_id
+        self._interim_text = ""
+        self._final_received = False
+        self._close_code = None
         self._session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=None)
         )
@@ -174,6 +181,12 @@ class OrukRealtimeConnection:
         assert self._socket is not None
         message = await self._socket.receive()
         if message.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
+            self._close_code = (
+                message.data
+                if message.type == aiohttp.WSMsgType.CLOSE
+                and isinstance(message.data, int)
+                else self._socket.close_code
+            )
             return None
         if message.type == aiohttp.WSMsgType.ERROR:
             raise RuntimeError("websocket error")
@@ -192,7 +205,19 @@ class OrukRealtimeConnection:
             while True:
                 event = await self._receive_json()
                 if event is None:
-                    code = self._socket.close_code or 1000
+                    code = self._close_code or self._socket.close_code or 1006
+                    if code not in (1000, 1001):
+                        message = f"Oruk WebSocket closed abnormally ({code})"
+                        await self._callback.on_error(
+                            message, f"websocket_close_{code}", fatal=False
+                        )
+                    elif self._committed and not self._final_received:
+                        message = (
+                            "Oruk WebSocket closed before the final result"
+                        )
+                        await self._callback.on_error(
+                            message, "missing_final", fatal=False
+                        )
                     break
                 await self._dispatch(event)
                 if self._closing:
@@ -235,10 +260,14 @@ class OrukRealtimeConnection:
         elif kind == TRANSCRIPT_PREFIX + "delta":
             delta = event.get("delta")
             if isinstance(delta, str) and delta:
-                await self._callback.on_interim(delta)
+                if len(self._interim_text) + len(delta) > _MAX_TRANSCRIPT_CHARS:
+                    raise RuntimeError("interim transcript exceeds limit")
+                self._interim_text += delta
+                await self._callback.on_interim(self._interim_text)
         elif kind == TRANSCRIPT_PREFIX + "completed":
             transcript = event.get("transcript")
             if isinstance(transcript, str):
+                self._final_received = True
                 await self._callback.on_final(transcript)
         elif kind in (EMOTION_PREFIX + "completed", EMOTION_PREFIX + "failed"):
             await self._callback.on_phrase_emotion(event)

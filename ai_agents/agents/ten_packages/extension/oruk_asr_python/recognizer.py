@@ -115,20 +115,33 @@ class OrukeetRecognizer:
     def prewarm(self) -> None:
         """Download, verify and load the model once, off the event loop."""
         with self._lock:
-            self._load()
+            try:
+                self._load()
+            finally:
+                if self._closed:
+                    self._recognizer = None
 
     def recognize(self, audio: NDArray[np.float32], sample_rate: int) -> str:
         """Recognize a mono utterance of float32 samples in [-1, 1]."""
         with self._lock:
-            if self._closed:
-                raise RuntimeError("Orukeet recognizer is closed")
-            if not audio.size:
-                return ""
-            text: str = self._load().recognize(audio, sample_rate=sample_rate)
-            return text
+            try:
+                if self._closed:
+                    raise RuntimeError("Orukeet recognizer is closed")
+                if not audio.size:
+                    return ""
+                text: str = self._load().recognize(
+                    audio, sample_rate=sample_rate
+                )
+                return text
+            finally:
+                if self._closed:
+                    self._recognizer = None
 
     def close(self) -> None:
-        """Wait for any native work to finish before releasing the recognizer."""
-        with self._lock:
-            self._closed = True
-            self._recognizer = None
+        """Reject new work immediately; release active native work on return."""
+        self._closed = True
+        if self._lock.acquire(blocking=False):
+            try:
+                self._recognizer = None
+            finally:
+                self._lock.release()

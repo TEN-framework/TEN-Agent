@@ -1,7 +1,7 @@
 # oruk_realtime_asr_python
 
 Streaming speech-to-text for TEN using **Oruk's realtime API**. It streams audio
-over an authenticated WebSocket and surfaces interim transcript deltas and a
+over an authenticated WebSocket and surfaces accumulated interim transcripts and a
 final transcript per turn, plus optional **phrase-emotion estimates** (vocal
 expression descriptors that arrive independently of the transcript).
 
@@ -51,6 +51,10 @@ bounded, and timestamps preserve the audio timeline across turns and reconnects.
 The realtime extension ignores callbacks from replaced sockets, closes each
 turn's transport, and uses one recovery task with at most five attempts and
 exponential backoff. Stop cancels and awaits recovery.
+Interim text is accumulated per turn with a 128,000-character limit. Abnormal
+WebSocket closes report a recoverable vendor error with the close code before
+recovery. A committed turn that closes without a final result also reports an
+error, including when the socket uses a normal close code.
 
 Run these commands from `ai_agents/` in the supported Linux development image
 (`ghcr.io/ten-framework/ten_agent_build:0.7.14`):
@@ -65,11 +69,12 @@ requirements and the installed TEN system packages' `requirements.txt` first;
 `tman install --standalone` installs TEN packages, not their Python dependencies.
 The guarder install handles its own dependencies.
 
-Offline lifecycle fault-injection tests for both extensions are in
-`oruk_realtime_asr_python/tests/unit/test_lifecycle.py`. They exercise the actual
-extension and transport methods with a stubbed TEN boundary. The native ASR
-guarder separately exercises the real runtime and provider. Long-duration cases
-are opt-in and are not included in the default guarder command.
+Offline realtime lifecycle and transport fault-injection tests are in
+`tests/unit/test_lifecycle.py`. They import only this extension and run with its own
+requirements, using a thin stubbed TEN boundary without downloading models or
+contacting the provider. The native ASR guarder separately exercises the real
+runtime and provider. Long-duration cases are opt-in and are not included in
+the default guarder command.
 
 When the recognizer does not report a detected language, results use `und`
 (undetermined), or the caller's `result_language_default`. A caller-supplied

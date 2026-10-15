@@ -41,11 +41,22 @@ the model card at https://huggingface.co/oruk/orukeet.
 
 ## Lifecycle and validation
 
-Invalid configuration prevents connection attempts. Finalize completion is
-bounded, and timestamps preserve the audio timeline across turns and reconnects.
-The realtime extension ignores callbacks from replaced sockets, closes each
-turn's transport, and uses one recovery task with at most five attempts and
-exponential backoff. Stop cancels and awaits recovery.
+Invalid configuration prevents connection attempts. Each finalize request
+marks its position in the audio queue, drains preceding frames, and snapshots
+that turn before accepting subsequent audio. Overlapping finalize requests
+retain their individual boundaries and metadata.
+
+A connected utterance is limited to **10 MiB** of PCM16 (about 5.5 minutes).
+Exceeding this limit emits one nonfatal `utterance_too_long` error and discards
+the whole turn. Audio is ignored until the next finalize, which acknowledges
+the discarded turn; the following turn can proceed normally.
+
+Audio draining, model readiness, and recognition each have a **30-second**
+deadline. A timeout emits a fatal error and disables the extension instance;
+subsequent finalize requests acknowledge promptly without starting more work.
+Stop and finalize do not wait indefinitely for native inference. Python cannot
+interrupt an active ONNX call: its result is ignored and its model is released
+when that call returns. Restart the extension after a fatal timeout.
 
 Run these commands from `ai_agents/` in the supported Linux development image
 (`ghcr.io/ten-framework/ten_agent_build:0.7.14`):
@@ -60,11 +71,12 @@ requirements and the installed TEN system packages' `requirements.txt` first;
 `tman install --standalone` installs TEN packages, not their Python dependencies.
 The guarder install handles its own dependencies.
 
-Offline lifecycle fault-injection tests for both extensions are in
-`oruk_realtime_asr_python/tests/unit/test_lifecycle.py`. They exercise the actual
-extension and transport methods with a stubbed TEN boundary. The native ASR
-guarder separately exercises the real runtime and provider. Long-duration cases
-are opt-in and are not included in the default guarder command.
+Offline local lifecycle and native-work deadline fault-injection tests are in
+`tests/test_lifecycle.py`. They import only this extension and run with its own
+requirements, using a thin stubbed TEN boundary without downloading models or
+contacting the provider. The native ASR guarder separately exercises the real
+runtime and provider. Long-duration cases are opt-in and are not included in
+the default guarder command.
 
 When the recognizer does not report a detected language, results use `und`
 (undetermined), or the caller's `result_language_default`. A caller-supplied

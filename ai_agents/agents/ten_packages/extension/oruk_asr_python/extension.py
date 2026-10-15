@@ -33,6 +33,15 @@ from .config import OrukASRConfig
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, ORUKEET_MODEL
 from .recognizer import OrukeetRecognizer
 
+MAX_UTTERANCE_BYTES = 10 * 1024 * 1024
+FINALIZE_TIMEOUT_SECONDS = 30.0
+
+
+class _FinalizeBoundary:
+    def __init__(self):
+        self.ready = asyncio.Event()
+        self.release = asyncio.Event()
+
 
 class OrukASRExtension(AsyncASRBaseExtension):
     """Local Orukeet ASR for TEN.
@@ -56,6 +65,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
         self._connected = False
         self._init_failed = False
         self._finalize_request_lock = asyncio.Lock()
+        self._audio_lock = asyncio.Lock()
+        self._active_boundary = None
+        self._pending_boundaries = set()
+        self._inference_task = None
+        self._utterance_overflow = False
         self._ready_event = asyncio.Event()
         self._loading = False
         self._flushing = False
@@ -103,18 +117,83 @@ class OrukASRExtension(AsyncASRBaseExtension):
     @override
     async def on_data(self, ten_env, data):
         if data.get_name() == "asr_finalize":
-            # The base owns one mutable finalize_id and metadata context.
-            async with self._finalize_request_lock:
-                self._capture_metadata(data)
-                token = self._finalize_context.set(
-                    (copy.deepcopy(self.metadata), self.session_id)
-                )
-                try:
-                    await super().on_data(ten_env, data)
-                finally:
-                    self._finalize_context.reset(token)
+            # Place the boundary at receipt, even when an earlier request is
+            # still recognizing. Otherwise a later turn can overtake this one.
+            boundary = None
+            queue = getattr(self, "audio_frames_queue", None)
+            if queue is not None and not (self.stopped or self._init_failed):
+                boundary = _FinalizeBoundary()
+                self._pending_boundaries.add(boundary)
+                queue.put_nowait(boundary)
+            try:
+                # The base owns one mutable finalize_id. Serialize its use,
+                # while each request retains its own queue boundary.
+                async with self._finalize_request_lock:
+                    self._active_boundary = boundary
+                    if boundary is not None and not (
+                        self.stopped or self._init_failed
+                    ):
+                        try:
+                            await asyncio.wait_for(
+                                boundary.ready.wait(),
+                                timeout=FINALIZE_TIMEOUT_SECONDS,
+                            )
+                        except asyncio.TimeoutError:
+                            await self._fail_session(
+                                "Orukeet audio drain timed out", "drain_timeout"
+                            )
+                    # Cold-start audio is held in the base's startup buffer;
+                    # loading must finish draining it before metadata is frozen.
+                    await self._wait_until_ready()
+                    # A request without metadata inherits the last frame that
+                    # was actually drained, never a later turn's queued frame.
+                    self._capture_metadata(data)
+                    token = self._finalize_context.set(
+                        (copy.deepcopy(self.metadata), self.session_id)
+                    )
+                    try:
+                        await super().on_data(ten_env, data)
+                    finally:
+                        self._finalize_context.reset(token)
+            finally:
+                if boundary is not None:
+                    boundary.release.set()
+                    self._pending_boundaries.discard(boundary)
+                if self._active_boundary is boundary:
+                    self._active_boundary = None
             return
         await super().on_data(ten_env, data)
+
+    async def _handle_audio_frame(self, ten_env, audio_frame):
+        # The base consumes this queue in order. A boundary pauses it until
+        # finalize has snapshotted all earlier frames, including pending dumps.
+        if isinstance(audio_frame, _FinalizeBoundary):
+            audio_frame.ready.set()
+            await audio_frame.release.wait()
+            return
+        await super()._handle_audio_frame(ten_env, audio_frame)
+
+    def _release_boundary(self):
+        if self._active_boundary is not None:
+            self._active_boundary.release.set()
+
+    async def _fail_session(self, message, code):
+        self._init_failed = True
+        self._connected = False
+        if self.recognizer is not None:
+            recognizer, self.recognizer = self.recognizer, None
+            recognizer.close()
+        await self.send_asr_error(
+            ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=message,
+            ),
+            ModuleErrorVendorInfo(
+                vendor=self.vendor(), code=code, message=message
+            ),
+        )
+        await self.on_disconnected(code=0, message=message)
 
     async def _flush_buffered_audio(self):
         while not self.stopped:
@@ -211,7 +290,10 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     local_files_only=self.config.local_files_only,
                 )
             await asyncio.to_thread(self.recognizer.prewarm)
-            if self.stopped:
+            if self.stopped or self._init_failed:
+                await self.on_disconnected(
+                    code=0, message="connection disabled"
+                )
                 return
             self._flushing = True
             self._connected = True
@@ -229,6 +311,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
                 "Orukeet model ready", category=LOG_CATEGORY_VENDOR
             )
         except Exception as e:
+            if self.stopped or self._init_failed:
+                await self.on_disconnected(
+                    code=0, message="connection disabled"
+                )
+                return
             self.ten_env.log_error(f"Failed to load Orukeet model: {e}")
             error = ModuleError(
                 module=MODULE_NAME_ASR,
@@ -261,12 +348,22 @@ class OrukASRExtension(AsyncASRBaseExtension):
     @override
     async def stop_connection(self) -> None:
         self._ready_event.set()
+        for boundary in self._pending_boundaries:
+            boundary.ready.set()
+            boundary.release.set()
         self._connected = False
         self._utterance.clear()
+        task, self._inference_task = self._inference_task, None
+        if task is not None and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
         if self.recognizer is not None:
             recognizer = self.recognizer
             self.recognizer = None
-            await asyncio.to_thread(recognizer.close)
+            recognizer.close()
 
     @override
     def input_audio_sample_rate(self) -> int:
@@ -282,15 +379,40 @@ class OrukASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, _session_id: str | None
     ) -> bool:
-        self._capture_metadata(frame, _session_id)
+        async with self._audio_lock:
+            return await self._buffer_audio(frame, _session_id)
+
+    async def _buffer_audio(self, frame, session_id):
+        if self.stopped or self._init_failed or self._utterance_overflow:
+            return False
+        self._capture_metadata(frame, session_id)
         buf = frame.lock_buf()
         try:
             audio_data = bytes(buf)
+            if len(self._utterance) + len(audio_data) > MAX_UTTERANCE_BYTES:
+                self._utterance.clear()
+                self._utterance_overflow = True
+                message = "Orukeet utterance exceeded the 10 MiB audio limit"
+                await self.send_asr_error(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                        message=message,
+                    ),
+                    ModuleErrorVendorInfo(
+                        vendor=self.vendor(),
+                        code="utterance_too_long",
+                        message=message,
+                    ),
+                )
+                return False
             if self.audio_dumper:
                 try:
                     await self.audio_dumper.push_bytes(audio_data)
                 except Exception:
                     self.ten_env.log_error("Audio diagnostic dump failed")
+            if self.stopped or self._init_failed:
+                return False
             if not self._utterance:
                 self._utterance_start_ms = int(
                     self.audio_timeline.get_total_user_audio_duration()
@@ -310,13 +432,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
     async def finalize(self, _session_id: str | None) -> None:
         """Transcribe the buffered utterance and emit a single final result."""
         assert self.config is not None
-        if self._loading and not self.stopped:
-            try:
-                await asyncio.wait_for(self._ready_event.wait(), timeout=30.0)
-            except asyncio.TimeoutError:
-                await self.send_asr_finalize_end()
-                return
-        if self.stopped:
+        if self.stopped or self._init_failed:
+            await self.send_asr_finalize_end()
+            return
+        await self._wait_until_ready()
+        if self.stopped or self._init_failed:
             await self.send_asr_finalize_end()
             return
 
@@ -331,30 +451,70 @@ class OrukASRExtension(AsyncASRBaseExtension):
         finally:
             self._finalize_context.reset(token)
 
+    async def _wait_until_ready(self):
+        if self._loading and not (self.stopped or self._init_failed):
+            try:
+                await asyncio.wait_for(
+                    self._ready_event.wait(), timeout=FINALIZE_TIMEOUT_SECONDS
+                )
+            except asyncio.TimeoutError:
+                await self._fail_session(
+                    "Orukeet model readiness timed out", "readiness_timeout"
+                )
+
     async def _finalize_utterance(self) -> None:
-        pcm = bytes(self._utterance)
-        # Drop a trailing odd byte so int16 framing stays aligned.
-        if len(pcm) % 2:
-            pcm = pcm[:-1]
-        self._utterance.clear()
-
-        sample_rate = self.config.sample_rate
-        duration_ms = int(len(pcm) / 2 / sample_rate * 1000)
-        start_ms = self._utterance_start_ms
-        self._utterance_start_ms += duration_ms
-
-        if pcm and self.recognizer is not None:
+        try:
+            try:
+                await asyncio.wait_for(
+                    self._audio_lock.acquire(),
+                    timeout=FINALIZE_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                await self._fail_session(
+                    "Orukeet audio drain timed out", "drain_timeout"
+                )
+                return
+            try:
+                pcm = bytes(self._utterance)
+                if len(pcm) % 2:
+                    pcm = pcm[:-1]
+                self._utterance.clear()
+                overflow = self._utterance_overflow
+                self._utterance_overflow = False
+                sample_rate = self.config.sample_rate
+                duration_ms = int(len(pcm) / 2 / sample_rate * 1000)
+                start_ms = self._utterance_start_ms
+                self._utterance_start_ms += duration_ms
+            finally:
+                self._audio_lock.release()
+                self._release_boundary()
+            if overflow or not pcm or self.recognizer is None:
+                return
             try:
                 samples = (
                     np.frombuffer(pcm, dtype=np.int16).astype(np.float32)
                     / 32768.0
                 )
-                text = await asyncio.to_thread(
-                    self.recognizer.recognize, samples, sample_rate
+                task = asyncio.create_task(
+                    asyncio.to_thread(
+                        self.recognizer.recognize, samples, sample_rate
+                    )
                 )
+                self._inference_task = task
+                text = await asyncio.wait_for(
+                    task, timeout=FINALIZE_TIMEOUT_SECONDS
+                )
+            except asyncio.TimeoutError:
+                await self._fail_session(
+                    "Orukeet recognition timed out", "recognition_timeout"
+                )
+                return
+            except asyncio.CancelledError:
+                if self.stopped:
+                    return
+                raise
             except Exception as e:
                 if self.stopped:
-                    await self.send_asr_finalize_end()
                     return
                 self.ten_env.log_error(f"Orukeet recognition failed: {e}")
                 await self.send_asr_error(
@@ -369,10 +529,11 @@ class OrukASRExtension(AsyncASRBaseExtension):
                         message=str(e),
                     ),
                 )
-                text = ""
+                return
+            finally:
+                self._inference_task = None
 
             if self.stopped:
-                await self.send_asr_finalize_end()
                 return
 
             if text:
@@ -388,7 +549,9 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     )
                 )
 
-        await self.send_asr_finalize_end()
+        finally:
+            self._release_boundary()
+            await self.send_asr_finalize_end()
 
     def _build_metadata(self) -> Dict[str, Any]:
         """session_id at the root; vendor details nested under asr_info."""

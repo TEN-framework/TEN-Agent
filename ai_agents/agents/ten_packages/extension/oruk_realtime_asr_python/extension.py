@@ -31,6 +31,15 @@ from .config import OrukRealtimeASRConfig
 from .const import DUMP_FILE_NAME, MODEL, MODULE_NAME_ASR, SAMPLE_RATE
 from .recognition import OrukRealtimeConnection, OrukRealtimeCallback
 
+AUDIO_DRAIN_TIMEOUT_SECONDS = 10.0
+IO_TIMEOUT_SECONDS = 10.0
+
+
+class _FinalizeBoundary:
+    def __init__(self):
+        self.ready = asyncio.Event()
+        self.release = asyncio.Event()
+
 
 class _TurnCallback:
     """Ignore late events from a socket replaced by a later turn."""
@@ -78,6 +87,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._io_lock = asyncio.Lock()
         self._finalize_lock = asyncio.Lock()
         self._finalize_request_lock = asyncio.Lock()
+        self._finalize_boundaries: set[_FinalizeBoundary] = set()
         self._reconnect_task = None
         self._generation = 0
         self._fatal = False
@@ -115,13 +125,49 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     @override
     async def on_data(self, ten_env, data):
         if data.get_name() == "asr_finalize":
-            # The base writes finalize_id before calling finalize(), so guard
-            # the whole request rather than only the vendor commit.
-            async with self._finalize_request_lock:
-                self._capture_metadata(data)
-                await super().on_data(ten_env, data)
+            # Mark receipt before waiting for an earlier finalize request.
+            # The base consumes audio separately from control messages.
+            boundary = None
+            queue = getattr(self, "audio_frames_queue", None)
+            if queue is not None and not (
+                self.stopped or self._fatal or self._init_failed
+            ):
+                boundary = _FinalizeBoundary()
+                self._finalize_boundaries.add(boundary)
+                queue.put_nowait(boundary)
+            try:
+                async with self._finalize_request_lock:
+                    if boundary is not None and not (
+                        self.stopped or self._fatal or self._init_failed
+                    ):
+                        try:
+                            await asyncio.wait_for(
+                                boundary.ready.wait(),
+                                timeout=AUDIO_DRAIN_TIMEOUT_SECONDS,
+                            )
+                        except asyncio.TimeoutError:
+                            await self.on_error(
+                                "Oruk audio drain timed out",
+                                "drain_timeout",
+                                True,
+                            )
+                    self._capture_metadata(data)
+                    await super().on_data(ten_env, data)
+            finally:
+                if boundary is not None:
+                    boundary.release.set()
+                    self._finalize_boundaries.discard(boundary)
             return
         await super().on_data(ten_env, data)
+
+    async def _handle_audio_frame(self, ten_env, audio_frame):
+        if isinstance(audio_frame, _FinalizeBoundary):
+            audio_frame.ready.set()
+            # Hold later frames until the final result/ack has used this turn's
+            # metadata; future audio can then enter the next socket's buffer.
+            await audio_frame.release.wait()
+            return
+        await super()._handle_audio_frame(ten_env, audio_frame)
 
     async def _flush_buffered_audio(self):
         while not self.stopped:
@@ -283,6 +329,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
 
     @override
     async def stop_connection(self) -> None:
+        for boundary in self._finalize_boundaries:
+            boundary.ready.set()
+            boundary.release.set()
         task, self._reconnect_task = self._reconnect_task, None
         if task is not None and task is not asyncio.current_task():
             task.cancel()
@@ -315,18 +364,26 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             buf = frame.lock_buf()
             try:
                 audio_data = bytes(buf)
-                await connection.send_pcm(audio_data)
+                await asyncio.wait_for(
+                    connection.send_pcm(audio_data), timeout=IO_TIMEOUT_SECONDS
+                )
                 self._turn_bytes += len(audio_data)
                 self.audio_timeline.add_user_audio(
                     len(audio_data) / 2 / self.config.sample_rate * 1000
                 )
                 if self.audio_dumper:
                     try:
-                        await self.audio_dumper.push_bytes(audio_data)
+                        await asyncio.wait_for(
+                            self.audio_dumper.push_bytes(audio_data),
+                            timeout=IO_TIMEOUT_SECONDS,
+                        )
                     except Exception:
                         self.ten_env.log_error("Audio diagnostic dump failed")
                 return True
             except Exception:
+                await self.on_error(
+                    "Oruk audio send failed", "send_failed", False
+                )
                 return False
             finally:
                 frame.unlock_buf(buf)
@@ -334,39 +391,77 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     @override
     async def finalize(self, _session_id: str | None) -> None:
         async with self._finalize_lock:
-            self._finalize_pending = True
-            generation = self._generation
+            callback_owned = False
+            generation = None
+            requested_generation = self._generation
+            turn_done = self._turn_done
+            buffered_turn = not self.buffered_frames.empty() or self._flushing
             try:
+                # Queue consumption can leave earlier audio in the disconnected
+                # buffer. Wait for on_open to flush it, then select that socket
+                # generation, rather than abandoning the request on reconnect.
+                connection = await asyncio.wait_for(
+                    self._connection_for_finalize(), timeout=IO_TIMEOUT_SECONDS
+                )
+                if connection is None:
+                    return
                 if (
-                    not self.is_connected()
-                    and self.connection is not None
-                    and not self._fatal
+                    self._generation != requested_generation
+                    and not buffered_turn
                 ):
-                    await asyncio.wait_for(
-                        self._ready_event.wait(), timeout=10.0
-                    )
+                    return
                 async with self._io_lock:
-                    if generation != self._generation:
-                        return
-                    connection = self.connection
-                    if connection is None or not connection.is_connected():
-                        return
-                    await connection.commit()
-                await asyncio.wait_for(self._turn_done.wait(), timeout=10.0)
+                    if (
+                        self.connection is not connection
+                        or not self.is_connected()
+                    ):
+                        raise asyncio.TimeoutError
+                    generation = self._generation
+                    turn_done = self._turn_done
+                    # Previous-socket callbacks cannot acknowledge this request
+                    # while it is still waiting for the next ready connection.
+                    self._finalize_pending = True
+                    callback_owned = True
+                    await asyncio.wait_for(
+                        connection.commit(), timeout=IO_TIMEOUT_SECONDS
+                    )
+                await asyncio.wait_for(
+                    turn_done.wait(), timeout=IO_TIMEOUT_SECONDS
+                )
             except asyncio.TimeoutError:
-                if generation != self._generation:
+                if generation is not None and generation != self._generation:
                     return
                 await self.on_error(
                     "Oruk finalization timed out", "finalize_timeout", False
                 )
+                # The boundary prevents later-turn audio entering this buffer.
+                # A failed turn must not be replayed as part of the next one.
+                while not self.buffered_frames.empty():
+                    self.buffered_frames.get_nowait()
+                self.buffered_frames_size = 0
                 await self._close_current()
                 await self.on_disconnected(code=0, message="finalize timeout")
                 self._schedule_reconnect()
             finally:
-                await self._finish_finalize()
+                if callback_owned:
+                    await self._finish_finalize(turn_done)
+                else:
+                    await self.send_asr_finalize_end()
 
-    async def _finish_finalize(self) -> None:
-        self._turn_done.set()
+    async def _connection_for_finalize(self):
+        while not self.is_connected():
+            if self.stopped or self._fatal or self._init_failed:
+                return None
+            if self.connection is None:
+                if self.buffered_frames.empty():
+                    return None
+                self._schedule_reconnect()
+            self._ready_event.clear()
+            await self._ready_event.wait()
+        return self.connection
+
+    async def _finish_finalize(self, turn_done=None) -> None:
+        (turn_done if turn_done is not None else self._turn_done).set()
         if self._finalize_pending:
             self._finalize_pending = False
             await self.send_asr_finalize_end()
@@ -479,7 +574,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         if not self._final_sent:
             self._emitted_ms += self._turn_duration_ms()
         await self._finish_finalize()
-        await self.on_disconnected(code=0, message="closed")
+        await self.on_disconnected(code=code, message=message)
         self._schedule_reconnect()
 
     def _schedule_reconnect(self) -> None:
@@ -507,6 +602,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     # ---- helpers ----
 
     def _reset_turn(self) -> None:
+        # A waiting finalize retains the completed turn's event even when the
+        # next connection opens before its coroutine resumes.
+        self._turn_done = asyncio.Event()
         self._phrases = []
         self._final_sent = False
         self._turn_bytes = 0

@@ -47,6 +47,9 @@ class Base:
     async def on_deinit(self, env):
         pass
 
+    async def _handle_audio_frame(self, env, audio_frame):
+        await self.send_audio(audio_frame, self.session_id)
+
     async def on_data(self, env, data):
         # Mirror the native base's mutable finalize context, assigned before
         # it invokes the extension's finalize implementation.
@@ -83,16 +86,12 @@ m.ModuleErrorCode = Enum(
 )
 sys.modules["ten_runtime"].AsyncTenEnv = object
 sys.modules["ten_runtime"].AudioFrame = object
-for package, directory in [
-    ("_oruk_unit_realtime", "oruk_realtime_asr_python"),
-    ("_oruk_unit_local", "oruk_asr_python"),
-]:
-    namespace = types.ModuleType(package)
-    namespace.__path__ = [str(ROOT / directory)]
-    sys.modules[package] = namespace
+namespace = types.ModuleType("_oruk_unit_realtime")
+namespace.__path__ = [str(ROOT / "oruk_realtime_asr_python")]
+sys.modules["_oruk_unit_realtime"] = namespace
 rt = importlib.import_module("_oruk_unit_realtime.extension")
 transport = importlib.import_module("_oruk_unit_realtime.recognition")
-local = importlib.import_module("_oruk_unit_local.extension")
+assert rt.OrukRealtimeASRExtension.__mro__[1] is Base
 
 for name, original in _original_modules.items():
     if original is None:
@@ -165,6 +164,277 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         await task
         e._reopen.assert_awaited_once()
 
+    async def test_finalize_drains_queued_audio_and_inflight_dump(self):
+        e = self.new()
+        e.audio_frames_queue = asyncio.Queue()
+        entered, release = asyncio.Event(), asyncio.Event()
+        sent, committed = [], []
+
+        async def dump(pcm):
+            if pcm == b"first":
+                entered.set()
+                await release.wait()
+
+        async def commit():
+            committed.append(list(sent))
+            await e.on_final("first turn")
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=sent.append),
+            commit=AsyncMock(side_effect=commit),
+        )
+        e.audio_dumper = Mock(push_bytes=AsyncMock(side_effect=dump))
+
+        def frame(pcm):
+            return Mock(
+                lock_buf=Mock(return_value=pcm),
+                get_buf=Mock(return_value=pcm),
+                get_property_to_json=Mock(return_value=(None, None)),
+                unlock_buf=Mock(),
+            )
+
+        stop_consumer = object()
+
+        async def consume():
+            while True:
+                item = await e.audio_frames_queue.get()
+                if item is stop_consumer:
+                    return
+                await e._handle_audio_frame(e.ten_env, item)
+
+        consumer = asyncio.create_task(consume())
+        pending = None
+        try:
+            e.audio_frames_queue.put_nowait(frame(b"first"))
+            e.audio_frames_queue.put_nowait(frame(b"second"))
+            await asyncio.wait_for(entered.wait(), timeout=1)
+            request = Mock(
+                get_name=Mock(return_value="asr_finalize"),
+                get_property_string=Mock(return_value=("drain-finalize", None)),
+            )
+            pending = asyncio.create_task(e.on_data(e.ten_env, request))
+            await asyncio.sleep(0)
+            e.audio_frames_queue.put_nowait(frame(b"next turn"))
+            e.connection.commit.assert_not_called()
+            release.set()
+            await asyncio.wait_for(pending, timeout=1)
+            self.assertEqual(committed, [[b"first", b"second"]])
+            e.send_asr_finalize_end.assert_awaited_once()
+        finally:
+            release.set()
+            # Python 3.10 wait_for can consume cancellation while its child
+            # completes. Stop this queue consumer cooperatively instead.
+            e.audio_frames_queue.put_nowait(stop_consumer)
+            if pending is not None:
+                pending.cancel()
+            await asyncio.wait_for(
+                asyncio.gather(
+                    consumer,
+                    *([pending] if pending is not None else []),
+                    return_exceptions=True,
+                ),
+                timeout=1,
+            )
+
+    async def test_finalize_boundaries_mark_receipt_before_request_lock(self):
+        e = self.new()
+        e.audio_frames_queue = asyncio.Queue()
+        await e._finalize_request_lock.acquire()
+
+        def request(identifier):
+            return Mock(
+                get_name=Mock(return_value="asr_finalize"),
+                get_property_string=Mock(return_value=(identifier, None)),
+            )
+
+        first = asyncio.create_task(e.on_data(e.ten_env, request("first")))
+        await asyncio.sleep(0)
+        between = object()
+        e.audio_frames_queue.put_nowait(between)
+        second = asyncio.create_task(e.on_data(e.ten_env, request("second")))
+        await asyncio.sleep(0)
+        self.assertIsInstance(
+            e.audio_frames_queue.get_nowait(), rt._FinalizeBoundary
+        )
+        self.assertIs(e.audio_frames_queue.get_nowait(), between)
+        self.assertIsInstance(
+            e.audio_frames_queue.get_nowait(), rt._FinalizeBoundary
+        )
+        self.assertEqual(len(e._finalize_boundaries), 2)
+        e.stopped = True
+        await e.stop_connection()
+        self.assertTrue(
+            all(boundary.ready.is_set() for boundary in e._finalize_boundaries)
+        )
+        e._finalize_request_lock.release()
+        await asyncio.gather(first, second)
+        self.assertFalse(e._finalize_boundaries)
+        self.assertEqual(e.send_asr_finalize_end.await_count, 2)
+
+    async def test_audio_drain_timeout_is_bounded_and_acknowledged(self):
+        e = self.new()
+        e.audio_frames_queue = asyncio.Queue()
+        request = Mock(
+            get_name=Mock(return_value="asr_finalize"),
+            get_property_string=Mock(return_value=("stalled-drain", None)),
+        )
+        with patch.object(rt, "AUDIO_DRAIN_TIMEOUT_SECONDS", 0.001):
+            await asyncio.wait_for(e.on_data(e.ten_env, request), timeout=0.2)
+        self.assertTrue(e._fatal)
+        e.send_asr_finalize_end.assert_awaited_once()
+        self.assertEqual(
+            e.send_asr_error.await_args.args[1].code, "drain_timeout"
+        )
+        self.assertTrue(e.audio_frames_queue.get_nowait().release.is_set())
+
+    async def test_disconnected_buffer_is_flushed_before_finalize_commit(self):
+        e = self.new()
+        frame = Mock(
+            lock_buf=Mock(return_value=b"buffered audio"),
+            get_buf=Mock(return_value=b"buffered audio"),
+            get_property_to_json=Mock(return_value=(None, None)),
+            unlock_buf=Mock(),
+        )
+        e.buffered_frames.put_nowait(frame)
+        sent = []
+
+        async def commit():
+            self.assertEqual(sent, [b"buffered audio"])
+            await e.on_final("buffered turn")
+
+        connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=sent.append),
+            commit=AsyncMock(side_effect=commit),
+        )
+
+        async def reopen():
+            e._generation += 1
+            e._reset_turn()
+            e._flushing = True
+            e._connect_started = asyncio.get_running_loop().time()
+            e.connection = connection
+            await e.on_open()
+
+        e._reopen = AsyncMock(side_effect=reopen)
+        await asyncio.wait_for(e.finalize("session-a"), timeout=0.2)
+        connection.commit.assert_awaited_once()
+        self.assertTrue(e.buffered_frames.empty())
+        e.send_asr_finalize_end.assert_awaited_once()
+        e.send_asr_error.assert_not_called()
+        await e._reconnect_task
+
+    async def test_completed_turn_event_survives_immediate_next_connection(
+        self,
+    ):
+        e = self.new()
+
+        async def commit():
+            await e.on_final("finished")
+            e._generation += 1
+            e._reset_turn()
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(side_effect=commit),
+        )
+        await asyncio.wait_for(e.finalize(None), timeout=0.2)
+        e.send_asr_error.assert_not_called()
+        e.send_asr_finalize_end.assert_awaited_once()
+        self.assertFalse(e._turn_done.is_set())
+
+    async def test_previous_close_cannot_ack_next_buffered_turn(self):
+        e = self.new()
+        e._final_sent = True
+        e.connection = Mock(is_connected=Mock(return_value=False))
+        e._schedule_reconnect = Mock()
+        e.buffered_frames.put_nowait(
+            Mock(
+                lock_buf=Mock(return_value=b"next audio"),
+                get_buf=Mock(return_value=b"next audio"),
+                get_property_to_json=Mock(return_value=(None, None)),
+                unlock_buf=Mock(),
+            )
+        )
+        pending = asyncio.create_task(e.finalize("session-b"))
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        await e.on_close(1000, "previous turn closed")
+        e.send_asr_finalize_end.assert_not_called()
+
+        async def commit():
+            self.assertTrue(e.buffered_frames.empty())
+            e.send_asr_finalize_end.assert_not_called()
+            await e.on_final("next turn")
+
+        e._generation += 1
+        e._reset_turn()
+        e._flushing = True
+        e._connect_started = asyncio.get_running_loop().time()
+        connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(),
+            commit=AsyncMock(side_effect=commit),
+        )
+        e.connection = connection
+        await e.on_open()
+        await asyncio.wait_for(pending, timeout=0.2)
+        connection.commit.assert_awaited_once()
+        e.send_asr_finalize_end.assert_awaited_once()
+
+    async def test_stalled_send_does_not_block_drain_timeout_cleanup(self):
+        e = self.new()
+        e.audio_frames_queue = asyncio.Queue()
+        entered = asyncio.Event()
+
+        async def stalled_send(_pcm):
+            entered.set()
+            await asyncio.Event().wait()
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=stalled_send),
+            close=AsyncMock(),
+        )
+        frame = Mock(lock_buf=Mock(return_value=b"stalled"))
+        request = Mock(
+            get_name=Mock(return_value="asr_finalize"),
+            get_property_string=Mock(return_value=("stalled-send", None)),
+        )
+        with (
+            patch.object(rt, "IO_TIMEOUT_SECONDS", 0.01),
+            patch.object(rt, "AUDIO_DRAIN_TIMEOUT_SECONDS", 0.001),
+        ):
+            sender = asyncio.create_task(e.send_audio(frame, None))
+            await asyncio.wait_for(entered.wait(), timeout=1)
+            await asyncio.wait_for(e.on_data(e.ten_env, request), timeout=0.2)
+            self.assertFalse(await sender)
+        self.assertTrue(e._fatal)
+        self.assertIsNone(e.connection)
+        frame.unlock_buf.assert_called_once()
+        e.send_asr_finalize_end.assert_awaited_once()
+
+    async def test_stalled_commit_is_bounded_and_acknowledged(self):
+        e = self.new()
+
+        async def commit():
+            await asyncio.Event().wait()
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            commit=AsyncMock(side_effect=commit),
+            close=AsyncMock(),
+        )
+        e._schedule_reconnect = Mock()
+        with patch.object(rt, "IO_TIMEOUT_SECONDS", 0.001):
+            await asyncio.wait_for(e.finalize(None), timeout=0.2)
+        e.send_asr_finalize_end.assert_awaited_once()
+        self.assertEqual(
+            e.send_asr_error.await_args.args[1].code, "finalize_timeout"
+        )
+        e._schedule_reconnect.assert_called_once()
+
     async def test_stop_cancels_reconnect(self):
         e = self.new()
         e._reconnect_task = asyncio.create_task(asyncio.sleep(20))
@@ -236,50 +506,45 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((result.start_ms, result.duration_ms), (1000, 500))
 
     async def test_concurrent_finalize_requests_preserve_id_and_session(self):
-        for extension in (
-            rt.OrukRealtimeASRExtension,
-            local.OrukASRExtension,
-        ):
-            with self.subTest(extension=extension.__name__):
-                e = extension("test")
-                entered, release = asyncio.Event(), asyncio.Event()
-                completed = []
+        e = rt.OrukRealtimeASRExtension("test")
+        entered, release = asyncio.Event(), asyncio.Event()
+        completed = []
 
-                async def finalize(session_id):
-                    if not entered.is_set():
-                        entered.set()
-                        await release.wait()
-                    completed.append((e.finalize_id, e.metadata["session_id"]))
+        async def finalize(session_id):
+            if not entered.is_set():
+                entered.set()
+                await release.wait()
+            completed.append((e.finalize_id, e.metadata["session_id"]))
 
-                e.finalize = finalize
+        e.finalize = finalize
 
-                def request(number):
-                    return Mock(
-                        get_name=Mock(return_value="asr_finalize"),
-                        get_property_string=Mock(
-                            return_value=(f"finalize-{number}", None)
-                        ),
-                        get_property_to_json=Mock(
-                            return_value=(
-                                '{"session_id":"session-' + str(number) + '"}',
-                                None,
-                            )
-                        ),
+        def request(number):
+            return Mock(
+                get_name=Mock(return_value="asr_finalize"),
+                get_property_string=Mock(
+                    return_value=(f"finalize-{number}", None)
+                ),
+                get_property_to_json=Mock(
+                    return_value=(
+                        '{"session_id":"session-' + str(number) + '"}',
+                        None,
                     )
+                ),
+            )
 
-                first = asyncio.create_task(e.on_data(e.ten_env, request(1)))
-                await entered.wait()
-                second = asyncio.create_task(e.on_data(e.ten_env, request(2)))
-                await asyncio.sleep(0)
-                release.set()
-                await asyncio.gather(first, second)
-                self.assertEqual(
-                    completed,
-                    [
-                        ("finalize-1", "session-1"),
-                        ("finalize-2", "session-2"),
-                    ],
-                )
+        first = asyncio.create_task(e.on_data(e.ten_env, request(1)))
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        second = asyncio.create_task(e.on_data(e.ten_env, request(2)))
+        await asyncio.sleep(0)
+        release.set()
+        await asyncio.gather(first, second)
+        self.assertEqual(
+            completed,
+            [
+                ("finalize-1", "session-1"),
+                ("finalize-2", "session-2"),
+            ],
+        )
 
     async def test_two_turn_timeline(self):
         e = self.new()
@@ -333,7 +598,7 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         client = Mock(start=start, close=AsyncMock())
         with patch.object(rt, "OrukRealtimeConnection", return_value=client):
             task = asyncio.create_task(e.start_connection())
-            await began.wait()
+            await asyncio.wait_for(began.wait(), timeout=1)
             e.stopped = True
             await e.stop_connection()
             release.set()
@@ -448,208 +713,6 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(e._flushing)
         self.assertEqual(e.session_id, "buffered-session")
 
-    async def test_local_finalize_waits_for_model_and_buffer_flush(self):
-        e = local.OrukASRExtension("test")
-        e.config = types.SimpleNamespace(
-            sample_rate=16000, asr_result_language="en"
-        )
-        e.recognizer = Mock(loaded=True, recognize=Mock(return_value="hello"))
-        e._loading = True
-        f = Mock(
-            lock_buf=Mock(return_value=b"\0\0" * 160),
-            get_buf=Mock(return_value=b"\0\0" * 160),
-            get_property_to_json=Mock(
-                return_value=('{"session_id":"warmup-session"}', None)
-            ),
-        )
-        await e.buffered_frames.put(f)
-        task = asyncio.create_task(e.finalize(None))
-        await asyncio.sleep(0)
-        e.send_asr_result.assert_not_called()
-        await e._flush_buffered_audio()
-        e._loading = False
-        e._ready_event.set()
-        await task
-        self.assertEqual(
-            e.send_asr_result.await_args.args[0].metadata["session_id"],
-            "warmup-session",
-        )
-        e.send_asr_finalize_end.assert_awaited_once()
-
-    async def test_local_invalid_config_never_loads_model(self):
-        e = local.OrukASRExtension("test")
-        e._init_failed = True
-        with patch.object(local, "OrukeetRecognizer") as constructor:
-            await e.start_connection()
-            constructor.assert_not_called()
-        e.on_disconnected.assert_awaited_once()
-        e.send_asr_error.assert_not_called()
-
-    async def test_local_errors_include_vendor_details(self):
-        for failure in (
-            "invalid_config",
-            "model_load_failed",
-            "recognition_failed",
-        ):
-            with self.subTest(failure=failure):
-                e = local.OrukASRExtension("test")
-                if failure == "invalid_config":
-                    env = Mock()
-                    env.get_property_to_json = AsyncMock(
-                        return_value=('{"params":{"sample_rate":8000}}', None)
-                    )
-                    await e.on_init(env)
-                    with patch.object(
-                        local, "OrukeetRecognizer"
-                    ) as constructor:
-                        await e.start_connection()
-                        constructor.assert_not_called()
-                    e.on_disconnected.assert_awaited_once()
-                else:
-                    e.config = types.SimpleNamespace(
-                        sample_rate=16000,
-                        asr_result_language="en",
-                        cache_dir=None,
-                        local_files_only=True,
-                    )
-                    e.recognizer = Mock(
-                        prewarm=Mock(side_effect=RuntimeError("load failed")),
-                        recognize=Mock(
-                            side_effect=RuntimeError("inference failed")
-                        ),
-                    )
-                    if failure == "model_load_failed":
-                        await e.start_connection()
-                        self.assertTrue(e._init_failed)
-                        e.on_disconnected.assert_awaited_once()
-                    else:
-                        e._utterance.extend(b"\0\0" * 160)
-                        await e.finalize(None)
-                        e.send_asr_finalize_end.assert_awaited_once()
-                e.send_asr_error.assert_awaited_once()
-                vendor_info = e.send_asr_error.await_args.args[1]
-                self.assertEqual(vendor_info.vendor, "oruk")
-                self.assertEqual(vendor_info.code, failure)
-                self.assertTrue(vendor_info.message)
-
-    async def test_local_stop_suppresses_in_flight_result_and_error(self):
-        for failure in (False, True):
-            with self.subTest(failure=failure):
-                e = local.OrukASRExtension("test")
-                e.config = types.SimpleNamespace(
-                    sample_rate=16000, asr_result_language="en"
-                )
-                e.recognizer = Mock()
-                e._utterance.extend(b"\0\0" * 160)
-                entered, release = asyncio.Event(), asyncio.Event()
-
-                async def recognize(*args):
-                    entered.set()
-                    await release.wait()
-                    if failure:
-                        raise RuntimeError("closed during recognition")
-                    return "late result"
-
-                with patch.object(local.asyncio, "to_thread", new=recognize):
-                    task = asyncio.create_task(e.finalize(None))
-                    await entered.wait()
-                    e.stopped = True
-                    release.set()
-                    await task
-                e.send_asr_result.assert_not_called()
-                e.send_asr_error.assert_not_called()
-                e.send_asr_finalize_end.assert_awaited_once()
-
-    async def test_local_next_turn_keeps_finalize_metadata_isolated(self):
-        e = local.OrukASRExtension("test")
-        e.config = types.SimpleNamespace(
-            sample_rate=16000, asr_result_language="en"
-        )
-        e.recognizer = Mock(loaded=True)
-        e._connected = True
-        e._utterance.extend(b"\0\0" * 160)
-        entered, release = asyncio.Event(), asyncio.Event()
-        results, acknowledgements, metric_sessions = [], [], []
-
-        async def emit_result(result):
-            # The native helper merges current metadata even when the result
-            # already carries a snapshot, then reads it again for metrics.
-            result.metadata.update(e.metadata)
-            results.append(copy.deepcopy(result.metadata))
-            await asyncio.sleep(0)
-            metric_sessions.append(e.session_id)
-
-        async def emit_finalize_end():
-            acknowledgements.append((e.finalize_id, copy.deepcopy(e.metadata)))
-
-        e.send_asr_result = AsyncMock(side_effect=emit_result)
-        e.send_asr_finalize_end = AsyncMock(side_effect=emit_finalize_end)
-
-        def request(session):
-            return Mock(
-                get_name=Mock(return_value="asr_finalize"),
-                get_property_string=Mock(
-                    return_value=("finalize-" + session, None)
-                ),
-                get_property_to_json=Mock(
-                    return_value=(
-                        '{"session_id":"session-' + session + '"}',
-                        None,
-                    )
-                ),
-            )
-
-        async def recognize(*args):
-            entered.set()
-            await release.wait()
-            return "turn words"
-
-        with patch.object(local.asyncio, "to_thread", new=recognize):
-            first = asyncio.create_task(e.on_data(e.ten_env, request("a")))
-            await entered.wait()
-            self.assertTrue(e.is_connected())
-            next_frame = Mock(
-                lock_buf=Mock(return_value=b"\0\0" * 160),
-                get_property_to_json=Mock(
-                    return_value=('{"session_id":"session-b"}', None)
-                ),
-            )
-            self.assertTrue(await e.send_audio(next_frame, "session-b"))
-            release.set()
-            await first
-            self.assertEqual(e.metadata, {"session_id": "session-b"})
-            self.assertEqual(e.session_id, "session-b")
-            self.assertEqual(len(e._utterance), 320)
-            await e.on_data(e.ten_env, request("b"))
-
-        self.assertEqual(
-            [result["session_id"] for result in results],
-            ["session-a", "session-b"],
-        )
-        self.assertEqual(metric_sessions, ["session-a", "session-b"])
-        self.assertEqual(
-            acknowledgements,
-            [
-                ("finalize-a", {"session_id": "session-a"}),
-                ("finalize-b", {"session_id": "session-b"}),
-            ],
-        )
-
-    async def test_local_timeline_survives_model_reconnect(self):
-        e = local.OrukASRExtension("test")
-        e.config = types.SimpleNamespace(
-            sample_rate=16000,
-            asr_result_language="en",
-            cache_dir="",
-            local_files_only=True,
-        )
-        e.recognizer = Mock(loaded=True, recognize=Mock(return_value="hello"))
-        f = Mock(lock_buf=Mock(return_value=b"\0\0" * 8000))
-        await e.send_audio(f, None)
-        await e.finalize(None)
-        self.assertEqual(e.send_asr_result.await_args.args[0].start_ms, 700)
-        e.audio_timeline.add_user_audio.assert_called_once_with(500)
-
 
 class Transport(unittest.IsolatedAsyncioTestCase):
     def new(self):
@@ -660,9 +723,131 @@ class Transport(unittest.IsolatedAsyncioTestCase):
             phrase_emotions=True,
             diarize=False,
             sample_rate=16000,
-            callback=Mock(on_close=AsyncMock(), on_error=AsyncMock()),
+            callback=Mock(
+                on_close=AsyncMock(),
+                on_error=AsyncMock(),
+                on_interim=AsyncMock(),
+                on_final=AsyncMock(),
+            ),
             ten_env=Mock(),
         )
+
+    async def test_interim_deltas_accumulate_within_each_turn(self):
+        first, second = self.new(), self.new()
+        for delta in ("hello", " world"):
+            await first._dispatch(
+                {"type": transport.TRANSCRIPT_PREFIX + "delta", "delta": delta}
+            )
+        await first._dispatch(
+            {
+                "type": transport.TRANSCRIPT_PREFIX + "completed",
+                "transcript": "Hello world.",
+            }
+        )
+        await second._dispatch(
+            {"type": transport.TRANSCRIPT_PREFIX + "delta", "delta": "next"}
+        )
+        self.assertEqual(
+            [
+                call.args[0]
+                for call in first._callback.on_interim.await_args_list
+            ],
+            ["hello", "hello world"],
+        )
+        first._callback.on_final.assert_awaited_once_with("Hello world.")
+        second._callback.on_interim.assert_awaited_once_with("next")
+
+    async def test_interim_accumulator_has_a_size_limit(self):
+        e = self.new()
+        with patch.object(transport, "_MAX_TRANSCRIPT_CHARS", 8):
+            await e._dispatch(
+                {
+                    "type": transport.TRANSCRIPT_PREFIX + "delta",
+                    "delta": "hello",
+                }
+            )
+            with self.assertRaisesRegex(RuntimeError, "exceeds limit"):
+                await e._dispatch(
+                    {
+                        "type": transport.TRANSCRIPT_PREFIX + "delta",
+                        "delta": " world",
+                    }
+                )
+        self.assertEqual(e._interim_text, "hello")
+        e._callback.on_interim.assert_awaited_once_with("hello")
+
+    async def test_close_codes_distinguish_success_and_transport_failure(self):
+        for code in (1000, 1001, 1011, None):
+            with self.subTest(code=code):
+                e = self.new()
+                e._final_received = True
+                e._socket = Mock(
+                    closed=False,
+                    close_code=code,
+                    close=AsyncMock(),
+                    receive=AsyncMock(
+                        return_value=types.SimpleNamespace(
+                            type=(
+                                transport.aiohttp.WSMsgType.CLOSE
+                                if code is not None
+                                else transport.aiohttp.WSMsgType.CLOSED
+                            ),
+                            data=code,
+                        )
+                    ),
+                )
+                e._session = Mock(closed=False, close=AsyncMock())
+                await e._receive_loop()
+                reported_code = code or 1006
+                self.assertEqual(
+                    e._callback.on_close.await_args.args[0], reported_code
+                )
+                if code in (1000, 1001):
+                    e._callback.on_error.assert_not_called()
+                else:
+                    e._callback.on_error.assert_awaited_once_with(
+                        f"Oruk WebSocket closed abnormally ({reported_code})",
+                        f"websocket_close_{reported_code}",
+                        fatal=False,
+                    )
+                e._socket.close.assert_awaited_once()
+                e._session.close.assert_awaited_once()
+
+    async def test_committed_close_without_final_reports_incomplete_turn(self):
+        e = self.new()
+        e._committed = True
+        e._socket = Mock(closed=False, close_code=1000, close=AsyncMock())
+        e._session = Mock(closed=False, close=AsyncMock())
+        e._receive_json = AsyncMock(return_value=None)
+        await e._receive_loop()
+        self.assertEqual(
+            e._callback.on_error.await_args.args[1], "missing_final"
+        )
+        e._callback.on_close.assert_awaited_once()
+
+    async def test_abnormal_close_emits_vendor_error_before_recovery(self):
+        e = rt.OrukRealtimeASRExtension("test")
+        e.config = rt.OrukRealtimeASRConfig(params={"api_key": "unit-key"})
+        e._schedule_reconnect = Mock()
+        connection = self.new()
+        connection._callback = rt._TurnCallback(e, e._generation)
+        connection._socket = Mock(
+            closed=False, close_code=1011, close=AsyncMock()
+        )
+        connection._session = Mock(closed=False, close=AsyncMock())
+        connection._receive_json = AsyncMock(return_value=None)
+        e.connection = connection
+        await connection._receive_loop()
+        e.send_asr_error.assert_awaited_once()
+        error, vendor = e.send_asr_error.await_args.args
+        self.assertEqual(error.code, m.ModuleErrorCode.NON_FATAL_ERROR.value)
+        self.assertEqual(vendor.vendor, "oruk")
+        self.assertEqual(vendor.code, "websocket_close_1011")
+        e.on_disconnected.assert_awaited_once_with(
+            code=1011, message="Oruk WebSocket closed abnormally (1011)"
+        )
+        self.assertIsNone(e.connection)
+        e._schedule_reconnect.assert_called_once()
 
     async def test_partial_handshake_failure_closes_session(self):
         e = self.new()
