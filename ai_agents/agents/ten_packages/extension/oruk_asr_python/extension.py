@@ -383,7 +383,10 @@ class OrukASRExtension(AsyncASRBaseExtension):
             return await self._buffer_audio(frame, _session_id)
 
     async def _buffer_audio(self, frame, session_id):
-        if self.stopped or self._init_failed or self._utterance_overflow:
+        if self.stopped or self._init_failed:
+            return False
+        if self._utterance_overflow:
+            self._record_dropped_audio(len(frame.get_buf()))
             return False
         self._capture_metadata(frame, session_id)
         buf = frame.lock_buf()
@@ -392,6 +395,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
             if len(self._utterance) + len(audio_data) > MAX_UTTERANCE_BYTES:
                 self._utterance.clear()
                 self._utterance_overflow = True
+                self._record_dropped_audio(len(audio_data))
                 message = "Orukeet utterance exceeded the 10 MiB audio limit"
                 await self.send_asr_error(
                     ModuleError(
@@ -481,15 +485,7 @@ class OrukASRExtension(AsyncASRBaseExtension):
                     # replaying it on a later connection would mix turns.
                     while not self.buffered_frames.empty():
                         frame = self.buffered_frames.get_nowait()
-                        duration_ms = (
-                            len(frame.get_buf())
-                            / self.input_audio_sample_rate()
-                            / self.input_audio_channels()
-                            / self.input_audio_sample_width()
-                            * 1000
-                        )
-                        self.audio_timeline.add_dropped_audio(duration_ms)
-                        self.dropped_audio_frames += 1
+                        self._record_dropped_audio(len(frame.get_buf()))
                     self.buffered_frames_size = 0
                 pcm = bytes(self._utterance)
                 if len(pcm) % 2:
@@ -576,6 +572,17 @@ class OrukASRExtension(AsyncASRBaseExtension):
         finally:
             self._release_boundary()
             await self.send_asr_finalize_end()
+
+    def _record_dropped_audio(self, byte_count: int) -> None:
+        duration_ms = (
+            byte_count
+            / self.input_audio_sample_rate()
+            / self.input_audio_channels()
+            / self.input_audio_sample_width()
+            * 1000
+        )
+        self.audio_timeline.add_dropped_audio(duration_ms)
+        self.dropped_audio_frames += 1
 
     def _build_metadata(self) -> Dict[str, Any]:
         """Preserve caller fields, with authoritative generated ASR details."""

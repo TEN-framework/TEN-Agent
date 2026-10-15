@@ -114,6 +114,56 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         e.config = rt.OrukRealtimeASRConfig(params={"api_key": "unit-key"})
         return e
 
+    async def test_handshake_vendor_errors_preserve_classification(self):
+        for phase in ("created", "updated"):
+            for code in ("invalid_api_key", "forbidden", "rate_limit"):
+                with self.subTest(phase=phase, code=code):
+                    e = self.new()
+                    error = {
+                        "type": "error",
+                        "error": {"code": code, "message": "vendor diagnostic"},
+                    }
+                    events = (
+                        [error]
+                        if phase == "created"
+                        else [{"type": "session.created"}, error]
+                    )
+                    socket = Mock(
+                        closed=False, send_json=AsyncMock(), close=AsyncMock()
+                    )
+                    session = Mock(
+                        closed=False,
+                        ws_connect=AsyncMock(return_value=socket),
+                        close=AsyncMock(),
+                    )
+                    e._schedule_reconnect = Mock()
+                    with (
+                        patch.object(
+                            transport.aiohttp,
+                            "ClientSession",
+                            return_value=session,
+                        ) as factory,
+                        patch.object(
+                            transport.OrukRealtimeConnection,
+                            "_receive_json",
+                            AsyncMock(side_effect=events),
+                        ),
+                    ):
+                        if code == "rate_limit":
+                            await e.start_connection()
+                        else:
+                            await e._reopen()
+                    factory.assert_called_once()
+                    e.send_asr_error.assert_awaited_once()
+                    error_arg, vendor = e.send_asr_error.await_args.args
+                    self.assertEqual(vendor.code, code)
+                    self.assertEqual(vendor.message, "vendor diagnostic")
+                    self.assertEqual(
+                        error_arg.code, 1000 if code == "rate_limit" else -1000
+                    )
+                    self.assertEqual(e._fatal, code != "rate_limit")
+                    self.assertIsNone(e.connection)
+
     async def test_stale_close_cannot_clear_new_turn(self):
         e = self.new()
         e._generation = 4
@@ -999,13 +1049,13 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
                     e.send_asr_error.await_args.args[1].code, "send_failed"
                 )
                 await old_callback.on_close(1000, "late")
-                self.assertEqual(e._emitted_ms, 1000)
+                self.assertEqual(e._emitted_ms, 1010)
                 e._reset_turn()
                 e._turn_bytes = 16000
                 await e.on_final("next turn")
                 result = e.send_asr_result.await_args.args[0]
                 self.assertEqual(
-                    (result.start_ms, result.duration_ms), (1000, 500)
+                    (result.start_ms, result.duration_ms), (1010, 500)
                 )
 
     async def test_send_failure_cannot_close_replacement_during_error_emit(
@@ -1045,7 +1095,7 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await pending)
         replacement.close.assert_not_called()
         self.assertIs(e.connection, replacement)
-        self.assertEqual(e._emitted_ms, 1000)
+        self.assertEqual(e._emitted_ms, 1010)
         self.assertFalse(e._turn_done.is_set())
         e.on_disconnected.assert_not_called()
         e._schedule_reconnect.assert_not_called()
@@ -1080,7 +1130,7 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(await pending)
         replacement.close.assert_not_called()
         self.assertIs(e.connection, replacement)
-        self.assertEqual(e._emitted_ms, 1000)
+        self.assertEqual(e._emitted_ms, 1010)
         self.assertFalse(e._turn_done.is_set())
         e.on_disconnected.assert_not_called()
         e._schedule_reconnect.assert_not_called()

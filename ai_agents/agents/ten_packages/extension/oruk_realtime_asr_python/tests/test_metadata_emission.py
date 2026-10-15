@@ -326,3 +326,70 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
             [{"finalize_id": "request-a", "metadata": request_metadata}],
         )
         self.assertEqual(extension.metadata, {"session_id": "audio-b"})
+
+    async def test_native_consumer_counts_failed_live_frame_once(self):
+        extension = self.new_extension()
+        extension._schedule_reconnect = Mock()
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=OSError("write failed")),
+            close=AsyncMock(),
+        )
+        frame = Mock(
+            get_buf=Mock(return_value=b"\0" * 32000),
+            lock_buf=Mock(return_value=b"\0" * 32000),
+            get_property_to_json=Mock(
+                return_value=(json.dumps({"session_id": "live-session"}), None)
+            ),
+        )
+        boundary = module._FinalizeBoundary()
+        extension.audio_frames_queue.put_nowait(frame)
+        extension.audio_frames_queue.put_nowait(boundary)
+        consumer = asyncio.create_task(extension._audio_frame_consumer())
+        timeline = extension.audio_timeline
+        with patch.object(
+            timeline, "add_dropped_audio", wraps=timeline.add_dropped_audio
+        ) as dropped:
+            try:
+                await asyncio.wait_for(boundary.ready.wait(), 1)
+            finally:
+                extension.stopped = True
+                boundary.release.set()
+                await asyncio.wait_for(consumer, 1)
+        dropped.assert_called_once_with(1000.0)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        self.assertEqual(extension._emitted_ms, 1000)
+        extension._reset_turn()
+        extension._turn_bytes = 16000
+        await extension.on_final("next successful turn")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual(
+            (result["start_ms"], result["duration_ms"]), (1000, 500)
+        )
+
+    async def test_failed_buffered_frame_retried_without_drop(self):
+        extension = self.new_extension()
+        extension._schedule_reconnect = Mock()
+        frame = Mock(
+            get_buf=Mock(return_value=b"\0" * 32000),
+            lock_buf=Mock(return_value=b"\0" * 32000),
+        )
+        extension.buffered_frames.put_nowait(frame)
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=OSError("write failed")),
+            close=AsyncMock(),
+        )
+        with self.assertRaises(ConnectionError):
+            await extension._flush_buffered_audio()
+        self.assertEqual(extension.buffered_frames.qsize(), 1)
+        self.assertEqual(extension.dropped_audio_frames, 0)
+        extension._reset_turn()
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True), send_pcm=AsyncMock()
+        )
+        await extension._flush_buffered_audio()
+        await extension.on_final("successfully retried")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (0, 1000))
+        self.assertEqual(extension.dropped_audio_frames, 0)

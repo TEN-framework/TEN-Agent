@@ -373,6 +373,14 @@ class LocalLifecycle(unittest.IsolatedAsyncioTestCase):
                 await extension.send_audio(self.frame(pcm=b"\0" * 2), "a")
             )
             self.assertEqual(len(extension._utterance), 0)
+            self.assertEqual(extension.dropped_audio_frames, 2)
+            self.assertEqual(
+                [
+                    call.args[0]
+                    for call in extension.audio_timeline.add_dropped_audio.call_args_list
+                ],
+                [0.0625, 0.0625],
+            )
             extension.send_asr_error.assert_awaited_once()
             self.assertEqual(
                 extension.send_asr_error.await_args.args[1].code,

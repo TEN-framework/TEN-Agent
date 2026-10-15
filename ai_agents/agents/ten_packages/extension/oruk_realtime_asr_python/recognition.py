@@ -25,6 +25,27 @@ _SUBPROTOCOL = "oruk-realtime"
 _MAX_TRANSCRIPT_CHARS = 128_000
 
 
+class OrukRealtimeHandshakeError(RuntimeError):
+    def __init__(self, event):
+        self.message, self.code, self.fatal = _vendor_error(event)
+        super().__init__(self.message)
+
+
+def _vendor_error(event):
+    error = event.get("error")
+    code = (
+        error.get("code", "realtime_error")
+        if isinstance(error, dict)
+        else "realtime_error"
+    )
+    message = error.get("message", code) if isinstance(error, dict) else code
+    return (
+        str(message),
+        str(code),
+        code in {"unauthorized", "invalid_api_key", "forbidden", "not_found"},
+    )
+
+
 class OrukRealtimeCallback(Protocol):
     async def on_open(self) -> None: ...
     async def on_interim(self, text: str) -> None: ...
@@ -155,6 +176,8 @@ class OrukRealtimeConnection:
             max_msg_size=1_048_576,
         )
         created = await self._receive_json()
+        if created is not None and created.get("type") == "error":
+            raise OrukRealtimeHandshakeError(created)
         if created is None or created.get("type") != "session.created":
             raise RuntimeError("missing session.created")
         self._request_id = created.get("request_id", request_id) or request_id
@@ -165,6 +188,8 @@ class OrukRealtimeConnection:
             }
         )
         updated = await self._receive_json()
+        if updated is not None and updated.get("type") == "error":
+            raise OrukRealtimeHandshakeError(updated)
         if updated is None or updated.get("type") != "session.updated":
             raise RuntimeError("missing session.updated")
 
@@ -245,22 +270,7 @@ class OrukRealtimeConnection:
     async def _dispatch(self, event: dict[str, Any]) -> None:
         kind = event["type"]
         if kind == "error":
-            error = event.get("error")
-            code = (
-                error.get("code", "realtime_error")
-                if isinstance(error, dict)
-                else "realtime_error"
-            )
-            message = (
-                error.get("message", code) if isinstance(error, dict) else code
-            )
-            fatal = code in {
-                "unauthorized",
-                "invalid_api_key",
-                "forbidden",
-                "not_found",
-            }
-            await self._callback.on_error(str(message), str(code), fatal)
+            await self._callback.on_error(*_vendor_error(event))
         elif kind == TRANSCRIPT_PREFIX + "delta":
             delta = event.get("delta")
             if isinstance(delta, str) and delta:

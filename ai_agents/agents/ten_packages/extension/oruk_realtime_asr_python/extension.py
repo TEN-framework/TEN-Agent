@@ -30,7 +30,11 @@ from ten_runtime import (
 
 from .config import OrukRealtimeASRConfig
 from .const import DUMP_FILE_NAME, MODEL, MODULE_NAME_ASR, SAMPLE_RATE
-from .recognition import OrukRealtimeConnection, OrukRealtimeCallback
+from .recognition import (
+    OrukRealtimeConnection,
+    OrukRealtimeCallback,
+    OrukRealtimeHandshakeError,
+)
 
 AUDIO_DRAIN_TIMEOUT_SECONDS = 10.0
 IO_TIMEOUT_SECONDS = 10.0
@@ -113,6 +117,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._draining_connection = None
         self._buffer_epoch = 0
         self._dropped_duration_ms = 0.0
+        self._retained_frame = ContextVar(
+            "oruk_realtime_retained", default=None
+        )
 
     @property
     def metadata(self):
@@ -227,7 +234,11 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
-            success = await self.send_audio(frame, self.session_id)
+            token = self._retained_frame.set(frame)
+            try:
+                success = await self.send_audio(frame, self.session_id)
+            finally:
+                self._retained_frame.reset(token)
             if epoch != self._buffer_epoch:
                 if not success:
                     self._record_dropped_frame(frame)
@@ -358,9 +369,21 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                     return
                 status = getattr(exc, "status", None)
                 await self.on_error(
-                    "Oruk connection failed",
-                    str(status or "connect_failed"),
-                    status in {401, 403},
+                    (
+                        exc.message
+                        if isinstance(exc, OrukRealtimeHandshakeError)
+                        else "Oruk connection failed"
+                    ),
+                    (
+                        exc.code
+                        if isinstance(exc, OrukRealtimeHandshakeError)
+                        else str(status or "connect_failed")
+                    ),
+                    (
+                        exc.fatal
+                        if isinstance(exc, OrukRealtimeHandshakeError)
+                        else status in {401, 403}
+                    ),
                 )
                 await self.on_disconnected(code=0, message="connect failed")
                 self._schedule_reconnect()
@@ -426,6 +449,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         async with self._io_lock:
             connection = self.connection
             if connection is None or not connection.is_connected():
+                if self._retained_frame.get() is not frame:
+                    self._record_dropped_frame(frame)
                 return False
             generation = self._generation
             turn_done = self._turn_done
@@ -450,6 +475,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                         self.ten_env.log_error("Audio diagnostic dump failed")
                 return True
             except Exception:
+                if self._retained_frame.get() is not frame:
+                    self._record_dropped_audio(len(buf))
                 context = (
                     self._turn_finalize_context or self._snapshot_context()
                 )
@@ -768,8 +795,11 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._draining_connection = None
 
     def _record_dropped_frame(self, frame):
+        self._record_dropped_audio(len(frame.get_buf()))
+
+    def _record_dropped_audio(self, byte_count):
         duration_ms = (
-            len(frame.get_buf())
+            byte_count
             / self.input_audio_sample_rate()
             / self.input_audio_channels()
             / self.input_audio_sample_width()

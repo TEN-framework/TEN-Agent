@@ -88,6 +88,52 @@ class NativeMetadataEmission(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(extension.metadata, original)
 
+    async def test_overflow_preserves_rejected_input_in_native_timeline(self):
+        extension = self.new()
+        extension.recognizer = Mock(
+            loaded=True, recognize=Mock(return_value="next turn")
+        )
+        extension._connected = True
+
+        def frame(session, byte_count):
+            pcm = b"\0" * byte_count
+            return Mock(
+                get_buf=Mock(return_value=pcm),
+                lock_buf=Mock(return_value=pcm),
+                unlock_buf=Mock(),
+                get_property_to_json=Mock(
+                    return_value=(json.dumps({"session_id": session}), None)
+                ),
+            )
+
+        with patch.object(local_extension, "MAX_UTTERANCE_BYTES", 320):
+            # Native base accepts 10 ms, then rejects the triggering 5 ms and
+            # another 10 ms until finalize. Their input offset must survive.
+            for byte_count in (320, 160, 320):
+                await extension._handle_audio_frame(
+                    extension.ten_env, frame("a", byte_count)
+                )
+            self.assertEqual(extension.dropped_audio_frames, 2)
+            self.assertEqual(
+                extension.audio_timeline.get_total_user_audio_duration(), 25
+            )
+            self.assertEqual(len(self.emitted(extension, "error")), 1)
+            extension.finalize_id = "overflow-a"
+            await asyncio.wait_for(extension.finalize("a"), timeout=1)
+            self.assertEqual(self.emitted(extension, "asr_result"), [])
+
+            await extension._handle_audio_frame(
+                extension.ten_env, frame("b", 320)
+            )
+            extension.finalize_id = "next-b"
+            await asyncio.wait_for(extension.finalize("b"), timeout=1)
+        results = self.emitted(extension, "asr_result")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["start_ms"], 25)
+        self.assertEqual(results[0]["duration_ms"], 10)
+        self.assertEqual(results[0]["metadata"]["session_id"], "b")
+        self.assertEqual(len(self.emitted(extension, "asr_finalize_end")), 2)
+
     async def test_disconnected_finalize_before_trigger_connect_drops_old_turn(
         self,
     ):
