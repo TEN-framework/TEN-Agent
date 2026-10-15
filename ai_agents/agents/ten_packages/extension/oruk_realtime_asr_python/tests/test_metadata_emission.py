@@ -542,3 +542,221 @@ class MetadataEmission(unittest.IsolatedAsyncioTestCase):
         statuses = self.outputs(extension, "connection_status_changed")
         self.assertEqual([item["current"] for item in statuses], ["connected"])
         extension._schedule_reconnect.assert_not_called()
+
+    async def test_finalize_inherits_buffered_audio_unless_session_explicit(
+        self,
+    ):
+        for supplied in (
+            None,
+            {"request_tag": "x"},
+            {"session_id": "override", "request_tag": "x"},
+        ):
+            with self.subTest(metadata=supplied):
+                extension = self.new_extension()
+                extension.metadata = {"session_id": "session-a"}
+                extension.session_id = "session-a"
+                audio_metadata = {"session_id": "session-b", "frame_tag": "b"}
+                frame = Mock(
+                    get_buf=Mock(return_value=b"\0" * 320),
+                    lock_buf=Mock(return_value=b"\0" * 320),
+                    get_property_to_json=Mock(
+                        return_value=(json.dumps(audio_metadata), None)
+                    ),
+                )
+                extension.buffered_frames.put_nowait(frame)
+                extension.buffered_frames_size = 320
+                connection = Mock(
+                    is_connected=Mock(return_value=True), send_pcm=AsyncMock()
+                )
+
+                async def commit():
+                    await extension.on_final("session b transcript")
+
+                connection.commit = AsyncMock(side_effect=commit)
+
+                async def reopen():
+                    extension._generation += 1
+                    extension._reset_turn()
+                    extension._flushing = True
+                    extension.connection = connection
+                    await extension.on_open()
+
+                extension._reopen = AsyncMock(side_effect=reopen)
+                request = Data.create("asr_finalize")
+                payload = {"finalize_id": "finalize-b"}
+                if supplied is not None:
+                    payload["metadata"] = supplied
+                request.set_property_from_json(None, json.dumps(payload))
+                pending = asyncio.create_task(
+                    extension.on_data(extension.ten_env, request)
+                )
+                boundary = await asyncio.wait_for(
+                    extension.audio_frames_queue.get(), 1
+                )
+                consumer = asyncio.create_task(
+                    extension._handle_audio_frame(extension.ten_env, boundary)
+                )
+                await asyncio.wait_for(pending, 1)
+                await asyncio.wait_for(consumer, 1)
+                await extension._reconnect_task
+                expected = (
+                    dict(supplied)
+                    if supplied and "session_id" in supplied
+                    else {**audio_metadata, **(supplied or {})}
+                )
+                result = self.outputs(extension, "asr_result")[0]
+                self.assertEqual(
+                    {key: result["metadata"][key] for key in expected}, expected
+                )
+                self.assertEqual(
+                    self.outputs(extension, "asr_finalize_end"),
+                    [{"finalize_id": "finalize-b", "metadata": expected}],
+                )
+                ttlw = [
+                    item
+                    for item in self.outputs(extension, "metrics")
+                    if ModuleMetricKey.ASR_TTLW in item["metrics"]
+                ]
+                self.assertEqual(len(ttlw), 1)
+                self.assertEqual(
+                    ttlw[0]["metadata"]["session_id"], expected["session_id"]
+                )
+                self.assertEqual(extension.metadata, audio_metadata)
+
+    async def test_eviction_during_flush_keeps_start_and_includes_gap(self):
+        extension = self.new_extension()
+        extension.buffer_strategy = Mock(
+            return_value=module.ASRBufferConfigModeKeep(byte_limit=64000)
+        )
+        frames = [
+            Mock(
+                get_buf=Mock(return_value=b"\0" * size),
+                lock_buf=Mock(return_value=b"\0" * size),
+            )
+            for size in (32000, 32000, 64000)
+        ]
+        for frame in frames[:2]:
+            await extension._handle_audio_frame(extension.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def dump(_data):
+            if not entered.is_set():
+                entered.set()
+                await release.wait()
+
+        extension.audio_dumper = Mock(push_bytes=AsyncMock(side_effect=dump))
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True), send_pcm=AsyncMock()
+        )
+        extension._flushing = True
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        await extension._handle_audio_frame(extension.ten_env, frames[2])
+        release.set()
+        await asyncio.wait_for(flushing, 1)
+        await extension.on_final("first and third frames")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual((result["start_ms"], result["duration_ms"]), (0, 4000))
+        self.assertEqual(extension._emitted_ms, 4000)
+        self.assertEqual(extension.dropped_audio_frames, 1)
+        extension._reset_turn()
+        extension._turn_bytes = 16000
+        await extension.on_final("next turn")
+        self.assertEqual(
+            self.outputs(extension, "asr_result")[1]["start_ms"], 4000
+        )
+
+    async def test_abort_claims_failed_buffer_before_delayed_error_returns(
+        self,
+    ):
+        extension = self.new_extension()
+        extension._schedule_reconnect = Mock()
+        extension.buffer_strategy = Mock(
+            return_value=module.ASRBufferConfigModeKeep(byte_limit=32000)
+        )
+        frame = Mock(
+            get_buf=Mock(return_value=b"\0" * 32000),
+            lock_buf=Mock(return_value=b"\0" * 32000),
+        )
+        await extension._handle_audio_frame(extension.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def emit(data):
+            value = json.loads(data.get_property_to_json(None)[0])
+            if (
+                data.get_name() == "error"
+                and value["vendor_info"]["code"] == "send_failed"
+            ):
+                entered.set()
+                await release.wait()
+
+        extension.ten_env.send_data.side_effect = emit
+        extension.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=OSError("failed")),
+            close=AsyncMock(),
+        )
+        extension._flushing = True
+        flushing = asyncio.create_task(extension._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        await extension._handle_audio_frame(
+            extension.ten_env, Mock(get_buf=Mock(return_value=b"\0" * 64000))
+        )
+        self.assertEqual(extension._emitted_ms, 3000)
+        self.assertEqual(extension.dropped_audio_frames, 2)
+        extension._reset_turn()
+        extension._turn_bytes = 16000
+        await extension.on_final("new turn before old error completes")
+        result = self.outputs(extension, "asr_result")[0]
+        self.assertEqual(
+            (result["start_ms"], result["duration_ms"]), (3000, 500)
+        )
+        release.set()
+        await asyncio.wait_for(flushing, 1)
+        self.assertEqual(extension._emitted_ms, 3500)
+        self.assertEqual(extension.dropped_audio_frames, 2)
+
+    async def test_failed_write_after_eviction_abandons_affected_retry(self):
+        e = self.new_extension()
+        e._schedule_reconnect = Mock()
+        e.buffer_strategy = Mock(
+            return_value=module.ASRBufferConfigModeKeep(byte_limit=64000)
+        )
+        frames = [
+            Mock(
+                get_buf=Mock(return_value=b"\0" * n),
+                lock_buf=Mock(return_value=b"\0" * n),
+            )
+            for n in (32000, 32000, 64000)
+        ]
+        for frame in frames[:2]:
+            await e._handle_audio_frame(e.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send(_data):
+            entered.set()
+            await release.wait()
+            raise OSError("failed after eviction")
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=send),
+            close=AsyncMock(),
+        )
+        e._flushing = True
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        await e._handle_audio_frame(e.ten_env, frames[2])
+        release.set()
+        with self.assertRaises(ConnectionError):
+            await asyncio.wait_for(flushing, 1)
+        self.assertTrue(e.buffered_frames.empty())
+        self.assertEqual(e.dropped_audio_frames, 3)
+        self.assertEqual(e._emitted_ms, 4000)
+        e._reset_turn()
+        e._turn_bytes = 16000
+        await e.on_final("next turn")
+        result = self.outputs(e, "asr_result")[0]
+        self.assertEqual(
+            (result["start_ms"], result["duration_ms"]), (4000, 500)
+        )

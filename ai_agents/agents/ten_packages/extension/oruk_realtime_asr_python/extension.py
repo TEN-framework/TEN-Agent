@@ -120,6 +120,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._retained_frame = ContextVar(
             "oruk_realtime_retained", default=None
         )
+        self._buffered_sends = {}
+        self._finalize_metadata_explicit = ContextVar(
+            "oruk_realtime_finalize_metadata", default=True
+        )
+        self._turn_start_ms = None
+        self._turn_gap_ms = 0
 
     @property
     def metadata(self):
@@ -167,11 +173,13 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             if isinstance(value, dict):
                 self.metadata = copy.deepcopy(value)
                 self.session_id = value.get("session_id", self.session_id)
+                return True
             if session_id is not None and self.metadata is None:
                 self.metadata = {"session_id": session_id}
                 self.session_id = session_id
         except (ValueError, TypeError, AttributeError):
             pass
+        return False
 
     @override
     async def on_audio_frame(self, ten_env, audio_frame):
@@ -208,8 +216,12 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                                 "drain_timeout",
                                 True,
                             )
-                    self._capture_metadata(data)
-                    await super().on_data(ten_env, data)
+                    explicit = self._capture_metadata(data)
+                    token = self._finalize_metadata_explicit.set(explicit)
+                    try:
+                        await super().on_data(ten_env, data)
+                    finally:
+                        self._finalize_metadata_explicit.reset(token)
             finally:
                 if boundary is not None:
                     boundary.release.set()
@@ -282,16 +294,33 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 self.buffered_frames_size = 0
                 return
             self.buffered_frames_size -= len(frame.get_buf())
-            token = self._retained_frame.set(frame)
+            retained = {
+                "frame": frame,
+                "failed": False,
+                "discarded": False,
+                "gap": False,
+            }
+            self._buffered_sends[id(retained)] = retained
+            token = self._retained_frame.set(retained)
             try:
                 success = await self.send_audio(frame, self.session_id)
             finally:
                 self._retained_frame.reset(token)
+                self._buffered_sends.pop(id(retained), None)
             if epoch != self._buffer_epoch:
-                if not success:
+                if not success and not retained["discarded"]:
                     self._record_dropped_frame(frame)
                 return
             if not success:
+                if retained["gap"]:
+                    # A retry after a later eviction would put older audio
+                    # after the dropped interval. Abandon this failed turn.
+                    self._discard_buffered_audio()
+                    if not retained["discarded"]:
+                        self._record_dropped_frame(frame)
+                    raise ConnectionError(
+                        "Buffered turn lost audio before retry"
+                    )
                 pending = [frame]
                 while not self.buffered_frames.empty():
                     pending.append(self.buffered_frames.get_nowait())
@@ -508,8 +537,10 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     ) -> bool:
         async with self._io_lock:
             connection = self.connection
+            retained = self._retained_frame.get()
+            retry_owned = retained is not None and retained["frame"] is frame
             if connection is None or not connection.is_connected():
-                if self._retained_frame.get() is not frame:
+                if not retry_owned:
                     self._record_dropped_frame(frame)
                 return False
             generation = self._generation
@@ -518,6 +549,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             buf = frame.lock_buf()
             try:
                 audio_data = bytes(buf)
+                if self._turn_start_ms is None:
+                    self._turn_start_ms = self._emitted_ms
                 await asyncio.wait_for(
                     connection.send_pcm(audio_data), timeout=IO_TIMEOUT_SECONDS
                 )
@@ -535,7 +568,9 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                         self.ten_env.log_error("Audio diagnostic dump failed")
                 return True
             except Exception:
-                if self._retained_frame.get() is not frame:
+                if retry_owned:
+                    retained["failed"] = True
+                else:
                     self._record_dropped_audio(len(buf))
                 context = (
                     self._turn_finalize_context or self._snapshot_context()
@@ -583,6 +618,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
     async def finalize(self, _session_id: str | None) -> None:
         async with self._finalize_lock:
             request_context = self._snapshot_context()
+            explicit_metadata = self._finalize_metadata_explicit.get()
+            context_resolved = False
             callback_owned = False
             generation = None
             requested_generation = self._generation
@@ -595,6 +632,10 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
                 connection = await asyncio.wait_for(
                     self._connection_for_finalize(), timeout=IO_TIMEOUT_SECONDS
                 )
+                request_context = self._resolve_finalize_context(
+                    request_context, explicit_metadata
+                )
+                context_resolved = True
                 if connection is None:
                     return
                 if (
@@ -625,6 +666,10 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             except Exception as exc:
                 if generation is not None and generation != self._generation:
                     return
+                if not context_resolved:
+                    request_context = self._resolve_finalize_context(
+                        request_context, explicit_metadata
+                    )
                 timed_out = isinstance(exc, asyncio.TimeoutError)
                 message = (
                     "Oruk finalization timed out"
@@ -682,6 +727,16 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             await self._ready_event.wait()
         return self.connection
 
+    def _resolve_finalize_context(self, request_context, explicit):
+        request_metadata = request_context[0]
+        if explicit and request_metadata and "session_id" in request_metadata:
+            return request_context
+        metadata, session_id = self._snapshot_context()
+        if explicit:
+            metadata = metadata or {}
+            metadata.update(request_metadata or {})
+        return metadata, session_id
+
     async def _finish_finalize(
         self, turn_done=None, generation=None, context=None
     ) -> None:
@@ -724,7 +779,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             ASRResult(
                 text=text,
                 final=False,
-                start_ms=self._emitted_ms,
+                start_ms=self._result_start_ms(),
                 duration_ms=self._turn_duration_ms(),
                 language=self.config.asr_result_language if self.config else "",
                 words=[],
@@ -748,7 +803,7 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
             ASRResult(
                 text=text,
                 final=True,
-                start_ms=self._emitted_ms,
+                start_ms=self._result_start_ms(),
                 duration_ms=duration_ms,
                 language=self.config.asr_result_language if self.config else "",
                 words=[],
@@ -883,6 +938,8 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         self._turn_accounted = False
         self._turn_finalize_context = None
         self._draining_connection = None
+        self._turn_start_ms = None
+        self._turn_gap_ms = 0
 
     def _record_dropped_frame(self, frame):
         self._record_dropped_audio(len(frame.get_buf()))
@@ -900,22 +957,41 @@ class OrukRealtimeASRExtension(AsyncASRBaseExtension, OrukRealtimeCallback):
         prior_offset = int(self._dropped_duration_ms)
         self._dropped_duration_ms += duration_ms
         # Round the cumulative duration once, rather than every short frame.
-        self._emitted_ms += int(self._dropped_duration_ms) - prior_offset
+        elapsed_ms = int(self._dropped_duration_ms) - prior_offset
+        self._emitted_ms += elapsed_ms
+        if self._turn_start_ms is not None and not self._turn_accounted:
+            self._turn_gap_ms += elapsed_ms
+        for retained in self._buffered_sends.values():
+            retained["gap"] = True
 
     def _discard_buffered_audio(self):
         self._buffer_epoch += 1
         while not self.buffered_frames.empty():
             self._record_dropped_frame(self.buffered_frames.get_nowait())
+        for retained in self._buffered_sends.values():
+            if retained["failed"] and not retained["discarded"]:
+                self._record_dropped_frame(retained["frame"])
+                retained["discarded"] = True
         self.buffered_frames_size = 0
 
     def _account_turn(self, generation=None):
         if generation is not None and generation != self._generation:
             return
         if not self._turn_accounted:
-            self._emitted_ms += self._turn_duration_ms()
+            self._emitted_ms += self._accepted_turn_duration_ms()
             self._turn_accounted = True
 
+    def _result_start_ms(self) -> int:
+        return (
+            self._emitted_ms
+            if self._turn_start_ms is None
+            else self._turn_start_ms
+        )
+
     def _turn_duration_ms(self) -> int:
+        return self._accepted_turn_duration_ms() + self._turn_gap_ms
+
+    def _accepted_turn_duration_ms(self) -> int:
         rate = self.config.sample_rate if self.config else SAMPLE_RATE
         return int(self._turn_bytes / 2 / rate * 1000)
 

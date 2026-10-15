@@ -1357,6 +1357,49 @@ class Lifecycle(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(e._flushing)
         self.assertEqual(e.session_id, "buffered-session")
 
+    async def test_failed_write_after_eviction_abandons_affected_retry(self):
+        e = self.new()
+        e._schedule_reconnect = Mock()
+        e.buffer_strategy = Mock(
+            return_value=types.SimpleNamespace(byte_limit=64000)
+        )
+        frames = [
+            Mock(
+                get_buf=Mock(return_value=b"\0" * n),
+                lock_buf=Mock(return_value=b"\0" * n),
+            )
+            for n in (32000, 32000, 64000)
+        ]
+        for frame in frames[:2]:
+            await e._handle_audio_frame(e.ten_env, frame)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def send(_data):
+            entered.set()
+            await release.wait()
+            raise OSError("failed after eviction")
+
+        e.connection = Mock(
+            is_connected=Mock(return_value=True),
+            send_pcm=AsyncMock(side_effect=send),
+            close=AsyncMock(),
+        )
+        e._flushing = True
+        flushing = asyncio.create_task(e._flush_buffered_audio())
+        await asyncio.wait_for(entered.wait(), 1)
+        await e._handle_audio_frame(e.ten_env, frames[2])
+        release.set()
+        with self.assertRaises(ConnectionError):
+            await asyncio.wait_for(flushing, 1)
+        self.assertTrue(e.buffered_frames.empty())
+        self.assertEqual(e.dropped_audio_frames, 3)
+        self.assertEqual(e._emitted_ms, 4000)
+        e._reset_turn()
+        e._turn_bytes = 16000
+        await e.on_final("next turn")
+        result = e.send_asr_result.await_args.args[0]
+        self.assertEqual((result.start_ms, result.duration_ms), (4000, 500))
+
 
 class Transport(unittest.IsolatedAsyncioTestCase):
     def new(self):
