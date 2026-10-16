@@ -1,0 +1,3 @@
+kotoba-sdk>=0.2.3
+pydantic>=2.0.0
+websockets>=15.0

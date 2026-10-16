@@ -1,0 +1,9 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "key": "${env:KOTOBA_TTS_KEY}",
+        "base_url": "ws://127.0.0.1:8765/v2/tts/ws",
+        "sample_rate": 16000
+    }
+}
