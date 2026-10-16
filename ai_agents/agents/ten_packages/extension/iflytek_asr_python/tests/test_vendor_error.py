@@ -1,7 +1,7 @@
 import asyncio
 
 from iflytek_asr_python.protocol import IFlytekProtocolError
-from iflytek_asr_python.reconnect_manager import ReconnectLimitReached
+from iflytek_asr_python.reconnect_manager import ReconnectLimitReachedError
 
 from .helpers import create_extension, data_as_dict
 
@@ -14,7 +14,7 @@ def test_vendor_errors_include_classification_code_and_message() -> None:
             IFlytekProtocolError("vendor-429", "temporarily overloaded")
         )
         await extension._send_framework_error(
-            ReconnectLimitReached("maximum reconnection attempts reached"),
+            ReconnectLimitReachedError("maximum reconnection attempts reached"),
             fatal=True,
         )
 

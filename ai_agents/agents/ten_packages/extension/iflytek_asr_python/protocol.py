@@ -4,9 +4,10 @@
 # See the LICENSE file for more information.
 #
 import base64
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 import json
-from typing import Any, Mapping
+from typing import Any
 
 from .config import IFlytekAsrConfig
 

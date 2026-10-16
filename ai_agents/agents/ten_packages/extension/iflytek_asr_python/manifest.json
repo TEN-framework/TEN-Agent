@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "iflytek_asr_python",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "display_name": {
     "locales": {
       "en-US": {

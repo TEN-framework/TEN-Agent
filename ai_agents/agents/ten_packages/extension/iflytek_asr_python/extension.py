@@ -34,7 +34,7 @@ from ten_runtime import AsyncTenEnv, AudioFrame
 from .client import IFlytekAsrClient, IFlytekAsrClientListener
 from .config import IFlytekAsrConfig
 from .protocol import IFlytekProtocolError, IFlytekResponse
-from .reconnect_manager import ReconnectLimitReached, ReconnectManager
+from .reconnect_manager import ReconnectLimitReachedError, ReconnectManager
 
 DUMP_FILE_NAME = "iflytek_asr_in.pcm"
 
@@ -369,7 +369,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
 
                 try:
                     await self.reconnect_manager.attempt(connect)
-                except ReconnectLimitReached as error:
+                except ReconnectLimitReachedError as error:
                     self._should_reconnect = False
                     await self._send_framework_error(error, fatal=True)
                     return
@@ -390,7 +390,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
                     )
                     if exhausted:
                         self._should_reconnect = False
-                        limit_error = ReconnectLimitReached(
+                        limit_error = ReconnectLimitReachedError(
                             "maximum reconnection attempts reached"
                         )
                         await self._send_framework_error(
@@ -572,7 +572,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         vendor_message = self._error_message(error)
         if isinstance(error, IFlytekProtocolError):
             vendor_code = self._sanitize_text(error.code)[:128]
-        elif isinstance(error, ReconnectLimitReached):
+        elif isinstance(error, ReconnectLimitReachedError):
             vendor_code = "reconnect_exhausted"
         elif isinstance(error, ValidationError):
             vendor_code = "invalid_config"
