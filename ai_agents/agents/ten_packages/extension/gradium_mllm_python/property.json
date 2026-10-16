@@ -1,0 +1,14 @@
+{
+  "api_key": "${env:GRADIUM_API_KEY}",
+  "region": "us",
+  "path": "/api/speech/s2s",
+  "model_name": "s2s-translate",
+  "stt_model_name": "stt-translate",
+  "tts_model_name": "default",
+  "voice_id": "YTpq7expH9539ERJ",
+  "target_language": "en",
+  "input_format": "pcm",
+  "output_format": "pcm",
+  "input_sample_rate": 24000,
+  "dump": false
+}

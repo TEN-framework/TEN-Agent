@@ -31,6 +31,9 @@
       "path": "../../../ten_packages/extension/glm_mllm_python"
     },
     {
+      "path": "../../../ten_packages/extension/gradium_mllm_python"
+    },
+    {
       "path": "../../../ten_packages/extension/openai_mllm_python"
     },
     {

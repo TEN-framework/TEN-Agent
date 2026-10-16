@@ -2,6 +2,146 @@
   "ten": {
     "predefined_graphs": [
       {
+        "name": "gradium_translate_demo",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Gradium translation demo connected."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "v2v",
+              "addon": "gradium_mllm_python",
+              "property": {
+                "api_key": "${env:GRADIUM_API_KEY}",
+                "region": "us",
+                "path": "/api/speech/s2s",
+                "model_name": "s2s-translate",
+                "stt_model_name": "stt-translate",
+                "tts_model_name": "default",
+                "voice_id": "${env:GRADIUM_S2S_VOICE_ID|YTpq7expH9539ERJ}",
+                "target_language": "en",
+                "input_format": "pcm",
+                "output_format": "pcm",
+                "input_sample_rate": 24000
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "v2v"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "main_control",
+              "data": [
+                {
+                  "names": [
+                    "mllm_server_input_transcript",
+                    "mllm_server_output_transcript",
+                    "mllm_server_session_ready",
+                    "mllm_server_interrupted",
+                    "mllm_server_function_call"
+                  ],
+                  "source": [
+                    {
+                      "extension": "v2v"
+                    }
+                  ]
+                }
+              ],
+              "cmd": [
+                {
+                  "names": ["on_user_left", "on_user_joined"],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "v2v"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
         "name": "voice_assistant_realtime",
         "auto_start": true,
         "graph": {
