@@ -5,7 +5,7 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
 ## Features
 
 - **Ultra-Low Latency Voice Interaction**: Direct speech-to-speech conversation with minimal delay
-- **Multi-Provider Support**: Compatible with OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, and other voice-to-voice models
+- **Multi-Provider Support**: Compatible with OpenAI GPT Realtime, Azure Voice AI, Gemini 2.0 Flash, GLM, StepFun, ThunderPhone, and other voice-to-voice models
 
 ## Prerequisites
 
@@ -20,6 +20,7 @@ A real-time voice assistant optimized for ultra-low-latency conversation using v
    - **Gemini**: `GEMINI_API_KEY` - For Gemini 2.0 Flash
    - **GLM**: `GLM_API_KEY` - For GLM voice models
    - **StepFun**: `STEPFUN_API_KEY` - For StepFun voice models
+   - **ThunderPhone**: `THUNDERPHONE_API_KEY` (and optionally `THUNDERPHONE_AGENT_ID`) - For ThunderPhone phone agents
 
 ### Optional Environment Variables
 
@@ -48,6 +49,8 @@ GEMINI_API_KEY=your_gemini_api_key_here
 GLM_API_KEY=your_glm_api_key_here
 # OR
 STEPFUN_API_KEY=your_stepfun_api_key_here
+# OR
+THUNDERPHONE_API_KEY=your_thunderphone_secret_key_here
 
 # Optional
 WEATHERAPI_API_KEY=your_weather_api_key_here

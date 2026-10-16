@@ -37,6 +37,9 @@
       "path": "../../../ten_packages/extension/stepfun_mllm_python"
     },
     {
+      "path": "../../../ten_packages/extension/thunderphone_mllm_python"
+    },
+    {
       "path": "../../../ten_packages/extension/message_collector2"
     },
     {

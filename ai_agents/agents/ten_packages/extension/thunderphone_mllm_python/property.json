@@ -1,0 +1,7 @@
+{
+    "api_key": "${env:THUNDERPHONE_API_KEY}",
+    "agent_id": "${env:THUNDERPHONE_AGENT_ID|}",
+    "product": "bolt",
+    "language": "en",
+    "prompt": "You are a helpful voice assistant. Keep your answers short."
+}
