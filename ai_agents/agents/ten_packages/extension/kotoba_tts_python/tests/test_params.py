@@ -175,3 +175,32 @@ def test_validate_rejects_blank_or_zero_fields(field, value, message):
 def test_boolean_for_float_is_rejected():
     with pytest.raises(ValueError, match="request_timeout_seconds"):
         _config({"key": "k", "request_timeout_seconds": True})
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        pytest.param(
+            "wss://host/v2/tts/ws", "wss://host/v2/tts/ws", id="no-query"
+        ),
+        pytest.param(
+            "wss://host/ws?access_token=tok123&X-Amz-Signature=amz456",
+            "wss://host/ws?access_token=***&X-Amz-Signature=***",
+            id="any-query-name",
+        ),
+        pytest.param(
+            "wss://user:pw@host/ws?k=v#frag",
+            "wss://***@host/ws?k=***#frag",
+            id="userinfo-and-fragment",
+        ),
+        pytest.param(
+            "wss://host/ws?flag", "wss://host/ws?flag", id="bare-flag"
+        ),
+    ],
+)
+def test_redacted_base_url_masks_every_query_value(url, expected):
+    config = _config({"key": "k", "base_url": url})
+    assert config.redacted_base_url() == expected
+    rendered = config.to_str(sensitive_handling=True)
+    for secret in ("tok123", "amz456", "user:pw"):
+        assert secret not in rendered

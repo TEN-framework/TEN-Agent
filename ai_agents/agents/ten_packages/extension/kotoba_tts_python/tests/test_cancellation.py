@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fake_kotoba_server import FakeKotobaServer, Scenario  # noqa: E402
 from helpers import (  # noqa: E402
+    dump_path,
     events_after,
     make_config,
     metrics_with,
@@ -567,9 +568,7 @@ def test_flush_takeover_finalizes_the_dump():
             tester = run_tester(
                 script, make_config(server.url, dump=True, dump_path=dump_dir)
             )
-        with open(
-            os.path.join(dump_dir, "kotoba_tts_dump_hang.pcm"), "rb"
-        ) as f:
+        with open(dump_path(dump_dir, "hang"), "rb") as f:
             assert f.read() == tester.recording.audio_bytes("hang")
     finally:
         server.stop()
@@ -610,9 +609,7 @@ def test_stop_during_recorder_finalization_still_finalizes_the_dump():
                 make_config(server.url, dump=True, dump_path=dump_dir),
                 timeout_s=10.0,
             )
-        with open(
-            os.path.join(dump_dir, "kotoba_tts_dump_stopdump.pcm"), "rb"
-        ) as f:
+        with open(dump_path(dump_dir, "stopdump"), "rb") as f:
             assert f.read() == tester.recording.audio_bytes("stopdump")
         assert len(tester.recording.audio_bytes("stopdump")) == len(
             server.expected_pcm(1)
@@ -732,9 +729,7 @@ def test_stop_during_gated_dump_flush_completes_the_file():
                 timeout_s=10.0,
             )
             assert time.monotonic() - t0 < 6.0
-        with open(
-            os.path.join(dump_dir, "kotoba_tts_dump_gate.pcm"), "rb"
-        ) as f:
+        with open(dump_path(dump_dir, "gate"), "rb") as f:
             assert f.read() == tester.recording.audio_bytes("gate")
         assert len(tester.recording.audio_bytes("gate")) == len(
             server.expected_pcm(1)
@@ -796,10 +791,10 @@ def test_next_request_during_previous_dump_flush_then_stop():
         rec = tester.recording
         ends = {e.payload["request_id"]: e for e in rec.named("tts_audio_end")}
         assert ends["P"].payload["reason"] == 1
-        with open(os.path.join(dump_dir, "kotoba_tts_dump_P.pcm"), "rb") as f:
+        with open(dump_path(dump_dir, "P"), "rb") as f:
             assert f.read() == rec.audio_bytes("P")
         assert len(rec.audio_bytes("P")) == len(server.expected_pcm(1))
-        with open(os.path.join(dump_dir, "kotoba_tts_dump_Q.pcm"), "rb") as f:
+        with open(dump_path(dump_dir, "Q"), "rb") as f:
             dump_q = f.read()
         recorded_q = rec.audio_bytes("Q")
         assert recorded_q and dump_q.startswith(recorded_q)
@@ -921,9 +916,9 @@ def test_request_released_during_shutdown_never_starts():
             )
             assert time.monotonic() - t0 < 8.0
         files = sorted(os.listdir(dump_dir))
-        assert "kotoba_tts_dump_C.pcm" not in files, files
+        assert os.path.basename(dump_path(dump_dir, "C")) not in files, files
         assert "後。" not in server.recorded.texts, server.recorded.texts
-        with open(os.path.join(dump_dir, "kotoba_tts_dump_A.pcm"), "rb") as f:
+        with open(dump_path(dump_dir, "A"), "rb") as f:
             assert f.read() == tester.recording.audio_bytes("A")
     finally:
         server.stop()

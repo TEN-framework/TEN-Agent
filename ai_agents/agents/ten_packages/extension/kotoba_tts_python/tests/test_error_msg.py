@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 #
 """Vendor error classification and secret handling."""
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -184,13 +185,24 @@ def test_missing_key_fails_at_init_and_on_request():
 def test_event_metadata_never_carries_endpoint_secrets():
     server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
     try:
-        secret_url = server.url + "?sign=sig-secret-123"
+        # Query names outside any known list: every value must be masked.
+        secret_url = (
+            server.url
+            + "?sign=sig-secret-123&access_token=tok-secret-456"
+            + "&X-Amz-Signature=amz-secret-789"
+        )
 
         async def script(tester, ten_env):
             await tester.send_text(ten_env, "meta", "メタデータ。", end=True)
             await tester.wait_for_audio_end("meta")
             for e in tester.recording.events:
-                assert "sig-secret-123" not in json.dumps(e.payload)
+                payload = json.dumps(e.payload)
+                for secret in (
+                    "sig-secret-123",
+                    "tok-secret-456",
+                    "amz-secret-789",
+                ):
+                    assert secret not in payload, (e.name, secret)
             start = tester.recording.named("tts_audio_start")[0]
             assert (
                 "127.0.0.1"
@@ -405,5 +417,40 @@ def test_text_rejected_by_the_service_is_non_fatal_and_not_retried():
 
         run_tester(script, make_config(server.url))
         assert server.recorded.texts == ["却下される文。", "次の文。"]
+    finally:
+        server.stop()
+
+
+def test_init_failure_reports_each_request_once_across_deltas():
+    """With the extension uninitialized, a request arriving as several
+    deltas gets exactly one error and one audio_end, not one per delta."""
+    server = FakeKotobaServer().start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.wait_for_event("error")  # the init error
+            await tester.send_text(ten_env, "multi", "一つ、", end=False)
+            await tester.send_text(ten_env, "multi", "二つ、", end=False)
+            await tester.send_text(ten_env, "multi", "三つ。", end=True)
+            await tester.wait_for_audio_end("multi", timeout_s=2.0)
+            await asyncio.sleep(0.3)
+            errors = [
+                e
+                for e in tester.recording.named("error")
+                if e.payload.get("id") == "multi"
+            ]
+            ends = [
+                e
+                for e in tester.recording.named("tts_audio_end")
+                if e.payload["request_id"] == "multi"
+            ]
+            assert len(errors) == 1, len(errors)
+            assert len(ends) == 1 and ends[0].payload["reason"] == 3
+            # The queue is released: a following request is reported too.
+            await tester.send_text(ten_env, "next", "次。", end=True)
+            await tester.wait_for_audio_end("next", timeout_s=2.0)
+
+        run_tester(script, make_config(server.url, params={"key": ""}))
+        assert server.recorded.connections == 0
     finally:
         server.stop()

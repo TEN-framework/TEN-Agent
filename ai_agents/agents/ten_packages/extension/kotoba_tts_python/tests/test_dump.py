@@ -12,11 +12,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fake_kotoba_server import FakeKotobaServer, Scenario  # noqa: E402
+from helpers import dump_path as _dump_file  # noqa: E402
 from helpers import make_config, run_tester  # noqa: E402
-
-
-def _dump_file(dump_dir: str, request_id: str) -> str:
-    return os.path.join(dump_dir, f"kotoba_tts_dump_{request_id}.pcm")
 
 
 def test_dump_matches_emitted_audio_per_request():
@@ -34,7 +31,9 @@ def test_dump_matches_emitted_audio_per_request():
             script, make_config(server.url, dump=True, dump_path=dump_dir)
         )
         files = sorted(os.listdir(dump_dir))
-        assert files == ["kotoba_tts_dump_d1.pcm", "kotoba_tts_dump_d2.pcm"]
+        assert files == sorted(
+            os.path.basename(_dump_file(dump_dir, rid)) for rid in ("d1", "d2")
+        )
         with open(_dump_file(dump_dir, "d1"), "rb") as f:
             assert f.read() == tester.recording.audio_bytes("d1")
         with open(_dump_file(dump_dir, "d2"), "rb") as f:
@@ -63,7 +62,8 @@ def test_dump_is_finalized_on_flush_and_sanitizes_request_id():
             script, make_config(server.url, dump=True, dump_path=dump_dir)
         )
         files = os.listdir(dump_dir)
-        assert files == ["kotoba_tts_dump_.._evil_id.pcm"]
+        assert files == [os.path.basename(_dump_file(dump_dir, "../evil/id"))]
+        assert "/" not in files[0] and files[0].startswith("kotoba_tts_dump_")
         with open(os.path.join(dump_dir, files[0]), "rb") as f:
             data = f.read()
         assert data == tester.recording.audio_bytes("../evil/id")
@@ -214,6 +214,65 @@ def test_large_dump_with_slow_writer_is_exact_and_isolated():
                 data = f.read()
             assert data == tester.recording.audio_bytes(rid), rid
         assert len(tester.recording.audio_bytes("big")) == 60 * 1600
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_colliding_request_ids_get_separate_dump_files():
+    """``a/b`` and ``a_b`` sanitize to the same text; each request must
+    still get its own file holding exactly its own audio."""
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_dump_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "a/b", "一つ目。", end=True)
+            await tester.wait_for_audio_end("a/b")
+            await tester.send_text(ten_env, "a_b", "二つ目。", end=True)
+            await tester.wait_for_audio_end("a_b")
+
+        tester = run_tester(
+            script, make_config(server.url, dump=True, dump_path=dump_dir)
+        )
+        first, second = _dump_file(dump_dir, "a/b"), _dump_file(dump_dir, "a_b")
+        assert first != second
+        assert sorted(os.listdir(dump_dir)) == sorted(
+            os.path.basename(f) for f in (first, second)
+        )
+        with open(first, "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("a/b")
+        with open(second, "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("a_b")
+        assert len(tester.recording.audio_bytes("a/b")) == len(
+            server.expected_pcm(1)
+        )
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_existing_dump_file_is_replaced_not_appended():
+    """A stale file with this request's name (an earlier run, the same id
+    reused) must not be appended to: the file holds only this run's audio."""
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_dump_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    try:
+        stale = _dump_file(dump_dir, "again")
+        with open(stale, "wb") as f:
+            f.write(b"\x7f" * 4096)
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "again", "もう一度。", end=True)
+            await tester.wait_for_audio_end("again")
+
+        tester = run_tester(
+            script, make_config(server.url, dump=True, dump_path=dump_dir)
+        )
+        with open(stale, "rb") as f:
+            data = f.read()
+        assert data == tester.recording.audio_bytes("again")
+        assert b"\x7f" * 16 not in data
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)

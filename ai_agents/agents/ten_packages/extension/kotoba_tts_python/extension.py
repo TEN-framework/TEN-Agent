@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 #
 import asyncio
+import hashlib
 import os
 import re
 import time
@@ -35,6 +36,15 @@ _COMPLETED_HISTORY = 512
 # terminal path before taking it over. A latency bound only: whatever the
 # worker did not complete, the caller completes (see ``_finalize()``).
 _TERMINAL_JOIN_SECONDS = 2.0
+
+
+def dump_file_name(request_id: str) -> str:
+    """Dump file name for a request id: a sanitized form of the id for
+    readability plus a hash of the raw id, so ids that sanitize to the same
+    text (``a/b`` and ``a_b``) never share a file."""
+    safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", request_id)
+    digest = hashlib.sha256(request_id.encode("utf-8")).hexdigest()[:8]
+    return f"kotoba_tts_dump_{safe_id}_{digest}.pcm"
 
 
 def _describe_init_error(exc: BaseException) -> str:
@@ -218,26 +228,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
 
         Returns quickly: the base class awaits this call inline.
         """
-        if self.client is None or self.config is None:
-            await self.send_tts_error(
-                t.request_id,
-                ModuleError(
-                    message=f"TTS not initialized: {self._init_error}",
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.FATAL_ERROR,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+        if t.request_id in self._completed_ids:
+            # Late input for a request that already ended (for example a
+            # repeated empty request, or more deltas after an init-failed
+            # request was reported). Not an error: release the queue.
+            self.ten_env.log_warn(
+                f"ignoring text for finished request {t.request_id}"
             )
-            # Consumers close a request on its terminal event: send one.
-            await self.send_tts_audio_end(
-                request_id=t.request_id,
-                request_event_interval_ms=0,
-                request_total_audio_duration_ms=0,
-                reason=TTSAudioEndReason.ERROR,
-            )
-            await self.finish_request(
-                t.request_id, reason=TTSAudioEndReason.ERROR
-            )
+            await self.finish_request(t.request_id)
             return
 
         if self._stopping:
@@ -248,13 +246,28 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             )
             return
 
-        if t.request_id in self._completed_ids:
-            # Late input for a request that already ended (for example a
-            # repeated empty request). Not an error: release the queue.
-            self.ten_env.log_warn(
-                f"ignoring text for finished request {t.request_id}"
+        if self.client is None or self.config is None:
+            await self.send_tts_error(
+                t.request_id,
+                ModuleError(
+                    message=f"TTS not initialized: {self._init_error}",
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
             )
-            await self.finish_request(t.request_id)
+            # Consumers close a request on its terminal event: send one,
+            # and only one; further deltas of this id take the branch above.
+            await self.send_tts_audio_end(
+                request_id=t.request_id,
+                request_event_interval_ms=0,
+                request_total_audio_duration_ms=0,
+                reason=TTSAudioEndReason.ERROR,
+            )
+            self._remember_completed(t.request_id)
+            await self.finish_request(
+                t.request_id, reason=TTSAudioEndReason.ERROR
+            )
             return
 
         request = self._request
@@ -295,10 +308,13 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         assert self.config is not None
         try:
             os.makedirs(self.config.dump_path, exist_ok=True)
-            safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", request_id)
             path = os.path.join(
-                self.config.dump_path, f"kotoba_tts_dump_{safe_id}.pcm"
+                self.config.dump_path, dump_file_name(request_id)
             )
+            # PCMWriter appends: start this request's file empty so a
+            # stale file from an earlier run never receives new audio.
+            with open(path, "wb"):
+                pass
             return PCMWriter(path)
         except Exception as exc:
             self.ten_env.log_error(

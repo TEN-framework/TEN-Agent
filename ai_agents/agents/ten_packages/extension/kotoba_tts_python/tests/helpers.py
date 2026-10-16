@@ -259,3 +259,12 @@ def run_tester(
     ), f"tester failed: {error.error_message() if error else 'unknown'}"
     assert tester.failure is None, tester.failure
     return tester
+
+
+def dump_path(dump_dir: str, request_id: str) -> str:
+    """Path of the extension's dump file for ``request_id``."""
+    import os
+
+    from kotoba_tts_python.extension import dump_file_name
+
+    return os.path.join(dump_dir, dump_file_name(request_id))

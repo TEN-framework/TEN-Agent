@@ -120,27 +120,32 @@ class KotobaTTSConfig(BaseModel):
             name: (
                 utils.encrypt(str(value)) if value not in (None, "") else value
             )
-            for name, value in utils.redact_json(
-                config.params, json_keys=_SENSITIVE_KEYS
-            ).items()
+            for name, value in config.params.items()
         }
         config.base_url = _redact_url(config.base_url)
         return f"{config}"
 
 
-_SENSITIVE_KEYS = frozenset(
-    set(utils.DEFAULT_JSON_KEYS)
-    | {"key", "token", "secret", "password", "signature", "sign"}
-)
+_USERINFO_RE = re.compile(r"^([a-z][a-z0-9+.-]*://)[^/@]+@")
+_QUERY_VALUE_RE = re.compile(r"=[^&#]*")
 
 
 def _redact_url(url: str) -> str:
-    """Mask credentials in the URL's userinfo and query string."""
+    """Mask every credential-bearing part of a URL for diagnostics.
+
+    No name list: a custom endpoint may carry a token under any query name
+    (``access_token``, ``X-Amz-Signature``, ...), so every query value is
+    masked and only the names stay. ``scheme://user:secret@host`` becomes
+    ``scheme://***@host``.
+    """
     if not url:
         return url
-    redacted = utils.redact_url(url, url_keys=_SENSITIVE_KEYS)
-    # ``scheme://user:secret@host`` -> ``scheme://***@host``
-    return re.sub(r"^([a-z][a-z0-9+.-]*://)[^/@]+@", r"\1***@", redacted)
+    url = _USERINFO_RE.sub(r"\1***@", url)
+    query_start = url.find("?")
+    if query_start < 0:
+        return url
+    head, query = url[: query_start + 1], url[query_start + 1 :]
+    return head + _QUERY_VALUE_RE.sub("=***", query)
 
 
 def _as_int(value: Any, name: str) -> int:
