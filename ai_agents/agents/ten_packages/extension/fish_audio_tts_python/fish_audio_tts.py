@@ -54,11 +54,7 @@ class FishAudioTTSClient:
         self._send_lock = asyncio.Lock()
         self._session_request_id = ""
         self._session_active = False
-        self._session_texts: list[str] = []
         self._session_first_text_flushed = False
-        self._session_audio_seen = False
-        self._replay_request_id = ""
-        self._replay_texts: list[str] = []
         self._context_entered = False
         self._waiting_for_event = False
         self._is_cancelled = False
@@ -133,9 +129,6 @@ class FishAudioTTSClient:
         if self._websocket is not None and self._receiver_task is not None:
             if not self._receiver_task.done():
                 return
-            if self._session_active and not self._session_audio_seen:
-                self._replay_request_id = self._session_request_id
-                self._replay_texts = list(self._session_texts)
             await self._reset_connection()
 
         self._is_closing = False
@@ -200,6 +193,9 @@ class FishAudioTTSClient:
             raise ConnectionError("Fish Audio WebSocket is not connected")
         async with self._send_lock:
             payload = ormsgpack.packb(message)
+            event = message.get("event")
+            request = message.get("request")
+            request_detail = f", request={request}" if request else ""
             # Log every outbound protocol event so the exact stream sent to the
             # vendor (start/text/flush/stop) can be reconstructed from the log.
             # Only event names, sizes and counts are recorded: the utterance
@@ -208,9 +204,10 @@ class FishAudioTTSClient:
             # Logged before the TTFB marker so measuring stays accurate.
             self.ten_env.log_info(
                 "vendor_send: "
-                f"event={message.get('event')}, bytes={len(payload)}, "
+                f"event={event}, bytes={len(payload)}, "
                 f"keys={sorted(message.keys())}, "
-                f"text_chars={len(message.get('text') or '')}",
+                f"text_chars={len(message.get('text') or '')}"
+                f"{request_detail}",
                 category=LOG_CATEGORY_VENDOR,
             )
             if message.get("event") == "text" and self.on_text_send is not None:
@@ -225,9 +222,7 @@ class FishAudioTTSClient:
         await self._send({"event": "start", "request": self._build_request()})
         self._session_request_id = request_id
         self._session_active = True
-        self._session_texts = []
         self._session_first_text_flushed = False
-        self._session_audio_seen = False
         self._session_stop_requested = False
 
     def _should_flush(self, text: str, is_last: bool) -> bool:
@@ -274,7 +269,6 @@ class FishAudioTTSClient:
                 if event == "audio":
                     audio = data.get("audio")
                     if isinstance(audio, bytes) and audio:
-                        self._session_audio_seen = True
                         if self.on_audio is not None:
                             await self.on_audio(audio, self._session_request_id)
                         else:
@@ -308,9 +302,13 @@ class FishAudioTTSClient:
             self._reconnect_task = asyncio.create_task(self._reconnect_loop())
 
     async def _reconnect_loop(self) -> None:
-        request_id = self._session_request_id
-        texts = list(self._session_texts)
-        stop_requested = self._session_stop_requested
+        """Re-establish the transport after a receive failure.
+
+        Already accepted text is never resent: the vendor session dies with the
+        socket and the protocol carries no acknowledgement, so replaying a
+        buffered utterance would duplicate audible speech. An interrupted
+        request is failed instead, and the next request reconnects on demand.
+        """
         while not self._is_closing and not self._is_cancelled:
             self._reconnect_attempts += 1
             if self._reconnect_attempts > MAX_RECONNECT_ATTEMPTS:
@@ -329,22 +327,19 @@ class FishAudioTTSClient:
             try:
                 await self._reset_connection(notify=False)
                 await self._ensure_connection()
-                await self._start_session(request_id)
-                # _start_session() clears the finalization flag, so restore it:
-                # a further drop on this connection must still replay the stop.
-                self._session_stop_requested = stop_requested
-                for index, replay_text in enumerate(texts):
-                    await self._send_text(
-                        replay_text,
-                        is_last=stop_requested and index == len(texts) - 1,
-                    )
-                self._session_texts = texts
-                if stop_requested:
-                    await self._send({"event": "stop"})
                 self._reconnect_attempts = 0
-                self.ten_env.log_info(
-                    f"FishAudioTTS: WebSocket reconnected, replayed={len(texts)}"
-                )
+                self.ten_env.log_info("FishAudioTTS: WebSocket reconnected")
+                if self._waiting_for_event:
+                    # The interrupted request is not resumed, so terminate it
+                    # instead of leaving the caller waiting for a terminal event.
+                    message = (
+                        "Fish Audio connection dropped before the utterance "
+                        "finished; the interrupted request is not resumed"
+                    )
+                    self.ten_env.log_warn(message, category=LOG_CATEGORY_VENDOR)
+                    await self._events.put(
+                        (message.encode("utf-8"), EVENT_TTS_ERROR)
+                    )
                 return
             except Exception as error:
                 self.ten_env.log_warn(
@@ -390,13 +385,7 @@ class FishAudioTTSClient:
                 self.on_request_start()
             await self._ensure_connection_with_retry()
             await self._start_session(request_id)
-            if self._replay_request_id == request_id:
-                for replay_text in self._replay_texts:
-                    await self._send_text(replay_text)
-                self._replay_request_id = ""
-                self._replay_texts = []
             await self._send_text(text, is_last=text_input_end)
-            self._session_texts.append(text)
 
             if not text_input_end:
                 async for event in self._drain_ready_events():
@@ -477,6 +466,9 @@ class FishAudioTTSClient:
         websocket = self._websocket
         self._websocket = None
         if websocket is not None:
+            self.ten_env.log_info(
+                "vendor_send: close", category=LOG_CATEGORY_VENDOR
+            )
             try:
                 await websocket.close()
             except Exception:
@@ -499,9 +491,7 @@ class FishAudioTTSClient:
         self._connection_reported = False
         self._session_active = False
         self._session_request_id = ""
-        self._session_texts = []
         self._session_first_text_flushed = False
-        self._session_audio_seen = False
 
     def _clear_pending_events(self) -> None:
         while True:
