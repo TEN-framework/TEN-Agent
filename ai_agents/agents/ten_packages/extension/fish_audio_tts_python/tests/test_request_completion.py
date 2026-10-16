@@ -27,6 +27,7 @@ def _create_extension() -> FishAudioTTSExtension:
     extension.ten_env = MagicMock()
     extension.client = MagicMock()
     extension.client.cancel = AsyncMock()
+    extension.client.interruption.return_value = None
     extension.send_tts_audio_end = AsyncMock()
     extension.send_tts_error = AsyncMock()
     extension.finish_request = AsyncMock()

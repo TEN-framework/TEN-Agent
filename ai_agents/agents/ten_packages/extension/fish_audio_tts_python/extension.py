@@ -334,9 +334,35 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     f"Skipping empty text for request_id: {t.request_id}"
                 )
                 if t.text_input_end:
-                    await self._complete_current_request(
-                        TTSAudioEndReason.REQUEST_END
+                    interruption = (
+                        self.client.interruption(t.request_id)
+                        if self.client is not None
+                        else None
                     )
+                    if interruption is not None:
+                        # The session broke before this request finished, so it
+                        # must not be reported as a normal end.
+                        reason, event = interruption
+                        error_code = (
+                            ModuleErrorCode.FATAL_ERROR
+                            if event == EVENT_TTS_INVALID_KEY_ERROR
+                            else ModuleErrorCode.NON_FATAL_ERROR
+                        )
+                        await self._complete_current_request(
+                            TTSAudioEndReason.ERROR,
+                            error=ModuleError(
+                                message=reason,
+                                module=ModuleType.TTS,
+                                code=error_code,
+                                vendor_info=ModuleErrorVendorInfo(
+                                    vendor=self.vendor()
+                                ),
+                            ),
+                        )
+                    else:
+                        await self._complete_current_request(
+                            TTSAudioEndReason.REQUEST_END
+                        )
                 return
 
             async for audio_chunk, event in self.client.get(
@@ -454,10 +480,12 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         """Send audio_end at most once and flush without changing base state."""
 
-        interval_start = self.request_ts or self.sent_ts
+        # The interval starts when tts_audio_start is emitted. A request that
+        # never produced audio has no start event, so it reports 0 instead of
+        # folding the text-send time into the interval.
         request_event_interval = (
-            int((time.monotonic() - interval_start) * 1000)
-            if interval_start
+            int((time.monotonic() - self.request_ts) * 1000)
+            if self.request_ts
             else 0
         )
         duration_ms = self._calculate_audio_duration_ms()
