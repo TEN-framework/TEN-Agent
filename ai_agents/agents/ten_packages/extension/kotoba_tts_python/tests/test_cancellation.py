@@ -871,3 +871,60 @@ def test_flush_waits_for_terminal_events_that_land_in_time():
             run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_request_released_during_shutdown_never_starts():
+    """A's dump flush is gated, B is streaming, C is queued behind B. The
+    app stops. While on_stop waits for A, B completes and the base class
+    releases C: C must not start (no worker, no dump, no text sent)."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_stopq_")
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=4, chunk_delay_s=0.1)
+    ).start()
+    original_flush = ext_mod.PCMWriter.flush
+    gate = {"entered": None}
+
+    async def gated_flush(self):
+        entered, gate["entered"] = gate["entered"], None  # first flush only
+        if entered is not None:
+            entered.set()
+            await asyncio.sleep(1.0)  # longer than B needs to finish
+        await original_flush(self)
+
+    try:
+        with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
+
+            async def script(tester, ten_env):
+                entered = asyncio.Event()
+                gate["entered"] = entered
+                await tester.send_text(ten_env, "A", "前。", end=True)
+                await tester.wait_for_audio_end("A")
+                await asyncio.wait_for(entered.wait(), 5.0)
+                # A is stuck in its dump flush. B streams, C waits behind B.
+                await tester.send_text(ten_env, "B", "中。", end=True)
+                await tester.send_text(ten_env, "C", "後。", end=True)
+                await tester.wait_for(lambda r: len(r.audio_bytes("B")) > 0)
+                # Return: the runtime stops the extension while A flushes
+                # and B still has chunks to go.
+
+            t0 = time.monotonic()
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=10.0,
+            )
+            assert time.monotonic() - t0 < 8.0
+        files = sorted(os.listdir(dump_dir))
+        assert "kotoba_tts_dump_C.pcm" not in files, files
+        assert "後。" not in server.recorded.texts, server.recorded.texts
+        with open(os.path.join(dump_dir, "kotoba_tts_dump_A.pcm"), "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("A")
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)

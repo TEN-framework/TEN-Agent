@@ -100,6 +100,8 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         # Requests whose terminal path has started and whose dump is not
         # closed yet. ``_request`` may already point at the next request.
         self._finishing: set[_RequestState] = set()
+        # Set first thing in on_stop(): no request may start after that.
+        self._stopping = False
         self._generation = 0
         self._completed_ids: set[str] = set()
         self._completed_order: deque[str] = deque(maxlen=_COMPLETED_HISTORY)
@@ -147,21 +149,35 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        requests = list(self._finishing)
-        current = self._request
-        if current is not None and current not in self._finishing:
-            requests.append(current)
-        for request in requests:
-            if request.ended:
-                # Terminal events or the dump flush may be mid-flight: let
-                # them land, bounded, then complete whatever is left.
-                await self._join_terminal_worker(request)
-            else:
-                await self._stop_worker(request)
-            await self._finalize(
-                request, TTSAudioEndReason.INTERRUPTED, finish=False
-            )
-        self._request = None
+        # The base class's input loop keeps running until its own on_stop;
+        # refuse new requests first, so a request released by a finishing
+        # one during the waits below cannot start behind our back.
+        self._stopping = True
+        while True:
+            requests = list(self._finishing)
+            current = self._request
+            if current is not None and current not in self._finishing:
+                requests.append(current)
+            if not requests:
+                break
+            for request in requests:
+                if request.ended:
+                    # Terminal events or the dump flush may be mid-flight:
+                    # let them land, bounded, then complete what is left.
+                    await self._join_terminal_worker(request)
+                    await self._finalize(
+                        request, TTSAudioEndReason.INTERRUPTED, finish=False
+                    )
+                else:
+                    # A request that never reached its end gets no terminal
+                    # events on shutdown (the base class emits none
+                    # either); only its worker is stopped and its dump
+                    # closed.
+                    await self._stop_worker(request)
+                    request.ended = True
+                    await self._close_recorder(request)
+                if self._request is request:
+                    self._request = None
         if self.client is not None:
             await self.client.close()
         await super().on_stop(ten_env)
@@ -221,6 +237,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             )
             await self.finish_request(
                 t.request_id, reason=TTSAudioEndReason.ERROR
+            )
+            return
+
+        if self._stopping:
+            # Shutdown has begun: nothing may start now. The base class is
+            # about to flush its queue and clear request state itself.
+            self.ten_env.log_warn(
+                f"ignoring text for {t.request_id}: extension is stopping"
             )
             return
 
