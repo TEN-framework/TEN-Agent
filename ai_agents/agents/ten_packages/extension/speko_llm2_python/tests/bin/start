@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+export PYTHONPATH=".:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:.ten/app/ten_packages/system/ten_ai_base/interface:${PYTHONPATH}"
+# uv's cached test environment keeps test dependencies out of provider installs.
+uv run --no-project --with-requirements requirements.txt \
+  --with-requirements tests/requirements.txt \
+  pytest -q -o asyncio_default_fixture_loop_scope=function \
+  -W error::pytest.PytestUnhandledCoroutineWarning tests/ "$@"

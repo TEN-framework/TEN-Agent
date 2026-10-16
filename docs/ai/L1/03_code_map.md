@@ -47,9 +47,9 @@ Other repo-root directories: `core/` (C runtime), `packages/` (example/core exte
 
 | Category  | Count | Examples                                                    |
 | --------- | ----- | ----------------------------------------------------------- |
-| ASR       | 10+   | `deepgram_asr_python`, `azure_asr_python`, `aws_asr_python` |
-| TTS       | 15+   | `deepgram_tts`, `elevenlabs_tts2_python`, `cartesia_tts`    |
-| LLM       | 9+    | `openai_llm2_python`, `anthropic_llm2_python`, `gemini_llm2_python`, `bedrock_llm_python` |
+| ASR       | 10+   | `deepgram_asr_python`, `azure_asr_python`, `aws_asr_python`, `speko_asr_python` |
+| TTS       | 15+   | `deepgram_tts`, `elevenlabs_tts2_python`, `cartesia_tts`, `speko_tts2_python`    |
+| LLM       | 9+    | `openai_llm2_python`, `anthropic_llm2_python`, `gemini_llm2_python`, `bedrock_llm_python`, `speko_llm2_python` |
 | Avatar    | 5+    | `heygen_avatar_python`, `anam_avatar_python`                |
 | Tools     | 8+    | `bingsearch_tool_python`, `vision_tool_python`              |
 | Transport | 3+    | `agora_rtc`, `websocket_server`, `http_server_python`       |

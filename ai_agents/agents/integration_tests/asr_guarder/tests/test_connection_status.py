@@ -48,6 +48,7 @@ _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
         "smallest_asr_python",
         "rtzr_asr_python",
         "soniox_asr_python",
+        "speko_asr_python",
         "tencent_asr_python",
     }
 )

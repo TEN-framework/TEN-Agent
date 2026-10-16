@@ -1,0 +1,18 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "${env:SPEKO_API_KEY|}",
+    "base_url": "https://router.speko.dev",
+    "sample_rate": 24000,
+    "channels": 1,
+    "language": "en",
+    "voice": "",
+    "routing": {
+      "mode": "auto",
+      "objective": "balanced"
+    },
+    "ready_timeout_sec": 10.0,
+    "receive_timeout_sec": 30.0
+  }
+}
