@@ -50,6 +50,9 @@ class _RequestState:
         self.emitted_bytes = 0
         self.ttfb_sent = False
         self.recorder: PCMWriter | None = None
+        # A trailing half sample held back until the next chunk completes
+        # it, so only whole samples are emitted and counted.
+        self.pending_bytes = b""
         # ``ended``: a terminal path has started. ``audio_end_sent``: the
         # terminal event has actually been emitted. Flush needs both.
         self.ended = False
@@ -129,7 +132,8 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         if self.config is None:
             return {}
         return {
-            "url": self.config.base_url,
+            # Metadata travels on every event: never the raw endpoint.
+            "url": self.config.redacted_base_url(),
             "language": self.config.language,
             "speaker_id": self.config.speaker_id,
             "sample_rate": self.config.sample_rate,
@@ -204,15 +208,28 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             request_id, self._generation, self.config.segment_soft_limit_chars
         )
         if self.config.dump:
+            request.recorder = self._open_recorder(request_id)
+        request.worker = asyncio.create_task(self._run_request(request))
+        self._request = request
+        return request
+
+    def _open_recorder(self, request_id: str) -> PCMWriter | None:
+        """Create the dump writer, or ``None`` when the dump location is
+        unusable. A bad ``dump_path`` must never strand the request queue."""
+        assert self.config is not None
+        try:
             os.makedirs(self.config.dump_path, exist_ok=True)
             safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", request_id)
             path = os.path.join(
                 self.config.dump_path, f"kotoba_tts_dump_{safe_id}.pcm"
             )
-            request.recorder = PCMWriter(path)
-        request.worker = asyncio.create_task(self._run_request(request))
-        self._request = request
-        return request
+            return PCMWriter(path)
+        except Exception as exc:
+            self.ten_env.log_error(
+                f"dump disabled for {request_id}: cannot use "
+                f"dump_path {self.config.dump_path!r}: {exc}"
+            )
+            return None
 
     async def _finalize_input(self, request: _RequestState) -> None:
         rest = request.buffer.flush()
@@ -281,6 +298,16 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
 
     async def _emit_audio(self, request: _RequestState, chunk: bytes) -> None:
         assert self.client is not None and self.config is not None
+        frame_bytes = (
+            self.synthesize_audio_sample_width()
+            * self.synthesize_audio_channels()
+        )
+        data = request.pending_bytes + chunk
+        cut = len(data) - len(data) % frame_bytes
+        request.pending_bytes = data[cut:]
+        chunk = data[:cut]
+        if not chunk:
+            return
         connect_delay_ms = self.client.take_connect_delay_ms()
         if connect_delay_ms is not None:
             await self.metrics_connect_delay(

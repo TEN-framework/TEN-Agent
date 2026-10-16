@@ -106,3 +106,31 @@ def test_dump_write_failure_does_not_fail_the_request():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_unusable_dump_path_does_not_strand_the_queue():
+    """dump_path names an existing file, so the directory cannot be created.
+    The request must still complete, and so must the next one."""
+    blocker = tempfile.NamedTemporaryFile(
+        prefix="kotoba_not_a_dir_", delete=False
+    )
+    blocker.close()
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "d1", "一。", end=True)
+            end1 = await tester.wait_for_audio_end("d1")
+            assert end1.payload["reason"] == 1
+            await tester.send_text(ten_env, "d2", "二。", end=True)
+            end2 = await tester.wait_for_audio_end("d2")
+            assert end2.payload["reason"] == 1
+            assert tester.recording.named("error") == []
+            assert tester.recording.audio_bytes("d2") == server.expected_pcm(1)
+
+        run_tester(
+            script, make_config(server.url, dump=True, dump_path=blocker.name)
+        )
+    finally:
+        server.stop()
+        os.unlink(blocker.name)

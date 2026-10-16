@@ -71,6 +71,8 @@ class Scenario:
     stray_chunks_after_cancel: int = 0
     # Never answer the N-th response.create (1-based): no chunks, no done.
     hold_response_index: int | None = None
+    # Append this many extra bytes to every chunk (1 = split samples).
+    extra_chunk_bytes: int = 0
 
 
 @dataclass
@@ -301,6 +303,8 @@ class FakeKotobaServer:
                 await self._finish_cancelled(ws, response_id)
                 return
             chunk = pcm16_ramp(sc.samples_per_chunk)
+            if sc.extra_chunk_bytes:
+                chunk += bytes([0x7F]) * sc.extra_chunk_bytes
             await self._send(
                 ws,
                 {

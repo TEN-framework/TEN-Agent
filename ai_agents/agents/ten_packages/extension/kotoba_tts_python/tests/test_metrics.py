@@ -31,6 +31,15 @@ def test_ttfb_once_per_request_and_request_bytes_match_text():
             await tester.wait_for_audio_end("m1")
             await tester.send_text(ten_env, "m2", "三文目。", end=True)
             await tester.wait_for_audio_end("m2")
+            # Usage follows audio_end; wait for m2's before reading.
+            await tester.wait_for(
+                lambda r: any(
+                    e.payload["metadata"].get("request_id") == "m2"
+                    for e in r.named("metrics")
+                    if "recv_audio_duration" in e.payload.get("metrics", {})
+                ),
+                timeout_s=2.0,
+            )
 
             ttfb = _metrics(tester, "ttfb")
             assert [e.payload["metadata"]["request_id"] for e in ttfb] == [

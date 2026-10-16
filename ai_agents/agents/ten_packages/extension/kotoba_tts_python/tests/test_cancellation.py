@@ -296,6 +296,15 @@ def test_usage_after_flush_belongs_to_the_next_request_only():
             await tester.wait_for_audio_end("A", timeout_s=0.5)
             await tester.send_text(ten_env, "B", "さしすせそ。", end=True)
             await tester.wait_for_audio_end("B", timeout_s=8.0)
+            # Usage is emitted right after audio_end; wait for B's.
+            await tester.wait_for(
+                lambda r: any(
+                    e.payload["metadata"].get("request_id") == "B"
+                    for e in r.named("metrics")
+                    if "recv_audio_duration" in e.payload.get("metrics", {})
+                ),
+                timeout_s=2.0,
+            )
             usage = [
                 e
                 for e in metrics_with(tester, "recv_audio_duration")
@@ -375,6 +384,131 @@ def test_disconnect_callback_failure_does_not_break_the_client():
                 assert tester.recording.named("error") == []
 
             run_tester(script, make_config(server.url))
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()
+
+
+def test_flush_while_the_write_itself_is_suspended():
+    """Gate AsyncTTSSession.synthesize (the actual write) and flush while it
+    is suspended: the send-cleanup branch must drop the socket, report
+    INTERRUPTED once, and the next request must get clean audio."""
+    from unittest.mock import patch
+    import kotoba._ws_tts as sdk_tts
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=3)).start()
+    gate = {"event": None, "entered": None}
+    original = sdk_tts.AsyncTTSSession.synthesize
+
+    async def gated_synthesize(self, text, **kwargs):
+        event, gate["event"] = gate["event"], None  # gate the first send only
+        if event is not None:
+            gate["entered"].set()
+            await event.wait()
+        return await original(self, text, **kwargs)
+
+    try:
+        with patch.object(
+            sdk_tts.AsyncTTSSession, "synthesize", gated_synthesize
+        ):
+
+            async def script(tester, ten_env):
+                gate["event"] = asyncio.Event()
+                gate["entered"] = asyncio.Event()
+                await tester.send_text(ten_env, "w", "書き込み中。", end=True)
+                await asyncio.wait_for(gate["entered"].wait(), 5.0)
+                t0 = time.monotonic()
+                await tester.send_flush(ten_env, "flush-write")
+                await tester.wait_for_event("tts_flush_end")
+                assert time.monotonic() - t0 < FLUSH_BUDGET_S
+                end = await tester.wait_for_audio_end("w", timeout_s=0.5)
+                assert end.payload["reason"] == 2
+                _assert_clean_after_flush(tester, "w")
+                await tester.send_text(ten_env, "n", "次。", end=True)
+                end2 = await tester.wait_for_audio_end("n")
+                assert end2.payload["reason"] == 1
+                assert tester.recording.audio_bytes("n") == server.expected_pcm(
+                    1
+                )
+
+            run_tester(script, make_config(server.url))
+        # The interrupted write dropped its socket; the next request opened a new one.
+        assert server.recorded.connections == 2
+        assert server.recorded.texts == ["次。"]
+    finally:
+        server.stop()
+
+
+def test_stop_while_the_write_is_suspended_is_bounded():
+    from unittest.mock import patch
+    import kotoba._ws_tts as sdk_tts
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=3)).start()
+    gate = {"event": None, "entered": None}
+    original = sdk_tts.AsyncTTSSession.synthesize
+
+    async def gated_synthesize(self, text, **kwargs):
+        if gate["event"] is not None:
+            gate["entered"].set()
+            await gate["event"].wait()
+        return await original(self, text, **kwargs)
+
+    try:
+        with patch.object(
+            sdk_tts.AsyncTTSSession, "synthesize", gated_synthesize
+        ):
+
+            async def script(tester, ten_env):
+                gate["event"] = asyncio.Event()
+                gate["entered"] = asyncio.Event()
+                await tester.send_text(ten_env, "s", "停止。", end=True)
+                await asyncio.wait_for(gate["entered"].wait(), 5.0)
+                # Return: the runtime stops the extension mid-write.
+
+            t0 = time.monotonic()
+            run_tester(script, make_config(server.url), timeout_s=10.0)
+            assert time.monotonic() - t0 < 4.0
+    finally:
+        server.stop()
+
+
+def test_late_old_session_cleanup_preserves_the_replacement():
+    """A's cancel drain outlives the grace period (server answers late). B
+    must get its own connection, and the old session's late cleanup must
+    not drop B's socket or leak A's audio."""
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=40,
+            chunk_delay_s=0.05,
+            cancel_done_delay_s=3.0,
+            stray_chunks_after_cancel=2,
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "A", "古い。", end=True)
+            await tester.wait_for_event("pcm_frame", count=2)
+            await tester.send_flush(ten_env, "flush-A")
+            await tester.wait_for_event("tts_flush_end")
+            await tester.wait_for_audio_end("A", timeout_s=0.5)
+            await tester.send_text(ten_env, "B", "新しい。", end=True)
+            end_b = await tester.wait_for_audio_end("B", timeout_s=12.0)
+            assert end_b.payload["reason"] == 1
+            assert tester.recording.audio_bytes("B") == server.expected_pcm(1)
+            await asyncio.sleep(1.5)  # old session's late done(cancelled) lands
+            await tester.send_text(ten_env, "C", "三。", end=True)
+            end_c = await tester.wait_for_audio_end("C", timeout_s=8.0)
+            assert end_c.payload["reason"] == 1
+            assert tester.recording.audio_bytes("C") == server.expected_pcm(1)
+            statuses = [
+                e.payload.get("current")
+                for e in tester.recording.named("connection_status_changed")
+            ]
+            assert statuses.count("connected") == 2, statuses
+
+        run_tester(script, make_config(server.url))
+        # A's connection was dropped after the grace period; B and C share the replacement.
         assert server.recorded.connections == 2
     finally:
         server.stop()

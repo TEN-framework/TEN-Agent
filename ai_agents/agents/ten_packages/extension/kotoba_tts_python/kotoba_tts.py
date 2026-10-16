@@ -157,6 +157,8 @@ class KotobaTTSClient:
         # consumer stops early, so cancel() knows there is work to undo.
         self._response_active = False
         self._drain_task: asyncio.Task | None = None
+        # Watches the SDK receiver so a remote close is reported while idle.
+        self._watch_task: asyncio.Task | None = None
         self._closed = False
 
         # Rate echoed by ``session.created``; equals the configured rate
@@ -246,7 +248,28 @@ class KotobaTTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
             await self._report_connected()
+            self._watch_task = asyncio.create_task(
+                self._watch_remote_close(session)
+            )
             return session
+
+    async def _watch_remote_close(self, session: AsyncTTSSession) -> None:
+        """Report a remote close as soon as the SDK receiver ends.
+
+        Only the watched session is retired; a response in progress is left
+        to ``synthesize()``, which sees the same termination.
+        """
+        receiver = getattr(session, "_receiver_task", None)
+        if receiver is None:
+            return
+        try:
+            await asyncio.shield(receiver)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            pass
+        if self._session is session and not self._response_active:
+            await self.drop(message="remote closed")
 
     async def drop(self, *, message: str) -> None:
         """Close the socket; the next ``connect()`` opens a new one."""
@@ -256,6 +279,13 @@ class KotobaTTSClient:
     async def _drop_locked(self, *, message: str) -> None:
         session, self._session = self._session, None
         self._response_active = False
+        watch, self._watch_task = self._watch_task, None
+        if (
+            watch is not None
+            and not watch.done()
+            and watch is not asyncio.current_task()
+        ):
+            watch.cancel()
         if session is None:
             return
         await session.close()

@@ -139,3 +139,15 @@ def test_to_str_redacts_unknown_param_values_and_url_credentials():
         assert secret not in text, secret
     assert "example.test" in text
     assert config.ignored_params() == ["custom_note", "token"]
+
+
+def test_redacted_base_url_masks_userinfo_and_signed_query():
+    config = _config(
+        {
+            "key": "k",
+            "base_url": "wss://user:pw-secret@example.test/ws?sign=sig-secret&x=1",
+        }
+    )
+    url = config.redacted_base_url()
+    assert "pw-secret" not in url and "sig-secret" not in url
+    assert url.startswith("wss://***@example.test/ws?")

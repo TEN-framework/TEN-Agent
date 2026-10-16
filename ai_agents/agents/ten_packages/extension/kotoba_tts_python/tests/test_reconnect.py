@@ -129,3 +129,33 @@ def test_response_stall_times_out_without_hanging():
         )
     finally:
         server.stop()
+
+
+def test_idle_close_is_reported_before_the_next_text():
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=2, idle_close_s=0.3)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "one", "一。", end=True)
+            await tester.wait_for_audio_end("one")
+            # The service closes the idle socket; the status must flip
+            # without any further request from us.
+            await tester.wait_for(
+                lambda r: any(
+                    e.payload.get("current") == "disconnected"
+                    and e.payload.get("last") == "connected"
+                    for e in r.named("connection_status_changed")
+                ),
+                timeout_s=2.0,
+            )
+            await tester.send_text(ten_env, "two", "二。", end=True)
+            end = await tester.wait_for_audio_end("two")
+            assert end.payload["reason"] == 1
+            assert tester.recording.named("error") == []
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()

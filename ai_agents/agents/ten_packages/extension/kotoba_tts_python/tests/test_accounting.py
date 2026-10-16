@@ -138,3 +138,75 @@ def test_ttfb_excludes_handshake_time():
         run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_interval_under_controlled_clock_on_error_and_interrupt():
+    """Error after partial audio and flush after audio: the interval is
+    exactly the reads between audio_start and audio_end (one read)."""
+    clock = FakeClock(step_s=0.1)
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=4,
+            chunk_delay_s=0.05,
+            fail_response_index=1,
+            fail_after_chunks=2,
+        )
+    ).start()
+    try:
+        with patch.object(
+            ext_mod.KotobaTTSExtension, "_clock", staticmethod(clock)
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "err", "失敗。", end=True)
+                end = await tester.wait_for_audio_end("err")
+                assert end.payload["reason"] == 3
+                assert end.payload["request_event_interval_ms"] == 100
+                await tester.send_text(ten_env, "int", "中断。", end=True)
+                await tester.wait_for(
+                    lambda r: len(r.audio_bytes("int")) >= 2 * 1600
+                )
+                await tester.send_flush(ten_env)
+                await tester.wait_for_event("tts_flush_end")
+                end = await tester.wait_for_audio_end("int", timeout_s=0.5)
+                assert end.payload["reason"] == 2
+                assert end.payload["request_event_interval_ms"] == 100
+
+            run_tester(script, make_config(server.url))
+    finally:
+        server.stop()
+
+
+def test_split_samples_are_aligned_and_never_cross_requests():
+    """Each service chunk carries one extra byte. Only whole samples may be
+    emitted and counted; the half sample held back at the end of a request
+    must not leak into the next one."""
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=3, extra_chunk_bytes=1)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            rec = tester.recording
+            await tester.send_text(ten_env, "odd1", "奇数。", end=True)
+            end1 = await tester.wait_for_audio_end("odd1")
+            emitted1 = rec.audio_bytes("odd1")
+            # 3 chunks * (1600 + 1) bytes = 4803 -> 4802 emitted, 1 held
+            assert len(emitted1) == 4802
+            assert all(len(d) % 2 == 0 for _, d, _ in rec.frames)
+            assert end1.payload["request_total_audio_duration_ms"] == (
+                4802 * 1000 // 32000
+            )
+            await tester.send_text(ten_env, "odd2", "次。", end=True)
+            end2 = await tester.wait_for_audio_end("odd2")
+            emitted2 = rec.audio_bytes("odd2")
+            assert len(emitted2) == 4802
+            assert end2.payload["request_total_audio_duration_ms"] == (
+                4802 * 1000 // 32000
+            )
+            # The first request's held byte did not prefix the second.
+            assert emitted2[:2] == server.expected_pcm(1)[:2]
+
+        run_tester(script, make_config(server.url))
+    finally:
+        server.stop()

@@ -104,6 +104,10 @@ class KotobaTTSConfig(BaseModel):
     def ignored_params(self) -> list[str]:
         return sorted(self.params.keys())
 
+    def redacted_base_url(self) -> str:
+        """The endpoint with credentials and signed query values masked."""
+        return _redact_url(self.base_url)
+
     def to_str(self, sensitive_handling: bool = True) -> str:
         if not sensitive_handling:
             return f"{self}"

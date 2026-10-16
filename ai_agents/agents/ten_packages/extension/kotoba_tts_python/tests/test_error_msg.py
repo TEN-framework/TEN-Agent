@@ -175,3 +175,24 @@ def test_missing_key_fails_at_init_and_on_request():
         assert server.recorded.connections == 0
     finally:
         server.stop()
+
+
+def test_event_metadata_never_carries_endpoint_secrets():
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    try:
+        secret_url = server.url + "?sign=sig-secret-123"
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "meta", "メタデータ。", end=True)
+            await tester.wait_for_audio_end("meta")
+            for e in tester.recording.events:
+                assert "sig-secret-123" not in json.dumps(e.payload)
+            start = tester.recording.named("tts_audio_start")[0]
+            assert (
+                "127.0.0.1"
+                in start.payload["metadata"]["vendor_metadata"]["url"]
+            )
+
+        run_tester(script, make_config(secret_url))
+    finally:
+        server.stop()
