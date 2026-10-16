@@ -31,8 +31,9 @@ from .segmenter import SentenceBuffer
 _END_OF_REQUEST = None
 # How many finished request ids to remember for late-input detection.
 _COMPLETED_HISTORY = 512
-# How long flush waits for a worker that is already emitting its terminal
-# events before taking over. Normally the wait is well under 10 ms.
+# How long flush and shutdown wait for a worker that is already in its
+# terminal path before taking it over. A latency bound only: whatever the
+# worker did not complete, the caller completes (see ``_finalize()``).
 _TERMINAL_JOIN_SECONDS = 2.0
 
 
@@ -68,10 +69,22 @@ class _RequestState:
         # A trailing half sample held back until the next chunk completes
         # it, so only whole samples are emitted and counted.
         self.pending_bytes = b""
-        # ``ended``: a terminal path has started. ``audio_end_sent``: the
-        # terminal event has actually been emitted. Flush needs both.
+        # A handshake time taken from the client but not yet reported.
+        # Kept here so a send interrupted by flush is repeated, not lost.
+        self.pending_connect_delay_ms: int | None = None
+        # Terminal progress. ``ended``: a terminal path has started. Each
+        # ``*_sent`` flag is set right after its event has gone out, so a
+        # second caller of ``_finalize()`` repeats only what was cut off.
         self.ended = False
+        self.error_sent = False
         self.audio_end_sent = False
+        self.usage_sent = False
+        self.finished = False
+        # Set once every event is out and the request no longer owns the
+        # extension; only the dump flush may still be running.
+        self.settled = asyncio.Event()
+        # Flush and shutdown may finalize concurrently; one at a time.
+        self.finalize_lock = asyncio.Lock()
 
 
 class KotobaTTSExtension(AsyncTTS2BaseExtension):
@@ -84,6 +97,9 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         self.client: KotobaTTSClient | None = None
         self._init_error: str | None = None
         self._request: _RequestState | None = None
+        # Requests whose terminal path has started and whose dump is not
+        # closed yet. ``_request`` may already point at the next request.
+        self._finishing: set[_RequestState] = set()
         self._generation = 0
         self._completed_ids: set[str] = set()
         self._completed_order: deque[str] = deque(maxlen=_COMPLETED_HISTORY)
@@ -131,15 +147,21 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        request = self._request
-        if request is not None:
+        requests = list(self._finishing)
+        current = self._request
+        if current is not None and current not in self._finishing:
+            requests.append(current)
+        for request in requests:
             if request.ended:
-                # Terminal events may be mid-flight: let them land.
+                # Terminal events or the dump flush may be mid-flight: let
+                # them land, bounded, then complete whatever is left.
                 await self._join_terminal_worker(request)
             else:
                 await self._stop_worker(request)
-            await self._close_recorder(request)
-            self._request = None
+            await self._finalize(
+                request, TTSAudioEndReason.INTERRUPTED, finish=False
+            )
+        self._request = None
         if self.client is not None:
             await self.client.close()
         await super().on_stop(ten_env)
@@ -214,14 +236,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         request = self._request
         if request is None or request.request_id != t.request_id:
             if request is not None and not request.ended:
-                # The base class normally finishes a request before it
-                # hands us the next one. Finalize the old one anyway so
-                # it cannot stay open forever.
+                # The base class finishes a request before it hands us the
+                # next one, so this is unexpected. Interrupt the old one
+                # so it cannot stay open forever.
                 self.ten_env.log_warn(
                     f"request {request.request_id} superseded by "
                     f"{t.request_id} without text_input_end"
                 )
-                await self._finalize_input(request)
+                await self._interrupt(request)
             request = self._start_request(t.request_id)
 
         if t.text:
@@ -338,21 +360,21 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         chunk = data[:cut]
         if not chunk:
             return
-        connect_delay_ms = self.client.take_connect_delay_ms()
-        if connect_delay_ms is not None:
-            await self.metrics_connect_delay(
-                connect_delay_ms, request_id=request.request_id
-            )
+        ttfb_ms: int | None = None
         if not request.ttfb_sent:
             request.ttfb_sent = True
             # TTFB runs from the moment the text was handed to the socket,
-            # not from connection setup (reported as connect_delay above).
+            # not from connection setup (reported as connect_delay below).
+            # Read before any await: the metric sends take time that is
+            # not part of the time to first byte.
             origin = self.client.last_send_at
             ttfb_ms = (
                 int((self._clock() - origin) * 1000)
                 if origin is not None
                 else 0
             )
+        await self._report_connect_delay(request)
+        if ttfb_ms is not None:
             await self.send_tts_ttfb_metrics(
                 request_id=request.request_id,
                 ttfb_ms=ttfb_ms,
@@ -386,61 +408,144 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         reason: TTSAudioEndReason,
         error: ModuleError | None = None,
     ) -> None:
-        """Terminal path shared by completion and failure.
-
-        Order matters: the terminal events go out first, then the state
-        transition, then the slow dump flush. ``cancel_tts()`` joins this
-        path when a flush arrives while it runs.
-        """
+        """Worker entry to the terminal path, for completion and failure."""
         if not self._is_current(request) or request.ended:
             return
-        request.ended = True
         self._generation += 1
-        if error is not None:
-            # Error first, then the terminal audio_end, so consumers learn
-            # why the request ends before they see it end.
-            await self.send_tts_error(request.request_id, error)
-        await self._send_audio_end(request, reason)
-        await self.finish_request(request.request_id, reason=reason)
-        await self._close_recorder(request)
-        # Cleared last, so on_stop() can still find and join this request
-        # while its recorder is being finalized.
-        if self._request is request:
-            self._request = None
+        await self._finalize(request, reason, error)
 
     async def cancel_tts(self) -> None:
         """Flush: stop the worker, cancel the in-flight response, and
         report INTERRUPTED. The base class clears request state itself.
 
-        If the worker is already emitting its terminal events, wait for it
-        so that no event of the old request lands after tts_flush_end.
+        If the worker is already emitting its terminal events, wait for
+        them so that no event of the old request lands after
+        tts_flush_end; if they do not land in time, take over.
         """
         request = self._request
         if request is None:
             return
-        if request.ended:
-            await self._join_terminal_worker(request)
-            if not request.audio_end_sent:
-                await self._send_audio_end(
-                    request, TTSAudioEndReason.INTERRUPTED
-                )
-            # The joined or cancelled worker may not have reached its own
-            # recorder cleanup.
-            await self._close_recorder(request)
-            if self._request is request:
-                self._request = None
+        if not request.ended:
+            await self._interrupt(request)
             return
+        if await self._wait_settled(request):
+            return
+        await self._finalize(
+            request, TTSAudioEndReason.INTERRUPTED, finish=False
+        )
+
+    async def _interrupt(self, request: _RequestState) -> None:
+        """Stop a request that is still synthesizing and end it as
+        INTERRUPTED. ``finish_request()`` is not called: the base class
+        owns the state transition on flush."""
         request.ended = True
         self._generation += 1
         await self._stop_worker(request)
         if self.client is not None:
             await self.client.cancel()
-        await self._send_audio_end(request, TTSAudioEndReason.INTERRUPTED)
-        if self._request is request:
-            self._request = None
-        await self._close_recorder(request)
+        await self._finalize(
+            request, TTSAudioEndReason.INTERRUPTED, finish=False
+        )
+
+    async def _finalize(
+        self,
+        request: _RequestState,
+        reason: TTSAudioEndReason,
+        error: ModuleError | None = None,
+        *,
+        finish: bool = True,
+    ) -> None:
+        """The single terminal sequence: error, audio_end, usage, state
+        transition, release of the extension, dump flush.
+
+        Idempotent: every step records its completion on the request right
+        after its await returns, so a caller that takes over after the
+        worker was cancelled mid-way repeats only the steps that did not
+        complete. ``finish`` is False when the base class performs the
+        state transition itself (flush, shutdown).
+        """
+        request.ended = True
+        self._finishing.add(request)
+        async with request.finalize_lock:
+            if error is not None and not request.error_sent:
+                # Error first, then the terminal audio_end, so consumers
+                # learn why the request ends before they see it end.
+                await self.send_tts_error(request.request_id, error)
+                request.error_sent = True
+            if not request.audio_end_sent:
+                interval_ms = 0
+                if request.audio_started_at is not None:
+                    interval_ms = int(
+                        (self._clock() - request.audio_started_at) * 1000
+                    )
+                bytes_per_second = (
+                    self.synthesize_audio_sample_rate()
+                    * self.synthesize_audio_sample_width()
+                    * self.synthesize_audio_channels()
+                )
+                duration_ms = request.emitted_bytes * 1000 // bytes_per_second
+                await self.send_tts_audio_end(
+                    request_id=request.request_id,
+                    request_event_interval_ms=interval_ms,
+                    request_total_audio_duration_ms=duration_ms,
+                    reason=reason,
+                )
+                request.audio_end_sent = True
+                self._remember_completed(request.request_id)
+            if not request.usage_sent:
+                # A handshake paid for by this request but never followed
+                # by audio (flushed early) is still this request's metric.
+                await self._report_connect_delay(request)
+                # Usage for this request only; this also resets the base
+                # counters so the next request does not inherit them.
+                await self.send_usage_metrics(request.request_id)
+                request.usage_sent = True
+            if finish and not request.finished:
+                await self.finish_request(request.request_id, reason=reason)
+                request.finished = True
+            # Every event is out: the extension is free for the next
+            # request while the dump is still being written.
+            if self._request is request:
+                self._request = None
+            request.settled.set()
+            await self._close_recorder(request)
+        self._finishing.discard(request)
+
+    async def _report_connect_delay(self, request: _RequestState) -> None:
+        """Report the handshake time of a new connection under this
+        request, once. The value is parked on the request before the send
+        so an interrupted send is repeated by the next caller."""
+        if request.pending_connect_delay_ms is None and self.client is not None:
+            request.pending_connect_delay_ms = (
+                self.client.take_connect_delay_ms()
+            )
+        if request.pending_connect_delay_ms is None:
+            return
+        await self.metrics_connect_delay(
+            request.pending_connect_delay_ms, request_id=request.request_id
+        )
+        request.pending_connect_delay_ms = None
+
+    async def _wait_settled(self, request: _RequestState) -> bool:
+        """Flush found the worker inside its terminal events: wait for them
+        to land. Returns False when they did not land in time, in which
+        case the worker has been cancelled and the caller takes over."""
+        try:
+            await asyncio.wait_for(
+                request.settled.wait(), _TERMINAL_JOIN_SECONDS
+            )
+            return True
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn(
+                f"request {request.request_id} did not finish within "
+                f"{_TERMINAL_JOIN_SECONDS:g} s of flush; cancelling it"
+            )
+            await self._stop_worker(request)
+            return False
 
     async def _join_terminal_worker(self, request: _RequestState) -> None:
+        """Shutdown found a request in its terminal path: wait for the
+        whole worker, dump flush included, bounded; cancel it otherwise."""
         worker = request.worker
         if worker is None or worker.done() or worker is asyncio.current_task():
             return
@@ -451,48 +556,11 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         except asyncio.TimeoutError:
             self.ten_env.log_warn(
                 f"request {request.request_id} did not finish within "
-                f"{_TERMINAL_JOIN_SECONDS:g} s of flush; cancelling it"
+                f"{_TERMINAL_JOIN_SECONDS:g} s of stop; cancelling it"
             )
             await self._stop_worker(request)
         except Exception:
             pass
-
-    async def _send_audio_end(
-        self, request: _RequestState, reason: TTSAudioEndReason
-    ) -> None:
-        """Emit the single terminal audio_end and the request's usage."""
-        if request.audio_end_sent:
-            return
-        interval_ms = 0
-        if request.audio_started_at is not None:
-            interval_ms = int((self._clock() - request.audio_started_at) * 1000)
-        bytes_per_second = (
-            self.synthesize_audio_sample_rate()
-            * self.synthesize_audio_sample_width()
-            * self.synthesize_audio_channels()
-        )
-        duration_ms = request.emitted_bytes * 1000 // bytes_per_second
-        await self.send_tts_audio_end(
-            request_id=request.request_id,
-            request_event_interval_ms=interval_ms,
-            request_total_audio_duration_ms=duration_ms,
-            reason=reason,
-        )
-        # Set only after the event is out: a send interrupted by flush has
-        # not been sent, and flush then emits INTERRUPTED itself.
-        request.audio_end_sent = True
-        self._remember_completed(request.request_id)
-        if self.client is not None:
-            # A handshake paid for by this request but never followed by
-            # audio (flushed early) is still this request's metric.
-            connect_delay_ms = self.client.take_connect_delay_ms()
-            if connect_delay_ms is not None:
-                await self.metrics_connect_delay(
-                    connect_delay_ms, request_id=request.request_id
-                )
-        # Usage for this request only; this also resets the base counters
-        # so the next request does not inherit them.
-        await self.send_usage_metrics(request.request_id)
 
     # -- helpers -----------------------------------------------------------
 
@@ -534,18 +602,23 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             pass
 
     async def _close_recorder(self, request: _RequestState) -> None:
-        recorder, request.recorder = request.recorder, None
+        recorder = request.recorder
         if recorder is None:
             return
         try:
             # PCMWriter.flush() returns early while a background write is
             # running and leaves bytes buffered since then; repeat until
             # the buffer is empty so the dump holds every emitted frame.
+            # Shielded: cancelling the caller must not cancel the writer's
+            # own task, which has already taken the bytes out of the buffer.
             for _ in range(8):
-                await recorder.flush()
+                await asyncio.shield(recorder.flush())
                 if not getattr(recorder, "buffer", None):
                     break
         except Exception as exc:
             self.ten_env.log_error(
                 f"failed to flush dump for {request.request_id}: {exc}"
             )
+        # Detached only once the flush is through: a close interrupted by
+        # cancellation leaves the recorder for the caller that takes over.
+        request.recorder = None

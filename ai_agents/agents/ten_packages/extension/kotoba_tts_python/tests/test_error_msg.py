@@ -308,3 +308,102 @@ def test_malformed_property_error_never_echoes_rejected_input():
         assert server.recorded.connections == 0
     finally:
         server.stop()
+
+
+def test_transient_rate_limit_on_handshake_is_retried_silently():
+    """The gateway answers the first handshake with 429: the retry on a
+    fresh socket succeeds and the consumer sees nothing of it."""
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=2,
+            handshake_status=429,
+            handshake_status_count=1,
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "rl1", "混雑。", end=True)
+            end = await tester.wait_for_audio_end("rl1")
+            assert end.payload["reason"] == 1
+            assert tester.recording.named("error") == []
+            assert tester.recording.audio_bytes("rl1") == server.expected_pcm(1)
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()
+
+
+def test_persistent_rate_limit_is_non_fatal_and_recoverable():
+    """429 on both attempts: one NON_FATAL error naming the limit, one
+    audio_end(ERROR), and the next request connects normally."""
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=2,
+            handshake_status=429,
+            handshake_status_count=2,
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "rl2", "制限中。", end=True)
+            end = await tester.wait_for_audio_end("rl2")
+            rec = tester.recording
+            assert end.payload["reason"] == 3
+            assert end.payload["request_total_audio_duration_ms"] == 0
+            errors = rec.named("error")
+            assert len(errors) == 1
+            assert errors[0].payload["code"] == NON_FATAL
+            assert errors[0].payload["vendor_info"]["code"] == "rate_limited"
+            assert errors[0].payload["id"] == "rl2"
+            await tester.send_text(ten_env, "rl3", "復旧。", end=True)
+            end2 = await tester.wait_for_audio_end("rl3")
+            assert end2.payload["reason"] == 1
+            assert rec.audio_bytes("rl3") == server.expected_pcm(1)
+            assert len(rec.named("error")) == 1
+
+        run_tester(script, make_config(server.url))
+        # Two refused handshakes for rl2, one accepted for rl3.
+        assert server.recorded.connections == 3
+        assert server.recorded.texts == ["復旧。"]
+    finally:
+        server.stop()
+
+
+def test_text_rejected_by_the_service_is_non_fatal_and_not_retried():
+    """The service fails the response with a request-level code: one
+    NON_FATAL error carrying that code, no retry with the same text, and
+    the next request works on the same connection."""
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=2,
+            fail_response_index=1,
+            fail_code="invalid_text",
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "bad", "却下される文。", end=True)
+            end = await tester.wait_for_audio_end("bad")
+            rec = tester.recording
+            assert end.payload["reason"] == 3
+            assert end.payload["request_total_audio_duration_ms"] == 0
+            errors = rec.named("error")
+            assert len(errors) == 1
+            assert errors[0].payload["code"] == NON_FATAL
+            assert errors[0].payload["vendor_info"]["code"] == "invalid_text"
+            assert errors[0].payload["id"] == "bad"
+            assert rec.audio_bytes("bad") == b""
+            await tester.send_text(ten_env, "good", "次の文。", end=True)
+            end2 = await tester.wait_for_audio_end("good")
+            assert end2.payload["reason"] == 1
+            assert rec.audio_bytes("good") == server.expected_pcm(1)
+            assert len(rec.named("error")) == 1
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["却下される文。", "次の文。"]
+    finally:
+        server.stop()

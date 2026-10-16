@@ -34,6 +34,13 @@ _FATAL_CODES = frozenset(
     }
 )
 
+# Server error codes that reject the text of one request: not fatal for the
+# session, and not worth a retry with the same text.
+_REQUEST_CODES = frozenset({"invalid_text", "text_too_long"})
+
+# ``HTTP 429`` inside a handshake failure message.
+_HTTP_STATUS_RE = re.compile(r"\bHTTP (\d{3})\b")
+
 # How long ``cancel()`` waits for the server's ``response.done`` before the
 # socket is dropped instead.
 CANCEL_GRACE_SECONDS = 2.0
@@ -86,7 +93,7 @@ def classify_error(exc: BaseException) -> KotobaTTSError:
             str(exc),
             code=code,
             fatal=fatal_code is not None,
-            retryable=fatal_code is None,
+            retryable=fatal_code is None and code not in _REQUEST_CODES,
         )
     if _is_policy_close(exc):
         # fal accepts the upgrade and then closes with 1008 "Unauthorized"
@@ -102,6 +109,13 @@ def classify_error(exc: BaseException) -> KotobaTTSError:
             str(exc), code="handshake_timeout", fatal=False, retryable=True
         )
     if isinstance(exc, (APIError, KotobaError)):
+        # A refused handshake names its HTTP status; 429 is the gateway's
+        # quota or rate limit, transient and worth one retry.
+        status = _HTTP_STATUS_RE.search(str(exc))
+        if status is not None and status.group(1) == "429":
+            return KotobaTTSError(
+                str(exc), code="rate_limited", fatal=False, retryable=True
+            )
         return KotobaTTSError(
             str(exc), code="transport_error", fatal=False, retryable=True
         )

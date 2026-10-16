@@ -41,7 +41,10 @@ class Scenario:
     samples_per_chunk: int = 800
     chunk_delay_s: float = 0.02
     # Reject the WebSocket handshake with this HTTP status (e.g. 401).
+    # ``handshake_status_count`` limits it to the first N connections
+    # (None = every connection), imitating a transient 429.
     handshake_status: int | None = None
+    handshake_status_count: int | None = None
     # Keys rejected for an unknown key. ``reject_mode`` "http" answers the
     # handshake with 401; "close" accepts the upgrade and then closes with
     # code 1008 "Unauthorized", which is what the fal gateway does.
@@ -151,7 +154,11 @@ class FakeKotobaServer:
     def _process_request(self, connection, request):
         with self._lock:
             self.recorded.connections += 1
+            connection_index = self.recorded.connections
         status = self.scenario.handshake_status
+        count = self.scenario.handshake_status_count
+        if count is not None and connection_index > count:
+            status = None
         if status is None and self.scenario.reject_mode == "http":
             if self._key_of(request) in self.scenario.reject_keys:
                 status = HTTPStatus.UNAUTHORIZED

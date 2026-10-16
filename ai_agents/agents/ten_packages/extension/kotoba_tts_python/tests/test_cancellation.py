@@ -620,3 +620,254 @@ def test_stop_during_recorder_finalization_still_finalizes_the_dump():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def _usage_for(tester, request_id: str) -> list:
+    return [
+        e
+        for e in metrics_with(tester, "recv_audio_duration")
+        if e.payload["metadata"].get("request_id") == request_id
+    ]
+
+
+def test_flush_takeover_after_audio_end_still_reports_usage():
+    """The worker hangs after audio_end went out, inside the usage send.
+    Flush takes over after the bound: no second audio_end, but usage for
+    the old request is emitted, and the next request's usage holds only
+    its own counters."""
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    state = {"calls": 0}
+    original = ext_mod.KotobaTTSExtension.send_usage_metrics
+
+    async def hanging_first_usage(self, *args, **kwargs):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            await asyncio.sleep(60)
+        return await original(self, *args, **kwargs)
+
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.5), patch.object(
+            ext_mod.KotobaTTSExtension,
+            "send_usage_metrics",
+            hanging_first_usage,
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "U1", "使用量。", end=True)
+                await tester.wait_for_audio_end("U1")
+                await _wait_until(lambda: state["calls"] >= 1)
+                t0 = time.monotonic()
+                await tester.send_flush(ten_env, "flush-usage")
+                await tester.wait_for_event("tts_flush_end")
+                assert 0.4 < time.monotonic() - t0 < 2.0
+                await tester.send_text(ten_env, "U2", "次。", end=True)
+                await tester.wait_for_audio_end("U2")
+                await tester.wait_for(
+                    lambda r: len(_usage_for(tester, "U2")) >= 1,
+                    timeout_s=2.0,
+                )
+                ends = [
+                    e.payload["request_id"]
+                    for e in tester.recording.named("tts_audio_end")
+                ]
+                assert ends == ["U1", "U2"], ends
+                u1 = _usage_for(tester, "U1")
+                u2 = _usage_for(tester, "U2")
+                assert len(u1) == 1 and len(u2) == 1
+                assert u1[0].payload["metrics"]["input_characters"] == len(
+                    "使用量。"
+                )
+                assert u2[0].payload["metrics"]["input_characters"] == len(
+                    "次。"
+                )
+                assert u2[0].payload["metrics"]["recv_audio_duration"] == (
+                    len(tester.recording.audio_bytes("U2")) * 1000 / (16000 * 2)
+                )
+
+            run_tester(script, make_config(server.url))
+    finally:
+        server.stop()
+
+
+def test_stop_during_gated_dump_flush_completes_the_file():
+    """Shutdown arrives while the dump flush is suspended for longer than
+    the join bound: on_stop cancels the worker and finishes the flush
+    itself; the file holds every emitted frame."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_stopgate_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=3)).start()
+    original_flush = ext_mod.PCMWriter.flush
+    state = {"calls": 0}
+
+    async def gated_flush(self):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            # Longer than the (patched) join bound, shorter than the test.
+            await asyncio.sleep(1.0)
+        await original_flush(self)
+
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.3), patch.object(
+            ext_mod.PCMWriter, "flush", gated_flush
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "gate", "停止。", end=True)
+                await tester.wait_for_audio_end("gate")
+                await _wait_until(lambda: state["calls"] >= 1)
+                # Return: the runtime stops the extension inside the flush.
+
+            t0 = time.monotonic()
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=10.0,
+            )
+            assert time.monotonic() - t0 < 6.0
+        with open(
+            os.path.join(dump_dir, "kotoba_tts_dump_gate.pcm"), "rb"
+        ) as f:
+            assert f.read() == tester.recording.audio_bytes("gate")
+        assert len(tester.recording.audio_bytes("gate")) == len(
+            server.expected_pcm(1)
+        )
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_next_request_during_previous_dump_flush_then_stop():
+    """The previous request's dump is still being written when the next
+    request starts and the app stops: on_stop must finish the previous
+    request's flush (it is no longer the current request) and close the
+    current request's dump. Events emitted during on_stop are not
+    observable here, so the second file is checked against the frames
+    recorded before the stop."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_overlap_")
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=3, chunk_delay_s=0.1)
+    ).start()
+    original_flush = ext_mod.PCMWriter.flush
+    gate = {"event": None, "entered": None}
+
+    async def gated_flush(self):
+        event, gate["event"] = gate["event"], None  # gate the first flush
+        if event is not None:
+            gate["entered"].set()
+            await event.wait()
+        await original_flush(self)
+
+    try:
+        with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
+
+            async def script(tester, ten_env):
+                release = asyncio.Event()
+                gate["event"] = release
+                gate["entered"] = asyncio.Event()
+                await tester.send_text(ten_env, "P", "前。", end=True)
+                await tester.wait_for_audio_end("P")
+                await asyncio.wait_for(gate["entered"].wait(), 5.0)
+                # P is now stuck in its dump flush; start the next request.
+                await tester.send_text(ten_env, "Q", "後ろ。", end=True)
+                await tester.wait_for(lambda r: len(r.audio_bytes("Q")) > 0)
+                release.set()
+                # Return: the runtime stops the extension while Q streams
+                # and P's flush has just been released.
+
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=10.0,
+            )
+        rec = tester.recording
+        ends = {e.payload["request_id"]: e for e in rec.named("tts_audio_end")}
+        assert ends["P"].payload["reason"] == 1
+        with open(os.path.join(dump_dir, "kotoba_tts_dump_P.pcm"), "rb") as f:
+            assert f.read() == rec.audio_bytes("P")
+        assert len(rec.audio_bytes("P")) == len(server.expected_pcm(1))
+        with open(os.path.join(dump_dir, "kotoba_tts_dump_Q.pcm"), "rb") as f:
+            dump_q = f.read()
+        recorded_q = rec.audio_bytes("Q")
+        assert recorded_q and dump_q.startswith(recorded_q)
+        # Frames emitted between the script's return and on_stop are in
+        # the file but not in the recording; the file ends on a frame.
+        assert len(dump_q) % 1600 == 0, len(dump_q)
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_flush_waits_for_terminal_events_that_land_in_time():
+    """Flush arrives while the worker is between its terminal events and
+    finish_request (gated here). The events land within the bound, so
+    flush waits for them instead of taking over: audio_end keeps its
+    REQUEST_END reason, there is exactly one of it, it precedes
+    flush_end, and the next request works."""
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    gate = {"release": None, "entered": None}
+    original = ext_mod.KotobaTTSExtension.finish_request
+
+    async def gated_finish(self, *args, **kwargs):
+        release, gate["release"] = gate["release"], None  # first call only
+        if release is not None:
+            gate["entered"].set()
+            await release.wait()
+        return await original(self, *args, **kwargs)
+
+    try:
+        with patch.object(
+            ext_mod.KotobaTTSExtension, "finish_request", gated_finish
+        ):
+
+            async def script(tester, ten_env):
+                release = asyncio.Event()
+                gate["release"] = release
+                gate["entered"] = asyncio.Event()
+                await tester.send_text(ten_env, "wait", "待つ。", end=True)
+                end = await tester.wait_for_audio_end("wait")
+                await asyncio.wait_for(gate["entered"].wait(), 5.0)
+                flush_task = asyncio.ensure_future(
+                    tester.send_flush(ten_env, "flush-wait")
+                )
+                await asyncio.sleep(0.3)
+                assert tester.recording.named("tts_flush_end") == []
+                t_release = time.monotonic()
+                release.set()
+                await flush_task
+                flush_end = (await tester.wait_for_event("tts_flush_end"))[0]
+                assert flush_end.at >= t_release
+                assert end.at <= flush_end.at
+                ends = [
+                    e
+                    for e in tester.recording.named("tts_audio_end")
+                    if e.payload["request_id"] == "wait"
+                ]
+                assert len(ends) == 1 and ends[0].payload["reason"] == 1
+                assert len(_usage_for(tester, "wait")) == 1
+                await tester.send_text(ten_env, "after", "次。", end=True)
+                end2 = await tester.wait_for_audio_end("after")
+                assert end2.payload["reason"] == 1
+                assert tester.recording.audio_bytes(
+                    "after"
+                ) == server.expected_pcm(1)
+
+            run_tester(script, make_config(server.url))
+    finally:
+        server.stop()
