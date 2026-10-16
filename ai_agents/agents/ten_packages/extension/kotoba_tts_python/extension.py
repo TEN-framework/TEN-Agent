@@ -30,6 +30,9 @@ from .segmenter import SentenceBuffer
 _END_OF_REQUEST = None
 # How many finished request ids to remember for late-input detection.
 _COMPLETED_HISTORY = 512
+# How long flush waits for a worker that is already emitting its terminal
+# events before taking over. Normally the wait is well under 10 ms.
+_TERMINAL_JOIN_SECONDS = 2.0
 
 
 class _RequestState:
@@ -47,10 +50,16 @@ class _RequestState:
         self.emitted_bytes = 0
         self.ttfb_sent = False
         self.recorder: PCMWriter | None = None
+        # ``ended``: a terminal path has started. ``audio_end_sent``: the
+        # terminal event has actually been emitted. Flush needs both.
         self.ended = False
+        self.audio_end_sent = False
 
 
 class KotobaTTSExtension(AsyncTTS2BaseExtension):
+    # Injectable monotonic clock; tests replace it to check accounting.
+    _clock = staticmethod(time.monotonic)
+
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.config: KotobaTTSConfig | None = None
@@ -73,6 +82,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             self.config = config
             ignored = config.ignored_params()
             if ignored:
+                # Names only: an unknown key may hold a credential.
                 ten_env.log_warn(f"ignoring unknown params: {ignored}")
             ten_env.log_info(
                 f"config: {config.to_str(sensitive_handling=True)}",
@@ -85,6 +95,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 on_connecting=self.on_connecting,
                 on_connected=self.on_connected,
                 on_disconnected=self.on_disconnected,
+                clock=self._clock,
             )
         except Exception as exc:
             self._init_error = str(exc)
@@ -242,7 +253,6 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         assert self.client is not None
         for attempt in range(2):
             audio_in_segment = False
-            sent_at = time.monotonic()
             await self.send_tts_request_metrics(
                 request.request_id,
                 segment,
@@ -254,7 +264,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                     if not self._is_current(request):
                         return
                     audio_in_segment = True
-                    await self._emit_audio(request, chunk, sent_at)
+                    await self._emit_audio(request, chunk)
                 return
             except KotobaTTSError as err:
                 if not self._is_current(request):
@@ -269,28 +279,49 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             finally:
                 await stream.aclose()
 
-    async def _emit_audio(
-        self, request: _RequestState, chunk: bytes, sent_at: float
-    ) -> None:
-        now = time.monotonic()
+    async def _emit_audio(self, request: _RequestState, chunk: bytes) -> None:
+        assert self.client is not None and self.config is not None
+        connect_delay_ms = self.client.take_connect_delay_ms()
+        if connect_delay_ms is not None:
+            await self.metrics_connect_delay(
+                connect_delay_ms, request_id=request.request_id
+            )
         if not request.ttfb_sent:
             request.ttfb_sent = True
+            # TTFB runs from the moment the text was handed to the socket,
+            # not from connection setup (reported as connect_delay above).
+            origin = self.client.last_send_at
+            ttfb_ms = (
+                int((self._clock() - origin) * 1000)
+                if origin is not None
+                else 0
+            )
             await self.send_tts_ttfb_metrics(
                 request_id=request.request_id,
-                ttfb_ms=int((now - sent_at) * 1000),
+                ttfb_ms=ttfb_ms,
                 extra_metadata={
                     "speaker_id": self.config.speaker_id,
                     "language": self.config.language,
                 },
             )
         if request.audio_started_at is None:
-            request.audio_started_at = now
+            # The event interval starts when tts_audio_start is emitted.
+            request.audio_started_at = self._clock()
             await self.send_tts_audio_start(request_id=request.request_id)
+        await self.send_tts_audio_data(chunk)
+        # Count only audio that was handed to the runtime.
         request.emitted_bytes += len(chunk)
         self.metrics_add_recv_audio_chunks(chunk)
         if request.recorder is not None:
-            await request.recorder.write(chunk)
-        await self.send_tts_audio_data(chunk)
+            try:
+                await request.recorder.write(chunk)
+            except Exception as exc:
+                # A dump failure must not fail the request: log once and
+                # stop recording this request.
+                self.ten_env.log_error(
+                    f"dump write failed for {request.request_id}: {exc}"
+                )
+                request.recorder = None
 
     async def _end_request(
         self,
@@ -298,7 +329,12 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         reason: TTSAudioEndReason,
         error: ModuleError | None = None,
     ) -> None:
-        """Terminal path shared by completion and failure."""
+        """Terminal path shared by completion and failure.
+
+        Order matters: the terminal events go out first, then the state
+        transition, then the slow dump flush. ``cancel_tts()`` joins this
+        path when a flush arrives while it runs.
+        """
         if not self._is_current(request) or request.ended:
             return
         request.ended = True
@@ -308,16 +344,29 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             # why the request ends before they see it end.
             await self.send_tts_error(request.request_id, error)
         await self._send_audio_end(request, reason)
-        await self.send_usage_metrics(request.request_id)
         if self._request is request:
             self._request = None
         await self.finish_request(request.request_id, reason=reason)
+        await self._close_recorder(request)
 
     async def cancel_tts(self) -> None:
         """Flush: stop the worker, cancel the in-flight response, and
-        report INTERRUPTED. The base class clears request state itself."""
+        report INTERRUPTED. The base class clears request state itself.
+
+        If the worker is already emitting its terminal events, wait for it
+        so that no event of the old request lands after tts_flush_end.
+        """
         request = self._request
-        if request is None or request.ended:
+        if request is None:
+            return
+        if request.ended:
+            await self._join_terminal_worker(request)
+            if not request.audio_end_sent:
+                await self._send_audio_end(
+                    request, TTSAudioEndReason.INTERRUPTED
+                )
+            if self._request is request:
+                self._request = None
             return
         request.ended = True
         self._generation += 1
@@ -327,16 +376,34 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         await self._send_audio_end(request, TTSAudioEndReason.INTERRUPTED)
         if self._request is request:
             self._request = None
+        await self._close_recorder(request)
+
+    async def _join_terminal_worker(self, request: _RequestState) -> None:
+        worker = request.worker
+        if worker is None or worker.done() or worker is asyncio.current_task():
+            return
+        try:
+            await asyncio.wait_for(
+                asyncio.shield(worker), _TERMINAL_JOIN_SECONDS
+            )
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn(
+                f"request {request.request_id} did not finish within "
+                f"{_TERMINAL_JOIN_SECONDS:g} s of flush; cancelling it"
+            )
+            await self._stop_worker(request)
+        except Exception:
+            pass
 
     async def _send_audio_end(
         self, request: _RequestState, reason: TTSAudioEndReason
     ) -> None:
-        await self._close_recorder(request)
+        """Emit the single terminal audio_end and the request's usage."""
+        if request.audio_end_sent:
+            return
         interval_ms = 0
         if request.audio_started_at is not None:
-            interval_ms = int(
-                (time.monotonic() - request.audio_started_at) * 1000
-            )
+            interval_ms = int((self._clock() - request.audio_started_at) * 1000)
         bytes_per_second = (
             self.synthesize_audio_sample_rate()
             * self.synthesize_audio_sample_width()
@@ -349,7 +416,13 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             request_total_audio_duration_ms=duration_ms,
             reason=reason,
         )
+        # Set only after the event is out: a send interrupted by flush has
+        # not been sent, and flush then emits INTERRUPTED itself.
+        request.audio_end_sent = True
         self._remember_completed(request.request_id)
+        # Usage for this request only; this also resets the base counters
+        # so the next request does not inherit them.
+        await self.send_usage_metrics(request.request_id)
 
     # -- helpers -----------------------------------------------------------
 

@@ -62,6 +62,15 @@ class Scenario:
     idle_close_s: float | None = None
     # Hold the first chunk of every response this long (TTFB / stall).
     first_chunk_delay_s: float = 0.0
+    # Delay before answering ``open`` (slow handshake).
+    handshake_delay_s: float = 0.0
+    # Delay before answering ``response.cancel`` with done(cancelled).
+    cancel_done_delay_s: float = 0.0
+    # Send this many stray audio.chunk frames after a cancel, before
+    # done(cancelled), imitating audio already in flight.
+    stray_chunks_after_cancel: int = 0
+    # Never answer the N-th response.create (1-based): no chunks, no done.
+    hold_response_index: int | None = None
 
 
 @dataclass
@@ -163,6 +172,8 @@ class FakeKotobaServer:
                 await ws.close(code=1003)
                 return
             self.recorded.opens.append(body)
+            if self.scenario.handshake_delay_s:
+                await asyncio.sleep(self.scenario.handshake_delay_s)
             if self.scenario.open_error:
                 await self._send(
                     ws, {"type": "error", "message": self.scenario.open_error}
@@ -256,6 +267,11 @@ class FakeKotobaServer:
         )
         fail_here = sc.fail_response_index == index
         close_here = sc.close_response_index == index
+        if sc.hold_response_index == index:
+            # Imitate a stalled service: wait for cancel or forever.
+            await cancel_event.wait()
+            await self._finish_cancelled(ws, response_id)
+            return
         for i in range(sc.chunks_per_response):
             if fail_here and i >= sc.fail_after_chunks:
                 await self._send(
@@ -282,14 +298,7 @@ class FakeKotobaServer:
             except asyncio.TimeoutError:
                 pass
             if cancel_event.is_set():
-                self.recorded.responses_cancelled += 1
-                await self._send(
-                    ws,
-                    {
-                        "type": "response.done",
-                        "response": {"id": response_id, "status": "cancelled"},
-                    },
-                )
+                await self._finish_cancelled(ws, response_id)
                 return
             chunk = pcm16_ramp(sc.samples_per_chunk)
             await self._send(
@@ -307,6 +316,30 @@ class FakeKotobaServer:
             {
                 "type": "response.done",
                 "response": {"id": response_id, "status": "completed"},
+            },
+        )
+
+    async def _finish_cancelled(self, ws, response_id: str) -> None:
+        sc = self.scenario
+        self.recorded.responses_cancelled += 1
+        for _ in range(sc.stray_chunks_after_cancel):
+            chunk = pcm16_ramp(sc.samples_per_chunk, start=999)
+            await self._send(
+                ws,
+                {
+                    "type": "audio.chunk",
+                    "audio": base64.b64encode(chunk).decode("ascii"),
+                    "isFinal": False,
+                    "response_id": response_id,
+                },
+            )
+        if sc.cancel_done_delay_s:
+            await asyncio.sleep(sc.cancel_done_delay_s)
+        await self._send(
+            ws,
+            {
+                "type": "response.done",
+                "response": {"id": response_id, "status": "cancelled"},
             },
         )
 

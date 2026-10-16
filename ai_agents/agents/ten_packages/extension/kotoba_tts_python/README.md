@@ -35,9 +35,13 @@ per request for debugging.
 The service synthesizes one complete text per response, while TEN streams
 LLM output as deltas. The extension buffers deltas per `request_id` and sends
 a request as soon as a sentence is complete (`。！？!?.` or a newline), then
-the remainder on `text_input_end`. One WebSocket is reused across requests;
-it reconnects after the service's idle timeout and retries a sentence once
-when the connection drops before any audio for it arrived.
+the remainder on `text_input_end`.
+
+One WebSocket is reused across requests; it reconnects after the service's
+idle timeout or any connection drop, and retries a sentence once when the
+connection fails before any audio for it arrived. Connection state is
+reported through `connection_status_changed` (`connecting`, `connected`,
+`disconnected`).
 
 Flush cancels the in-flight response (`response.cancel`), drops buffered text
 and reports `tts_audio_end` with reason `INTERRUPTED`. Empty or
@@ -76,3 +80,7 @@ python3 ten_packages/extension/kotoba_tts_python/tests/run_fake_server.py 8765 &
 export KOTOBA_TTS_KEY=fake-key
 task tts-guarder-test EXTENSION=kotoba_tts_python CONFIG_DIR=tests/configs_fake
 ```
+
+Guarder skips: `test_subtitle_alignment` is skipped because the service
+exposes no word timestamps. `test_connection_status` runs for this
+extension (listed in the guarder's WebSocket allowlist).

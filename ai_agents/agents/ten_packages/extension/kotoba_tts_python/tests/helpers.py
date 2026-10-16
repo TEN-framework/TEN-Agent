@@ -234,6 +234,20 @@ class RecordingTester(AsyncExtensionTester):
         self._waiters = remaining
 
 
+def metrics_with(tester, key: str):
+    """Metrics events whose payload carries ``key``."""
+    return [
+        e
+        for e in tester.recording.named("metrics")
+        if key in e.payload.get("metrics", {})
+    ]
+
+
+def events_after(tester, name: str, after_event) -> list:
+    """Events named ``name`` recorded after ``after_event``."""
+    return [e for e in tester.recording.named(name) if e.at > after_event.at]
+
+
 def run_tester(
     script, config: dict, *, timeout_s: float = 20.0
 ) -> RecordingTester:

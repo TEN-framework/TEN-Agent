@@ -117,3 +117,25 @@ def test_to_str_masks_key():
     text = config.to_str(sensitive_handling=True)
     assert "secret-key-value" not in text
     assert "secret-key-value" in config.to_str(sensitive_handling=False)
+
+
+def test_to_str_redacts_unknown_param_values_and_url_credentials():
+    config = _config(
+        {
+            "key": "k-secret",
+            "token": "tok-secret",
+            "custom_note": "plain-value",
+            "base_url": "wss://user:pw-secret@example.test/ws?sign=sig-secret",
+        }
+    )
+    text = config.to_str(sensitive_handling=True)
+    for secret in (
+        "k-secret",
+        "tok-secret",
+        "plain-value",
+        "pw-secret",
+        "sig-secret",
+    ):
+        assert secret not in text, secret
+    assert "example.test" in text
+    assert config.ignored_params() == ["custom_note", "token"]

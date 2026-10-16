@@ -71,3 +71,38 @@ def test_dump_is_finalized_on_flush_and_sanitizes_request_id():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_dump_write_failure_does_not_fail_the_request():
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_dump_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=3)).start()
+
+    async def failing_write(self, data):
+        raise OSError("disk full")
+
+    try:
+        with patch.object(ext_mod.PCMWriter, "write", failing_write):
+
+            async def script(tester, ten_env):
+                await tester.send_text(
+                    ten_env, "nodisk", "書けない。", end=True
+                )
+                end = await tester.wait_for_audio_end("nodisk")
+                assert end.payload["reason"] == 1
+                assert tester.recording.audio_bytes(
+                    "nodisk"
+                ) == server.expected_pcm(1)
+                assert end.payload["request_total_audio_duration_ms"] == (
+                    len(server.expected_pcm(1)) * 1000 // 32000
+                )
+                assert tester.recording.named("error") == []
+
+            run_tester(
+                script, make_config(server.url, dump=True, dump_path=dump_dir)
+            )
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)

@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 #
 import copy
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -109,10 +110,33 @@ class KotobaTTSConfig(BaseModel):
         config = copy.deepcopy(self)
         if config.key:
             config.key = utils.encrypt(config.key)
-        for name in ("key", "api_key"):
-            if config.params.get(name):
-                config.params[name] = utils.encrypt(str(config.params[name]))
+        # Unknown params may hold credentials under any name: mask every
+        # value, and strip credentials from the URL as well.
+        config.params = {
+            name: (
+                utils.encrypt(str(value)) if value not in (None, "") else value
+            )
+            for name, value in utils.redact_json(
+                config.params, json_keys=_SENSITIVE_KEYS
+            ).items()
+        }
+        config.base_url = _redact_url(config.base_url)
         return f"{config}"
+
+
+_SENSITIVE_KEYS = frozenset(
+    set(utils.DEFAULT_JSON_KEYS)
+    | {"key", "token", "secret", "password", "signature", "sign"}
+)
+
+
+def _redact_url(url: str) -> str:
+    """Mask credentials in the URL's userinfo and query string."""
+    if not url:
+        return url
+    redacted = utils.redact_url(url, url_keys=_SENSITIVE_KEYS)
+    # ``scheme://user:secret@host`` -> ``scheme://***@host``
+    return re.sub(r"^([a-z][a-z0-9+.-]*://)[^/@]+@", r"\1***@", redacted)
 
 
 def _as_int(value: Any, name: str) -> int:

@@ -5,7 +5,7 @@
 """Thin client over the Kotoba Python SDK (``kotoba-sdk``).
 
 One ``AsyncTTSSession`` is kept open across requests. The service closes
-idle sockets and fal caps a connection's lifetime, so every request goes
+idle sockets and connections can drop at any time, so every request goes
 through ``connect()``, which reconnects when the socket is gone.
 """
 import asyncio
@@ -139,6 +139,7 @@ class KotobaTTSClient:
         on_connected: Callable[[], Awaitable[None]] | None = None,
         on_disconnected: Callable[..., Awaitable[None]] | None = None,
         session_factory: Callable[..., AsyncTTSSession] = AsyncTTSSession,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.config = config
         self.ten_env = ten_env
@@ -147,9 +148,13 @@ class KotobaTTSClient:
         self._on_connected = on_connected
         self._on_disconnected = on_disconnected
         self._session_factory = session_factory
+        self._clock = clock
 
         self._session: AsyncTTSSession | None = None
         self._connect_lock = asyncio.Lock()
+        # True from the moment text is handed to the socket until the
+        # server's response.done has been consumed. Stays True when the
+        # consumer stops early, so cancel() knows there is work to undo.
         self._response_active = False
         self._drain_task: asyncio.Task | None = None
         self._closed = False
@@ -157,12 +162,25 @@ class KotobaTTSClient:
         # Rate echoed by ``session.created``; equals the configured rate
         # unless the server negotiated differently.
         self.negotiated_sample_rate: int = config.sample_rate
+        # Monotonic time of the last text send, the TTFB origin.
+        self.last_send_at: float | None = None
+        # Handshake duration of the most recent new connection, consumed
+        # once by ``take_connect_delay_ms()``.
+        self._pending_connect_delay_ms: int | None = None
 
     # -- connection --------------------------------------------------------
 
     @property
     def connected(self) -> bool:
         return self._session is not None
+
+    def take_connect_delay_ms(self) -> int | None:
+        """Return and clear the handshake time of the last new connection."""
+        delay, self._pending_connect_delay_ms = (
+            self._pending_connect_delay_ms,
+            None,
+        )
+        return delay
 
     async def connect(self) -> AsyncTTSSession:
         """Return the open session, connecting when needed."""
@@ -181,9 +199,8 @@ class KotobaTTSClient:
                 )
             if self._session is not None:
                 return self._session
-            if self._on_connecting:
-                await self._on_connecting()
-            started = time.monotonic()
+            await self._report_connecting()
+            started = self._clock()
             session = self._session_factory(
                 self.config.base_url,
                 language=self.config.language,
@@ -194,18 +211,20 @@ class KotobaTTSClient:
             )
             try:
                 await session.start()
+            except asyncio.CancelledError:
+                await session.close()
+                await self._report_disconnected(message="connect cancelled")
+                raise
             except Exception as exc:
                 err = classify_error(exc)
                 self.ten_env.log_warn(
                     f"vendor_status: connect failed code={err.code}",
                     category=LOG_CATEGORY_VENDOR,
                 )
-                if self._on_disconnected:
-                    await self._on_disconnected(
-                        code=0,
-                        message="connect failed",
-                        vendor_info=err.vendor_info(self.vendor),
-                    )
+                await self._report_disconnected(
+                    message="connect failed",
+                    vendor_info=err.vendor_info(self.vendor),
+                )
                 raise err from exc
             self._session = session
             self._response_active = False
@@ -219,14 +238,14 @@ class KotobaTTSClient:
                     fatal=True,
                     retryable=False,
                 )
+            delay_ms = int((self._clock() - started) * 1000)
+            self._pending_connect_delay_ms = delay_ms
             self.ten_env.log_info(
-                "vendor_status: connected "
-                f"in {int((time.monotonic() - started) * 1000)} ms, "
+                f"vendor_status: connected in {delay_ms} ms, "
                 f"sample_rate={self.negotiated_sample_rate}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            if self._on_connected:
-                await self._on_connected()
+            await self._report_connected()
             return session
 
     async def drop(self, *, message: str) -> None:
@@ -244,8 +263,7 @@ class KotobaTTSClient:
             f"vendor_status: disconnected ({message})",
             category=LOG_CATEGORY_VENDOR,
         )
-        if self._on_disconnected:
-            await self._on_disconnected(code=0, message=message)
+        await self._report_disconnected(message=message)
 
     async def close(self) -> None:
         self._closed = True
@@ -258,23 +276,64 @@ class KotobaTTSClient:
             self._drain_task = None
         await self.drop(message="closed")
 
+    # -- status callbacks (a reporting failure never breaks the client) ---
+
+    async def _report_connecting(self) -> None:
+        if self._on_connecting is None:
+            return
+        try:
+            await self._on_connecting()
+        except Exception as exc:
+            self.ten_env.log_error(f"on_connecting callback failed: {exc}")
+
+    async def _report_connected(self) -> None:
+        if self._on_connected is None:
+            return
+        try:
+            await self._on_connected()
+        except Exception as exc:
+            self.ten_env.log_error(f"on_connected callback failed: {exc}")
+
+    async def _report_disconnected(
+        self,
+        *,
+        message: str,
+        vendor_info: ModuleErrorVendorInfo | None = None,
+    ) -> None:
+        if self._on_disconnected is None:
+            return
+        try:
+            await self._on_disconnected(
+                code=0, message=message, vendor_info=vendor_info
+            )
+        except Exception as exc:
+            self.ten_env.log_error(f"on_disconnected callback failed: {exc}")
+
     # -- synthesis ---------------------------------------------------------
 
     async def synthesize(self, text: str) -> AsyncIterator[bytes]:
         """Yield PCM16 chunks for ``text`` until the server reports done.
 
         Raises ``KotobaTTSError``. After an error the socket is dropped, so
-        a retry reconnects.
+        a retry reconnects. ``last_send_at`` is set when the text has been
+        handed to the socket.
         """
         session = await self.connect()
         timeout = self.config.request_timeout_seconds
+
+        # Mark the response active before the send: if the send is
+        # interrupted the server may still have received the text.
+        self._response_active = True
         try:
             await session.synthesize(text)
+        except asyncio.CancelledError:
+            await self.drop(message="send interrupted")
+            raise
         except Exception as exc:
             # A socket the server closed while idle fails here first.
             await self.drop(message="send failed")
             raise classify_error(exc) from exc
-        self._response_active = True
+        self.last_send_at = self._clock()
 
         done = False
         finished = False
@@ -356,12 +415,21 @@ class KotobaTTSClient:
             pass
 
     async def _await_drain(self) -> None:
+        """Wait for a pending cancel drain.
+
+        Caller cancellation propagates: an interrupted drain leaves the
+        socket in an unknown state, so it is dropped first.
+        """
         task = self._drain_task
         if task is None:
             return
         try:
-            await task
-        except (asyncio.CancelledError, Exception):
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            task.cancel()
+            await self.drop(message="drain interrupted")
+            raise
+        except Exception:
             pass
         finally:
             if self._drain_task is task:
