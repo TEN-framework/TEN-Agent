@@ -187,3 +187,36 @@ def test_connecting_and_connected_callback_failures_are_logged_only():
             run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_close_right_after_done_retires_the_session():
+    """Server closes immediately after response.done: the status must flip
+    to disconnected without another request, and the next request opens a
+    new connection."""
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=3, close_after_done=True)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "one", "一。", end=True)
+            end = await tester.wait_for_audio_end("one")
+            assert end.payload["reason"] == 1
+            await tester.wait_for(
+                lambda r: any(
+                    e.payload.get("current") == "disconnected"
+                    and e.payload.get("last") == "connected"
+                    for e in r.named("connection_status_changed")
+                ),
+                timeout_s=2.0,
+            )
+            await tester.send_text(ten_env, "two", "二。", end=True)
+            end2 = await tester.wait_for_audio_end("two")
+            assert end2.payload["reason"] == 1
+            assert tester.recording.audio_bytes("two") == server.expected_pcm(1)
+            assert tester.recording.named("error") == []
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()

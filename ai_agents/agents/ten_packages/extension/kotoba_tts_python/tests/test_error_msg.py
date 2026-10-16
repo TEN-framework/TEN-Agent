@@ -169,6 +169,10 @@ def test_missing_key_fails_at_init_and_on_request():
                     e.payload.get("id") == "nokey" for e in r.named("error")
                 )
             )
+            # The request still gets its terminal event.
+            end = await tester.wait_for_audio_end("nokey", timeout_s=2.0)
+            assert end.payload["reason"] == 3
+            assert end.payload["request_total_audio_duration_ms"] == 0
             assert tester.recording.frames == []
 
         run_tester(script, make_config(server.url, params={"key": ""}))
@@ -259,5 +263,48 @@ def test_unexpected_worker_exception_ends_request_and_recovers():
                 assert end2.payload["reason"] == 1
 
             run_tester(script, make_config(server.url))
+    finally:
+        server.stop()
+
+
+def test_transport_errors_never_quote_endpoint_secrets():
+    """Connection refused on a credential-bearing endpoint: the SDK quotes
+    the URL it tried; nothing we emit or log may carry the secrets."""
+    secret_url = "ws://user:pw-secret-77@127.0.0.1:9/ws?sign=sig-secret-77"
+
+    async def script(tester, ten_env):
+        await tester.send_text(ten_env, "refused", "接続拒否。", end=True)
+        end = await tester.wait_for_audio_end("refused", timeout_s=10.0)
+        assert end.payload["reason"] == 3
+        for e in tester.recording.events:
+            text = json.dumps(e.payload, ensure_ascii=False)
+            assert "pw-secret-77" not in text, e.name
+            assert "sig-secret-77" not in text, e.name
+        errors = tester.recording.named("error")
+        assert len(errors) == 1 and errors[0].payload["code"] == NON_FATAL
+
+    run_tester(
+        script, make_config(secret_url, params={"request_timeout_seconds": 2})
+    )
+
+
+def test_malformed_property_error_never_echoes_rejected_input():
+    """``params`` given as a bare string (someone pasted the key) fails
+    pydantic validation; the rejected value must not appear anywhere."""
+    server = FakeKotobaServer().start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.wait_for_event("error")
+            await tester.send_text(ten_env, "bad", "設定不正。", end=True)
+            await tester.wait_for_audio_end("bad", timeout_s=2.0)
+            for e in tester.recording.events:
+                assert "KEY-MARKER-4242" not in json.dumps(e.payload)
+            errors = tester.recording.named("error")
+            assert all(e.payload["code"] == FATAL for e in errors)
+            assert "params" in errors[0].payload["message"]
+
+        run_tester(script, {"params": "KEY-MARKER-4242"})
+        assert server.recorded.connections == 0
     finally:
         server.stop()

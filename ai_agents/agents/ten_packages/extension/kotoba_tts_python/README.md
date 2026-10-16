@@ -28,7 +28,13 @@ export KOTOBA_TTS_KEY=<your fal key>
 | `segment_soft_limit_chars` | `120` | buffered text longer than this is cut at a comma; twice this is cut unconditionally |
 
 Top-level `dump` / `dump_path` write one `kotoba_tts_dump_<request_id>.pcm`
-per request for debugging.
+per request for debugging. If `dump_path` cannot be created, recording is
+disabled for that request and the request still completes.
+
+Metrics per request: `ttfb` (text sent to first audio chunk), `connect_delay`
+(WebSocket handshake, only when a new connection was opened), request bytes
+per sentence, and the usage counters on every terminal path including
+interruption.
 
 ## How it works
 

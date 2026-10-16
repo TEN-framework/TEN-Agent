@@ -119,3 +119,31 @@ def test_very_fast_response_still_reports_events_once():
         run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_connect_delay_belongs_to_the_request_that_paid_for_it():
+    """First request on a new socket is flushed before any audio: its
+    handshake must be reported under its own id, not the next request's."""
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=3, first_chunk_delay_s=1.5)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            import asyncio
+
+            await tester.send_text(ten_env, "first", "最初。", end=True)
+            await asyncio.sleep(0.3)  # connected, waiting for first chunk
+            await tester.send_flush(ten_env)
+            await tester.wait_for_event("tts_flush_end")
+            await tester.wait_for_audio_end("first", timeout_s=1.0)
+            await tester.send_text(ten_env, "second", "次。", end=True)
+            await tester.wait_for_audio_end("second", timeout_s=8.0)
+            delays = _metrics(tester, "connect_delay")
+            assert [d.payload["metadata"]["request_id"] for d in delays] == [
+                "first"
+            ], [d.payload for d in delays]
+
+        run_tester(script, make_config(server.url))
+    finally:
+        server.stop()

@@ -475,7 +475,13 @@ def test_stop_while_the_write_is_suspended_is_bounded():
 def test_late_old_session_cleanup_preserves_the_replacement():
     """A's cancel drain outlives the grace period (server answers late). B
     must get its own connection, and the old session's late cleanup must
-    not drop B's socket or leak A's audio."""
+    not drop B's socket or leak A's audio.
+
+    By construction the replacement cannot exist while the old session is
+    still being drained: ``connect()`` awaits the drain (or its timeout and
+    drop) before opening a new socket, and ``_drain`` / the watcher only
+    act on a session that is still ``self._session``. The server-side
+    open/close order asserted below is the proof of that ordering."""
     server = FakeKotobaServer(
         Scenario(
             chunks_per_response=40,
@@ -510,5 +516,107 @@ def test_late_old_session_cleanup_preserves_the_replacement():
         run_tester(script, make_config(server.url))
         # A's connection was dropped after the grace period; B and C share the replacement.
         assert server.recorded.connections == 2
+        kinds = [(k, i) for k, i, _ in server.recorded.events]
+        opens = [i for k, i in kinds if k == "open"]
+        assert len(opens) == 2, kinds
+        first, second = opens
+        assert kinds.index(("close", first)) < kinds.index(
+            ("open", second)
+        ), kinds
     finally:
         server.stop()
+
+
+def test_flush_takeover_finalizes_the_dump():
+    """Same as the hung-terminal test, with dumping enabled: when flush
+    takes over, the dump must still hold every emitted frame."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_takeover_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    state = {"calls": 0}
+    original = ext_mod.KotobaTTSExtension.send_tts_audio_end
+
+    async def hanging_first_audio_end(self, *args, **kwargs):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            await asyncio.sleep(60)
+        return await original(self, *args, **kwargs)
+
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.5), patch.object(
+            ext_mod.KotobaTTSExtension,
+            "send_tts_audio_end",
+            hanging_first_audio_end,
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "hang", "固まる。", end=True)
+                await tester.wait_for(
+                    lambda r: len(r.frames) >= 2 and state["calls"] >= 1,
+                    timeout_s=5.0,
+                )
+                await tester.send_flush(ten_env, "flush-hang")
+                await tester.wait_for_event("tts_flush_end")
+                await tester.wait_for_audio_end("hang", timeout_s=0.5)
+
+            tester = run_tester(
+                script, make_config(server.url, dump=True, dump_path=dump_dir)
+            )
+        with open(
+            os.path.join(dump_dir, "kotoba_tts_dump_hang.pcm"), "rb"
+        ) as f:
+            assert f.read() == tester.recording.audio_bytes("hang")
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_stop_during_recorder_finalization_still_finalizes_the_dump():
+    """The app stops while the terminal path is inside the (slow) dump
+    flush: on_stop must join the finishing worker instead of cancelling
+    it, and the file must be complete."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_stopflush_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=3)).start()
+    original_flush = ext_mod.PCMWriter.flush
+
+    async def slow_flush(self):
+        await asyncio.sleep(0.5)
+        await original_flush(self)
+
+    try:
+        with patch.object(ext_mod.PCMWriter, "flush", slow_flush):
+
+            async def script(tester, ten_env):
+                await tester.send_text(
+                    ten_env, "stopdump", "停止中。", end=True
+                )
+                await tester.wait_for_audio_end("stopdump")
+                # Return now: the worker is inside the 0.5 s flush and the
+                # runtime stops the extension while it is pending.
+
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=10.0,
+            )
+        with open(
+            os.path.join(dump_dir, "kotoba_tts_dump_stopdump.pcm"), "rb"
+        ) as f:
+            assert f.read() == tester.recording.audio_bytes("stopdump")
+        assert len(tester.recording.audio_bytes("stopdump")) == len(
+            server.expected_pcm(1)
+        )
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)

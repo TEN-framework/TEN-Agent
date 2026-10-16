@@ -152,7 +152,9 @@ def _as_int(value: Any, name: str) -> int:
         return int(value)
     if isinstance(value, str) and value.strip().isdigit():
         return int(value.strip())
-    raise ValueError(f"params.{name} must be an integer, got {value!r}")
+    raise ValueError(
+        f"params.{name} must be an integer, got {type(value).__name__}"
+    )
 
 
 def _as_float(value: Any, name: str) -> float:
@@ -162,8 +164,8 @@ def _as_float(value: Any, name: str) -> float:
         result = float(value)
     except (TypeError, ValueError) as exc:
         raise ValueError(
-            f"params.{name} must be a number, got {value!r}"
+            f"params.{name} must be a number, got {type(value).__name__}"
         ) from exc
     if result != result or result in (float("inf"), float("-inf")):
-        raise ValueError(f"params.{name} must be finite, got {value!r}")
+        raise ValueError(f"params.{name} must be a finite number")
     return result

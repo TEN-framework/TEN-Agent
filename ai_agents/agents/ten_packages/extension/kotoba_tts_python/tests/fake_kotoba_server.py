@@ -15,6 +15,7 @@ import asyncio
 import base64
 import json
 import threading
+import time
 from dataclasses import dataclass, field
 from http import HTTPStatus
 
@@ -75,11 +76,15 @@ class Scenario:
     extra_chunk_bytes: int = 0
     # Echo this format in session.created instead of the requested one.
     negotiate_format: str | None = None
+    # Close the socket right after a completed response.done.
+    close_after_done: bool = False
 
 
 @dataclass
 class Recorded:
     connections: int = 0
+    # ("open" | "close", connection index, monotonic time)
+    events: list = field(default_factory=list)
     opens: list[dict] = field(default_factory=list)
     texts: list[str] = field(default_factory=list)
     cancels: int = 0
@@ -166,6 +171,18 @@ class FakeKotobaServer:
         ):
             await ws.close(code=1008, reason="Unauthorized")
             return
+        with self._lock:
+            conn_index = self.recorded.connections
+            self.recorded.events.append(("open", conn_index, time.monotonic()))
+        try:
+            await self._serve_connection(ws)
+        finally:
+            with self._lock:
+                self.recorded.events.append(
+                    ("close", conn_index, time.monotonic())
+                )
+
+    async def _serve_connection(self, ws) -> None:
         try:
             raw = await ws.recv()
             body = json.loads(raw)
@@ -264,6 +281,15 @@ class FakeKotobaServer:
     async def _respond(
         self, ws, text: str, cancel_event: asyncio.Event
     ) -> None:
+        try:
+            await self._respond_inner(ws, text, cancel_event)
+        except websockets.exceptions.ConnectionClosed:
+            # The client went away mid-response; nothing left to send.
+            return
+
+    async def _respond_inner(
+        self, ws, text: str, cancel_event: asyncio.Event
+    ) -> None:
         with self._lock:
             self._response_counter += 1
             index = self._response_counter
@@ -327,6 +353,8 @@ class FakeKotobaServer:
                 "response": {"id": response_id, "status": "completed"},
             },
         )
+        if sc.close_after_done:
+            await ws.close(code=1000, reason="done")
 
     async def _finish_cancelled(self, ws, response_id: str) -> None:
         sc = self.scenario

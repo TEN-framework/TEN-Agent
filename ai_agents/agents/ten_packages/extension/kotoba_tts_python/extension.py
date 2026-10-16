@@ -9,6 +9,7 @@ import time
 import traceback
 from collections import deque
 
+from pydantic import ValidationError
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
@@ -33,6 +34,20 @@ _COMPLETED_HISTORY = 512
 # How long flush waits for a worker that is already emitting its terminal
 # events before taking over. Normally the wait is well under 10 ms.
 _TERMINAL_JOIN_SECONDS = 2.0
+
+
+def _describe_init_error(exc: BaseException) -> str:
+    """A configuration error message without any rejected input values."""
+    if isinstance(exc, ValidationError):
+        parts = []
+        for err in exc.errors(include_input=False):
+            loc = ".".join(str(x) for x in err.get("loc", ())) or "config"
+            parts.append(f"{loc}: {err.get('type', 'invalid')}")
+        return "invalid property: " + "; ".join(parts)
+    if isinstance(exc, ValueError):
+        # Our own validate_config() messages name fields, never values.
+        return str(exc)
+    return f"{type(exc).__name__}"
 
 
 class _RequestState:
@@ -101,12 +116,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 clock=self._clock,
             )
         except Exception as exc:
-            self._init_error = str(exc)
-            ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
+            # Never echo rejected input: a malformed property may carry
+            # the API key inside the exception text.
+            self._init_error = _describe_init_error(exc)
+            ten_env.log_error(f"on_init failed: {self._init_error}")
             await self.send_tts_error(
                 request_id="",
                 error=ModuleError(
-                    message=f"Initialization failed: {exc}",
+                    message=f"Initialization failed: {self._init_error}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
@@ -116,7 +133,11 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         request = self._request
         if request is not None:
-            await self._stop_worker(request)
+            if request.ended:
+                # Terminal events may be mid-flight: let them land.
+                await self._join_terminal_worker(request)
+            else:
+                await self._stop_worker(request)
             await self._close_recorder(request)
             self._request = None
         if self.client is not None:
@@ -160,15 +181,24 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         Returns quickly: the base class awaits this call inline.
         """
         if self.client is None or self.config is None:
-            await self.finish_request(
+            await self.send_tts_error(
                 t.request_id,
-                reason=TTSAudioEndReason.ERROR,
-                error=ModuleError(
+                ModuleError(
                     message=f"TTS not initialized: {self._init_error}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
+            )
+            # Consumers close a request on its terminal event: send one.
+            await self.send_tts_audio_end(
+                request_id=t.request_id,
+                request_event_interval_ms=0,
+                request_total_audio_duration_ms=0,
+                reason=TTSAudioEndReason.ERROR,
+            )
+            await self.finish_request(
+                t.request_id, reason=TTSAudioEndReason.ERROR
             )
             return
 
@@ -371,10 +401,12 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             # why the request ends before they see it end.
             await self.send_tts_error(request.request_id, error)
         await self._send_audio_end(request, reason)
-        if self._request is request:
-            self._request = None
         await self.finish_request(request.request_id, reason=reason)
         await self._close_recorder(request)
+        # Cleared last, so on_stop() can still find and join this request
+        # while its recorder is being finalized.
+        if self._request is request:
+            self._request = None
 
     async def cancel_tts(self) -> None:
         """Flush: stop the worker, cancel the in-flight response, and
@@ -392,6 +424,9 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 await self._send_audio_end(
                     request, TTSAudioEndReason.INTERRUPTED
                 )
+            # The joined or cancelled worker may not have reached its own
+            # recorder cleanup.
+            await self._close_recorder(request)
             if self._request is request:
                 self._request = None
             return
@@ -447,6 +482,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         # not been sent, and flush then emits INTERRUPTED itself.
         request.audio_end_sent = True
         self._remember_completed(request.request_id)
+        if self.client is not None:
+            # A handshake paid for by this request but never followed by
+            # audio (flushed early) is still this request's metric.
+            connect_delay_ms = self.client.take_connect_delay_ms()
+            if connect_delay_ms is not None:
+                await self.metrics_connect_delay(
+                    connect_delay_ms, request_id=request.request_id
+                )
         # Usage for this request only; this also resets the base counters
         # so the next request does not inherit them.
         await self.send_usage_metrics(request.request_id)
@@ -495,7 +538,13 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         if recorder is None:
             return
         try:
-            await recorder.flush()
+            # PCMWriter.flush() returns early while a background write is
+            # running and leaves bytes buffered since then; repeat until
+            # the buffer is empty so the dump holds every emitted frame.
+            for _ in range(8):
+                await recorder.flush()
+                if not getattr(recorder, "buffer", None):
+                    break
         except Exception as exc:
             self.ten_env.log_error(
                 f"failed to flush dump for {request.request_id}: {exc}"

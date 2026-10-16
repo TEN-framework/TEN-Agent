@@ -9,6 +9,7 @@ idle sockets and connections can drop at any time, so every request goes
 through ``connect()``, which reconnects when the socket is gone.
 """
 import asyncio
+import re
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 
@@ -36,6 +37,9 @@ _FATAL_CODES = frozenset(
 # How long ``cancel()`` waits for the server's ``response.done`` before the
 # socket is dropped instead.
 CANCEL_GRACE_SECONDS = 2.0
+
+# ``scheme://user:secret@host`` -> ``scheme://***@host`` inside free text.
+_USERINFO_RE = re.compile(r"([a-z][a-z0-9+.-]*://)[^/@\s]+@")
 
 
 class KotobaTTSError(Exception):
@@ -109,8 +113,10 @@ def classify_error(exc: BaseException) -> KotobaTTSError:
             fatal=False,
             retryable=True,
         )
+    # Unknown exception: the message may quote arbitrary data, so only the
+    # type is emitted; the full traceback goes to the log.
     return KotobaTTSError(
-        f"{type(exc).__name__}: {exc}",
+        f"unexpected {type(exc).__name__}",
         code="unexpected_error",
         fatal=False,
         retryable=False,
@@ -159,6 +165,9 @@ class KotobaTTSClient:
         self._drain_task: asyncio.Task | None = None
         # Watches the SDK receiver so a remote close is reported while idle.
         self._watch_task: asyncio.Task | None = None
+        # Set by the watcher when the transport ended during a response, so
+        # synthesize() retires the session once that response is consumed.
+        self._remote_closed: AsyncTTSSession | None = None
         self._closed = False
 
         # Rate echoed by ``session.created``; equals the configured rate
@@ -179,6 +188,29 @@ class KotobaTTSClient:
             None,
         )
         return delay
+
+    def _scrub(self, text: str) -> str:
+        """Remove endpoint credentials from diagnostic text.
+
+        SDK and transport errors quote the URL they tried (``Could not
+        reach <url>``); a custom endpoint may carry a password or a signed
+        query, so every string we log or emit goes through here.
+        """
+        if not text:
+            return text
+        raw = self.config.base_url
+        if raw and raw in text:
+            text = text.replace(raw, self.config.redacted_base_url())
+        return _USERINFO_RE.sub(r"\1***@", text)
+
+    def _classify(self, exc: BaseException) -> KotobaTTSError:
+        err = classify_error(exc)
+        clean = self._scrub(str(err))
+        if clean == str(err):
+            return err
+        return KotobaTTSError(
+            clean, code=err.code, fatal=err.fatal, retryable=err.retryable
+        )
 
     async def connect(self) -> AsyncTTSSession:
         """Return the open session, connecting when needed."""
@@ -214,7 +246,7 @@ class KotobaTTSClient:
                 await self._report_disconnected(message="connect cancelled")
                 raise
             except Exception as exc:
-                err = classify_error(exc)
+                err = self._classify(exc)
                 self.ten_env.log_warn(
                     f"vendor_status: connect failed code={err.code}",
                     category=LOG_CATEGORY_VENDOR,
@@ -264,8 +296,14 @@ class KotobaTTSClient:
             # Receiver errors are reported through synthesize(); here only
             # the fact that it ended matters. Cancellation passes through.
             pass
-        if self._session is session and not self._response_active:
-            await self.drop(message="remote closed")
+        if self._session is not session:
+            return
+        if self._response_active:
+            # synthesize() is still consuming this response's queued
+            # events; it retires the session when the response completes.
+            self._remote_closed = session
+            return
+        await self.drop(message="remote closed")
 
     async def drop(self, *, message: str) -> None:
         """Close the socket; the next ``connect()`` opens a new one."""
@@ -275,6 +313,7 @@ class KotobaTTSClient:
     async def _drop_locked(self, *, message: str) -> None:
         session, self._session = self._session, None
         self._response_active = False
+        self._remote_closed = None
         watch, self._watch_task = self._watch_task, None
         if (
             watch is not None
@@ -358,7 +397,7 @@ class KotobaTTSClient:
         except Exception as exc:
             # A socket the server closed while idle fails here first.
             await self.drop(message="send failed")
-            raise classify_error(exc) from exc
+            raise self._classify(exc) from exc
         self.last_send_at = self._clock()
 
         done = False
@@ -392,12 +431,17 @@ class KotobaTTSClient:
             ) from exc
         except KotobaError as exc:
             await self.drop(message="service error")
-            raise classify_error(exc) from exc
+            raise self._classify(exc) from exc
         finally:
             # Left True when the consumer stopped early (cancellation or an
             # abandoned generator): ``cancel()`` then clears the server side.
             if finished:
                 self._response_active = False
+
+        if done and self._remote_closed is session:
+            # The server closed right after response.done while we were
+            # still draining its queue: retire the socket now.
+            await self.drop(message="remote closed after response")
 
         if not done:
             await self.drop(message="closed before response.done")
@@ -422,7 +466,7 @@ class KotobaTTSClient:
         try:
             await session.cancel()
         except Exception as exc:
-            await self.drop(message=f"cancel failed: {exc}")
+            await self.drop(message=f"cancel failed: {self._scrub(str(exc))}")
             return
         self._drain_task = asyncio.create_task(self._drain(session))
 
@@ -433,7 +477,9 @@ class KotobaTTSClient:
             )
         except (asyncio.TimeoutError, KotobaError) as exc:
             if self._session is session:
-                await self.drop(message=f"cancel drain failed: {exc}")
+                await self.drop(
+                    message=f"cancel drain failed: {self._scrub(str(exc))}"
+                )
 
     @staticmethod
     async def _consume_until_done(session: AsyncTTSSession) -> None:

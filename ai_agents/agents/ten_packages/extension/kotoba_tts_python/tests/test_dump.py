@@ -160,3 +160,60 @@ def test_dump_is_finalized_on_error_with_partial_audio():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_large_dump_with_slow_writer_is_exact_and_isolated():
+    """96 KB of audio crosses PCMWriter's 64 KiB auto-flush while the file
+    write itself is slowed down; the finalized dump must equal the emitted
+    PCM, and a flush under load must not lose the buffered tail."""
+    import time as _time
+    from unittest.mock import patch
+    import ten_ai_base.helper as helper_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_dump_big_")
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=60, samples_per_chunk=800, chunk_delay_s=0.01
+        )
+    ).start()
+    original_write = helper_mod.write_pcm_to_file
+
+    def slow_write(data, path):
+        _time.sleep(0.15)
+        return original_write(data, path)
+
+    try:
+        with patch.object(helper_mod, "write_pcm_to_file", slow_write):
+
+            async def script(tester, ten_env):
+                await tester.send_text(
+                    ten_env, "big", "長い長い文章。", end=True
+                )
+                await tester.wait_for_audio_end("big", timeout_s=15.0)
+                # flush under load: second request interrupted mid-stream
+                await tester.send_text(
+                    ten_env, "cut", "途中で止める。", end=True
+                )
+                await tester.wait_for(
+                    lambda r: len(r.audio_bytes("cut")) >= 70_000,
+                    timeout_s=15.0,
+                )
+                await tester.send_flush(ten_env)
+                await tester.wait_for_event("tts_flush_end")
+                await tester.wait_for_audio_end("cut", timeout_s=2.0)
+                await tester.send_text(ten_env, "after", "次。", end=True)
+                await tester.wait_for_audio_end("after", timeout_s=15.0)
+
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=60.0,
+            )
+        for rid in ("big", "cut", "after"):
+            with open(_dump_file(dump_dir, rid), "rb") as f:
+                data = f.read()
+            assert data == tester.recording.audio_bytes(rid), rid
+        assert len(tester.recording.audio_bytes("big")) == 60 * 1600
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
