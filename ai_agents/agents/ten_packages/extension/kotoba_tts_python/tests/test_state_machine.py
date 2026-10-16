@@ -142,3 +142,59 @@ def test_late_text_for_finished_request_is_ignored():
         assert server.recorded.texts == ["終わり。", "次の文。"]
     finally:
         server.stop()
+
+
+def test_unterminated_tail_is_sent_at_text_input_end():
+    """Main control ends a turn with an empty final input; a tail without
+    a terminator must still be synthesized then."""
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "tail", "今日は", end=False)
+            await tester.send_text(ten_env, "tail", "", end=True)
+            end = await tester.wait_for_audio_end("tail")
+            assert end.payload["reason"] == 1
+            assert tester.recording.audio_bytes("tail") == server.expected_pcm(
+                1
+            )
+            await tester.send_text(ten_env, "tail2", "明日は晴れ", end=True)
+            await tester.wait_for_audio_end("tail2")
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["今日は", "明日は晴れ"]
+    finally:
+        server.stop()
+
+
+def test_completed_id_history_evicts_oldest():
+    """With the history shortened to two ids, the first request id is
+    forgotten after two more requests and is treated as new again."""
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=1)).start()
+    try:
+        with patch.object(ext_mod, "_COMPLETED_HISTORY", 2):
+
+            async def script(tester, ten_env):
+                for rid in ("r1", "r2", "r3"):
+                    await tester.send_text(ten_env, rid, f"{rid}。", end=True)
+                    await tester.wait_for_audio_end(rid)
+                # r1 was evicted: its id is accepted as a fresh request.
+                await tester.send_text(ten_env, "r1", "再び。", end=True)
+                await tester.wait_for(
+                    lambda r: sum(
+                        1
+                        for e in r.named("tts_audio_end")
+                        if e.payload["request_id"] == "r1"
+                    )
+                    == 2,
+                    timeout_s=5.0,
+                )
+                assert tester.recording.named("error") == []
+
+            run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["r1。", "r2。", "r3。", "再び。"]
+    finally:
+        server.stop()

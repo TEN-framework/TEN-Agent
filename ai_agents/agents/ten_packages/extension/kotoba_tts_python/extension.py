@@ -245,8 +245,8 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                     break
                 await self._synthesize_segment(request, segment)
             await self._end_request(request, TTSAudioEndReason.REQUEST_END)
-        except asyncio.CancelledError:
-            raise
+        # CancelledError is a BaseException: it passes through the handlers
+        # below untouched, which is what flush relies on.
         except KotobaTTSError as err:
             await self._end_request(
                 request, TTSAudioEndReason.ERROR, error=self._module_error(err)

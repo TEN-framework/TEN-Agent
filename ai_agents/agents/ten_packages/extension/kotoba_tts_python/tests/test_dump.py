@@ -134,3 +134,29 @@ def test_unusable_dump_path_does_not_strand_the_queue():
     finally:
         server.stop()
         os.unlink(blocker.name)
+
+
+def test_dump_is_finalized_on_error_with_partial_audio():
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_dump_")
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=4, fail_response_index=1, fail_after_chunks=2
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "err", "途中失敗。", end=True)
+            end = await tester.wait_for_audio_end("err")
+            assert end.payload["reason"] == 3
+
+        tester = run_tester(
+            script, make_config(server.url, dump=True, dump_path=dump_dir)
+        )
+        with open(_dump_file(dump_dir, "err"), "rb") as f:
+            data = f.read()
+        assert data == tester.recording.audio_bytes("err")
+        assert len(data) == 2 * 800 * 2
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)

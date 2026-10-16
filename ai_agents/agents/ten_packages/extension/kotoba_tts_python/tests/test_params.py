@@ -151,3 +151,27 @@ def test_redacted_base_url_masks_userinfo_and_signed_query():
     url = config.redacted_base_url()
     assert "pw-secret" not in url and "sig-secret" not in url
     assert url.startswith("wss://***@example.test/ws?")
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        pytest.param("language", "", "params.language", id="blank-language"),
+        pytest.param("speaker_id", "", "params.speaker_id", id="blank-speaker"),
+        pytest.param(
+            "segment_soft_limit_chars",
+            0,
+            "segment_soft_limit_chars",
+            id="zero-soft-limit",
+        ),
+    ],
+)
+def test_validate_rejects_blank_or_zero_fields(field, value, message):
+    config = KotobaTTSConfig(key="k", **{field: value})
+    with pytest.raises(ValueError, match=message):
+        config.validate_config()
+
+
+def test_boolean_for_float_is_rejected():
+    with pytest.raises(ValueError, match="request_timeout_seconds"):
+        _config({"key": "k", "request_timeout_seconds": True})

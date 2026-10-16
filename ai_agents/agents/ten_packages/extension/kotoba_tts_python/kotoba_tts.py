@@ -172,10 +172,6 @@ class KotobaTTSClient:
 
     # -- connection --------------------------------------------------------
 
-    @property
-    def connected(self) -> bool:
-        return self._session is not None
-
     def take_connect_delay_ms(self) -> int | None:
         """Return and clear the handshake time of the last new connection."""
         delay, self._pending_connect_delay_ms = (
@@ -264,9 +260,9 @@ class KotobaTTSClient:
             return
         try:
             await asyncio.shield(receiver)
-        except asyncio.CancelledError:
-            raise
         except Exception:
+            # Receiver errors are reported through synthesize(); here only
+            # the fact that it ended matters. Cancellation passes through.
             pass
         if self._session is session and not self._response_active:
             await self.drop(message="remote closed")

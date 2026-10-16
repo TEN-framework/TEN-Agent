@@ -55,9 +55,6 @@ class SentenceBuffer:
         self._buffer = ""
         return rest if _has_speech(rest) else None
 
-    def clear(self) -> None:
-        self._buffer = ""
-
     def _find_boundary(self, text: str) -> int | None:
         """Index just past the first sentence end, or ``None``."""
         length = len(text)

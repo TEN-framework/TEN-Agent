@@ -196,3 +196,68 @@ def test_event_metadata_never_carries_endpoint_secrets():
         run_tester(script, make_config(secret_url))
     finally:
         server.stop()
+
+
+def test_unexpected_negotiated_format_is_fatal():
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=2, negotiate_format="pcm_f32")
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "fmt", "形式。", end=True)
+            end = await tester.wait_for_audio_end("fmt")
+            errors = tester.recording.named("error")
+            assert len(errors) == 1
+            assert errors[0].payload["code"] == FATAL
+            assert (
+                errors[0].payload["vendor_info"]["code"] == "unsupported_format"
+            )
+            assert end.payload["reason"] == 3
+            assert tester.recording.frames == []
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.connections == 1
+        assert server.recorded.texts == []
+    finally:
+        server.stop()
+
+
+def test_unexpected_worker_exception_ends_request_and_recovers():
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    original = ext_mod.KotobaTTSClient.synthesize
+    state = {"raised": False}
+
+    def exploding_synthesize(self, text):
+        if not state["raised"]:
+            state["raised"] = True
+            raise RuntimeError("boom")
+        return original(self, text)
+
+    try:
+        with patch.object(
+            ext_mod.KotobaTTSClient, "synthesize", exploding_synthesize
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "boom", "爆発。", end=True)
+                end = await tester.wait_for_audio_end("boom")
+                assert end.payload["reason"] == 3
+                errors = tester.recording.named("error")
+                assert len(errors) == 1
+                assert errors[0].payload["code"] == NON_FATAL
+                assert (
+                    errors[0].payload["vendor_info"]["code"]
+                    == "unexpected_error"
+                )
+                assert "爆発" not in errors[0].payload["message"]
+                await tester.send_text(ten_env, "ok", "回復。", end=True)
+                end2 = await tester.wait_for_audio_end("ok")
+                assert end2.payload["reason"] == 1
+
+            run_tester(script, make_config(server.url))
+    finally:
+        server.stop()

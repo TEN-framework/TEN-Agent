@@ -159,3 +159,31 @@ def test_idle_close_is_reported_before_the_next_text():
         assert server.recorded.connections == 2
     finally:
         server.stop()
+
+
+def test_connecting_and_connected_callback_failures_are_logged_only():
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+
+    async def failing(self, *args, **kwargs):
+        raise RuntimeError("status sink down")
+
+    try:
+        with patch.object(
+            ext_mod.KotobaTTSExtension, "on_connecting", failing
+        ), patch.object(ext_mod.KotobaTTSExtension, "on_connected", failing):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "cb", "回調。", end=True)
+                end = await tester.wait_for_audio_end("cb")
+                assert end.payload["reason"] == 1
+                assert tester.recording.audio_bytes(
+                    "cb"
+                ) == server.expected_pcm(1)
+                assert tester.recording.named("error") == []
+
+            run_tester(script, make_config(server.url))
+    finally:
+        server.stop()

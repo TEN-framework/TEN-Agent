@@ -73,6 +73,8 @@ class Scenario:
     hold_response_index: int | None = None
     # Append this many extra bytes to every chunk (1 = split samples).
     extra_chunk_bytes: int = 0
+    # Echo this format in session.created instead of the requested one.
+    negotiate_format: str | None = None
 
 
 @dataclass
@@ -187,7 +189,10 @@ class FakeKotobaServer:
                 ws,
                 {
                     "type": "session.created",
-                    "format": str(body.get("format") or "pcm_f32").lower(),
+                    "format": (
+                        self.scenario.negotiate_format
+                        or str(body.get("format") or "pcm_f32").lower()
+                    ),
                     "sample_rate": sample_rate,
                     "channels": 1,
                     "language": body.get("language"),

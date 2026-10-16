@@ -95,3 +95,27 @@ def test_no_ttfb_when_no_audio():
         run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_very_fast_response_still_reports_events_once():
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=1, chunk_delay_s=0.0)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "fast", "速い。", end=True)
+            end = await tester.wait_for_audio_end("fast")
+            rec = tester.recording
+            assert len(rec.named("tts_audio_start")) == 1
+            assert len(rec.named("tts_audio_end")) == 1
+            ttfb = _metrics(tester, "ttfb")
+            assert len(ttfb) == 1
+            assert 0 <= ttfb[0].payload["metrics"]["ttfb"] < 500
+            assert end.payload["request_total_audio_duration_ms"] == (
+                len(server.expected_pcm(1)) * 1000 // 32000
+            )
+
+        run_tester(script, make_config(server.url))
+    finally:
+        server.stop()
