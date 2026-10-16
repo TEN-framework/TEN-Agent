@@ -95,6 +95,9 @@ class _RequestState:
         self.settled = asyncio.Event()
         # Flush and shutdown may finalize concurrently; one at a time.
         self.finalize_lock = asyncio.Lock()
+        # The dump close, run as its own task once the events are out so
+        # that flush never waits on disk I/O. Joined by on_stop.
+        self.cleanup: asyncio.Task | None = None
 
 
 class KotobaTTSExtension(AsyncTTS2BaseExtension):
@@ -172,11 +175,14 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 break
             for request in requests:
                 if request.ended:
-                    # Terminal events or the dump flush may be mid-flight:
+                    # Terminal events or the dump close may be mid-flight:
                     # let them land, bounded, then complete what is left.
-                    await self._join_terminal_worker(request)
+                    await self._join_bounded(request, request.worker, "stop")
                     await self._finalize(
                         request, TTSAudioEndReason.INTERRUPTED, finish=False
+                    )
+                    await self._join_bounded(
+                        request, request.cleanup, "dump close"
                     )
                 else:
                     # A request that never reached its end gets no terminal
@@ -185,7 +191,10 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                     # closed.
                     await self._stop_worker(request)
                     request.ended = True
-                    await self._close_recorder(request)
+                # Shutdown is the one caller that must wait for the file:
+                # whatever the dump task did not finish is closed here.
+                await self._close_recorder(request)
+                self._finishing.discard(request)
                 if self._request is request:
                     self._request = None
         if self.client is not None:
@@ -544,11 +553,20 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 await self.finish_request(request.request_id, reason=reason)
                 request.finished = True
             # Every event is out: the extension is free for the next
-            # request while the dump is still being written.
+            # request, and the caller (flush included) is not made to wait
+            # for disk I/O. The dump closes in its own task; the request
+            # stays in _finishing until that task is through, so on_stop
+            # can still join it.
             if self._request is request:
                 self._request = None
             request.settled.set()
-            await self._close_recorder(request)
+            if request.recorder is not None and request.cleanup is None:
+                request.cleanup = asyncio.create_task(self._close_dump(request))
+        if request.recorder is None:
+            self._finishing.discard(request)
+
+    async def _close_dump(self, request: _RequestState) -> None:
+        await self._close_recorder(request)
         self._finishing.discard(request)
 
     async def _report_connect_delay(self, request: _RequestState) -> None:
@@ -583,22 +601,28 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             await self._stop_worker(request)
             return False
 
-    async def _join_terminal_worker(self, request: _RequestState) -> None:
-        """Shutdown found a request in its terminal path: wait for the
-        whole worker, dump flush included, bounded; cancel it otherwise."""
-        worker = request.worker
-        if worker is None or worker.done() or worker is asyncio.current_task():
+    async def _join_bounded(
+        self, request: _RequestState, task: asyncio.Task | None, what: str
+    ) -> None:
+        """Shutdown found a request's worker or dump close in flight: wait
+        for it, bounded, shielding it so the wait's own timeout does not
+        cancel it. On timeout cancel it; the caller completes the rest."""
+        if task is None or task.done() or task is asyncio.current_task():
             return
         try:
-            await asyncio.wait_for(
-                asyncio.shield(worker), _TERMINAL_JOIN_SECONDS
-            )
+            await asyncio.wait_for(asyncio.shield(task), _TERMINAL_JOIN_SECONDS)
         except asyncio.TimeoutError:
             self.ten_env.log_warn(
-                f"request {request.request_id} did not finish within "
-                f"{_TERMINAL_JOIN_SECONDS:g} s of stop; cancelling it"
+                f"request {request.request_id}: {what} did not finish "
+                f"within {_TERMINAL_JOIN_SECONDS:g} s of stop; cancelling it"
             )
-            await self._stop_worker(request)
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+            if task is request.worker:
+                request.worker = None
         except Exception:
             pass
 

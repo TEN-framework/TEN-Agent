@@ -923,3 +923,66 @@ def test_request_released_during_shutdown_never_starts():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_flush_during_streaming_does_not_wait_for_dump_io():
+    """Dump enabled, the dump write is held: flush during streaming must
+    still produce tts_flush_end and accept the next request while the
+    write is pending. Shutdown then finishes the file exactly."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_flushio_")
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=40, chunk_delay_s=0.05)
+    ).start()
+    original_flush = ext_mod.PCMWriter.flush
+    gate = {"release": None, "entered": None}
+
+    async def gated_flush(self):
+        release, gate["release"] = gate["release"], None  # first flush only
+        if release is not None:
+            gate["entered"].set()
+            await release.wait()
+        await original_flush(self)
+
+    try:
+        with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
+
+            async def script(tester, ten_env):
+                release = asyncio.Event()
+                gate["release"] = release
+                gate["entered"] = asyncio.Event()
+                await tester.send_text(
+                    ten_env, "io", "書き込み待ち。", end=True
+                )
+                await tester.wait_for_event("pcm_frame", count=2)
+                t0 = time.monotonic()
+                await tester.send_flush(ten_env, "flush-io")
+                await tester.wait_for_event("tts_flush_end", timeout_s=2.0)
+                assert time.monotonic() - t0 < FLUSH_BUDGET_S
+                end = await tester.wait_for_audio_end("io", timeout_s=0.5)
+                assert end.payload["reason"] == 2
+                _assert_clean_after_flush(tester, "io")
+                # The dump close is parked on the gate, not yet released.
+                await asyncio.wait_for(gate["entered"].wait(), 2.0)
+                assert not release.is_set()
+                # The input gate is open: the next request runs meanwhile.
+                await tester.send_text(ten_env, "next", "次。", end=True)
+                end2 = await tester.wait_for_audio_end("next", timeout_s=5.0)
+                assert end2.payload["reason"] == 1
+                release.set()
+
+            tester = run_tester(
+                script, make_config(server.url, dump=True, dump_path=dump_dir)
+            )
+        with open(dump_path(dump_dir, "io"), "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("io")
+        with open(dump_path(dump_dir, "next"), "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("next")
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
