@@ -30,7 +30,11 @@ from .subtitle_timing import (
 from .timing_hooks import install_timing_hook
 
 TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
-SUPPORTED_TTS_EXTENSIONS = {"cartesia_tts", "minimax_tts_websocket_duplex"}
+SUPPORTED_TTS_EXTENSIONS = {
+    "cartesia_tts",
+    "cosy_tts_python",
+    "minimax_tts_websocket_duplex",
+}
 REQUEST_IDS = ["subtitle_alignment_first", "subtitle_alignment_second"]
 
 

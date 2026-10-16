@@ -46,7 +46,7 @@ task tts-guarder-test EXTENSION=cartesia_tts
 task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 ```
 
-`test_subtitle_alignment.py` supports `cartesia_tts` and
+`test_subtitle_alignment.py` supports `cartesia_tts`, `cosy_tts_python` and
 `minimax_tts_websocket_duplex`. It validates two sequential requests against
 the cumulative PCM clock. MiniMax also compares TEN word timestamps with
 untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)

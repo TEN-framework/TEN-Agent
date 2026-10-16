@@ -9,12 +9,11 @@ from ten_runtime import (
     TenEnv,
 )
 
+from .extension import CosyTTSExtension
+
 
 @register_addon_as_extension("cosy_tts_python")
 class CosyTTSExtensionAddon(Addon):
-
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import CosyTTSExtension
-
         ten_env.log_info("CosyTTSExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(CosyTTSExtension(name), context)

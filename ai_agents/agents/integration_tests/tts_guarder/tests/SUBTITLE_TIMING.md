@@ -81,9 +81,9 @@ Choose the coverage level before adding support:
 
 Unregistered extensions install no vendor observer. Generic bounds checks alone
 cannot prove that the first-word offset was converted correctly: shifted words
-can still lie within the audio span. Currently MiniMax Duplex has a hook and
-Cartesia receives generic checks. Other extensions skip this case until they
-are added to the supported list and have a subtitle configuration.
+can still lie within the audio span. Currently MiniMax Duplex has a hook, while
+Cartesia and CosyVoice receive generic checks. Other extensions skip this case
+until they are added to the supported list and have a subtitle configuration.
 
 ### 1. Prepare the extension and configuration
 
