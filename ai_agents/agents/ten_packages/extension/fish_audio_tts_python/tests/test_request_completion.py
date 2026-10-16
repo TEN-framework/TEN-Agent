@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-from datetime import datetime
+import time
 from unittest.mock import AsyncMock, MagicMock
 
 from ten_ai_base.message import ModuleErrorCode, TTSAudioEndReason
@@ -38,7 +38,7 @@ def test_cancel_before_first_audio_sends_interrupted_without_finish() -> None:
         extension = _create_extension()
         extension.current_request_id = "interrupted-request"
         extension.current_request_finished = False
-        extension.sent_ts = datetime.now()
+        extension.sent_ts = time.monotonic()
         assert extension.request_ts is None
 
         await extension.cancel_tts()
@@ -50,9 +50,10 @@ def test_cancel_before_first_audio_sends_interrupted_without_finish() -> None:
         assert end_args["request_event_interval_ms"] >= 0
         assert end_args["request_total_audio_duration_ms"] == 0
         assert end_args["reason"] == TTSAudioEndReason.INTERRUPTED
-        # The base flush path clears request state after cancel_tts returns.
+        # Flush discards the interrupted request state immediately.
         extension.finish_request.assert_not_awaited()
-        assert extension.current_request_finished is True
+        assert extension.current_request_id is None
+        assert extension.current_request_finished is False
 
     asyncio.run(run_test())
 
@@ -61,7 +62,7 @@ def test_request_after_interrupt_still_completes() -> None:
     async def run_test() -> None:
         extension = _create_extension()
         extension.current_request_id = "interrupted-request"
-        extension.sent_ts = datetime.now()
+        extension.sent_ts = time.monotonic()
 
         await extension.cancel_tts()
         extension.finish_request.assert_not_awaited()
@@ -69,8 +70,9 @@ def test_request_after_interrupt_still_completes() -> None:
         extension.send_tts_audio_start = AsyncMock()
         extension.send_tts_ttfb_metrics = AsyncMock()
         extension.send_tts_audio_data = AsyncMock()
+        extension.sent_ts = time.monotonic()
 
-        async def audio_stream(_text: str):
+        async def audio_stream(_text: str, **_kwargs):
             yield b"\x01\x02" * 160, EVENT_TTS_RESPONSE
             yield None, EVENT_TTS_END
 
@@ -125,7 +127,7 @@ def test_non_final_vendor_error_does_not_finish_request() -> None:
     async def run_test() -> None:
         extension = _create_extension()
 
-        async def error_stream(_text: str):
+        async def error_stream(_text: str, **_kwargs):
             yield b"temporary failure", EVENT_TTS_ERROR
 
         extension.client.get = error_stream
@@ -154,8 +156,11 @@ def test_append_input_ends_on_final_empty_chunk() -> None:
         extension.send_tts_audio_start = AsyncMock()
         extension.send_tts_ttfb_metrics = AsyncMock()
         extension.send_tts_audio_data = AsyncMock()
+        extension.sent_ts = time.monotonic()
 
-        async def audio_stream(_text: str):
+        async def audio_stream(_text: str, **_kwargs):
+            if extension.sent_ts is None:
+                extension.sent_ts = time.monotonic()
             yield b"\x01\x02" * 240, EVENT_TTS_RESPONSE
             yield None, EVENT_TTS_END
 
@@ -200,7 +205,7 @@ def test_empty_vendor_chunk_waits_for_end_event() -> None:
     async def run_test() -> None:
         extension = _create_extension()
 
-        async def audio_stream(_text: str):
+        async def audio_stream(_text: str, **_kwargs):
             yield b"", EVENT_TTS_RESPONSE
             yield None, EVENT_TTS_END
 
@@ -227,7 +232,7 @@ def test_flush_event_does_not_duplicate_cancel_completion() -> None:
     async def run_test() -> None:
         extension = _create_extension()
 
-        async def flush_stream(_text: str):
+        async def flush_stream(_text: str, **_kwargs):
             yield None, EVENT_TTS_FLUSH
 
         extension.client.get = flush_stream
@@ -273,7 +278,7 @@ def test_invalid_key_error_completes_with_audio_end() -> None:
     async def run_test() -> None:
         extension = _create_extension()
 
-        async def invalid_key_stream(_text: str):
+        async def invalid_key_stream(_text: str, **_kwargs):
             yield b"402 Payment Required", EVENT_TTS_INVALID_KEY_ERROR
 
         extension.client.get = invalid_key_stream
@@ -416,7 +421,8 @@ def test_flush_finishes_audio_end_after_completion_task_is_cancelled() -> None:
         await asyncio.wait_for(cancel_task, 0.5)
 
         assert send_count == 1
-        assert extension._audio_end_sent is True
+        assert extension.current_request_id is None
+        assert extension._audio_end_sent is False
         extension.finish_request.assert_not_awaited()
 
     asyncio.run(run_test())
@@ -460,5 +466,32 @@ def test_audio_end_failure_is_retrieved_without_waiter() -> None:
         extension.ten_env.log_error.assert_called_once_with(
             "Fish Audio TTS audio_end task failed: type=RuntimeError"
         )
+
+    asyncio.run(run_test())
+
+
+def test_first_audio_without_text_send_anchor_logs_error() -> None:
+    """A missing on_text_send callback must surface instead of staying quiet."""
+
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.current_request_id = "request-without-anchor"
+        extension.first_chunk = True
+        extension.sent_ts = None
+        extension.send_tts_audio_start = AsyncMock()
+        extension.send_tts_ttfb_metrics = AsyncMock()
+        extension.send_tts_audio_data = AsyncMock()
+
+        await extension._on_audio_chunk(
+            b"\x01\x02" * 8, "request-without-anchor"
+        )
+
+        extension.ten_env.log_error.assert_called_once()
+        message = extension.ten_env.log_error.call_args.args[0]
+        assert "on_text_send" in message
+        extension.send_tts_audio_start.assert_not_awaited()
+        extension.send_tts_ttfb_metrics.assert_not_awaited()
+        extension.send_tts_audio_data.assert_awaited_once()
+        assert extension.first_chunk is False
 
     asyncio.run(run_test())

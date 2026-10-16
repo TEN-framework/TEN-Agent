@@ -31,6 +31,21 @@ from fish_audio_tts_python.fish_audio_tts import (
 
 
 # ================ test metrics ================
+def _invoke_on_text_send(MockFishAudioTTSClient) -> None:
+    """Simulate the real client's on_text_send callback for mocked clients.
+
+    The extension must wire this callback: without it there is no text-send
+    anchor, so tts_audio_start and the TTFB metric are skipped silently.
+    """
+    call = MockFishAudioTTSClient.call_args
+    assert call is not None, "FishAudioTTSClient was never constructed"
+    callback = call.kwargs.get("on_text_send")
+    assert (
+        callback is not None
+    ), "fish_audio_tts_python must pass on_text_send to FishAudioTTSClient"
+    callback()
+
+
 class ExtensionTesterMetrics(ExtensionTester):
     def __init__(self):
         super().__init__()
@@ -98,7 +113,8 @@ def test_ttfb_metric_is_sent(MockFishAudioTTSClient):
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
-    async def mock_get_audio_with_delay(text: str):
+    async def mock_get_audio_with_delay(text: str, **_kwargs):
+        _invoke_on_text_send(MockFishAudioTTSClient)
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
         yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)

@@ -1,10 +1,8 @@
-#
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0.
-# See the LICENSE file for more information.
-#
 import asyncio
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
+
+import ormsgpack
 
 from fish_audio_tts_python.config import FishAudioTTSConfig
 from fish_audio_tts_python.fish_audio_tts import (
@@ -15,90 +13,141 @@ from fish_audio_tts_python.fish_audio_tts import (
 )
 
 
-class BlockingSession:
+class BlockingWebSocket:
     def __init__(self) -> None:
+        self.response = SimpleNamespace(headers={})
         self.closed = asyncio.Event()
         self.close_calls = 0
+        self.audio_sent = False
 
-    async def tts(self, **_kwargs):
-        yield b"first-audio"
+    async def send(self, _message: bytes) -> None:
+        return None
+
+    async def recv(self) -> bytes:
+        await asyncio.sleep(0)
+        if not self.audio_sent:
+            self.audio_sent = True
+            return ormsgpack.packb({"event": "audio", "audio": b"audio"})
         await self.closed.wait()
-        raise ConnectionError("session closed")
+        raise ConnectionError("socket closed")
 
     async def close(self) -> None:
         self.close_calls += 1
         self.closed.set()
 
 
-class SuccessfulSession:
+class SuccessfulWebSocket:
     def __init__(self) -> None:
+        self.response = SimpleNamespace(headers={})
         self.close_calls = 0
+        self.messages = [
+            {"event": "audio", "audio": b"audio"},
+            {"event": "finish", "reason": "stop"},
+        ]
 
-    async def tts(self, **_kwargs):
-        yield b"second-audio"
+    async def send(self, _message: bytes) -> None:
+        return None
+
+    async def recv(self) -> bytes:
+        await asyncio.sleep(0)
+        return ormsgpack.packb(self.messages.pop(0))
 
     async def close(self) -> None:
         self.close_calls += 1
 
 
-class FailingCloseSession:
-    async def close(self) -> None:
-        raise ConnectionError("connection already closed")
+class FakeConnect:
+    def __init__(self, websocket) -> None:
+        self.websocket = websocket
+
+    async def __aenter__(self):
+        return self.websocket
+
+    async def __aexit__(self, *_args) -> None:
+        await self.websocket.close()
 
 
-@patch("fish_audio_tts_python.fish_audio_tts.AsyncWebSocketSession")
-def test_cancel_closes_session_and_next_request_recovers(mock_session):
+class BlockingConnect:
+    def __init__(self) -> None:
+        self.started = asyncio.Event()
+        self.exited = asyncio.Event()
+
+    async def __aenter__(self):
+        self.started.set()
+        await asyncio.Future()
+
+    async def __aexit__(self, *_args) -> None:
+        self.exited.set()
+
+
+def test_cancel_closes_socket_and_next_request_recovers():
     async def run_test() -> None:
-        blocked_session = BlockingSession()
-        successful_session = SuccessfulSession()
-        mock_session.side_effect = [blocked_session, successful_session]
+        blocked_socket = BlockingWebSocket()
+        successful_socket = SuccessfulWebSocket()
+        sockets = iter([blocked_socket, successful_socket])
+
+        def fake_connect(*_args, **_kwargs):
+            return FakeConnect(next(sockets))
 
         config = FishAudioTTSConfig(api_key="test-key")
         ten_env = MagicMock()
-        client = FishAudioTTSClient(config, ten_env)
 
-        first_stream = client.get("first request")
-        assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
-            b"first-audio",
-            EVENT_TTS_RESPONSE,
-        )
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            side_effect=fake_connect,
+        ):
+            client = FishAudioTTSClient(config, ten_env)
 
-        await asyncio.wait_for(client.cancel(), 0.5)
-        assert blocked_session.close_calls == 1
-        assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
-            None,
-            EVENT_TTS_FLUSH,
-        )
+            first_stream = client.get("first request")
+            assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
+                b"audio",
+                EVENT_TTS_RESPONSE,
+            )
 
-        second_stream = client.get("second request")
-        assert await asyncio.wait_for(second_stream.__anext__(), 0.5) == (
-            b"second-audio",
-            EVENT_TTS_RESPONSE,
-        )
-        assert await asyncio.wait_for(second_stream.__anext__(), 0.5) == (
-            None,
-            EVENT_TTS_END,
-        )
-        assert mock_session.call_count == 2
+            await asyncio.wait_for(client.cancel(), 0.5)
+            assert blocked_socket.close_calls >= 1
+            assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
+                None,
+                EVENT_TTS_FLUSH,
+            )
 
-        await client.clean()
-        assert successful_session.close_calls == 1
+            second_stream = client.get("second request")
+            assert await asyncio.wait_for(second_stream.__anext__(), 0.5) == (
+                b"audio",
+                EVENT_TTS_RESPONSE,
+            )
+            assert await asyncio.wait_for(second_stream.__anext__(), 0.5) == (
+                None,
+                EVENT_TTS_END,
+            )
+
+            await client.clean()
 
     asyncio.run(run_test())
 
 
-@patch("fish_audio_tts_python.fish_audio_tts.AsyncWebSocketSession")
-def test_clean_ignores_vendor_close_failure(mock_session):
+def test_cancel_interrupts_websocket_handshake():
     async def run_test() -> None:
-        mock_session.return_value = FailingCloseSession()
+        connect_context = BlockingConnect()
         ten_env = MagicMock()
-        client = FishAudioTTSClient(
-            FishAudioTTSConfig(api_key="test-key"), ten_env
-        )
 
-        await client.clean()
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            return_value=connect_context,
+        ):
+            client = FishAudioTTSClient(
+                FishAudioTTSConfig(api_key="test-key"), ten_env
+            )
+            stream = client.get("hello")
+            receive_task = asyncio.create_task(stream.__anext__())
+            await asyncio.wait_for(connect_context.started.wait(), 0.5)
 
-        assert client.client is None
-        ten_env.log_warn.assert_called_once()
+            await asyncio.wait_for(client.cancel(), 0.5)
+            assert await asyncio.wait_for(receive_task, 0.5) == (
+                None,
+                EVENT_TTS_FLUSH,
+            )
+            await stream.aclose()
+            assert not connect_context.exited.is_set()
 
     asyncio.run(run_test())

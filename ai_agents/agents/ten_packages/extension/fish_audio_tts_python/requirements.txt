@@ -1,2 +1,3 @@
-fish-audio-sdk
+ormsgpack>=1.5.0
 pydantic
+websockets>=14.0
