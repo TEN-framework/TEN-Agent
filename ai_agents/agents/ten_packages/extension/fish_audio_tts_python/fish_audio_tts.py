@@ -22,8 +22,35 @@ MAX_RECONNECT_ATTEMPTS = 3
 # the elevenlabs per_sentence_flush check in conversational_agent.
 SENTENCE_ENDINGS = (".", "?", "!", "。", "？", "！")
 
+# Response headers that are useful for vendor diagnostics. Everything else,
+# notably Set-Cookie from the vendor or an intermediate proxy, stays out of
+# production logs.
+RESPONSE_HEADER_ALLOWLIST = frozenset(
+    {
+        "x-fishaudio-datacenter",
+        "x-fishaudio-request-id",
+        "x-request-id",
+        "traceparent",
+        "tracestate",
+        "server-timing",
+        "content-type",
+        "date",
+    }
+)
+
+CLOSE_TIMEOUT = 0.1
+
 
 class FishAudioTTSClient:
+    """Own one Fish Audio WebSocket connection at a time.
+
+    A single supervisor task owns connect, retry and close. Requests submit
+    protocol messages to a queue that the supervisor's send loop drains, so a
+    request can never establish a competing connection. Cancelling a request
+    stops the whole supervisor, including any retry backoff, and the extension
+    replaces the client for the next request.
+    """
+
     def __init__(
         self,
         config: FishAudioTTSConfig,
@@ -45,30 +72,43 @@ class FishAudioTTSClient:
         self.on_audio = on_audio
         self._traceparent = ""
         self._response_headers: dict[str, str] = {}
-        self._connect_context = None
-        self._websocket: ClientConnection | None = None
-        self._connect_task: asyncio.Task | None = None
-        self._receiver_task: asyncio.Task | None = None
-        self._reconnect_task: asyncio.Task | None = None
         self._events: asyncio.Queue[tuple[bytes | None, int, str]] = (
             asyncio.Queue()
         )
-        self._send_lock = asyncio.Lock()
-        self._connect_lock = asyncio.Lock()
+        self._send_queue: asyncio.Queue[
+            tuple[dict[str, object], asyncio.Future]
+        ] = asyncio.Queue()
+        self._state_condition = asyncio.Condition()
+        self._supervisor_task: asyncio.Task | None = None
+        self._channel_tasks: list[asyncio.Task] = []
+        self._websocket: ClientConnection | None = None
+        self._connected = False
+        self._terminal_error = ""
         self._session_request_id = ""
         self._session_active = False
         self._session_first_text_flushed = False
-        self._context_entered = False
         self._waiting_for_event = False
         self._waiting_request_id = ""
         self._is_cancelled = False
         self._is_closing = False
         self._connection_reported = False
-        self._session_stop_requested = False
-        self._reconnect_attempts = 0
+        self._connecting_reported = False
+        self._terminal_failure_reported = False
+        self._consecutive_failures = 0
         self._interrupted_request_id = ""
         self._interruption_reason = ""
         self._interruption_event = EVENT_TTS_ERROR
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # Constructed outside an event loop (for example by a config-only
+            # unit test). get() starts the supervisor when it is first used.
+            pass
+        else:
+            self._supervisor_task = asyncio.create_task(
+                self._process_websocket()
+            )
 
     @property
     def websocket_url(self) -> str:
@@ -123,7 +163,12 @@ class FishAudioTTSClient:
         headers = getattr(response, "headers", None)
         if headers is None:
             headers = getattr(websocket, "response_headers", {})
-        self._response_headers = self._headers_to_dict(headers)
+        captured = self._headers_to_dict(headers)
+        self._response_headers = {
+            name: value
+            for name, value in captured.items()
+            if name in RESPONSE_HEADER_ALLOWLIST
+        }
         datacenter = self._response_headers.get("x-fishaudio-datacenter", "")
         trace_id = self._traceparent.split("-")[1]
         self.ten_env.log_info(
@@ -132,20 +177,69 @@ class FishAudioTTSClient:
             f"x-fishaudio-datacenter={datacenter}; trace_id={trace_id}"
         )
 
-    async def _ensure_connection(self) -> None:
-        # Serialize establishment: a background reconnect handshake and a new
-        # request must share one connection instead of overwriting each other's
-        # fields and leaving an orphaned socket behind.
-        async with self._connect_lock:
-            await self._connect_locked()
+    async def _notify_state(self) -> None:
+        async with self._state_condition:
+            self._state_condition.notify_all()
 
-    async def _connect_locked(self) -> None:
-        if self._websocket is not None and self._receiver_task is not None:
-            if not self._receiver_task.done():
-                return
-            await self._reset_connection()
+    async def _process_websocket(self) -> None:
+        """Supervise connect, receive, reconnect and close for this client."""
+        try:
+            while not self._is_closing and not self._is_cancelled:
+                try:
+                    await self._connect_and_run()
+                    # A live connection closed normally. Reconnect with the
+                    # same retry budget as any other transport failure.
+                    self._consecutive_failures = 0
+                    await asyncio.sleep(0.2)
+                except Exception as error:
+                    self._log_vendor_error(error)
+                    if self._is_closing or self._is_cancelled:
+                        return
+                    if self._session_active:
+                        # The request was in flight when the transport died.
+                        # Latch the failure before reconnecting so it cannot be
+                        # reported as a successful completion later.
+                        await self._record_interruption(
+                            "Fish Audio connection dropped before the "
+                            "request finished",
+                            EVENT_TTS_ERROR,
+                        )
+                        self._session_active = False
+                        self._session_request_id = ""
+                    self._consecutive_failures += 1
+                    self.ten_env.log_warn(
+                        "FishAudioTTS: connection failed, "
+                        f"attempt={self._consecutive_failures}/"
+                        f"{MAX_RECONNECT_ATTEMPTS}, "
+                        f"type={type(error).__name__}, "
+                        f"message={str(error)}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
+                    if self._consecutive_failures >= MAX_RECONNECT_ATTEMPTS:
+                        message = (
+                            "Fish Audio WebSocket connection failed after "
+                            f"{MAX_RECONNECT_ATTEMPTS} attempts"
+                        )
+                        self.ten_env.log_error(
+                            message, category=LOG_CATEGORY_VENDOR
+                        )
+                        detail = str(error).strip()
+                        self._terminal_error = (
+                            f"{message}: {detail}" if detail else message
+                        )
+                        self._terminal_failure_reported = True
+                        await self._report_connect_failure(type(error).__name__)
+                        await self._notify_state()
+                        return
+                    await asyncio.sleep(
+                        0.2 * (2 ** (self._consecutive_failures - 1))
+                    )
+        finally:
+            await self._teardown_connection()
+            await self._notify_state()
 
-        self._is_closing = False
+    async def _connect_and_run(self) -> None:
+        self._connecting_reported = True
         if self.on_connection_connecting is not None:
             await self.on_connection_connecting()
         headers = self._build_headers()
@@ -160,28 +254,97 @@ class FishAudioTTSClient:
             f"url={self.websocket_url}, headers={redacted_headers}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self._connect_context = connect(
+        async with connect(
             self.websocket_url,
             additional_headers=headers,
-        )
-        self._connect_task = asyncio.create_task(
-            self._connect_context.__aenter__()
-        )
-        try:
-            self._websocket = await self._connect_task
-            self._context_entered = True
-            self._connect_task = None
-            await self._capture_response_headers(self._websocket)
+            close_timeout=CLOSE_TIMEOUT,
+        ) as websocket:
+            self._websocket = websocket
+            await self._capture_response_headers(websocket)
             self._connection_reported = True
+            self._connecting_reported = False
+            self._connected = True
+            self._consecutive_failures = 0
             if self.on_connection_connected is not None:
                 await self.on_connection_connected()
-            self._receiver_task = asyncio.create_task(
-                self._receive_loop(self._websocket)
-            )
-        except BaseException:
-            self._connect_task = None
-            await self._reset_connection()
-            raise
+            await self._notify_state()
+
+            send_task = asyncio.create_task(self._send_loop(websocket))
+            receive_task = asyncio.create_task(self._receive_loop(websocket))
+            self._channel_tasks = [send_task, receive_task]
+            failure: Exception | None = None
+            try:
+                done, _pending = await asyncio.wait(
+                    self._channel_tasks,
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for task in done:
+                    if task.cancelled():
+                        continue
+                    error = task.exception()
+                    if error is not None:
+                        failure = error
+                        if self._session_active and not self._is_cancelled:
+                            # Latch before the cleanup below wakes senders with
+                            # a transport error, so the request reports the
+                            # provider failure instead of a generic send error.
+                            await self._record_interruption(
+                                "Fish Audio connection dropped before the "
+                                "request finished",
+                                EVENT_TTS_ERROR,
+                            )
+                            self._session_active = False
+                            self._session_request_id = ""
+                        break
+            finally:
+                for task in self._channel_tasks:
+                    if not task.done():
+                        task.cancel()
+                if self._channel_tasks:
+                    await asyncio.gather(
+                        *self._channel_tasks, return_exceptions=True
+                    )
+                self._channel_tasks = []
+                self._connected = False
+                self._websocket = None
+                self._clear_send_queue()
+                await self._notify_state()
+
+            if failure is not None:
+                raise failure
+            raise ConnectionError("Fish Audio WebSocket closed")
+
+    async def _teardown_connection(self) -> None:
+        for task in list(self._channel_tasks):
+            if not task.done():
+                task.cancel()
+        if self._channel_tasks:
+            await asyncio.gather(*self._channel_tasks, return_exceptions=True)
+            self._channel_tasks = []
+        websocket = self._websocket
+        self._websocket = None
+        if websocket is not None:
+            try:
+                await asyncio.wait_for(websocket.close(), timeout=CLOSE_TIMEOUT)
+            except Exception:
+                pass
+        self._connected = False
+        if self._connection_reported and self.on_connection_disconnected:
+            try:
+                await self.on_connection_disconnected(code=0, message="closed")
+            except Exception as error:
+                self.ten_env.log_error(
+                    "FishAudioTTS: failed to report disconnection: "
+                    f"type={type(error).__name__}, message={str(error)}"
+                )
+        self._connection_reported = False
+        if (
+            self._connecting_reported
+            and not self._terminal_failure_reported
+            and (self._is_cancelled or self._is_closing)
+        ):
+            await self._report_connect_failure("cancelled")
+        self._connecting_reported = False
 
     async def _report_connect_failure(self, reason: str) -> None:
         """Report a terminal handshake failure with safe diagnostics."""
@@ -198,64 +361,81 @@ class FishAudioTTSClient:
                 f"type={type(error).__name__}, message={str(error)}"
             )
 
-    async def _ensure_connection_with_retry(self) -> None:
-        last_error: Exception | None = None
-        for attempt in range(1, MAX_RECONNECT_ATTEMPTS + 1):
+    async def _send_loop(self, websocket: ClientConnection) -> None:
+        while not self._is_closing and not self._is_cancelled:
+            message, ack = await self._send_queue.get()
             try:
-                await self._ensure_connection()
-                return
+                payload = ormsgpack.packb(message)
+                self._log_send(message, payload)
+                if websocket is not self._websocket:
+                    raise ConnectionError("Fish Audio WebSocket was replaced")
+                if (
+                    message.get("event") == "text"
+                    and self.on_text_send is not None
+                ):
+                    # Mark TTFB immediately before the first text payload is
+                    # handed to the socket. The extension callback is
+                    # idempotent for subsequent chunks.
+                    self.on_text_send()
+                await websocket.send(payload)
+            except asyncio.CancelledError:
+                if not ack.done():
+                    if self._is_cancelled:
+                        ack.cancel()
+                    else:
+                        # The supervisor cancelled this send because the
+                        # transport failed. Surface it as a connection error
+                        # to the request instead of cancelling the caller's
+                        # task.
+                        ack.set_exception(
+                            ConnectionError(
+                                "Fish Audio WebSocket closed while sending"
+                            )
+                        )
+                raise
             except Exception as error:
-                last_error = error
-                self.ten_env.log_warn(
-                    "FishAudioTTS: WebSocket connect failed, "
-                    f"attempt={attempt}/{MAX_RECONNECT_ATTEMPTS}, "
-                    f"type={type(error).__name__}, message={str(error)}"
-                )
-                if attempt < MAX_RECONNECT_ATTEMPTS:
-                    await asyncio.sleep(0.2 * (2 ** (attempt - 1)))
-        assert last_error is not None
-        # Every attempt failed: report the terminal failure so the connection
-        # state leaves ``connecting`` instead of staying there forever.
-        await self._report_connect_failure(type(last_error).__name__)
-        raise last_error
+                if not ack.done():
+                    ack.set_exception(error)
+                raise
+            else:
+                if not ack.done():
+                    ack.set_result(None)
+
+    def _log_send(self, message: dict[str, object], payload: bytes) -> None:
+        payload_size = len(payload)
+        event = message.get("event")
+        request = message.get("request")
+        request_detail = f", request={request}" if request else ""
+        # Log every outbound protocol event so the exact stream sent to the
+        # vendor (start/text/flush/stop) can be reconstructed from the log.
+        # Only event names, sizes and counts are recorded: the utterance text
+        # stays out of vendor diagnostics and is logged under the transcript
+        # category instead.
+        self.ten_env.log_info(
+            "vendor_send: "
+            f"event={event}, bytes={payload_size}, "
+            f"keys={sorted(message.keys())}, "
+            f"text_chars={len(message.get('text') or '')}"
+            f"{request_detail}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     async def _send(self, message: dict[str, object]) -> None:
-        websocket = self._websocket
-        if websocket is None:
+        if self._is_cancelled:
+            raise asyncio.CancelledError
+        if not self._connected or self._websocket is None:
             raise ConnectionError("Fish Audio WebSocket is not connected")
-        async with self._send_lock:
-            payload = ormsgpack.packb(message)
-            event = message.get("event")
-            request = message.get("request")
-            request_detail = f", request={request}" if request else ""
-            # Log every outbound protocol event so the exact stream sent to the
-            # vendor (start/text/flush/stop) can be reconstructed from the log.
-            # Only event names, sizes and counts are recorded: the utterance
-            # text stays out of vendor diagnostics and is logged under the
-            # transcript category instead.
-            # Logged before the TTFB marker so measuring stays accurate.
-            self.ten_env.log_info(
-                "vendor_send: "
-                f"event={event}, bytes={len(payload)}, "
-                f"keys={sorted(message.keys())}, "
-                f"text_chars={len(message.get('text') or '')}"
-                f"{request_detail}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            if message.get("event") == "text" and self.on_text_send is not None:
-                # Mark TTFB immediately before the first text payload is sent.
-                # The extension callback is idempotent for subsequent chunks.
-                self.on_text_send()
-            await websocket.send(payload)
+        ack = asyncio.get_running_loop().create_future()
+        await self._send_queue.put((message, ack))
+        await ack
 
     async def _start_session(self, request_id: str) -> None:
         if self._session_active and self._session_request_id == request_id:
             return
-        await self._send({"event": "start", "request": self._build_request()})
         self._session_request_id = request_id
         self._session_active = True
         self._session_first_text_flushed = False
-        self._session_stop_requested = False
+        await self._send({"event": "start", "request": self._build_request()})
 
     def _should_flush(self, text: str, is_last: bool) -> bool:
         """Decide whether a text chunk should be followed by a flush event.
@@ -315,133 +495,67 @@ class FishAudioTTSClient:
         """
         if not self._session_request_id:
             return
-        self._interrupted_request_id = self._session_request_id
-        self._interruption_reason = reason
-        self._interruption_event = event
-        self.ten_env.log_warn(reason, category=LOG_CATEGORY_VENDOR)
+        self._latch_interruption(self._session_request_id, reason, event)
         if self._waiting_for_event:
             self._enqueue(None, EVENT_TTS_RECONNECT)
 
-    async def _receive_loop(self, websocket: ClientConnection) -> None:
-        try:
-            while not self._is_closing:
-                if websocket is not self._websocket:
-                    # Superseded by a newer connection: publish nothing.
-                    return
-                message = await websocket.recv()
-                if isinstance(message, str):
-                    raise RuntimeError(
-                        "Fish Audio returned a text WebSocket message"
-                    )
-                data = ormsgpack.unpackb(message)
-                event = data.get("event")
-                if event == "audio":
-                    audio = data.get("audio")
-                    if isinstance(audio, bytes) and audio:
-                        if (
-                            self.interruption(self._session_request_id)
-                            is not None
-                        ):
-                            # Late audio from an interrupted session must not
-                            # reach the consumer.
-                            continue
-                        if self.on_audio is not None:
-                            await self.on_audio(audio, self._session_request_id)
-                        else:
-                            self._enqueue(audio, EVENT_TTS_RESPONSE)
-                elif event == "finish":
-                    self._session_active = False
-                    reason = str(data.get("reason") or "").strip()
-                    if reason.lower() == "error":
-                        # The vendor stopped the stream because generation
-                        # failed: never report this as a normal end.
-                        await self._record_interruption(
-                            "Fish Audio finished the stream with "
-                            f"reason={reason!r}",
-                            EVENT_TTS_ERROR,
-                        )
-                    else:
-                        self._enqueue(None, EVENT_TTS_END)
-                elif event == "error":
-                    self._session_active = False
-                    error = str(data.get("error", "Unknown Fish Audio error"))
-                    _, event_type = self._error_event_text(error)
-                    await self._record_interruption(error, event_type)
-        except Exception as error:
-            if websocket is not self._websocket:
-                # A superseded connection failed; it owns no request state, so
-                # it must not latch a failure or trigger another reconnect.
-                return
-            if not self._is_closing:
-                self.ten_env.log_warn(
-                    "FishAudioTTS: WebSocket receive failed; "
-                    f"starting reconnect, attempt={self._reconnect_attempts + 1}, "
-                    f"type={type(error).__name__}, message={str(error)}"
-                )
-                if self._session_active and not self._is_cancelled:
-                    # The session was in flight, so this request did not
-                    # finish. Latch the failure before reconnecting: it must be
-                    # reported for this request even if nothing is waiting.
-                    await self._record_interruption(
-                        "Fish Audio connection dropped before the request "
-                        "finished",
-                        EVENT_TTS_ERROR,
-                    )
-                self._schedule_reconnect()
-            if self._connection_reported and self.on_connection_disconnected:
-                await self.on_connection_disconnected(
-                    code=1000,
-                    message=str(error),
-                )
-                self._connection_reported = False
-
-    def _schedule_reconnect(self) -> None:
-        if self._is_closing or self._is_cancelled:
+    def _latch_interruption(
+        self, request_id: str, reason: str, event: int
+    ) -> None:
+        """Bind a terminal failure to a request, including pre-session errors."""
+        if not request_id or self._interrupted_request_id == request_id:
             return
-        if self._reconnect_task is None or self._reconnect_task.done():
-            self._reconnect_task = asyncio.create_task(self._reconnect_loop())
+        self._interrupted_request_id = request_id
+        self._interruption_reason = reason
+        self._interruption_event = event
+        self.ten_env.log_warn(reason, category=LOG_CATEGORY_VENDOR)
 
-    async def _reconnect_loop(self) -> None:
-        """Re-establish the transport after a receive failure.
-
-        Already accepted text is never resent: the vendor session dies with the
-        socket and the protocol carries no acknowledgement, so replaying a
-        buffered utterance would duplicate audible speech. An interrupted
-        request is failed instead, and the next request reconnects on demand.
-        """
+    async def _receive_loop(self, websocket: ClientConnection) -> None:
         while not self._is_closing and not self._is_cancelled:
-            self._reconnect_attempts += 1
-            if self._reconnect_attempts > MAX_RECONNECT_ATTEMPTS:
-                message = (
-                    "Fish Audio WebSocket reconnect exhausted after "
-                    f"{MAX_RECONNECT_ATTEMPTS} attempts"
+            message = await websocket.recv()
+            if isinstance(message, str):
+                raise RuntimeError(
+                    "Fish Audio returned a text WebSocket message"
                 )
-                self.ten_env.log_error(message, category=LOG_CATEGORY_VENDOR)
-                # Every retry re-entered ``connecting``; report the terminal
-                # failure so the status does not stay there forever.
-                await self._report_connect_failure("reconnect exhausted")
-                if self._waiting_for_event and not self._interrupted_request_id:
-                    self._enqueue(
-                        message.encode("utf-8"),
+            data = ormsgpack.unpackb(message)
+            event = data.get("event")
+            if event == "audio":
+                audio = data.get("audio")
+                if isinstance(audio, bytes) and audio:
+                    if self.interruption(self._session_request_id):
+                        # Late audio from an interrupted session must not
+                        # reach the consumer.
+                        continue
+                    if self.on_audio is not None:
+                        await self.on_audio(audio, self._session_request_id)
+                    else:
+                        self._enqueue(audio, EVENT_TTS_RESPONSE)
+            elif event == "finish":
+                request_id = self._session_request_id
+                self._session_active = False
+                reason = str(data.get("reason") or "").strip()
+                if reason.lower() == "error":
+                    # The vendor stopped the stream because generation failed:
+                    # never report this as a normal end, and force a new
+                    # connection so a late frame cannot reach a later request.
+                    await self._record_interruption(
+                        "Fish Audio finished the stream with "
+                        f"reason={reason!r}",
                         EVENT_TTS_ERROR,
-                        self._waiting_request_id,
                     )
+                    self._session_request_id = ""
+                    return
+                self._enqueue(None, EVENT_TTS_END, request_id)
+                self._session_request_id = ""
+            elif event == "error":
+                self._session_active = False
+                error = str(data.get("error", "Unknown Fish Audio error"))
+                _, event_type = self._error_event_text(error)
+                await self._record_interruption(error, event_type)
+                self._session_request_id = ""
+                # The socket state after a vendor error is not trustworthy.
+                # Reconnect before serving another request.
                 return
-
-            await asyncio.sleep(0.2 * (2 ** (self._reconnect_attempts - 1)))
-            try:
-                async with self._connect_lock:
-                    await self._reset_connection(notify=False)
-                    await self._connect_locked()
-                self._reconnect_attempts = 0
-                self.ten_env.log_info("FishAudioTTS: WebSocket reconnected")
-                return
-            except Exception as error:
-                self.ten_env.log_warn(
-                    "FishAudioTTS: reconnect attempt failed, "
-                    f"attempt={self._reconnect_attempts}, "
-                    f"type={type(error).__name__}, message={str(error)}"
-                )
 
     @staticmethod
     def _error_event_text(error_message: str) -> tuple[bytes, int]:
@@ -467,7 +581,10 @@ class FishAudioTTSClient:
                 payload, event_type, owner = self._events.get_nowait()
             except asyncio.QueueEmpty:
                 return
-            if event_type not in (EVENT_TTS_RECONNECT, EVENT_TTS_FLUSH):
+            if event_type not in (
+                EVENT_TTS_RECONNECT,
+                EVENT_TTS_FLUSH,
+            ):
                 if owner != request_id:
                     # Event from another request: never deliver it here.
                     continue
@@ -475,13 +592,41 @@ class FishAudioTTSClient:
                 continue
             yield payload, event_type
 
+    async def _wait_until_connected(self) -> None:
+        async with self._state_condition:
+            await self._state_condition.wait_for(
+                lambda: self._connected
+                or self._is_cancelled
+                or self._is_closing
+                or bool(self._terminal_error)
+            )
+        if self._is_cancelled or self._is_closing:
+            raise asyncio.CancelledError
+        if self._terminal_error:
+            raise ConnectionError(self._terminal_error)
+
+    def _ensure_supervisor(self) -> None:
+        if self._is_cancelled or self._is_closing:
+            return
+        if self._supervisor_task is None or self._supervisor_task.done():
+            self._terminal_error = ""
+            self._terminal_failure_reported = False
+            self._consecutive_failures = 0
+            self._connected = False
+            self._supervisor_task = asyncio.create_task(
+                self._process_websocket()
+            )
+
     async def get(
         self,
         text: str,
         request_id: str = "",
         text_input_end: bool = True,
     ) -> AsyncIterator[tuple[bytes | None, int]]:
-        self._is_cancelled = False
+        if self._is_cancelled:
+            if text_input_end:
+                yield None, EVENT_TTS_FLUSH
+            return
         interrupted = self.interruption(request_id)
         if interrupted is not None:
             # The request already failed: never open another vendor session or
@@ -494,10 +639,11 @@ class FishAudioTTSClient:
                 reason, event = interrupted
                 yield reason.encode("utf-8"), event
             return
+        self._ensure_supervisor()
         try:
             if self.on_request_start is not None:
                 self.on_request_start()
-            await self._ensure_connection_with_retry()
+            await self._wait_until_connected()
             await self._start_session(request_id)
             await self._send_text(text, is_last=text_input_end)
 
@@ -506,7 +652,6 @@ class FishAudioTTSClient:
                     yield event
                 return
 
-            self._session_stop_requested = True
             await self._send({"event": "stop"})
             while True:
                 interruption = self.interruption(request_id)
@@ -517,8 +662,16 @@ class FishAudioTTSClient:
                     reason, event = interruption
                     yield reason.encode("utf-8"), event
                     return
+                if self._is_cancelled:
+                    yield None, EVENT_TTS_FLUSH
+                    return
                 self._waiting_for_event = True
                 self._waiting_request_id = request_id
+                if self._is_cancelled:
+                    # Close the race between the check above and registering
+                    # as a waiter: cancel() may have enqueued its sentinel
+                    # while this request was not yet marked as waiting.
+                    self._events.put_nowait((None, EVENT_TTS_FLUSH, ""))
                 try:
                     payload, event_type, owner = await self._events.get()
                 finally:
@@ -550,14 +703,30 @@ class FishAudioTTSClient:
             if self._is_cancelled:
                 yield None, EVENT_TTS_FLUSH
                 return
+            interruption = self.interruption(request_id)
+            if interruption is not None:
+                reason, event = interruption
+                yield reason.encode("utf-8"), event
+                return
+            _, event_type = self._error_event_text(str(error))
+            self._latch_interruption(request_id, str(error), event_type)
+            self._session_active = False
             self._log_vendor_error(error)
-            yield self._error_event_text(str(error))
+            yield str(error).encode("utf-8"), event_type
         except Exception as error:
             if self._is_cancelled:
                 yield None, EVENT_TTS_FLUSH
                 return
+            interruption = self.interruption(request_id)
+            if interruption is not None:
+                reason, event = interruption
+                yield reason.encode("utf-8"), event
+                return
+            _, event_type = self._error_event_text(str(error))
+            self._latch_interruption(request_id, str(error), event_type)
+            self._session_active = False
             self._log_vendor_error(error)
-            yield self._error_event_text(str(error))
+            yield str(error).encode("utf-8"), event_type
 
     def _log_vendor_error(self, error: Exception) -> None:
         self.ten_env.log_error(
@@ -566,64 +735,6 @@ class FishAudioTTSClient:
             category=LOG_CATEGORY_VENDOR,
         )
 
-    async def _reset_connection(self, notify: bool = True) -> None:
-        reconnect_task = self._reconnect_task
-        if (
-            reconnect_task is not None
-            and reconnect_task is not asyncio.current_task()
-            and not reconnect_task.done()
-        ):
-            reconnect_task.cancel()
-            await asyncio.gather(reconnect_task, return_exceptions=True)
-        if reconnect_task is self._reconnect_task:
-            self._reconnect_task = None
-
-        connect_task = self._connect_task
-        self._connect_task = None
-        if connect_task is not None and not connect_task.done():
-            connect_task.cancel()
-            await asyncio.gather(connect_task, return_exceptions=True)
-
-        receiver_task = self._receiver_task
-        self._receiver_task = None
-        if (
-            receiver_task is not None
-            and receiver_task is not asyncio.current_task()
-            and not receiver_task.done()
-        ):
-            receiver_task.cancel()
-            await asyncio.gather(receiver_task, return_exceptions=True)
-
-        websocket = self._websocket
-        self._websocket = None
-        if websocket is not None:
-            self.ten_env.log_info(
-                "vendor_send: close", category=LOG_CATEGORY_VENDOR
-            )
-            try:
-                await websocket.close()
-            except Exception:
-                pass
-
-        context = self._connect_context
-        self._connect_context = None
-        if context is not None and self._context_entered:
-            try:
-                await context.__aexit__(None, None, None)
-            except Exception:
-                pass
-        if (
-            notify
-            and self._connection_reported
-            and self.on_connection_disconnected
-        ):
-            await self.on_connection_disconnected(code=0, message="closed")
-        self._context_entered = False
-        self._connection_reported = False
-        self._session_active = False
-        self._session_request_id = ""
-        self._session_first_text_flushed = False
-
     def _clear_pending_events(self) -> None:
         while True:
             try:
@@ -631,22 +742,51 @@ class FishAudioTTSClient:
             except asyncio.QueueEmpty:
                 return
 
+    def _clear_send_queue(self) -> None:
+        while True:
+            try:
+                _message, ack = self._send_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                return
+            if not ack.done():
+                ack.set_exception(
+                    ConnectionError("Fish Audio TTS send cancelled")
+                )
+
+    async def _stop_supervisor(self) -> None:
+        task = self._supervisor_task
+        self._supervisor_task = None
+        if task is not None:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+        await self._teardown_connection()
+
     async def cancel(self) -> None:
         self.ten_env.log_debug("FishAudioTTS: cancel() called.")
+        if self._is_cancelled:
+            return
         self._is_cancelled = True
+        self._clear_send_queue()
+        if self._waiting_for_event:
+            self._events.put_nowait((None, EVENT_TTS_FLUSH, ""))
+        await self._notify_state()
+        await self._stop_supervisor()
         self._clear_pending_events()
         if self._waiting_for_event:
-            self._enqueue(None, EVENT_TTS_FLUSH)
-        if self._connect_task is not None and not self._connect_task.done():
-            self._connect_task.cancel()
-            await asyncio.gather(self._connect_task, return_exceptions=True)
-            self._connect_task = None
-        await self._reset_connection()
-        if not self._waiting_for_event:
-            self._clear_pending_events()
+            self._events.put_nowait((None, EVENT_TTS_FLUSH, ""))
+        self._session_active = False
+        self._session_request_id = ""
 
     async def clean(self) -> None:
         self.ten_env.log_debug("FishAudioTTS: clean() called.")
         self._is_closing = True
         self._is_cancelled = True
-        await self._reset_connection()
+        self._clear_send_queue()
+        if self._waiting_for_event:
+            self._events.put_nowait((None, EVENT_TTS_FLUSH, ""))
+        await self._notify_state()
+        await self._stop_supervisor()
+        self._clear_pending_events()
+        if self._waiting_for_event:
+            self._events.put_nowait((None, EVENT_TTS_FLUSH, ""))

@@ -42,6 +42,7 @@ class DuplicateHeaders:
             ("x-request-id", "request-123"),
             ("server-timing", "edge;dur=1"),
             ("server-timing", "inference;dur=2"),
+            ("set-cookie", "session=secret-value"),
         ]
 
 
@@ -132,6 +133,9 @@ def test_traceparent_is_sent_and_response_headers_are_logged():
         assert "us-east-1" in log_message
         assert trace_id in log_message
         assert "x-request-id" in log_message
+        assert "set-cookie" not in log_message
+        assert "secret-value" not in log_message
+        assert "set-cookie" not in client._response_headers
         assert events[:2] == ["request_start", "connect"]
         assert session.sent_messages[0]["event"] == "start"
         assert session.sent_messages[1] == {"event": "text", "text": "hello"}

@@ -121,3 +121,53 @@ def test_stale_terminal_event_is_not_delivered_to_another_request() -> None:
     events = asyncio.run(run())
 
     assert [event for _payload, event in events] == [EVENT_TTS_END]
+
+
+def test_connect_failure_is_latched_for_later_chunks() -> None:
+    async def run() -> tuple[
+        list[tuple[bytes | None, int]],
+        list[tuple[bytes | None, int]],
+        int,
+        int,
+    ]:
+        connect_calls = 0
+
+        def failing_connect(*_args, **_kwargs):
+            nonlocal connect_calls
+            connect_calls += 1
+            raise TimeoutError("timed out during opening handshake")
+
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            side_effect=failing_connect,
+        ):
+            client = FishAudioTTSClient(_config(), MagicMock())
+            first = [
+                event
+                async for event in client.get(
+                    "first chunk",
+                    request_id="req-1",
+                    text_input_end=False,
+                )
+            ]
+            assert client.interruption("req-1") is not None
+            calls_after_first = connect_calls
+            second = [
+                event
+                async for event in client.get(
+                    "",
+                    request_id="req-1",
+                    text_input_end=True,
+                )
+            ]
+            calls_after_second = connect_calls
+            await client.clean()
+        return first, second, calls_after_first, calls_after_second
+
+    first, second, calls_after_first, calls_after_second = asyncio.run(run())
+
+    assert [event for _payload, event in first] == [EVENT_TTS_ERROR]
+    assert [event for _payload, event in second] == [EVENT_TTS_ERROR]
+    # The final empty chunk must reuse the latched failure instead of opening
+    # another connection or completing as REQUEST_END.
+    assert calls_after_second == calls_after_first

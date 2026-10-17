@@ -1,9 +1,14 @@
 [project]
 name = "fish-audio-tts-python"
-version = "0.5.6"
+version = "0.5.7"
 requires-python = ">=3.10"
 dependencies = [
     "ormsgpack>=1.5.0",
     "pydantic>=2.13.4",
     "websockets>=14.0",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "api: provider-boundary contract test",
 ]
