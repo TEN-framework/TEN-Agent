@@ -95,6 +95,7 @@ class FishAudioTTSClient:
         self._connecting_reported = False
         self._terminal_failure_reported = False
         self._consecutive_failures = 0
+        self._default_request_counter = 0
         self._interrupted_request_id = ""
         self._interruption_reason = ""
         self._interruption_event = EVENT_TTS_ERROR
@@ -307,6 +308,10 @@ class FishAudioTTSClient:
                 self._channel_tasks = []
                 self._connected = False
                 self._websocket = None
+                # Report the end of this established socket before the
+                # supervisor starts its replacement, so consumers see the
+                # outage during the retry backoff.
+                await self._notify_disconnected("closed")
                 self._clear_send_queue()
                 await self._notify_state()
 
@@ -329,15 +334,7 @@ class FishAudioTTSClient:
             except Exception:
                 pass
         self._connected = False
-        if self._connection_reported and self.on_connection_disconnected:
-            try:
-                await self.on_connection_disconnected(code=0, message="closed")
-            except Exception as error:
-                self.ten_env.log_error(
-                    "FishAudioTTS: failed to report disconnection: "
-                    f"type={type(error).__name__}, message={str(error)}"
-                )
-        self._connection_reported = False
+        await self._notify_disconnected("closed")
         if (
             self._connecting_reported
             and not self._terminal_failure_reported
@@ -345,6 +342,20 @@ class FishAudioTTSClient:
         ):
             await self._report_connect_failure("cancelled")
         self._connecting_reported = False
+
+    async def _notify_disconnected(self, message: str) -> None:
+        if not self._connection_reported:
+            return
+        self._connection_reported = False
+        if self.on_connection_disconnected is None:
+            return
+        try:
+            await self.on_connection_disconnected(code=0, message=message)
+        except Exception as error:
+            self.ten_env.log_error(
+                "FishAudioTTS: failed to report disconnection: "
+                f"type={type(error).__name__}, message={str(error)}"
+            )
 
     async def _report_connect_failure(self, reason: str) -> None:
         """Report a terminal handshake failure with safe diagnostics."""
@@ -617,12 +628,21 @@ class FishAudioTTSClient:
                 self._process_websocket()
             )
 
+    def _new_default_request_id(self) -> str:
+        self._default_request_counter += 1
+        return f"__fish_default_{self._default_request_counter}__"
+
     async def get(
         self,
         text: str,
         request_id: str = "",
         text_input_end: bool = True,
     ) -> AsyncIterator[tuple[bytes | None, int]]:
+        if not request_id:
+            # The public client API allows an omitted request ID. Give the
+            # request an internal identity so vendor terminal events and
+            # failures still have an owner to wake.
+            request_id = self._new_default_request_id()
         if self._is_cancelled:
             if text_input_end:
                 yield None, EVENT_TTS_FLUSH

@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import ormsgpack
+import pytest
 
 from fish_audio_tts_python.config import FishAudioTTSConfig
 from fish_audio_tts_python.fish_audio_tts import (
@@ -61,6 +62,30 @@ class FakeConnect:
 
     async def __aexit__(self, *_args) -> None:
         await self.session.close()
+
+
+class VendorTerminalSession:
+    """Fake socket that returns one vendor terminal event after text."""
+
+    def __init__(self, message: dict) -> None:
+        self.response = SimpleNamespace(headers={})
+        self.message = message
+        self.sent: list[dict] = []
+        self._sent_terminal = False
+
+    async def send(self, message: bytes) -> None:
+        self.sent.append(ormsgpack.unpackb(message))
+
+    async def recv(self) -> bytes:
+        while not any(message.get("event") == "text" for message in self.sent):
+            await asyncio.sleep(_POLL_INTERVAL)
+        if not self._sent_terminal:
+            self._sent_terminal = True
+            return ormsgpack.packb(self.message)
+        await asyncio.Future()
+
+    async def close(self) -> None:
+        return None
 
 
 def _config() -> FishAudioTTSConfig:
@@ -171,3 +196,31 @@ def test_connect_failure_is_latched_for_later_chunks() -> None:
     # The final empty chunk must reuse the latched failure instead of opening
     # another connection or completing as REQUEST_END.
     assert calls_after_second == calls_after_first
+
+
+@pytest.mark.parametrize(
+    "terminal_message",
+    [
+        {"event": "error", "error": "vendor failure"},
+        {"event": "finish", "reason": "error"},
+    ],
+)
+def test_vendor_terminal_is_delivered_without_explicit_request_id(
+    terminal_message: dict,
+) -> None:
+    async def run() -> tuple[bytes | None, int]:
+        session = VendorTerminalSession(terminal_message)
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            return_value=FakeConnect(session),
+        ):
+            client = FishAudioTTSClient(_config(), MagicMock())
+            stream = client.get("hello")
+            event = await asyncio.wait_for(stream.__anext__(), 1.0)
+            await client.clean()
+        return event
+
+    payload, event = asyncio.run(run())
+
+    assert event == EVENT_TTS_ERROR
+    assert payload is not None

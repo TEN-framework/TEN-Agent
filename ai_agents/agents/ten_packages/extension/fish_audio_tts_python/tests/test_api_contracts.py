@@ -301,7 +301,18 @@ def test_api_flush_before_audio_reports_interrupted(server):
     async def scenario(ctx: TenTestContext):
         await wait_for_connected(ctx)
         await send_text(ctx, "req-1", "cancel me", text_input_end=False)
-        await expect_audio(ctx)
+
+        def text_was_sent() -> bool:
+            if server.connection_count() == 0:
+                return False
+            return any(
+                message.get("event") == "text"
+                for message in server.connection(0)["messages"]
+            )
+
+        # Wait for the vendor-bound text, not for the first audio frame:
+        # this exercises cancellation during the actual first-byte wait.
+        assert await wait_until(text_was_sent, 1.0)
         await send_flush(ctx)
 
         end = await expect_matching(
@@ -312,7 +323,7 @@ def test_api_flush_before_audio_reports_interrupted(server):
         )
         assert end["reason"] == 2
         assert end["request_event_interval_ms"] >= 0
-        assert end["request_total_audio_duration_ms"] >= 0
+        assert end["request_total_audio_duration_ms"] == 0
 
     scenario()
 

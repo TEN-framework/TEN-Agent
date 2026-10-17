@@ -14,6 +14,13 @@
       "version": "0.7"
     }
   ],
+  "dev_dependencies": [
+    {
+      "type": "system",
+      "name": "pytest_ten",
+      "version": "0.11.73"
+    }
+  ],
   "package": {
     "include": [
       "manifest.json",
