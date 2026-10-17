@@ -183,6 +183,21 @@ class FishAudioTTSClient:
             await self._reset_connection()
             raise
 
+    async def _report_connect_failure(self, reason: str) -> None:
+        """Report a terminal handshake failure with safe diagnostics."""
+        if self.on_connection_disconnected is None:
+            return
+        try:
+            await self.on_connection_disconnected(
+                code=0,
+                message=f"connect failed: {reason}",
+            )
+        except Exception as error:
+            self.ten_env.log_error(
+                "FishAudioTTS: failed to report connection failure: "
+                f"type={type(error).__name__}, message={str(error)}"
+            )
+
     async def _ensure_connection_with_retry(self) -> None:
         last_error: Exception | None = None
         for attempt in range(1, MAX_RECONNECT_ATTEMPTS + 1):
@@ -199,6 +214,9 @@ class FishAudioTTSClient:
                 if attempt < MAX_RECONNECT_ATTEMPTS:
                     await asyncio.sleep(0.2 * (2 ** (attempt - 1)))
         assert last_error is not None
+        # Every attempt failed: report the terminal failure so the connection
+        # state leaves ``connecting`` instead of staying there forever.
+        await self._report_connect_failure(type(last_error).__name__)
         raise last_error
 
     async def _send(self, message: dict[str, object]) -> None:
@@ -399,6 +417,9 @@ class FishAudioTTSClient:
                     f"{MAX_RECONNECT_ATTEMPTS} attempts"
                 )
                 self.ten_env.log_error(message, category=LOG_CATEGORY_VENDOR)
+                # Every retry re-entered ``connecting``; report the terminal
+                # failure so the status does not stay there forever.
+                await self._report_connect_failure("reconnect exhausted")
                 if self._waiting_for_event and not self._interrupted_request_id:
                     self._enqueue(
                         message.encode("utf-8"),

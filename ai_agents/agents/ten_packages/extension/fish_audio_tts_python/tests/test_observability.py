@@ -7,6 +7,7 @@ import ormsgpack
 from fish_audio_tts_python.config import FishAudioTTSConfig
 from fish_audio_tts_python.fish_audio_tts import (
     EVENT_TTS_END,
+    EVENT_TTS_ERROR,
     EVENT_TTS_INVALID_KEY_ERROR,
     EVENT_TTS_RESPONSE,
     FishAudioTTSClient,
@@ -274,5 +275,38 @@ def test_payment_required_handshake_is_reported_as_invalid_key():
 
         assert event[1] == EVENT_TTS_INVALID_KEY_ERROR
         assert b"Payment Required" in event[0]
+
+    asyncio.run(run_test())
+
+
+def test_terminal_connect_failure_is_reported_as_disconnected():
+    async def run_test() -> None:
+        ten_env = MagicMock()
+        notifications: list[dict[str, object]] = []
+
+        async def disconnected(**kwargs) -> None:
+            notifications.append(kwargs)
+
+        connector = patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            side_effect=RuntimeError("boom"),
+        )
+        connector.start()
+        try:
+            client = FishAudioTTSClient(
+                FishAudioTTSConfig(api_key="test-key"),
+                ten_env,
+                on_connection_disconnected=disconnected,
+            )
+            event = await client.get("hello").__anext__()
+        finally:
+            connector.stop()
+
+        assert event[1] == EVENT_TTS_ERROR
+        # The handshake failure must leave the reported state at
+        # ``disconnected`` instead of leaving it at ``connecting``.
+        assert notifications == [
+            {"code": 0, "message": "connect failed: RuntimeError"}
+        ]
 
     asyncio.run(run_test())
