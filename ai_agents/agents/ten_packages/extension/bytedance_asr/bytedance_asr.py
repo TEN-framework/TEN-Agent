@@ -220,7 +220,8 @@ class AsrWsClient:
                             error_msg += f", reqid: {payload_msg['reqid']}"
                         self.ten_env.log_error(error_msg)
                         self.ten_env.log_error(
-                            f"Full payload_msg: {payload_msg}"
+                            f"Full payload_msg: {payload_msg}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
                         # Use error callback to handle non-1000 error codes
                         if self.on_error:

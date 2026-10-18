@@ -389,7 +389,7 @@ class RimeTTSynthesizer:
         message_json = json.dumps(message)
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {message_json}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         if self.cur_request_id is None or self.cur_request_id != request_id:
             self.cur_request_id = request_id

@@ -394,7 +394,8 @@ class SpeechmaticsASRClient:
             metadata = msg.get("metadata", {})
             text = metadata.get("transcript", "")
             self.ten_env.log_info(
-                f"_handle_transcript_word_final_mode,metadata: {metadata}"
+                f"_handle_transcript_word_final_mode,metadata: {metadata}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if text:
                 start_ms = metadata.get("start_time", 0) * 1000
