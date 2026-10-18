@@ -5,7 +5,7 @@
 #
 import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_ai_base.message import ModuleErrorCode, TTSAudioEndReason
 from ten_ai_base.struct import TTSTextInput
@@ -21,12 +21,31 @@ from fish_audio_tts_python.fish_audio_tts import (
 )
 
 
+def _mock_client() -> MagicMock:
+    client = MagicMock()
+    client.cancel = AsyncMock()
+    client.interruption.return_value = None
+    return client
+
+
+def _monotonic_clock(values: list[float]):
+    iterator = iter(values)
+
+    def clock() -> float:
+        try:
+            return next(iterator)
+        except StopIteration:
+            return values[-1]
+
+    return clock
+
+
 def _create_extension() -> FishAudioTTSExtension:
     extension = FishAudioTTSExtension("fish_audio_tts_python")
     extension.config = FishAudioTTSConfig(api_key="test-key")
     extension.ten_env = MagicMock()
-    extension.client = MagicMock()
-    extension.client.cancel = AsyncMock()
+    extension.client = _mock_client()
+    extension._create_client = MagicMock(side_effect=_mock_client)
     extension.send_tts_audio_end = AsyncMock()
     extension.send_tts_error = AsyncMock()
     extension.finish_request = AsyncMock()
@@ -41,9 +60,11 @@ def test_cancel_before_first_audio_sends_interrupted_without_finish() -> None:
         extension.sent_ts = time.monotonic()
         assert extension.request_ts is None
 
+        old_client = extension.client
         await extension.cancel_tts()
 
-        extension.client.cancel.assert_awaited_once()
+        old_client.cancel.assert_awaited_once()
+        assert extension.client is not old_client
         extension.send_tts_audio_end.assert_awaited_once()
         end_args = extension.send_tts_audio_end.await_args.kwargs
         assert end_args["request_id"] == "interrupted-request"
@@ -54,6 +75,111 @@ def test_cancel_before_first_audio_sends_interrupted_without_finish() -> None:
         extension.finish_request.assert_not_awaited()
         assert extension.current_request_id is None
         assert extension.current_request_finished is False
+
+    asyncio.run(run_test())
+
+
+def test_audio_end_uses_adapter_pcm_and_audio_start_interval() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.current_request_id = "accounting-request"
+        extension.first_chunk = True
+        extension.sent_ts = 100.0
+        extension.total_audio_bytes = 0
+        extension.send_tts_audio_start = AsyncMock()
+        extension.send_tts_ttfb_metrics = AsyncMock()
+        extension.send_tts_audio_data = AsyncMock()
+
+        with patch(
+            "fish_audio_tts_python.extension.time.monotonic",
+            side_effect=_monotonic_clock([100.0, 100.25, 100.5]),
+        ):
+            # 3200 bytes = 100 ms of 16 kHz, mono, 16-bit PCM.
+            await extension._on_audio_chunk(
+                b"\x00\x00" * 1600, "accounting-request"
+            )
+            await extension._send_current_request_audio_end(
+                "accounting-request", TTSAudioEndReason.REQUEST_END
+            )
+
+        args = extension.send_tts_audio_end.await_args.kwargs
+        assert args["request_total_audio_duration_ms"] == 100
+        assert args["request_event_interval_ms"] == 500
+        ttfb = extension.send_tts_ttfb_metrics.await_args.kwargs["ttfb_ms"]
+        assert ttfb == 250
+
+    asyncio.run(run_test())
+
+
+def test_no_audio_end_reports_zero_duration_and_interval() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.request_ts = None
+        extension.total_audio_bytes = 0
+
+        await extension._send_current_request_audio_end(
+            "empty-request", TTSAudioEndReason.REQUEST_END
+        )
+
+        args = extension.send_tts_audio_end.await_args.kwargs
+        assert args["request_total_audio_duration_ms"] == 0
+        assert args["request_event_interval_ms"] == 0
+
+    asyncio.run(run_test())
+
+
+def test_interrupted_request_accounts_for_emitted_audio_only() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.current_request_id = "partial-request"
+        extension.first_chunk = True
+        extension.sent_ts = 100.0
+        extension.total_audio_bytes = 0
+        extension.send_tts_audio_start = AsyncMock()
+        extension.send_tts_ttfb_metrics = AsyncMock()
+        extension.send_tts_audio_data = AsyncMock()
+
+        with patch(
+            "fish_audio_tts_python.extension.time.monotonic",
+            side_effect=_monotonic_clock([100.0, 100.25, 100.5]),
+        ):
+            await extension._on_audio_chunk(
+                b"\x00\x00" * 1600, "partial-request"
+            )
+            await extension.cancel_tts()
+
+        args = extension.send_tts_audio_end.await_args.kwargs
+        assert args["request_total_audio_duration_ms"] == 100
+        assert args["request_event_interval_ms"] == 500
+        assert args["reason"] == TTSAudioEndReason.INTERRUPTED
+
+    asyncio.run(run_test())
+
+
+def test_error_after_audio_accounts_for_emitted_pcm() -> None:
+    async def run_test() -> None:
+        extension = _create_extension()
+        extension.current_request_id = "error-request"
+        extension.first_chunk = True
+        extension.sent_ts = 100.0
+        extension.total_audio_bytes = 0
+        extension.send_tts_audio_start = AsyncMock()
+        extension.send_tts_ttfb_metrics = AsyncMock()
+        extension.send_tts_audio_data = AsyncMock()
+
+        with patch(
+            "fish_audio_tts_python.extension.time.monotonic",
+            side_effect=_monotonic_clock([100.0, 100.25, 100.5]),
+        ):
+            await extension._on_audio_chunk(b"\x00\x00" * 1600, "error-request")
+            await extension._send_current_request_audio_end(
+                "error-request", TTSAudioEndReason.ERROR
+            )
+
+        args = extension.send_tts_audio_end.await_args.kwargs
+        assert args["request_total_audio_duration_ms"] == 100
+        assert args["request_event_interval_ms"] == 500
+        assert args["reason"] == TTSAudioEndReason.ERROR
 
     asyncio.run(run_test())
 
@@ -310,6 +436,9 @@ def test_initialization_failure_uses_input_request_id() -> None:
         extension = _create_extension()
         extension.config = None
         extension.client = None
+        # Exercise the real client factory so the invalid configuration fails
+        # during connect instead of returning a silent mock iterator.
+        del extension._create_client
 
         await extension.request_tts(
             TTSTextInput(

@@ -44,16 +44,21 @@ class SuccessfulWebSocket:
             {"event": "audio", "audio": b"audio"},
             {"event": "finish", "reason": "stop"},
         ]
+        self._closed = asyncio.Event()
 
     async def send(self, _message: bytes) -> None:
         return None
 
     async def recv(self) -> bytes:
         await asyncio.sleep(0)
-        return ormsgpack.packb(self.messages.pop(0))
+        if self.messages:
+            return ormsgpack.packb(self.messages.pop(0))
+        await self._closed.wait()
+        raise ConnectionError("socket closed")
 
     async def close(self) -> None:
         self.close_calls += 1
+        self._closed.set()
 
 
 class FakeConnect:
@@ -80,7 +85,7 @@ class BlockingConnect:
         self.exited.set()
 
 
-def test_cancel_closes_socket_and_next_request_recovers():
+def test_cancel_closes_socket_and_new_client_recovers():
     async def run_test() -> None:
         blocked_socket = BlockingWebSocket()
         successful_socket = SuccessfulWebSocket()
@@ -96,22 +101,25 @@ def test_cancel_closes_socket_and_next_request_recovers():
             "fish_audio_tts_python.fish_audio_tts.connect",
             side_effect=fake_connect,
         ):
-            client = FishAudioTTSClient(config, ten_env)
-
-            first_stream = client.get("first request")
+            first_client = FishAudioTTSClient(config, ten_env)
+            first_stream = first_client.get("first request")
             assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
                 b"audio",
                 EVENT_TTS_RESPONSE,
             )
 
-            await asyncio.wait_for(client.cancel(), 0.5)
+            await asyncio.wait_for(first_client.cancel(), 0.5)
             assert blocked_socket.close_calls >= 1
             assert await asyncio.wait_for(first_stream.__anext__(), 0.5) == (
                 None,
                 EVENT_TTS_FLUSH,
             )
+            await first_stream.aclose()
 
-            second_stream = client.get("second request")
+            # Flush discards the old client. The extension creates a new one
+            # so the next request has a clean connection.
+            second_client = FishAudioTTSClient(config, ten_env)
+            second_stream = second_client.get("second request")
             assert await asyncio.wait_for(second_stream.__anext__(), 0.5) == (
                 b"audio",
                 EVENT_TTS_RESPONSE,
@@ -121,7 +129,7 @@ def test_cancel_closes_socket_and_next_request_recovers():
                 EVENT_TTS_END,
             )
 
-            await client.clean()
+            await second_client.clean()
 
     asyncio.run(run_test())
 
@@ -149,5 +157,43 @@ def test_cancel_interrupts_websocket_handshake():
             )
             await stream.aclose()
             assert not connect_context.exited.is_set()
+
+    asyncio.run(run_test())
+
+
+def test_cancel_during_retry_backoff_stops_connection_attempts():
+    async def run_test() -> None:
+        connect_calls = 0
+        first_failure = asyncio.Event()
+        ten_env = MagicMock()
+
+        def failing_connect(*_args, **_kwargs):
+            nonlocal connect_calls
+            connect_calls += 1
+            first_failure.set()
+            raise RuntimeError("boom")
+
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            side_effect=failing_connect,
+        ):
+            client = FishAudioTTSClient(
+                FishAudioTTSConfig(api_key="test-key"), ten_env
+            )
+            stream = client.get("hello")
+            receive_task = asyncio.create_task(stream.__anext__())
+            await asyncio.wait_for(first_failure.wait(), 0.5)
+
+            await asyncio.wait_for(client.cancel(), 0.5)
+            assert await asyncio.wait_for(receive_task, 0.5) == (
+                None,
+                EVENT_TTS_FLUSH,
+            )
+            await stream.aclose()
+
+        # Cancelling during the backoff must stop the whole connection
+        # operation. No second handshake and no text may follow.
+        await asyncio.sleep(0.4)
+        assert connect_calls == 1
 
     asyncio.run(run_test())

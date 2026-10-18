@@ -18,11 +18,14 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import (
-    LOG_CATEGORY_KEY_POINT,
-    LOG_CATEGORY_TRANSCRIPTS,
-    LOG_CATEGORY_VENDOR,
-)
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+
+try:
+    from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
+except ImportError:
+    # Older bundled ten_ai_base releases predate the transcripts category.
+    # Keep the extension importable and use the same category name.
+    LOG_CATEGORY_TRANSCRIPTS = "transcripts"
 from .config import FishAudioTTSConfig
 
 from .fish_audio_tts import (
@@ -79,15 +82,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             if not self.config.api_key:
                 raise ValueError("API key is required")
 
-            self.client = FishAudioTTSClient(
-                config=self.config,
-                ten_env=ten_env,
-                on_text_send=self._on_text_send,
-                on_connection_connecting=self.on_connecting,
-                on_connection_connected=self.on_connected,
-                on_connection_disconnected=self.on_disconnected,
-                on_audio=self._on_audio_chunk,
-            )
+            self.client = self._create_client()
 
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
@@ -132,14 +127,21 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     async def cancel_tts(self) -> None:
         self.current_request_finished = True
         request_id = self.current_request_id
+        old_client = self.client
+        self.client = None
+        if old_client:
+            try:
+                await old_client.cancel()
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error cancelling Fish Audio TTS client: {e}"
+                )
+
         if request_id:
             self.ten_env.log_debug(
                 f"Current request {request_id} is being cancelled. "
                 "Sending INTERRUPTED."
             )
-            if self.client:
-                await self.client.cancel()
-
             # A flush can arrive before the first audio chunk, while request_ts
             # is still None. sent_ts lets us emit the required INTERRUPTED
             # audio_end during that normal TTFB window as well.
@@ -169,11 +171,33 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 "No current request found, skipping TTS cancellation."
             )
 
+        # Flush tears down the vendor socket. Start a fresh client now so the
+        # next request has a clean connection, matching the other WebSocket
+        # TTS extensions.
+        if old_client is not None:
+            try:
+                self.client = self._create_client()
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Failed to recreate Fish Audio TTS client: {e}"
+                )
+
+    def _create_client(self) -> FishAudioTTSClient:
+        return FishAudioTTSClient(
+            config=self.config,
+            ten_env=self.ten_env,
+            on_text_send=self._on_text_send,
+            on_connection_connecting=self.on_connecting,
+            on_connection_connected=self.on_connected,
+            on_connection_disconnected=self.on_disconnected,
+            on_audio=self._on_audio_chunk,
+        )
+
     def vendor(self) -> str:
         return "fish_audio"
 
     def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        return self.config.sample_rate if self.config else 16000
 
     def _on_text_send(self) -> None:
         if self.sent_ts is None:
@@ -241,16 +265,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if not self.client:
-                self.client = FishAudioTTSClient(
-                    config=self.config,
-                    ten_env=self.ten_env,
-                    on_text_send=self._on_text_send,
-                    on_connection_connecting=self.on_connecting,
-                    on_connection_connected=self.on_connected,
-                    on_connection_disconnected=self.on_disconnected,
-                    on_audio=self._on_audio_chunk,
-                )
-                self.ten_env.log_info("TTS client reconnected successfully.")
+                self.client = self._create_client()
+                self.ten_env.log_info("TTS client created successfully.")
 
             self.ten_env.log_info(
                 f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}, current_request_finished: {self.current_request_finished}"
@@ -334,9 +350,35 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     f"Skipping empty text for request_id: {t.request_id}"
                 )
                 if t.text_input_end:
-                    await self._complete_current_request(
-                        TTSAudioEndReason.REQUEST_END
+                    interruption = (
+                        self.client.interruption(t.request_id)
+                        if self.client is not None
+                        else None
                     )
+                    if interruption is not None:
+                        # The session broke before this request finished, so it
+                        # must not be reported as a normal end.
+                        reason, event = interruption
+                        error_code = (
+                            ModuleErrorCode.FATAL_ERROR
+                            if event == EVENT_TTS_INVALID_KEY_ERROR
+                            else ModuleErrorCode.NON_FATAL_ERROR
+                        )
+                        await self._complete_current_request(
+                            TTSAudioEndReason.ERROR,
+                            error=ModuleError(
+                                message=reason,
+                                module=ModuleType.TTS,
+                                code=error_code,
+                                vendor_info=ModuleErrorVendorInfo(
+                                    vendor=self.vendor()
+                                ),
+                            ),
+                        )
+                    else:
+                        await self._complete_current_request(
+                            TTSAudioEndReason.REQUEST_END
+                        )
                 return
 
             async for audio_chunk, event in self.client.get(
@@ -454,10 +496,12 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         """Send audio_end at most once and flush without changing base state."""
 
-        interval_start = self.request_ts or self.sent_ts
+        # The interval starts when tts_audio_start is emitted. A request that
+        # never produced audio has no start event, so it reports 0 instead of
+        # folding the text-send time into the interval.
         request_event_interval = (
-            int((time.monotonic() - interval_start) * 1000)
-            if interval_start
+            int((time.monotonic() - self.request_ts) * 1000)
+            if self.request_ts
             else 0
         )
         duration_ms = self._calculate_audio_duration_ms()
