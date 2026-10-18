@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 import websockets
 
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 
 PROTOCOL_VERSION = 0b0001
 DEFAULT_HEADER_SIZE = 0b0001
