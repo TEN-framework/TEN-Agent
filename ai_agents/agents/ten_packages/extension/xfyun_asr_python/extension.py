@@ -468,7 +468,8 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
             if result_data.get("sub_end") is True:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR sub sentence end: {result_to_send}"
+                    f"Xfyun ASR sub sentence end: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 self.wpgs_buffer.clear()
                 self.ten_env.log_debug(
@@ -478,7 +479,8 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
             if status == 2:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR complete result: {result_to_send}"
+                    f"Xfyun ASR complete result: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 # Clear buffer when recognition completes
                 min_sn = (

@@ -803,7 +803,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         """
         self.ten_env.log_debug(
             f"vendor_result: transcript: {tokens}, final_audio_proc_ms: {final_audio_proc_ms}, total_audio_proc_ms: {total_audio_proc_ms}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         try:

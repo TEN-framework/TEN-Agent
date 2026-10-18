@@ -129,7 +129,8 @@ class ElevenLabsWSRecognition:
 
             else:
                 self.ten_env.log_info(
-                    f"[ElevenLabs] Unknown message: {message_data}"
+                    f"[ElevenLabs] Unknown message: {message_data}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 if self.callback:
                     await self.callback.on_event(message_data)

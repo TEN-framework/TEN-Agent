@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 import websockets
 from ten_runtime import LogLevel
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 
 from .config import BytedanceASRLLMConfig
 from .const import (
@@ -585,7 +586,8 @@ class VolcengineASRClient:
             if self.ten_env:
                 self.ten_env.log_error(
                     f"Invalid {callback_name} callback result: "
-                    f"{callback_result}"
+                    f"{callback_result}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
             else:
                 logging.error(

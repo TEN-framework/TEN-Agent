@@ -117,7 +117,8 @@ class AssemblyAIWSRecognition:
                 # on_error would feed a dict into ModuleError(message=str) and
                 # raise a Pydantic validation error, so surface them as events.
                 self.ten_env.log_info(
-                    f"[AssemblyAI] Unknown message: {message_data}"
+                    f"[AssemblyAI] Unknown message: {message_data}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 if self.callback:
                     await self.callback.on_event(message_data)
