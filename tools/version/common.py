@@ -7,7 +7,27 @@
 import subprocess
 import json
 import os
-from jinja2 import Template
+import re
+
+try:
+    from jinja2 import Template
+except ModuleNotFoundError:
+    class Template:
+        """Fallback when jinja2 is not installed.
+
+        Supports {{ VARIABLE }} replacement used by version templates.
+        """
+
+        def __init__(self, content: str):
+            self.content = content
+
+        def render(self, **kwargs) -> str:
+            result = self.content
+            for key, val in kwargs.items():
+                result = re.sub(
+                    rf"\{{\{{\s*{re.escape(key)}\s*\}}\}}", str(val), result
+                )
+            return result
 
 
 class PkgInfo:
