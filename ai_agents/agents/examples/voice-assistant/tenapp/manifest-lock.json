@@ -442,6 +442,36 @@
     },
     {
       "type": "extension",
+      "name": "deepseek_llm2_python",
+      "version": "0.1.0",
+      "hash": "0f5e93ed9706f92ee48c5f9b26ba07941e5bd837c6ada0338f8eafa14fad9a1f",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/deepseek_llm2_python"
+    },
+    {
+      "type": "extension",
+      "name": "typesafe_jev_python",
+      "version": "0.1.0",
+      "hash": "4533399d37b1691ec3600dc37cd9d50dcb249ff559099d0a53b298691fd8998d",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/typesafe_jev_python"
+    },
+    {
+      "type": "extension",
       "name": "anthropic_llm2_python",
       "version": "0.1.0",
       "hash": "06de4fc1b5e65f521fa5e0211c2d38f012f22bb3278e475c3ad5098ab3211e0d",

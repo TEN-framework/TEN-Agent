@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "${env:TYPESAFE_API_KEY|}",
+    "base_url": "https://api.typesafe.ai",
+    "model": "jev-1.13.0",
+    "timeout_ms": 1000
+  }
+}

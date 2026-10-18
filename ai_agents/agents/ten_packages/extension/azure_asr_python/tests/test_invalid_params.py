@@ -73,3 +73,20 @@ def test_invalid_params():
     assert (
         err is None
     ), f"test_asr_result err code: {err.error_code()} message: {err.error_message()}"
+
+
+def test_invalid_transport_reconnect_grace_sec_on_init():
+    property_json = {
+        "params": {
+            "key": "fake_key",
+            "region": "fake_region",
+            "transport_reconnect_grace_sec": 0,
+        }
+    }
+
+    tester = AzureAsrExtensionTester()
+    tester.set_test_mode_single("azure_asr_python", json.dumps(property_json))
+    err = tester.run()
+    assert (
+        err is None
+    ), f"invalid grace init err code: {err.error_code()} message: {err.error_message()}"

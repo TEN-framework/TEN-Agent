@@ -1,0 +1,9 @@
+{
+    "base_url": "https://api.deepseek.com",
+    "api_key": "${env:DEEPSEEK_API_KEY}",
+    "frequency_penalty": 0.9,
+    "model": "deepseek-flash",
+    "max_tokens": 512,
+    "prompt": "",
+    "proxy_url": "${env:DEEPSEEK_PROXY_URL|}"
+}

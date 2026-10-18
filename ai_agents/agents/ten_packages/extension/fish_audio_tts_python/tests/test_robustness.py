@@ -133,7 +133,7 @@ def test_reconnect_after_connection_drop(MockFishAudioTTSClient):
     mock_instance.clean = AsyncMock()
 
     # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str):
+    async def mock_get_stateful(text: str, **_kwargs):
         nonlocal get_call_count
         get_call_count += 1
 

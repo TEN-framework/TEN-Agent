@@ -1,0 +1,51 @@
+{
+  "type": "extension",
+  "name": "main_jev_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "greeting": {
+          "type": "string"
+        },
+        "turn_detection_mode": {
+          "type": "string"
+        },
+        "model_routing": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "bool"},
+            "decision_dest": {"type": "string"},
+            "fast_dest": {"type": "string"},
+            "deep_dest": {"type": "string"},
+            "min_confidence": {"type": "float64"},
+            "timeout_ms": {"type": "int32"},
+            "question": {"type": "object", "properties": {}}
+          }
+        }
+      }
+    }
+  }
+}

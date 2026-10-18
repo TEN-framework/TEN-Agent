@@ -1,0 +1,2 @@
+openai>=2.44.0
+httpx[socks]>=0.28.0

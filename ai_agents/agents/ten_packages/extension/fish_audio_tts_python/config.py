@@ -1,8 +1,12 @@
-from typing import Any
+from typing import Any, Literal, get_args
 import copy
 from ten_ai_base import utils
-from fish_audio_sdk.apis import Backends
 from pydantic import BaseModel, Field
+
+
+FlushMode = Literal["off", "first_chunk", "every_sentence"]
+FLUSH_MODES: tuple[str, ...] = get_args(FlushMode)
+DEFAULT_FLUSH_MODE = "first_chunk"
 
 
 class FishAudioTTSConfig(BaseModel):
@@ -11,7 +15,9 @@ class FishAudioTTSConfig(BaseModel):
     sample_rate: int = 16000
     dump: bool = False
     dump_path: str = "/tmp"
-    backend: Backends = "speech-1.5"
+    backend: str = "speech-1.5"
+    flush_mode: str = DEFAULT_FLUSH_MODE
+    flush_mode_warning: str | None = None
     params: dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:
@@ -40,12 +46,26 @@ class FishAudioTTSConfig(BaseModel):
         if "opus_bitrate" in self.params:
             del self.params["opus_bitrate"]
 
-        if "chunk_length" in self.params:
-            del self.params["chunk_length"]
-
         if "backend" in self.params:
             self.backend = self.params["backend"]
             del self.params["backend"]
+
+        if "flush_mode" in self.params:
+            # Drop it from params so it never reaches the vendor payload.
+            self.flush_mode = str(self.params["flush_mode"])
+            del self.params["flush_mode"]
+
+        # An invalid value must not abort initialization: keep running with the
+        # default and let the extension surface the problem as an error log.
+        if self.flush_mode not in FLUSH_MODES:
+            self.flush_mode_warning = (
+                f"Invalid flush_mode {self.flush_mode!r}; allowed values are "
+                f"{', '.join(FLUSH_MODES)}; falling back to "
+                f"{DEFAULT_FLUSH_MODE!r}"
+            )
+            self.flush_mode = DEFAULT_FLUSH_MODE
+        else:
+            self.flush_mode_warning = None
 
         if "text" in self.params:
             del self.params["text"]

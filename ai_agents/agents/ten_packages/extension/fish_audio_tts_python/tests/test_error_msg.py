@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from ten_runtime import (
     ExtensionTester,
@@ -143,15 +143,13 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("fish_audio_tts_python.fish_audio_tts.AsyncWebSocketSession")
-def test_invalid_api_key_error(MockAsyncWebSocketSession):
+@patch("fish_audio_tts_python.fish_audio_tts.connect")
+def test_invalid_api_key_error(MockConnect):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
 
-    # Mock API key error by raising exception in create() method
-    mock_client = MockAsyncWebSocketSession.return_value
-    mock_client.close = AsyncMock()
-    mock_client.tts.side_effect = Exception("<Response [402 Payment Required]>")
+    # Mock API key error during WebSocket connection.
+    MockConnect.side_effect = Exception("<Response [402 Payment Required]>")
 
     # Config with invalid API key
     invalid_key_config = {

@@ -17,13 +17,19 @@ A configurable voice assistant with real-time conversation capabilities using Ag
    - `DEEPGRAM_API_KEY` for the default `voice_assistant` graph
    - `XAI_API_KEY` for `voice_assistant_xai_asr` or `voice_assistant_xai_full`
 
-3. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
-   - `OPENAI_API_KEY` - Your OpenAI API key (required)
+3. **LLM Provider**: Most graphs use an OpenAI-compatible model with
+   `OPENAI_API_KEY`. The optional Jev graph instead uses `DEEPSEEK_API_KEY`.
 
 4. **TTS Provider**: choose the graph you want to run
    - `ELEVENLABS_TTS_KEY` for the default `voice_assistant` graph or `voice_assistant_xai_asr`
    - `GRADIUM_API_KEY` for `voice_assistant_gradium`
    - `XAI_API_KEY` for `voice_assistant_xai_tts` or `voice_assistant_xai_full`
+
+5. **Optional Jev routing graph**: `voice_assistant_jev_router` needs
+   `TYPESAFE_API_KEY` and `DEEPSEEK_API_KEY`. Both routes use `deepseek-flash`:
+   simple conversation runs without thinking, while complex requests enable
+   thinking. It also needs the same Deepgram and ElevenLabs keys
+   as the default graph. This optional graph is a chatbot and has no tools.
 
 ### Provider-specific keys
 
@@ -41,6 +47,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 - `AGORA_APP_CERTIFICATE` - Agora App Certificate (optional)
 - `OPENAI_MODEL` - OpenAI model name (optional, defaults to configured model)
 - `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
+- `DEEPSEEK_PROXY_URL` - Proxy URL for the optional Jev graph (optional)
 - `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
 
 ## Setup
@@ -62,6 +69,9 @@ OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4
 OPENAI_PROXY_URL=your_proxy_url_here
 
+# For voice_assistant_jev_router, use these instead of the OpenAI variables
+TYPESAFE_API_KEY=your_typesafe_api_key_here
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
 # ElevenLabs (required for text-to-speech)
 ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
 
@@ -111,13 +121,42 @@ Available graph names:
 - `voice_assistant_xai_asr` - xAI STT + OpenAI-compatible LLM + ElevenLabs TTS
 - `voice_assistant_xai_tts` - Deepgram STT + OpenAI-compatible LLM + xAI TTS
 - `voice_assistant_xai_full` - xAI STT + OpenAI-compatible LLM + xAI TTS
+- `voice_assistant_jev_router` - Deepgram STT + Jev thinking-mode routing +
+  DeepSeek Flash chatbot + ElevenLabs TTS
 
 Examples:
 
 ```text
 http://localhost:3000/?graph=voice_assistant_xai_full
 https://ten-demo.agora.io/?graph=voice_assistant_xai_full
+http://localhost:3000/?graph=voice_assistant_jev_router
 ```
+
+The Jev graph is opt-in; the default `voice_assistant` graph is unchanged.
+Its Deepgram Nova-3 ASR uses a 500 ms endpointing window. Stable `is_final`
+segments are accumulated. `speech_final` submits the complete utterance to Jev
+and DeepSeek immediately; if it does not arrive, a 1000 ms deadline after the
+last nonempty ASR result submits the buffered stable text once. Empty ASR
+results do not extend the deadline, and late results from an already submitted
+segment are ignored. The default graph retains segment-final turn handling.
+Barge-in behavior is unchanged.
+Before each routed reply, the chat shows a separate, non-spoken Jev route
+record with the choice, confidence (when available), selected LLM, latency,
+and whether an error or timeout caused a fallback.
+Jev evaluates the final English ASR text with a `fast`/`deep` choice. A `fast`
+choice with confidence at least 0.8 uses Flash without thinking; `deep` or
+an uncertain `fast` choice uses Flash with thinking. Jev errors,
+invalid responses, and timeouts fall back to Flash without thinking to keep
+the voice response responsive. The Jev request has a 2000 ms deadline and
+the controller waits at most 2300 ms. These thresholds are demo starting
+points and should be calibrated with real requests before production use.
+When thinking is selected, the complete DeepSeek reasoning is shown in a
+separate chat message before the final answer; it is never sent to TTS. The
+route appears as a normal assistant message, so no frontend changes are
+needed. This graph registers no tools.
+Both LLM nodes are pinned to `deepseek-flash`; the old
+`DEEPSEEK_FAST_MODEL` and `DEEPSEEK_DEEP_MODEL` values do not override this
+graph.
 
 ## Configuration
 

@@ -4,8 +4,8 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-from datetime import datetime
 import os
+import time
 import traceback
 
 from ten_ai_base.helper import PCMWriter
@@ -18,7 +18,14 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+
+try:
+    from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
+except ImportError:
+    # Older bundled ten_ai_base releases predate the transcripts category.
+    # Keep the extension importable and use the same category name.
+    LOG_CATEGORY_TRANSCRIPTS = "transcripts"
 from .config import FishAudioTTSConfig
 
 from .fish_audio_tts import (
@@ -39,8 +46,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self.client: FishAudioTTSClient | None = None
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
-        self.sent_ts: datetime | None = None
-        self.request_ts: datetime | None = None
+        self.sent_ts: float | None = None
+        self.request_ts: float | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
@@ -65,6 +72,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 config_json_str
             )
             self.config.update_params()
+            if self.config.flush_mode_warning:
+                ten_env.log_error(self.config.flush_mode_warning)
 
             ten_env.log_info(
                 f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
@@ -73,9 +82,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             if not self.config.api_key:
                 raise ValueError("API key is required")
 
-            self.client = FishAudioTTSClient(
-                config=self.config, ten_env=ten_env
-            )
+            self.client = self._create_client()
 
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
@@ -120,14 +127,21 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     async def cancel_tts(self) -> None:
         self.current_request_finished = True
         request_id = self.current_request_id
+        old_client = self.client
+        self.client = None
+        if old_client:
+            try:
+                await old_client.cancel()
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error cancelling Fish Audio TTS client: {e}"
+                )
+
         if request_id:
             self.ten_env.log_debug(
                 f"Current request {request_id} is being cancelled. "
                 "Sending INTERRUPTED."
             )
-            if self.client:
-                await self.client.cancel()
-
             # A flush can arrive before the first audio chunk, while request_ts
             # is still None. sent_ts lets us emit the required INTERRUPTED
             # audio_end during that normal TTFB window as well.
@@ -138,16 +152,107 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 request_id, TTSAudioEndReason.INTERRUPTED
             )
 
+            recorder = self.recorder_map.pop(request_id, None)
+            if recorder is not None:
+                await recorder.flush()
+
+            self.current_request_id = None
+            self.current_turn_id = -1
+            self.current_request_finished = False
+            self.sent_ts = None
+            self.request_ts = None
+            self.total_audio_bytes = 0
+            self.first_chunk = True
+            self._audio_end_sent = False
+            self._audio_end_task = None
+
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."
             )
 
+        # Flush tears down the vendor socket. Start a fresh client now so the
+        # next request has a clean connection, matching the other WebSocket
+        # TTS extensions.
+        if old_client is not None:
+            try:
+                self.client = self._create_client()
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Failed to recreate Fish Audio TTS client: {e}"
+                )
+
+    def _create_client(self) -> FishAudioTTSClient:
+        return FishAudioTTSClient(
+            config=self.config,
+            ten_env=self.ten_env,
+            on_text_send=self._on_text_send,
+            on_connection_connecting=self.on_connecting,
+            on_connection_connected=self.on_connected,
+            on_connection_disconnected=self.on_disconnected,
+            on_audio=self._on_audio_chunk,
+        )
+
     def vendor(self) -> str:
         return "fish_audio"
 
     def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        return self.config.sample_rate if self.config else 16000
+
+    def _on_text_send(self) -> None:
+        if self.sent_ts is None:
+            self.sent_ts = time.monotonic()
+
+    async def _on_audio_chunk(
+        self, audio_chunk: bytes, request_id: str
+    ) -> None:
+        if self.current_request_id != request_id:
+            self.ten_env.log_debug(
+                f"Dropping Fish Audio audio for stale request_id: {request_id}"
+            )
+            return
+
+        self.total_audio_bytes += len(audio_chunk)
+        duration_ms = self._calculate_audio_duration_ms()
+        self.ten_env.log_debug(
+            f"receive_audio: duration: {duration_ms} of request id: {request_id}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+        if self.first_chunk:
+            if self.sent_ts is not None:
+                await self.send_tts_audio_start(request_id=request_id)
+                self.request_ts = time.monotonic()
+                ttfb = int((time.monotonic() - self.sent_ts) * 1000)
+                await self.send_tts_ttfb_metrics(
+                    request_id=request_id,
+                    ttfb_ms=ttfb,
+                    extra_metadata={
+                        "reference_id": self.config.params.get(
+                            "reference_id", ""
+                        ),
+                        "backend": self.config.params.get("backend", ""),
+                    },
+                )
+            else:
+                # Without the text-send timestamp there is no TTFB anchor, so
+                # tts_audio_start, the TTFB metric, and the audio frame
+                # metadata it registers would all be dropped silently. Log
+                # loudly instead: the client is expected to invoke the
+                # on_text_send callback before the first text payload reaches
+                # the socket.
+                self.ten_env.log_error(
+                    "Fish Audio TTS: first audio chunk arrived without a "
+                    "text-send timestamp; on_text_send callback is not wired, "
+                    "so tts_audio_start and TTFB metrics are skipped for "
+                    f"request {request_id}"
+                )
+            self.first_chunk = False
+
+        if self.config and self.config.dump and request_id in self.recorder_map:
+            await self.recorder_map[request_id].write(audio_chunk)
+
+        await self.send_tts_audio_data(audio_chunk)
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -157,12 +262,11 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if not self.client:
-                self.client = FishAudioTTSClient(
-                    config=self.config, ten_env=self.ten_env
-                )
-                self.ten_env.log_info("TTS client reconnected successfully.")
+                self.client = self._create_client()
+                self.ten_env.log_info("TTS client created successfully.")
 
             self.ten_env.log_info(
                 f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}, current_request_finished: {self.current_request_finished}"
@@ -173,7 +277,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 self.first_chunk = True
-                self.sent_ts = datetime.now()
+                self.sent_ts = None
                 self.request_ts = None
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
@@ -238,83 +342,55 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             # empty text stream. Handle empty chunks locally so a final empty
             # chunk can still close a request that already produced audio, and
             # an entirely empty request completes with zero duration.
-            if not t.text.strip():
+            if not t.text.strip() and not (
+                t.text_input_end
+                and getattr(self.client, "session_active", False) is True
+            ):
                 self.ten_env.log_info(
                     f"Skipping empty text for request_id: {t.request_id}"
                 )
                 if t.text_input_end:
-                    await self._complete_current_request(
-                        TTSAudioEndReason.REQUEST_END
+                    interruption = (
+                        self.client.interruption(t.request_id)
+                        if self.client is not None
+                        else None
                     )
+                    if interruption is not None:
+                        # The session broke before this request finished, so it
+                        # must not be reported as a normal end.
+                        reason, event = interruption
+                        error_code = (
+                            ModuleErrorCode.FATAL_ERROR
+                            if event == EVENT_TTS_INVALID_KEY_ERROR
+                            else ModuleErrorCode.NON_FATAL_ERROR
+                        )
+                        await self._complete_current_request(
+                            TTSAudioEndReason.ERROR,
+                            error=ModuleError(
+                                message=reason,
+                                module=ModuleType.TTS,
+                                code=error_code,
+                                vendor_info=ModuleErrorVendorInfo(
+                                    vendor=self.vendor()
+                                ),
+                            ),
+                        )
+                    else:
+                        await self._complete_current_request(
+                            TTSAudioEndReason.REQUEST_END
+                        )
                 return
 
-            async for audio_chunk, event in self.client.get(t.text):
+            async for audio_chunk, event in self.client.get(
+                t.text,
+                request_id=t.request_id,
+                text_input_end=t.text_input_end,
+            ):
                 if event == EVENT_TTS_RESPONSE:
-                    if audio_chunk is not None and len(audio_chunk) > 0:
+                    if audio_chunk:
                         chunk_count += 1
-                        self.total_audio_bytes += len(audio_chunk)
-                        duration_ms = self._calculate_audio_duration_ms()
-                        self.ten_env.log_debug(
-                            f"receive_audio:  duration: {duration_ms} of request id: {self.current_request_id}",
-                            category=LOG_CATEGORY_VENDOR,
-                        )
-
-                        # Send TTS audio start on first chunk
-                        if self.first_chunk:
-                            self.request_ts = datetime.now()
-                            if self.sent_ts:
-                                await self.send_tts_audio_start(
-                                    request_id=self.current_request_id,
-                                )
-                                ttfb = int(
-                                    (
-                                        datetime.now() - self.sent_ts
-                                    ).total_seconds()
-                                    * 1000
-                                )
-                                extra_metadata = {
-                                    "reference_id": self.config.params.get(
-                                        "reference_id", ""
-                                    ),
-                                    "backend": self.config.params.get(
-                                        "backend", ""
-                                    ),
-                                }
-                                await self.send_tts_ttfb_metrics(
-                                    request_id=self.current_request_id,
-                                    ttfb_ms=ttfb,
-                                    extra_metadata=extra_metadata,
-                                )
-                                self.ten_env.log_debug(
-                                    f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
-                                )
-                            self.first_chunk = False
-
-                        # Write to dump file if enabled
-                        if (
-                            self.config
-                            and self.config.dump
-                            and self.current_request_id
-                            and self.current_request_id in self.recorder_map
-                        ):
-                            self.ten_env.log_debug(
-                                f"Writing audio chunk to dump file, dump url: {self.config.dump_path}"
-                            )
-                            asyncio.create_task(
-                                self.recorder_map[
-                                    self.current_request_id
-                                ].write(audio_chunk)
-                            )
-
-                        # Send audio data
-                        await self.send_tts_audio_data(audio_chunk)
-                    else:
-                        self.ten_env.log_debug(
-                            "Received empty payload for TTS response"
-                        )
-                        # An empty vendor chunk is not a completion signal.
-                        # EVENT_TTS_END remains the single normal-completion
-                        # path, preventing duplicate audio_end events.
+                        await self._on_audio_chunk(audio_chunk, t.request_id)
+                    continue
                 elif event == EVENT_TTS_END:
                     self.ten_env.log_debug(
                         "Received TTS_END event from Fish Audio TTS"
@@ -420,10 +496,12 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         """Send audio_end at most once and flush without changing base state."""
 
-        interval_start = self.request_ts or self.sent_ts
+        # The interval starts when tts_audio_start is emitted. A request that
+        # never produced audio has no start event, so it reports 0 instead of
+        # folding the text-send time into the interval.
         request_event_interval = (
-            int((datetime.now() - interval_start).total_seconds() * 1000)
-            if interval_start
+            int((time.monotonic() - self.request_ts) * 1000)
+            if self.request_ts
             else 0
         )
         duration_ms = self._calculate_audio_duration_ms()

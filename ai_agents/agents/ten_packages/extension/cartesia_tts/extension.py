@@ -209,7 +209,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         try:
             await super().on_init(ten_env)
             config_json_str, _ = await self.ten_env.get_property_to_json("")
-            ten_env.log_info(f"config_json_str: {config_json_str}")
 
             if not config_json_str or config_json_str.strip() == "{}":
                 raise ValueError(

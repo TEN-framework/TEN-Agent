@@ -1,0 +1,11 @@
+[project]
+name = "typesafe-jev-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["typesafe-sdk==0.7.2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "pytest-asyncio>=0.24,<2"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -6,12 +6,11 @@ from .const import MODULE_NAME_ASR
 
 class ReconnectManager:
     """
-    Manages reconnection attempts with unlimited retries and exponential backoff strategy.
+    Manages bounded reconnection attempts with exponential backoff strategy.
 
     Features:
-    - Unlimited retry attempts (will keep retrying until successful)
+    - Bounded retry attempts (default from RECONNECT_MAX_ATTEMPTS)
     - Exponential backoff strategy with maximum delay cap: 0.5s, 1s, 2s, 4s (capped)
-    - Maximum delay cap to prevent overwhelming the service provider (default: 4s)
     - Automatic counter reset after successful connection
     - Detailed logging for monitoring and debugging
     """
@@ -20,10 +19,12 @@ class ReconnectManager:
         self,
         base_delay: float = 0.5,  # 500 milliseconds
         max_delay: float = 4.0,  # 4 seconds maximum delay
+        max_attempts: int = 100,
         logger=None,
     ):
         self.base_delay = base_delay
         self.max_delay = max_delay
+        self.max_attempts = max_attempts
         self.logger = logger
 
         # State tracking
@@ -45,8 +46,11 @@ class ReconnectManager:
         """Get current reconnection attempts information"""
         return {
             "current_attempts": self.attempts,
-            "unlimited_retries": True,
+            "max_attempts": self.max_attempts,
         }
+
+    def can_retry(self) -> bool:
+        return self.attempts < self.max_attempts
 
     async def handle_reconnect(
         self,
@@ -93,17 +97,23 @@ class ReconnectManager:
             return True
 
         except Exception as e:
+            is_fatal = self.attempts >= self.max_attempts
             if self.logger:
                 self.logger.log_error(
-                    f"Reconnection attempt #{self.attempts} failed: {e}. Will retry..."
+                    f"Reconnection attempt #{self.attempts} failed: {e}. "
+                    f"{'Giving up.' if is_fatal else 'Will retry...'}"
                 )
 
-            # Report error but don't stop retrying
+            # Report error but don't stop retrying until ceiling
             if error_handler:
                 await error_handler(
                     ModuleError(
                         module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        code=(
+                            ModuleErrorCode.FATAL_ERROR.value
+                            if is_fatal
+                            else ModuleErrorCode.NON_FATAL_ERROR.value
+                        ),
                         message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
                     )
                 )

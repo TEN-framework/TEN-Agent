@@ -1,5 +1,7 @@
 # TTS Guarder Test Guide
 
+As of: 2026-10-11
+
 This document describes how to run Guarder Test for TTS
 
 ## Environment Variables
@@ -44,4 +46,18 @@ task tts-guarder-test EXTENSION=cartesia_tts
 task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 ```
 
-Currently, `test_subtitle_alignment.py` only runs for `cartesia_tts`.
+`test_subtitle_alignment.py` supports `cartesia_tts` and
+`minimax_tts_websocket_duplex`. It validates two sequential requests against
+the cumulative PCM clock. MiniMax also compares TEN word timestamps with
+untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
+for the validation rules and their limits.
+
+See [adding a TTS extension](tests/SUBTITLE_TIMING.md#adding-a-tts-extension)
+for extension setup, the vendor object interface, registry entries, and
+verification steps.
+
+Only `minimax_tts_websocket_duplex` installs a vendor timing hook. The hook
+applies to the alignment test's matching connections and restores the client
+dependency afterward. Unregistered vendors receive no hook, and other Guarder
+cases retain their behavior. Cartesia uses the strengthened generic alignment
+checks without a vendor hook.

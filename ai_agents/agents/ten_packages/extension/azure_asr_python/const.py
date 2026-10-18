@@ -16,3 +16,9 @@ FATAL_ERROR_CODES = [
     speechsdk.CancellationErrorCode.AuthenticationFailure,
     speechsdk.CancellationErrorCode.BadRequest,
 ]
+# Default grace after transport disconnected before ext-level reconnect (overridable via params).
+DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC = 10
+# Wait for Azure Connection.connected after start_continuous_recognition returns.
+DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC = 30
+# Bounded reconnect ceiling (escalates to FATAL); high enough for long idle / SDK transport cycles.
+RECONNECT_MAX_ATTEMPTS = 100

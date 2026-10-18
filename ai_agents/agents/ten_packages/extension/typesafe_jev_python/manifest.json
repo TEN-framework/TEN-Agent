@@ -1,0 +1,39 @@
+{
+  "type": "extension",
+  "name": "typesafe_jev_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {"type": "system", "name": "ten_runtime_python", "version": "0.11"}
+  ],
+  "api": {
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "base_url": {"type": "string"},
+            "model": {"type": "string"},
+            "timeout_ms": {"type": "int32"}
+          }
+        }
+      }
+    },
+    "cmd_in": [
+      {"name": "decision_evaluate"},
+      {"name": "abort"}
+    ]
+  },
+  "scripts": {"test": "tests/bin/start"},
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt",
+      "tests/**"
+    ]
+  }
+}

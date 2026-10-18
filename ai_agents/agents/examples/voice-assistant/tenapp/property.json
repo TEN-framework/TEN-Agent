@@ -1779,6 +1779,171 @@
             }
           ]
         }
+      },
+      {
+        "name": "voice_assistant_jev_router",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US",
+                  "model": "nova-3",
+                  "endpointing": 500
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm_fast",
+              "addon": "deepseek_llm2_python",
+              "extension_group": "chatgpt_fast",
+              "property": {
+                "base_url": "https://api.deepseek.com",
+                "api_key": "${env:DEEPSEEK_API_KEY}",
+                "model": "deepseek-flash",
+                "max_tokens": 512,
+                "prompt": "You are a voice assistant. Give concise spoken answers unless the user asks for detail. Never reveal internal reasoning.",
+                "proxy_url": "${env:DEEPSEEK_PROXY_URL|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm_deep",
+              "addon": "deepseek_llm2_python",
+              "extension_group": "chatgpt_deep",
+              "property": {
+                "base_url": "https://api.deepseek.com",
+                "api_key": "${env:DEEPSEEK_API_KEY}",
+                "model": "deepseek-flash",
+                "max_tokens": 8192,
+                "prompt": "You are a voice assistant. Think carefully, then give a concise final answer unless the user asks for detail. Keep reasoning out of the spoken answer; it is delivered separately.",
+                "proxy_url": "${env:DEEPSEEK_PROXY_URL|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "jev",
+              "addon": "typesafe_jev_python",
+              "extension_group": "decision",
+              "property": {
+                "params": {
+                  "api_key": "${env:TYPESAFE_API_KEY}",
+                  "model": "jev-1.13.0",
+                  "timeout_ms": 2000
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_jev_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "turn_detection_mode": "speech_final",
+                "asr_final_fallback_ms": 1000,
+                "model_routing": {
+                  "enabled": true,
+                  "decision_dest": "jev",
+                  "fast_dest": "llm_fast",
+                  "deep_dest": "llm_deep",
+                  "min_confidence": 0.8,
+                  "timeout_ms": 2300,
+                  "question": {
+                    "type": "choice",
+                    "instructions": "Does the latest user request need deliberate multi-step reasoning before a concise spoken answer? Do not judge by length alone.",
+                    "criteria": {
+                      "fast": "Greetings, small talk, and direct questions that can be answered without extended reasoning",
+                      "deep": "Multi-step reasoning, planning with tradeoffs, or nuanced analysis that benefits from deliberate thought"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {"names": ["on_user_joined", "on_user_left"], "source": [{"extension": "agora_rtc"}]}
+              ],
+              "data": [
+                {"name": "asr_result", "source": [{"extension": "stt"}]},
+                {"name": "tts_audio_start", "source": [{"extension": "tts"}]},
+                {"name": "tts_audio_end", "source": [{"extension": "tts"}]}
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "streamid_adapter"}]},
+                {"name": "pcm_frame", "source": [{"extension": "tts"}]}
+              ],
+              "data": [
+                {"name": "data", "source": [{"extension": "message_collector"}]}
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {

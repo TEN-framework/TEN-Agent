@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Callable, Optional, Any
 
 import websockets
+from websockets.exceptions import ConnectionClosed, ConnectionClosedOK
 
 
 @dataclass
@@ -124,9 +125,9 @@ class SonioxWebsocketClient:
             if self.state != self.State.STOPPING:
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
-            if not (
-                self.state == self.State.STOPPING
-                and isinstance(e, websockets.exceptions.ConnectionClosedOK)
+            # Completed normal close handshakes are not ASR failures.
+            if self.state != self.State.STOPPING and not self.is_normal_close(
+                e
             ):
                 await self._call(SonioxWebsocketEvents.EXCEPTION, e)
             close_code, close_message = self._extract_close_info(e)
@@ -148,8 +149,13 @@ class SonioxWebsocketClient:
             self._stop_keepalive_task()
 
     @staticmethod
+    def is_normal_close(exc: Exception) -> bool:
+        """A completed normal handshake is not an ASR error."""
+        return isinstance(exc, ConnectionClosedOK)
+
+    @staticmethod
     def _extract_close_info(e: Exception | None) -> tuple[int, str]:
-        if isinstance(e, websockets.exceptions.ConnectionClosed):
+        if isinstance(e, ConnectionClosed):
             return e.code, e.reason or "closed"
         return 0, "closed"
 
@@ -208,11 +214,17 @@ class SonioxWebsocketClient:
     async def _handle_recv(self, ws, message: str):
         data = json.loads(message)
         match data:
-            case {"error_code": error_code, "error_message": error_message}:
+            case {
+                "error_code": error_code,
+                "error_message": error_message,
+                **rest,
+            }:
                 await self._call(
                     SonioxWebsocketEvents.ERROR,
                     error_code,
                     error_message,
+                    rest.get("request_id"),
+                    rest.get("error_type"),
                 )
             case {
                 "finished": True,
@@ -333,6 +345,8 @@ class SonioxWebsocketClient:
         ERROR:
             - error_code: int
             - error_message: str
+            - request_id: str | None (Soniox request id for vendor log correlation)
+            - error_type: str | None (Soniox machine-readable error type)
         FINISHED:
             - final_audio_proc_ms: int
             - total_audio_proc_ms: int

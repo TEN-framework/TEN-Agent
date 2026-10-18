@@ -26,6 +26,21 @@ from ..fish_audio_tts import (
 )
 
 
+def _invoke_on_text_send(MockFishAudioTTSClient) -> None:
+    """Simulate the real client's on_text_send callback for mocked clients.
+
+    The extension must wire this callback: without it there is no text-send
+    anchor, so tts_audio_start and the TTFB metric are skipped silently.
+    """
+    call = MockFishAudioTTSClient.call_args
+    assert call is not None, "FishAudioTTSClient was never constructed"
+    callback = call.kwargs.get("on_text_send")
+    assert (
+        callback is not None
+    ), "fish_audio_tts_python must pass on_text_send to FishAudioTTSClient"
+    callback()
+
+
 class StateMachineExtensionTester(ExtensionTester):
     """Extension tester for state machine verification."""
 
@@ -194,8 +209,9 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
 
     # Mock the async iterator returned by client.get()
     # fish_audio_tts uses: async for audio_chunk, event in self.client.get(text)
-    async def mock_get_request1(text: str):
+    async def mock_get_request1(text: str, **_kwargs):
         """Mock get() for first request - yields audio chunks then END event"""
+        _invoke_on_text_send(MockFishAudioTTSClient)
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding chunk 1 for request 1")
         yield b"mock_audio_chunk_1", EVENT_TTS_RESPONSE
@@ -209,8 +225,9 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
         print("  → Mock: Yielding END event for request 1")
         yield None, EVENT_TTS_END
 
-    async def mock_get_request2(text: str):
+    async def mock_get_request2(text: str, **_kwargs):
         """Mock get() for second request"""
+        _invoke_on_text_send(MockFishAudioTTSClient)
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding chunk 1 for request 2")
         yield b"mock_audio_chunk_1", EVENT_TTS_RESPONSE
@@ -224,7 +241,7 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
     # Create a stateful mock that alternates between requests
     call_count = [0]
 
-    def mock_get(text: str):
+    def mock_get(text: str, **_kwargs):
         call_count[0] += 1
         if call_count[0] == 1:
             print(
@@ -291,8 +308,9 @@ def test_request_state_transitions(MockFishAudioTTSClient):
     MockFishAudioTTSClient.return_value = mock_instance
 
     # Simple mock for single request
-    async def mock_get(text: str):
+    async def mock_get(text: str, **_kwargs):
         """Mock a simple TTS request"""
+        _invoke_on_text_send(MockFishAudioTTSClient)
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding audio chunk")
         yield b"mock_audio_chunk", EVENT_TTS_RESPONSE

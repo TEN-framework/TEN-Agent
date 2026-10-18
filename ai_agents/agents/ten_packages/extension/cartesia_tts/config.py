@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any, Optional
-import copy
 
 from ten_ai_base import utils
 
@@ -171,15 +170,11 @@ class CartesiaTTSConfig(BaseModel):
         if not sensitive_handling:
             return f"{self}"
 
-        config = copy.deepcopy(self)
-
-        # Encrypt sensitive fields
-        if config.api_key:
-            config.api_key = utils.encrypt(config.api_key)
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
-
-        return f"{config}"
+        return str(
+            utils.redact_json(
+                self.model_dump(),
+            ),
+        )
 
     @staticmethod
     def _ensure_dict(value: Any) -> dict[str, Any]:
