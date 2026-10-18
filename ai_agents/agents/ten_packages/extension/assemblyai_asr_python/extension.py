@@ -288,7 +288,7 @@ class AssemblyAIASRExtension(
         """Handle callback when event is received"""
         self.ten_env.log_info(
             f"vendor_status_changed: on_event message_data: {message_data}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
     @override
