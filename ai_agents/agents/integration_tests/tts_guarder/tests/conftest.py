@@ -7,7 +7,6 @@ import json
 import threading
 from typing import Any
 from typing_extensions import override
-from _pytest.config import Notset
 import pytest
 from ten_runtime import (
     App,
@@ -130,12 +129,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.fixture
-def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
+def extension_name(request: pytest.FixtureRequest) -> Any:
     return request.config.getoption("--extension_name")
 
 
 @pytest.fixture
-def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
+def config_dir(request: pytest.FixtureRequest) -> Any:
     return request.config.getoption("--config_dir")
 
 

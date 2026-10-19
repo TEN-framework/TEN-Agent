@@ -29,7 +29,10 @@ from .subtitle_timing import (
 )
 from .timing_hooks import install_timing_hook
 
-TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
+TTS_SUBTITLE_CONFIG_FILES = (
+    "property_subtitle_alignment.json",
+    "property_subtitle_alignment_ttd.json",
+)
 SUPPORTED_TTS_EXTENSIONS = {
     "cartesia_tts",
     "minimax_tts_websocket_duplex",
@@ -243,8 +246,13 @@ def run_subtitle_alignment(extension_name, config, monkeypatch):
         return tester.run()
 
 
+@pytest.mark.parametrize("config_file", TTS_SUBTITLE_CONFIG_FILES)
 def test_subtitle_alignment(
-    extension_name, config_dir, enable_subtitle_alignment, monkeypatch
+    extension_name,
+    config_dir,
+    enable_subtitle_alignment,
+    config_file,
+    monkeypatch,
 ):
     if not enable_subtitle_alignment:
         pytest.skip(
@@ -252,7 +260,7 @@ def test_subtitle_alignment(
         )
     if extension_name not in SUPPORTED_TTS_EXTENSIONS:
         pytest.skip(f"Word alignment is unsupported for {extension_name}")
-    path = os.path.join(config_dir, TTS_SUBTITLE_CONFIG_FILE)
+    path = os.path.join(config_dir, config_file)
     if not os.path.exists(path):
         pytest.skip(f"Word alignment configuration is missing: {path}")
     with open(path, encoding="utf-8") as source:
