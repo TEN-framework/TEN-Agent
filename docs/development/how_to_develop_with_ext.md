@@ -1040,6 +1040,230 @@ async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
 
 ---
 
+---
+
+## LLM Extension Development
+
+TEN Framework provides two base classes for building LLM extensions that plug into the voice-assistant pipeline. Both live in the `ten_ai_base` system package.
+
+| Base class | Protocol | Best for |
+|------------|----------|----------|
+| `AsyncLLMBaseExtension` | Streaming text-in / text-out, tool dispatch | Chat-completion providers (OpenAI, xAI Grok, Bedrock, …) |
+| `AsyncLLMToolBaseExtension` | Tool registration + result return | Custom tools called by an LLM extension |
+
+### Building an LLM extension with `AsyncLLMBaseExtension`
+
+`AsyncLLMBaseExtension` handles the conversation loop, memory management, user-join/leave commands, and flush. You only implement three methods.
+
+```python
+# my_llm_python/extension.py
+from typing import AsyncGenerator
+from ten_ai_base.llm import AsyncLLMBaseExtension
+from ten_ai_base.types import (
+    LLMCallCompletionArgs,
+    LLMDataCompletionArgs,
+    LLMToolMetadata,
+)
+from ten_runtime.async_ten_env import AsyncTenEnv
+from .client import MyLLMClient, MyLLMConfig
+
+
+class MyLLMExtension(AsyncLLMBaseExtension):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.config: MyLLMConfig | None = None
+        self.client: MyLLMClient | None = None
+
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("on_start")
+        await super().on_start(ten_env)
+
+        self.config = await MyLLMConfig.create_async(ten_env=ten_env)
+        if not self.config.api_key:
+            ten_env.log_warn("api_key not set, LLM will not respond")
+            return
+
+        self.client = MyLLMClient(ten_env, self.config)
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("on_stop")
+        await super().on_stop(ten_env)
+
+    # ------------------------------------------------------------------ #
+    # Called for each user message that enters the conversation queue.     #
+    # Stream text tokens back via self.send_text_output().                #
+    # ------------------------------------------------------------------ #
+    async def on_data_chat_completion(
+        self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
+    ) -> None:
+        messages = kargs.get("messages", [])
+        if not messages:
+            ten_env.log_error("no messages in request")
+            return
+        if not self.client:
+            raise RuntimeError("client not initialised")
+
+        async for token in self.client.stream_chat(messages):
+            self.send_text_output(ten_env, token, end_of_segment=False)
+
+        # Signal end of this turn.
+        self.send_text_output(ten_env, "", end_of_segment=True)
+
+    # ------------------------------------------------------------------ #
+    # Called when another extension (e.g. main_python) issues a           #
+    # synchronous call_chat_completion command.                           #
+    # ------------------------------------------------------------------ #
+    async def on_call_chat_completion(
+        self, ten_env: AsyncTenEnv, **kargs: LLMCallCompletionArgs
+    ) -> str:
+        messages = kargs.get("messages", [])
+        if not self.client:
+            raise RuntimeError("client not initialised")
+        result = await self.client.chat(messages)
+        return result.to_json()
+
+    # ------------------------------------------------------------------ #
+    # Called when a tool extension registers its metadata.               #
+    # Delegate to the base class to add the tool to the available set.   #
+    # ------------------------------------------------------------------ #
+    async def on_tools_update(
+        self, ten_env: AsyncTenEnv, tool: LLMToolMetadata
+    ) -> None:
+        return await super().on_tools_update(ten_env, tool)
+```
+
+Key points:
+
+- `send_text_output(ten_env, text, end_of_segment)` — emit a text token to the downstream TTS extension. Call with `end_of_segment=True` and empty text to close the turn.
+- `self.available_tools` — list of `LLMToolMetadata` registered by connected tool extensions. Pass this to your API client when building the request.
+- `on_data_chat_completion` runs in a cancellable async task managed by the base class. If a flush arrives mid-stream, the task is cancelled automatically.
+- Call `await super().on_start(ten_env)` and `await super().on_stop(ten_env)` — the base class wires up the data queue and command handlers.
+
+**Extension addon registration (`addon.py`):**
+
+```python
+from ten_runtime import Addon, register_addon_as_extension, TenEnv
+from .extension import MyLLMExtension
+
+
+@register_addon_as_extension("my_llm_python")
+class MyLLMExtensionAddon(Addon):
+    def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+        ten_env.log_info("on_create_instance")
+        ten_env.on_create_instance_done(MyLLMExtension(name), context)
+```
+
+---
+
+### Building a tool extension with `AsyncLLMToolBaseExtension`
+
+Tool extensions register their schema with connected LLM extensions and handle tool-call invocations.
+
+```python
+# my_tool_python/extension.py
+import json
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
+from ten_ai_base.types import LLMToolMetadata, LLMToolParameter, LLMToolResult
+from ten_runtime.async_ten_env import AsyncTenEnv
+
+
+class WebSearchToolExtension(AsyncLLMToolBaseExtension):
+    def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
+        return [
+            LLMToolMetadata(
+                name="web_search",
+                description="Search the web and return a summary of the top results.",
+                parameters=[
+                    LLMToolParameter(
+                        name="query",
+                        type="string",
+                        description="The search query.",
+                        required=True,
+                    ),
+                    LLMToolParameter(
+                        name="max_results",
+                        type="integer",
+                        description="Maximum number of results to return (default 3).",
+                        required=False,
+                    ),
+                ],
+            )
+        ]
+
+    async def run_tool(
+        self, ten_env: AsyncTenEnv, name: str, args: dict
+    ) -> LLMToolResult | None:
+        if name != "web_search":
+            return None
+
+        query = args.get("query", "")
+        max_results = int(args.get("max_results", 3))
+
+        ten_env.log_info(f"web_search: query={query!r} max_results={max_results}")
+
+        # Replace with a real search client call.
+        results = await self._do_search(query, max_results)
+        summary = "\n".join(f"- {r['title']}: {r['snippet']}" for r in results)
+
+        return LLMToolResult(
+            type="llmresult",
+            content=summary,
+        )
+
+    async def _do_search(self, query: str, max_results: int) -> list[dict]:
+        # Stub — replace with actual search API call.
+        return [{"title": "Example", "snippet": f"Result for {query!r}"}]
+```
+
+Key points:
+
+- `get_tool_metadata` is called once at startup. Return one `LLMToolMetadata` per tool your extension provides.
+- `run_tool` is called by the base class when the connected LLM requests a tool call. Return `LLMToolResult(type="llmresult", content=<str>)` to feed the result back to the LLM, or `LLMToolResult(type="requery", content=<str>)` to append extra context and re-run the LLM call.
+- Return `None` for unrecognised tool names.
+
+**Graph wiring in `property.json`:**
+
+Connect the tool extension to the LLM extension in the graph so that tool registration and invocations are routed correctly:
+
+```json
+{
+  "ten": {
+    "nodes": [
+      { "type": "extension", "name": "my_llm_python",      "addon": "my_llm_python" },
+      { "type": "extension", "name": "my_tool_python",     "addon": "my_tool_python" }
+    ],
+    "connections": [
+      {
+        "extension": "my_tool_python",
+        "cmd": [
+          { "name": "tool_register", "dest": [{ "extension": "my_llm_python" }] }
+        ]
+      },
+      {
+        "extension": "my_llm_python",
+        "cmd": [
+          { "name": "tool_call", "dest": [{ "extension": "my_tool_python" }] }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Real-world references
+
+The following extensions in this repository are good starting points for understanding the full implementation:
+
+| Extension | Base class | Notes |
+|-----------|------------|-------|
+| `ai_agents/agents/ten_packages/extension/grok_python` | `AsyncLLMBaseExtension` | xAI Grok streaming, tool dispatch, reasoning token handling |
+| `ai_agents/agents/ten_packages/extension/openai_llm2_python` | `AsyncLLM2BaseExtension` | OpenAI LLM2 protocol, think-block parsing |
+| `ai_agents/agents/ten_packages/extension/bingsearch_tool_python` | `AsyncLLMToolBaseExtension` | Bing web-search tool, `requery` result type |
+
+---
+
 ## Development Summary
 
 By following the complete development process provided in this guide, you can efficiently develop, test, and debug TEN extensions. Whether you choose C++, Go, Python, or Node.js, TEN Framework provides you with a complete toolchain and best practices to help you fully leverage the powerful features of TEN Framework and build high-performance, high-reliability extension applications.
