@@ -6,5 +6,5 @@ dependencies = [
   "aiofiles>=25.1.0",
   "pydantic>=2.0.0",
   "pysbd==0.3.4",
-  "websockets>=11.0.0",
+  "websockets>=14.2,<18",
 ]

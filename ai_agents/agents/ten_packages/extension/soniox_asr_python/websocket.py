@@ -81,11 +81,13 @@ class SonioxWebsocketClient:
         self,
         url: str,
         start_request: str,
+        api_key: str,
         enable_keepalive: bool = False,
         keepalive_interval: float = 15.0,
     ):
         self.url = url
         self.start_request = start_request
+        self.api_key = api_key
         self.state = self.State.INIT
         self._send_queue = asyncio.Queue()
         self._stop_event = asyncio.Event()
@@ -110,7 +112,12 @@ class SonioxWebsocketClient:
             self._reset_session_state()
             self.state = self.State.CONNECTING
             self._connection_attempt_start_time = int(time.time() * 1000)
-            async with websockets.connect(self.url) as ws:
+            async with websockets.connect(
+                self.url,
+                additional_headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                },
+            ) as ws:
                 if self.state == self.State.STOPPING:
                     return
                 await ws.send(self.start_request)

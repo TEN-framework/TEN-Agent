@@ -93,7 +93,8 @@ async def test_websocket_normal_close_emits_close_not_exception():
     """Code 1000 must fire CLOSE once and never EXCEPTION."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
-        json.dumps({"api_key": "x"}),
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
     )
     events: list[tuple] = []
 
@@ -124,7 +125,8 @@ async def test_incomplete_handshake_reports_asr_error(phase):
     """Code 1000 with a failed handshake must reach ASR error reporting."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
-        json.dumps({"api_key": "x"}),
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
     )
     events: list[tuple] = []
     failure = _connection_closed_error(1000, "OK")
@@ -182,7 +184,8 @@ async def test_connect_normal_close_emits_close_not_exception(code):
     """Actual connect()/recv path: ConnectionClosedOK emits CLOSE only."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
-        json.dumps({"api_key": "x"}),
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
     )
     events: list[tuple] = []
     normal = _connection_closed_ok(code, "OK")

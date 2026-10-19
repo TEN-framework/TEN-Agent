@@ -173,7 +173,7 @@ async def test_consecutive_connection_failures_keep_reconnecting():
 
     with patch(
         "soniox_asr_python.websocket.websockets.connect",
-        side_effect=lambda _url: FailedConnection(),
+        side_effect=lambda _url, **_kwargs: FailedConnection(),
     ):
         try:
             await ext.start_connection()
