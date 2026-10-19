@@ -15,7 +15,6 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
 from .config import InworldTTSConfig
 
-
 BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
@@ -83,13 +82,19 @@ class InworldTTSClient(AsyncTTS2HttpClient):
             session = await self._ensure_session()
 
             # Build request payload
+            # Current API field names: voiceId/modelId (voice/model are
+            # rejected with "voice_id can not be empty").
             payload = {
                 "text": text,
-                "voice": self.config.params.get("voice", "Ashley"),
-                "model": self.config.params.get("model", "inworld-tts-1.5-max"),
-                "outputSpec": {
-                    "encoding": self.config.params.get("encoding", "LINEAR16"),
-                    "sampleRateHertz": self.config.params.get(
+                "voiceId": self.config.params.get("voice", "Ashley"),
+                "modelId": self.config.params.get(
+                    "model", "inworld-tts-1.5-max"
+                ),
+                "audio_config": {
+                    "audio_encoding": self.config.params.get(
+                        "encoding", "LINEAR16"
+                    ),
+                    "sample_rate_hertz": self.config.params.get(
                         "sample_rate", 24000
                     ),
                 },
@@ -107,14 +112,16 @@ class InworldTTSClient(AsyncTTS2HttpClient):
 
             self.ten_env.log_debug(
                 f"InworldTTS: sending request for request_id: {request_id}, "
-                f"voice: {payload['voice']}, model: {payload['model']}"
+                f"voice: {payload['voiceId']}, model: {payload['modelId']}"
             )
 
             async with session.post(
                 INWORLD_TTS_STREAM_URL, json=payload
             ) as response:
-                if response.status == 401:
-                    error_message = "Invalid API key"
+                if response.status in (401, 403):
+                    # The service reports bad credentials as 403
+                    # ("Invalid authorization credentials").
+                    error_message = f"Invalid API key (HTTP {response.status})"
                     self.ten_env.log_error(
                         f"InworldTTS: {error_message} for request_id: {request_id}.",
                         category=LOG_CATEGORY_VENDOR,
@@ -170,12 +177,22 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                             ), TTS2HttpResponseEventType.ERROR
                             return
 
-                        # Extract audio data (base64 encoded)
-                        audio_b64 = data.get("audioContent") or data.get(
-                            "audio", {}
-                        ).get("content")
+                        # Extract audio data (base64 encoded). The
+                        # current API nests it under result.
+                        audio_b64 = (
+                            (data.get("result") or {}).get("audioContent")
+                            or data.get("audioContent")
+                            or data.get("audio", {}).get("content")
+                        )
                         if audio_b64:
                             chunk = base64.b64decode(audio_b64)
+
+                            # Each streamed chunk is a self-contained
+                            # WAV; strip its header to get raw pcm.
+                            if chunk[:4] == b"RIFF":
+                                data_pos = chunk.find(b"data", 12)
+                                if data_pos != -1:
+                                    chunk = chunk[data_pos + 8 :]
 
                             self.ten_env.log_debug(
                                 f"InworldTTS: received audio chunk, "

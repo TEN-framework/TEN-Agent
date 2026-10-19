@@ -1,0 +1,10 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:INWORLD_TTS_API_KEY}",
+        "model": "inworld-tts-1.5-max",
+        "voice": "Ashley",
+        "sample_rate": 24000
+    }
+}
