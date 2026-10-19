@@ -52,6 +52,7 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         self.leftover_bytes = b""
         self.session_id: str | None = None
+        self._flush_requested = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -84,6 +85,7 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         self._is_stopped = True
+        await self._cancel_request_operation_task()
         await self._cancel_stream_task()
         if self.client:
             await self.client.stop()
@@ -103,7 +105,25 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
 
+    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
+        is_flush = data.get_name() == "tts_flush"
+        if is_flush:
+            self._flush_requested = True
+        try:
+            await super().on_data(ten_env, data)
+        finally:
+            if is_flush:
+                self._flush_requested = False
+
     async def cancel_tts(self) -> None:
+        await self._cancel_request_operation_task()
+        await self._cancel_stream_task()
+        if self.client:
+            await self.client.cancel()
+        if self.current_request_id and not self._terminal_sent:
+            await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
+
+    async def _cancel_request_operation_task(self) -> None:
         operation_task = self._request_operation_task
         self._request_operation_task = None
         if (
@@ -113,11 +133,6 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
         ):
             operation_task.cancel()
             await asyncio.gather(operation_task, return_exceptions=True)
-        await self._cancel_stream_task()
-        if self.client:
-            await self.client.cancel()
-        if self.current_request_id and not self._terminal_sent:
-            await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
 
     def vendor(self) -> str:
         return "soniox"
@@ -150,9 +165,18 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
             if request_id != self.current_request_id:
                 await self._start_request(t)
             elif self._terminal_sent:
+                if self._processing_request_id == request_id:
+                    await self.finish_request(
+                        request_id,
+                        reason=TTSAudioEndReason.REQUEST_END,
+                    )
                 return
 
-            if not t.text.strip() and not t.text_input_end:
+            if (
+                not t.text.strip()
+                and not t.text_input_end
+                and self.current_stream_id is None
+            ):
                 return
 
             if (
@@ -164,9 +188,7 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
                 return
 
             self.metrics_add_input_characters(len(t.text))
-            operation_task = asyncio.create_task(
-                self._process_request(t)
-            )
+            operation_task = asyncio.create_task(self._process_request(t))
             self._request_operation_task = operation_task
             try:
                 await operation_task
@@ -200,10 +222,7 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
         if self.current_stream_id is None:
             stream_id = f"ten-{uuid.uuid4().hex}"
             await self.client.start_stream(stream_id)
-            if (
-                t.request_id != self.current_request_id
-                or self._terminal_sent
-            ):
+            if t.request_id != self.current_request_id or self._terminal_sent:
                 await self.client.cancel()
                 return
             self.current_stream_id = stream_id
@@ -239,6 +258,8 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
             async for payload, event in self.client.iter_events(stream_id):
                 if request_id != self.current_request_id or self._terminal_sent:
                     return
+                if self._flush_requested:
+                    return
 
                 if event == EVENT_TTS_TTFB_METRIC:
                     if isinstance(payload, int) and not self._audio_start_sent:
@@ -268,8 +289,10 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
                     ):
                         if self.client:
                             await self.client.stop()
+                        error = self._vendor_error(payload)
                         await self._finalize_request(
-                            TTSAudioEndReason.REQUEST_END
+                            TTSAudioEndReason.ERROR,
+                            error,
                         )
                         return
                     error = self._vendor_error(payload)
@@ -342,15 +365,41 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
                 (monotonic() - self._audio_start_monotonic) * 1000
             )
 
-        await self.send_tts_audio_end(
-            request_id=request_id,
-            request_event_interval_ms=interval_ms,
-            request_total_audio_duration_ms=self._audio_duration_ms(),
-            reason=reason,
-        )
+        try:
+            await self.send_tts_audio_end(
+                request_id=request_id,
+                request_event_interval_ms=interval_ms,
+                request_total_audio_duration_ms=self._audio_duration_ms(),
+                reason=reason,
+            )
+        except Exception as exc:
+            self.ten_env.log_error(
+                f"Failed to send audio_end for request_id {request_id}: {exc}"
+            )
+            if error is None:
+                error = ModuleError(
+                    message=f"Failed to send audio_end: {exc}",
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                )
+
         recorder = self.recorder_map.get(request_id)
         if recorder:
-            await recorder.flush()
+            try:
+                await recorder.flush()
+            except Exception as exc:
+                self.ten_env.log_error(
+                    f"Dump flush failed for request_id {request_id}: {exc}"
+                )
+                if error is None:
+                    error = ModuleError(
+                        message=f"Audio dump flush failed: {exc}",
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    )
+
         await self.finish_request(request_id, reason=reason, error=error)
 
     def _audio_duration_ms(self) -> int:
