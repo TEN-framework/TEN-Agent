@@ -113,7 +113,12 @@ def validate_subtitle_bounds(
             or start > audio_end + 1
             or spoken_end > audio_end + 1
         ):
-            return False, "Subtitle range lies outside the PCM timeline"
+            return (
+                False,
+                "Subtitle range lies outside the PCM timeline: "
+                f"start={start}, duration={duration}, spoken_end={spoken_end}, "
+                f"pcm=[{first.timestamp_ms}, {audio_end}]",
+            )
         if previous_start is not None and start <= previous_start:
             return False, "Subtitle starts are not strictly ascending"
         previous_start = start
