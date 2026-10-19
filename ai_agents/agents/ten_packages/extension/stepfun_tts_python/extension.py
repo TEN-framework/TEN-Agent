@@ -20,7 +20,7 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.struct import TTSTextResult
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS
 
 from .config import StepFunTTSConfig
 from .stepfun_tts import (
@@ -205,7 +205,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             # If client is None, it means the connection was dropped or never initialized.
             # Attempt to re-establish the connection.
             self.ten_env.log_info(
-                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
+                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if self.client is None:
                 self.ten_env.log_error(
@@ -297,7 +298,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
             # Send TTS request - audio data will be handled via callback
             self.ten_env.log_info(
-                f"Calling client.get() with TTSTextInput: {t.text}"
+                f"Calling client.get() with TTSTextInput: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.client.get(t)
             self.ten_env.log_info(
@@ -306,7 +308,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except StepFunTTSTaskFailedException as e:
             self.ten_env.log_error(
-                f"StepFunTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}"
+                f"StepFunTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             # Use the same error handling logic as the callback mechanism
             if t.text_input_end:
@@ -329,7 +332,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
-                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.send_tts_error(
                 self.current_request_id or "",
@@ -348,7 +352,8 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             await self.send_tts_error(
                 self.current_request_id or "",
@@ -517,7 +522,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             transcription_str = transcription.model_dump_json()
             self.ten_env.log_info(
                 f"send tts_text_result: {transcription_str} of request id: {transcription.request_id}",
-                category=LOG_CATEGORY_KEY_POINT,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             await self.send_tts_text_result(transcription)

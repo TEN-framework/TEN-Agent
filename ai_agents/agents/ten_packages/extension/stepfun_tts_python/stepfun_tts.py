@@ -17,7 +17,7 @@ from typing import Callable, Optional
 from ten_runtime import AsyncTenEnv
 from .config import StepFunTTSConfig
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 
 # TTS Events
 EVENT_TTSSentenceStart = 350
@@ -353,7 +353,7 @@ class _StepFunTTSInstance:
                     if self.ten_env:
                         self.ten_env.log_info(
                             f"send_text_to_tts_server: {tts_input.text} of request_id: {self.request_id}",
-                            category=LOG_CATEGORY_VENDOR,
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
 
                 if tts_input.text_input_end:

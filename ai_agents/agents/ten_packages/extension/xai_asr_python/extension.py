@@ -15,7 +15,11 @@ from ten_ai_base.asr import (
     AsyncASRBaseExtension,
 )
 from ten_ai_base.struct import ASRWord
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleError,
@@ -370,7 +374,10 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
 
     @override
     async def on_done(self, message_data: dict[str, Any]) -> None:
-        self.ten_env.log_debug(f"xAI transcript.done: {message_data}")
+        self.ten_env.log_debug(
+            f"xAI transcript.done: {message_data}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
 
     @override
     async def on_error(

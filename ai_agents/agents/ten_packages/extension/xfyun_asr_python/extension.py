@@ -24,6 +24,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 
@@ -367,7 +368,10 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
     @override
     async def on_result(self, message_data: dict) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_debug(f"Xfyun ASR result: {message_data}")
+        self.ten_env.log_debug(
+            f"Xfyun ASR result: {message_data}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         try:
             code = message_data.get("code")
             if code != 0:
@@ -464,7 +468,8 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
             if result_data.get("sub_end") is True:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR sub sentence end: {result_to_send}"
+                    f"Xfyun ASR sub sentence end: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 self.wpgs_buffer.clear()
                 self.ten_env.log_debug(
@@ -474,7 +479,8 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
             if status == 2:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR complete result: {result_to_send}"
+                    f"Xfyun ASR complete result: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 # Clear buffer when recognition completes
                 min_sn = (
@@ -499,7 +505,8 @@ class XfyunASRExtension(AsyncASRBaseExtension, XfyunWSRecognitionCallback):
                 self.wpgs_buffer.clear()
 
             self.ten_env.log_debug(
-                f"Xfyun ASR result: {result_to_send}, status: {status}, start_ms: {start_ms}, duration_ms: {duration_ms}"
+                f"Xfyun ASR result: {result_to_send}, status: {status}, start_ms: {start_ms}, duration_ms: {duration_ms}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # If no valid timestamps, use timeline to estimate

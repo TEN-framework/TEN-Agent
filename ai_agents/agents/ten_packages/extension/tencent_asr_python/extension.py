@@ -28,6 +28,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from .tencent_asr_client import (
@@ -477,7 +478,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             language=language,
             words=[],
         )
-        self.ten_env.log_debug(f"asr_result: {asr_result.model_dump_json()}")
+        self.ten_env.log_debug(
+            f"asr_result: {asr_result.model_dump_json()}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
 
         await self.send_asr_result(asr_result)
 
@@ -493,7 +497,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_start {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 
@@ -509,7 +513,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_change {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 
@@ -525,7 +529,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_sentence_end {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 
@@ -538,7 +542,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             return
         self.ten_env.log_debug(
             f"vendor_result: on_asr_complete {response.model_dump_json()}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(response.result, response.message_id)
 

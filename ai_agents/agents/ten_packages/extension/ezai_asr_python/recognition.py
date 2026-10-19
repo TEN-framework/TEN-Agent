@@ -8,6 +8,7 @@ from websockets.protocol import State
 from ten_ai_base.timeline import AudioTimeline
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 from ten_runtime import (
     AsyncTenEnv,
@@ -120,7 +121,7 @@ class DeepgramASRRecognition:
 
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {message}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             message_type = message_data.get("type")

@@ -26,6 +26,7 @@ from .word import (
     get_sentence_start_ms,
 )
 from ten_ai_base.timeline import AudioTimeline
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 
 # from .language_utils import get_speechmatics_language
 
@@ -364,7 +365,8 @@ class SpeechmaticsASRClient:
 
             if not result_metadata:
                 self.ten_env.log_warn(
-                    f"[PARTIAL] No speaker/channel. Full msg: {msg}"
+                    f"[PARTIAL] No speaker/channel. Full msg: {msg}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
             asr_result = ASRResult(
@@ -392,7 +394,8 @@ class SpeechmaticsASRClient:
             metadata = msg.get("metadata", {})
             text = metadata.get("transcript", "")
             self.ten_env.log_info(
-                f"_handle_transcript_word_final_mode,metadata: {metadata}"
+                f"_handle_transcript_word_final_mode,metadata: {metadata}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if text:
                 start_ms = metadata.get("start_time", 0) * 1000
@@ -418,7 +421,8 @@ class SpeechmaticsASRClient:
 
                 if not result_metadata:
                     self.ten_env.log_warn(
-                        f"[FINAL] No speaker/channel. Full msg: {msg}"
+                        f"[FINAL] No speaker/channel. Full msg: {msg}",
+                        category=LOG_CATEGORY_TRANSCRIPTS,
                     )
 
                 asr_result = ASRResult(
@@ -444,7 +448,8 @@ class SpeechmaticsASRClient:
 
     def _handle_transcript_sentence_final_mode(self, msg):
         self.ten_env.log_info(
-            f"_handle_transcript_sentence_final_mode, msg: {msg}"
+            f"_handle_transcript_sentence_final_mode, msg: {msg}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         try:
@@ -458,7 +463,8 @@ class SpeechmaticsASRClient:
                     speaker = alternatives[0].get("speaker", "")
                     if speaker:
                         self.ten_env.log_info(
-                            f"[SENTENCE] Word '{text}' has speaker: {speaker}"
+                            f"[SENTENCE] Word '{text}' has speaker: {speaker}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
                     if text:
                         start_ms = result.get("start_time", 0) * 1000
@@ -511,7 +517,8 @@ class SpeechmaticsASRClient:
                         )
 
                     self.ten_env.log_info(
-                        f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'"
+                        f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'",
+                        category=LOG_CATEGORY_TRANSCRIPTS,
                     )
 
                     word_payload = self.get_words(self.cache_words)
@@ -557,7 +564,8 @@ class SpeechmaticsASRClient:
                     )
 
                 self.ten_env.log_info(
-                    f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'"
+                    f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
                 word_payload = self.get_words(self.cache_words)
@@ -584,7 +592,10 @@ class SpeechmaticsASRClient:
             asyncio.create_task(self._emit_error(error, None))
 
     def _handle_end_transcript(self, msg):
-        self.ten_env.log_info(f"_handle_end_transcript, msg: {msg}")
+        self.ten_env.log_info(
+            f"_handle_end_transcript, msg: {msg}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         if self.on_asr_close:
             asyncio.create_task(self.on_asr_close())
 

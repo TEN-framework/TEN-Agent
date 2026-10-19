@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_asr",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "dependencies": [
     {
       "type": "system",

@@ -7,6 +7,7 @@ from typing_extensions import override
 
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 
@@ -391,7 +392,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         self.ten_env.log_debug(
             f"vendor_result: on_recognizing: {text}, language: {language}, full_json: {evt.result.json}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         await self._handle_asr_result(
@@ -441,7 +442,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         self.ten_env.log_debug(
             f"vendor_result: on_recognized: {text}, language: {language}, full_json: {evt.result.json}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self._handle_asr_result(
             text,

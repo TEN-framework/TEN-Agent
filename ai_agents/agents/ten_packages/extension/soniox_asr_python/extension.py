@@ -11,6 +11,7 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, Field
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 from ten_ai_base.asr import (
@@ -802,7 +803,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         """
         self.ten_env.log_debug(
             f"vendor_result: transcript: {tokens}, final_audio_proc_ms: {final_audio_proc_ms}, total_audio_proc_ms: {total_audio_proc_ms}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         try:
@@ -1027,7 +1028,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await self.ten_env.send_data(data)
         self.ten_env.log_info(
             f"send asr_results: {payload}",
-            category=LOG_CATEGORY_KEY_POINT,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
     async def _send_transcript_and_translation(
@@ -1091,7 +1092,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self.ten_env.log_info(
             f"send_asr_translation_result: {translation_result.model_dump_json()}",
-            category=LOG_CATEGORY_KEY_POINT,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await self.ten_env.send_data(data)
 

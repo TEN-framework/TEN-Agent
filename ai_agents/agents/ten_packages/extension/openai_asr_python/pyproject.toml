@@ -1,6 +1,6 @@
 [project]
 name = "openai-asr-python"
-version = "0.3.6"
+version = "0.3.7"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24.0",

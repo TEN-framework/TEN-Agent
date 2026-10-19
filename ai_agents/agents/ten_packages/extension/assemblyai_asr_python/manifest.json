@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "assemblyai_asr_python",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "dependencies": [
     {
       "type": "system",
