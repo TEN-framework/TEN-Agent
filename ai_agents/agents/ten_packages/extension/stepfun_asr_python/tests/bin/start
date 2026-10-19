@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/../.."
+export PYTHONPATH="$(pwd)/../../system/ten_runtime_python/interface:$(pwd)/../../system/ten_ai_base/interface:$(pwd)/..:${PYTHONPATH:-}"
+pytest -q

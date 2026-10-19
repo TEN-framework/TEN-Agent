@@ -1,0 +1,49 @@
+import pytest
+
+from stepfun_asr_python.config import StepFunASRConfig
+
+
+def valid_config() -> dict:
+    return {
+        "params": {
+            "api_key": "test-key",
+            "url": "wss://api.stepfun.com/v1/realtime/asr/stream",
+            "model": "stepaudio-2.5-asr-stream",
+            "language": "en",
+            "sample_rate": 16000,
+            "bits": 16,
+            "channels": 1,
+        }
+    }
+
+
+def test_config_accepts_stepfun_defaults():
+    config = StepFunASRConfig.model_validate(valid_config())
+    config.validate_config()
+
+    assert config.model == "stepaudio-2.5-asr-stream"
+    assert config.sample_rate == 16000
+    assert config.channels == 1
+
+
+def test_config_redacts_api_key():
+    config = StepFunASRConfig.model_validate(valid_config())
+
+    assert "test-key" not in config.to_str(sensitive_handling=True)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"params": {"api_key": ""}},
+        {"params": {"sample_rate": 24000}},
+        {"params": {"url": "https://api.stepfun.com/v1/realtime/asr/stream"}},
+    ],
+)
+def test_config_rejects_invalid_values(change):
+    raw = valid_config()
+    raw["params"].update(change["params"])
+    config = StepFunASRConfig.model_validate(raw)
+
+    with pytest.raises(ValueError):
+        config.validate_config()

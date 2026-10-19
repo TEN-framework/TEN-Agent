@@ -1,0 +1,11 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "url": "wss://api.stepfun.com/v1/realtime/asr/stream",
+    "model": "stepaudio-2.5-asr-stream",
+    "language": "en",
+    "sample_rate": 16000,
+    "bits": 16,
+    "channels": 1
+  }
+}

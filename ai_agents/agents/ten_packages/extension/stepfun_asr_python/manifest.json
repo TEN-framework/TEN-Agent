@@ -1,0 +1,66 @@
+{
+  "type": "extension",
+  "name": "stepfun_asr_python",
+  "version": "0.1.0",
+  "tags": ["python", "stepfun", "asr"],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {"type": "bool"},
+        "dump_path": {"type": "string"},
+        "finalize_timeout": {"type": "float64"},
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "url": {"type": "string"},
+            "model": {"type": "string"},
+            "language": {"type": "string"},
+            "sample_rate": {"type": "int32"},
+            "bits": {"type": "int32"},
+            "channels": {"type": "int32"},
+            "enable_itn": {"type": "bool"},
+            "full_rerun_on_commit": {"type": "bool"},
+            "enable_timestamp_align": {"type": "bool"},
+            "connection_timeout": {"type": "float64"},
+            "reconnect_base_delay": {"type": "float64"},
+            "reconnect_max_attempts": {"type": "int32"},
+            "server_vad": {"type": "bool"},
+            "silence_duration_ms": {"type": "int32"},
+            "threshold": {"type": "float64"}
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "pyproject.toml",
+      "requirements.txt",
+      "README.md"
+    ]
+  }
+}
