@@ -1,0 +1,77 @@
+{
+  "type": "extension",
+  "name": "agora_mind_bridge_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "api": {
+    "property": {
+      "properties": {
+        "agora_mind_extension": {"type": "string"},
+        "tts_extension": {"type": "string"},
+        "example_id": {"type": "string"},
+        "session_id": {"type": "uint64"},
+        "command_timeout_ms": {"type": "int32"}
+      }
+    },
+    "cmd_in": [
+      {"name": "create_workspace"},
+      {"name": "create_session"},
+      {"name": "flush_session"},
+      {"name": "set_session_debug"},
+      {"name": "delete_session"}
+    ],
+    "data_in": [
+      {
+        "name": "asr_result",
+        "property": {
+          "properties": {
+            "text": {"type": "string"},
+            "final": {"type": "bool"},
+            "metadata": {"type": "object"}
+          }
+        }
+      },
+      {
+        "name": "agora_mind_event",
+        "property": {
+          "properties": {
+            "event_json": {"type": "string"}
+          },
+          "required": ["event_json"]
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "tts_text_input",
+        "property": {
+          "properties": {
+            "request_id": {"type": "string"},
+            "text": {"type": "string"},
+            "text_input_end": {"type": "bool"},
+            "metadata": {"type": "object"}
+          },
+          "required": ["request_id", "text", "text_input_end"]
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  }
+}
