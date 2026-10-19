@@ -1,0 +1,61 @@
+{
+  "type": "extension",
+  "name": "camb_tts",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "int32"
+            },
+            "language": {
+              "type": "string"
+            },
+            "speech_model": {
+              "type": "string"
+            },
+            "user_instructions": {
+              "type": "string"
+            },
+            "format": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
