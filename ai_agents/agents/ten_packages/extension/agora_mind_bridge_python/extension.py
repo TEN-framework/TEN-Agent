@@ -107,12 +107,18 @@ class AgoraMindBridgeExtension(AsyncExtension):
             return
 
         response_json = self._result_property(result, "response_json")
-        if name == "create_session" and result.get_status_code() == StatusCode.OK:
+        if (
+            name == "create_session"
+            and result.get_status_code() == StatusCode.OK
+        ):
             self.session_id = session_id_from_response(response_json or "")
             self._last_final_text = None
             self._last_turn_key = None
             self._turn_index = 0
-        elif name == "delete_session" and result.get_status_code() == StatusCode.OK:
+        elif (
+            name == "delete_session"
+            and result.get_status_code() == StatusCode.OK
+        ):
             self.session_id = None
             self._last_final_text = None
             self._last_turn_key = None
@@ -181,7 +187,9 @@ class AgoraMindBridgeExtension(AsyncExtension):
             },
         )
         if error is not None or result is None:
-            ten_env.log_error(f"submit_user_input failed: {error or 'missing result'}")
+            ten_env.log_error(
+                f"submit_user_input failed: {error or 'missing result'}"
+            )
             return
         if result.get_status_code() == StatusCode.OK:
             self._last_final_text = normalized
@@ -269,12 +277,17 @@ class AgoraMindBridgeExtension(AsyncExtension):
         except Exception as error:
             return None, error
 
-    async def _return_error(self, ten_env: AsyncTenEnv, cmd: Cmd, detail: str) -> None:
+    async def _return_error(
+        self, ten_env: AsyncTenEnv, cmd: Cmd, detail: str
+    ) -> None:
         result = CmdResult.create(StatusCode.ERROR, cmd)
         result.set_property_string(
             "response_json",
             json.dumps(
-                {"type": "error", "error": {"kind": "bridge", "message": detail}}
+                {
+                    "type": "error",
+                    "error": {"kind": "bridge", "message": detail},
+                }
             ),
         )
         await ten_env.return_result(result)

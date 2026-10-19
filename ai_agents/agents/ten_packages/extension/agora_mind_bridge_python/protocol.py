@@ -56,7 +56,10 @@ def turn_text_from_event(
         envelope = json.loads(event_json)
     except (TypeError, ValueError):
         return None
-    if not isinstance(envelope, dict) or envelope.get("type") != "workspace.event":
+    if (
+        not isinstance(envelope, dict)
+        or envelope.get("type") != "workspace.event"
+    ):
         return None
 
     event = envelope.get("event")

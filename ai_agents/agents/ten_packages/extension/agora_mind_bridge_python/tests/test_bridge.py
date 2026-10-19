@@ -112,7 +112,11 @@ runtime.Cmd = FakeCmd
 runtime.CmdResult = type(
     "CmdResult",
     (),
-    {"create": classmethod(lambda cls, status, _cmd: FakeResult(status=status))},
+    {
+        "create": classmethod(
+            lambda cls, status, _cmd: FakeResult(status=status)
+        )
+    },
 )
 runtime.Data = FakeData
 runtime.Loc = lambda *parts: parts
@@ -169,7 +173,9 @@ async def test_duplicate_asr_final_is_submitted_once():
     command = bridge.ten_env.commands[0]
     assert command.name == "submit_user_input"
     assert command.properties["session_id"] == 7
-    assert json.loads(command.properties["input_json"])["text"] == ("Book the flight")
+    assert json.loads(command.properties["input_json"])["text"] == (
+        "Book the flight"
+    )
 
 
 @pytest.mark.asyncio
@@ -288,7 +294,9 @@ async def test_forwarded_command_timeout_is_reported():
         await asyncio.sleep(1)
 
     bridge.ten_env.send_cmd = never_returns
-    result, error = await bridge._send_command("flush_session", {"session_id": 7})
+    result, error = await bridge._send_command(
+        "flush_session", {"session_id": 7}
+    )
 
     assert result is None
     assert isinstance(error, TimeoutError)
