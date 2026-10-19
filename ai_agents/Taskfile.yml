@@ -55,8 +55,15 @@ tasks:
   test:
     desc: run tests
     cmds:
+      - task: test-security
       - task: test-agent-extensions
       - task: test-server
+
+  test-security:
+    desc: run security invariant tests
+    internal: true
+    cmds:
+      - python -m pytest tests {{ .CLI_ARGS }}
 
   test-server:
     desc: test server

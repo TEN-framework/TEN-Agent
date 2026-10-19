@@ -41,6 +41,14 @@ def to_str(self, sensitive_handling: bool = True) -> str:
 
 Never log raw API keys, tokens, or credentials.
 
+## TLS Verification
+
+- Use `ssl.create_default_context()` for outbound TLS and WebSocket clients.
+- Never set `check_hostname` to `False` or `verify_mode` to `ssl.CERT_NONE`.
+- Never use `ssl._create_unverified_context()` for production connections.
+- Add trusted private certificate authorities to the default context when a
+  deployment requires them; do not disable verification globally.
+
 ## Server-Side Protections
 
 The Go server (`http_server.go`) implements:

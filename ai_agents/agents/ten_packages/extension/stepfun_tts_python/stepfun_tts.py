@@ -172,8 +172,6 @@ class _StepFunTTSInstance:
                 # Establish connection
                 headers = {"Authorization": f"Bearer {self.config.api_key}"}
                 ssl_context = ssl.create_default_context()
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
 
                 session_start_time = time.time()
                 if self.ten_env:
