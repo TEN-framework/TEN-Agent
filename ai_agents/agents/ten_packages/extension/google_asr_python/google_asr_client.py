@@ -11,6 +11,7 @@ from google.cloud.speech_v2.types import (
 
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from google.api_core import exceptions as gcp_exceptions
@@ -415,7 +416,7 @@ class GoogleASRClient:
 
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {first_alt.transcript}, language: {normalized_lang}, full_json: {result}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             asr_result = ASRResult(

@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 from .config import TencentTTSConfig
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 from ten_runtime.async_ten_env import AsyncTenEnv
 from .src.flowing_speech_synthesizer import (
     FlowingSpeechSynthesizer,
@@ -275,7 +276,8 @@ class TencentTTSClient:
         Audio data should be consumed from the queue independently.
         """
         self.ten_env.log_debug(
-            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end},conn_ready_event: {self.conn_ready_event.is_set()}"
+            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end},conn_ready_event: {self.conn_ready_event.is_set()}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         await self.conn_ready_event.wait()
@@ -297,7 +299,10 @@ class TencentTTSClient:
         self._callback.set_sent_ts()
         self.synthesizer.process(text)
 
-        self.ten_env.log_debug(f"TTS synthesis initiated for text: {text}")
+        self.ten_env.log_debug(
+            f"TTS synthesis initiated for text: {text}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
 
     async def get_audio_data(self):
         """

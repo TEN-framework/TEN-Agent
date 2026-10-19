@@ -30,6 +30,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_VENDOR,
 )
 from ten_ai_base.dumper import Dumper
@@ -487,7 +488,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
 
             self.ten_env.log_debug(
                 f"Transcript processed (final={is_final}): {transcript_text[:50]}...",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
         except Exception as e:

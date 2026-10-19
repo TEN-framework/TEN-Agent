@@ -1,6 +1,6 @@
 [project]
 name = "assemblyai-asr-python"
-version = "0.2.2"
+version = "0.2.3"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",

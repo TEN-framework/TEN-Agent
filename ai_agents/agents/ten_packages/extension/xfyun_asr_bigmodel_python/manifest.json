@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "xfyun_asr_bigmodel_python",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "dependencies": [
     {
       "type": "system",

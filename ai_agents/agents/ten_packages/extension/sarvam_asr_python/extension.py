@@ -31,6 +31,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_VENDOR,
 )
 from ten_ai_base.dumper import Dumper
@@ -240,7 +241,7 @@ class SarvamASRExtension(AsyncASRBaseExtension):
             async for msg in self.ws:
                 self.ten_env.log_info(
                     f"sarvam_asr_python: Received message: {msg.type} data: {msg.data}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     try:
@@ -291,7 +292,7 @@ class SarvamASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in message processing loop: {e}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if not self.stopped:
                 # Send error before attempting reconnection
@@ -381,7 +382,7 @@ class SarvamASRExtension(AsyncASRBaseExtension):
 
             self.ten_env.log_debug(
                 f"Transcript processed: {transcript_text[:50]}...",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
         except Exception as e:

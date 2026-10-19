@@ -1,6 +1,6 @@
 [project]
 name = "xfyun-asr-dialect-python"
-version = "0.2.5"
+version = "0.2.6"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",

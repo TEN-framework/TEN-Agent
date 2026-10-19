@@ -25,7 +25,11 @@ from .google_tts import (
     EVENT_TTS_ERROR,
     EVENT_TTS_INVALID_KEY_ERROR,
 )
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_runtime import AsyncTenEnv
 
 
@@ -302,7 +306,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
             self.ten_env.log_debug(
                 f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # Process audio chunks

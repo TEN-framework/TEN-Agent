@@ -212,7 +212,8 @@ class WebSocketClient(ABC):
                 await self.on_error(e)
             except Exception as e:
                 self._logger.error(
-                    f"An unexpected error occurred in the main loop: {e}"
+                    "Unexpected ASR client error: error_type=%s",
+                    type(e).__name__,
                 )
                 await self.on_error(e)
 

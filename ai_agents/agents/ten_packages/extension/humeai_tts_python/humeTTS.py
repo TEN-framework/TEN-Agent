@@ -11,7 +11,7 @@ from hume.tts import (
 )
 from ten_runtime import AsyncTenEnv
 from .config import HumeAiTTSConfig
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
@@ -56,7 +56,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
 
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {text} of request_id: {request_id}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         voice = None

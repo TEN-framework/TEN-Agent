@@ -7,6 +7,7 @@ from typing import Any
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
 
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleVendorException,
@@ -508,7 +509,8 @@ class MurfTTSynthesizer:
         }
         message_json = json.dumps(message)
         self.ten_env.log_debug(
-            f"KEYPOINT Sending text to MURF TTS: {message_json}"
+            f"KEYPOINT Sending text to MURF TTS: {message_json}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         await ws.send(message_json)
         self._add_first_chunk_sent_time(
