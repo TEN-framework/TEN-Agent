@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+from contextlib import suppress
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from soniox_tts.config import SonioxTTSConfig
@@ -137,5 +138,37 @@ def test_client_sends_keepalive_between_streams(monkeypatch):
             await client.stop()
 
         assert {"keep_alive": True} in websocket.sent
+
+    asyncio.run(run())
+
+
+def test_cancel_invalidates_pending_connection():
+    async def run():
+        connect_started = asyncio.Event()
+        release_connect = asyncio.Event()
+        websocket = FakeWebSocket([])
+
+        async def connect(*_args, **_kwargs):
+            connect_started.set()
+            await release_connect.wait()
+            return websocket
+
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=connect,
+        ):
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            start_task = asyncio.create_task(client.start_stream("stream-1"))
+            await connect_started.wait()
+            await client.cancel()
+            release_connect.set()
+            with suppress(asyncio.CancelledError):
+                await start_task
+
+        assert websocket.closed is True
+        assert client._ws is None
+        assert client._stream_id is None
 
     asyncio.run(run())

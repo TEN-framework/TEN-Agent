@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 from unittest.mock import AsyncMock, MagicMock
 
 from ten_ai_base.message import TTSAudioEndReason
@@ -219,5 +220,39 @@ def test_cancel_interrupts_stream_and_reports_emitted_audio():
         end = extension.send_tts_audio_end.await_args.kwargs
         assert end["reason"] == TTSAudioEndReason.INTERRUPTED
         assert end["request_total_audio_duration_ms"] == 0
+
+    asyncio.run(run())
+
+
+def test_cancel_during_stream_setup_interrupts_request():
+    async def run():
+        setup_started = asyncio.Event()
+        release_setup = asyncio.Event()
+        extension = make_extension([])
+
+        async def start_stream(_stream_id):
+            setup_started.set()
+            await release_setup.wait()
+
+        extension.client.start_stream = start_stream
+        request_task = asyncio.create_task(
+            extension.request_tts(
+                TTSTextInput(
+                    request_id="connecting",
+                    text="hello",
+                    text_input_end=False,
+                )
+            )
+        )
+        await setup_started.wait()
+        await extension.cancel_tts()
+        release_setup.set()
+        with suppress(asyncio.CancelledError):
+            await request_task
+
+        extension.client.cancel.assert_awaited_once()
+        end = extension.send_tts_audio_end.await_args.kwargs
+        assert end["reason"] == TTSAudioEndReason.INTERRUPTED
+        extension.client.send_text.assert_not_awaited()
 
     asyncio.run(run())

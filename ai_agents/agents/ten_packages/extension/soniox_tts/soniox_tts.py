@@ -62,11 +62,15 @@ class SonioxTTSClient:
         self._needs_reconnect = False
         self._send_lock = asyncio.Lock()
         self._keepalive_task: asyncio.Task | None = None
+        self._cancel_generation = 0
 
     async def start(self) -> None:
-        await self._ensure_connection()
+        generation = self._cancel_generation
+        await self._ensure_connection(generation)
+        self._ensure_generation(generation)
 
     async def stop(self) -> None:
+        self._cancel_generation += 1
         self._needs_reconnect = False
         self._stream_id = None
         await self._stop_keepalive()
@@ -79,6 +83,7 @@ class SonioxTTSClient:
                 pass
 
     async def cancel(self) -> None:
+        self._cancel_generation += 1
         ws = self._ws
         stream_id = self._stream_id
         self._stream_id = None
@@ -95,9 +100,11 @@ class SonioxTTSClient:
         await self.stop()
 
     async def start_stream(self, stream_id: str) -> None:
+        generation = self._cancel_generation
         if self._needs_reconnect:
-            await self._reconnect()
-        await self._ensure_connection()
+            await self._reconnect(generation)
+        await self._ensure_connection(generation)
+        self._ensure_generation(generation)
         if self._stream_id is not None:
             raise RuntimeError("A Soniox TTS stream is already active")
 
@@ -121,6 +128,7 @@ class SonioxTTSClient:
         try:
             async with self._send_lock:
                 await self._ws.send(json.dumps(payload))
+            self._ensure_generation(generation)
         except Exception:
             self._needs_reconnect = True
             raise
@@ -136,6 +144,7 @@ class SonioxTTSClient:
         if self._request_started_at is None:
             self._request_started_at = time.monotonic()
         self._text_end_sent = text_end
+        generation = self._cancel_generation
 
         payload = {
             "text": text,
@@ -145,6 +154,7 @@ class SonioxTTSClient:
         try:
             async with self._send_lock:
                 await self._ws.send(json.dumps(payload))
+            self._ensure_generation(generation)
         except Exception:
             self._needs_reconnect = True
             raise
@@ -263,18 +273,22 @@ class SonioxTTSClient:
                 stream_id,
             ), EVENT_TTS_ERROR
 
-    async def _ensure_connection(self) -> None:
+    async def _ensure_connection(self, generation: int | None = None) -> None:
         if self._ws is None:
-            await self._connect()
+            await self._connect(generation)
 
-    async def _connect(self) -> None:
+    async def _connect(self, generation: int | None = None) -> None:
         try:
-            self._ws = await websockets.connect(
+            ws = await websockets.connect(
                 self.config.base_url,
                 additional_headers={
                     "Authorization": f"Bearer {self.config.api_key}"
                 },
             )
+            if generation is not None and generation != self._cancel_generation:
+                await ws.close()
+                raise asyncio.CancelledError
+            self._ws = ws
             self.ten_env.log_debug(
                 "vendor_status: connected to soniox tts",
                 category=LOG_CATEGORY_VENDOR,
@@ -289,7 +303,7 @@ class SonioxTTSClient:
                 raise SonioxTTSConnectionException(401, message) from exc
             raise
 
-    async def _reconnect(self) -> None:
+    async def _reconnect(self, generation: int | None = None) -> None:
         ws = self._ws
         self._ws = None
         self._stream_id = None
@@ -300,7 +314,11 @@ class SonioxTTSClient:
                 await ws.close()
             except Exception:
                 pass
-        await self._connect()
+        await self._connect(generation)
+
+    def _ensure_generation(self, generation: int) -> None:
+        if generation != self._cancel_generation:
+            raise asyncio.CancelledError
 
     async def _stop_keepalive(self) -> None:
         task = self._keepalive_task

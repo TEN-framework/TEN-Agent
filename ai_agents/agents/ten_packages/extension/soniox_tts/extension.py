@@ -42,6 +42,7 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
         self.current_turn_id = -1
         self.current_request_finished = False
         self._stream_task: asyncio.Task | None = None
+        self._request_operation_task: asyncio.Task | None = None
         self._is_stopped = False
         self._terminal_sent = False
         self._audio_start_sent = False
@@ -103,6 +104,15 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
 
     async def cancel_tts(self) -> None:
+        operation_task = self._request_operation_task
+        self._request_operation_task = None
+        if (
+            operation_task
+            and not operation_task.done()
+            and operation_task is not asyncio.current_task()
+        ):
+            operation_task.cancel()
+            await asyncio.gather(operation_task, return_exceptions=True)
         await self._cancel_stream_task()
         if self.client:
             await self.client.cancel()
@@ -154,18 +164,15 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
                 return
 
             self.metrics_add_input_characters(len(t.text))
-            await self._ensure_client()
-
-            if self.current_stream_id is None:
-                self.current_stream_id = f"ten-{uuid.uuid4().hex}"
-                await self.client.start_stream(self.current_stream_id)
-                self._stream_task = asyncio.create_task(
-                    self._consume_stream(request_id, self.current_stream_id)
-                )
-
-            await self.client.send_text(t.text, t.text_input_end)
-            if t.text_input_end and self._stream_task:
-                await self._stream_task
+            operation_task = asyncio.create_task(
+                self._process_request(t)
+            )
+            self._request_operation_task = operation_task
+            try:
+                await operation_task
+            finally:
+                if self._request_operation_task is operation_task:
+                    self._request_operation_task = None
         except SonioxTTSConnectionException as exc:
             await self._cancel_stream_task()
             await self._finalize_request(
@@ -186,6 +193,27 @@ class SonioxTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
+
+    async def _process_request(self, t: TTSTextInput) -> None:
+        await self._ensure_client()
+
+        if self.current_stream_id is None:
+            stream_id = f"ten-{uuid.uuid4().hex}"
+            await self.client.start_stream(stream_id)
+            if (
+                t.request_id != self.current_request_id
+                or self._terminal_sent
+            ):
+                await self.client.cancel()
+                return
+            self.current_stream_id = stream_id
+            self._stream_task = asyncio.create_task(
+                self._consume_stream(t.request_id, stream_id)
+            )
+
+        await self.client.send_text(t.text, t.text_input_end)
+        if t.text_input_end and self._stream_task:
+            await self._stream_task
 
     async def _start_request(self, t: TTSTextInput) -> None:
         self.current_request_id = t.request_id
