@@ -33,7 +33,7 @@
           "properties": {
             "text": {"type": "string"},
             "final": {"type": "bool"},
-            "metadata": {"type": "object"}
+            "metadata": {"type": "object", "properties": {}}
           }
         }
       },
@@ -55,7 +55,7 @@
             "request_id": {"type": "string"},
             "text": {"type": "string"},
             "text_input_end": {"type": "bool"},
-            "metadata": {"type": "object"}
+            "metadata": {"type": "object", "properties": {}}
           },
           "required": ["request_id", "text", "text_input_end"]
         }
