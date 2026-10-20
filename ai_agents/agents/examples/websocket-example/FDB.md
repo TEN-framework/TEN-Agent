@@ -126,6 +126,8 @@ Input messages are `{"audio":"<base64 PCM>","metadata":{"example_id":"case-1"}}`
 Input must be 16 kHz, mono, signed 16-bit little-endian PCM. The Rust runner must
 convert 48 kHz WAV and pace the PCM before injection. TEN does not accept a WAV
 container in the audio field.
+`metadata`, when present, must be a JSON object. Invalid metadata is rejected
+before the audio callback and does not poison the WebSocket connection.
 
 Each audio message must contain at least one complete PCM sample frame. With
 the graph's mono 16-bit format, the decoded byte count must be a positive

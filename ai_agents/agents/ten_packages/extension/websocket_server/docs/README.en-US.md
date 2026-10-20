@@ -58,3 +58,6 @@ count must be a positive multiple of `channels * bytes_per_sample`. Invalid
 lengths return `{"type":"error","error":"..."}` before allocating a TEN
 AudioFrame or writing an audio dump. The same client can continue sending valid
 audio after an error.
+
+If present, input `metadata` must be a JSON object. Arrays, strings, numbers and
+null return a protocol error before the audio callback.

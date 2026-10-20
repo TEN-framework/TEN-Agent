@@ -62,6 +62,8 @@ and then verifies a complete valid PCM roundtrip on the same connection.
 Base64 decoding uses strict validation; illegal characters and non-string audio
 fields are rejected before the audio callback. The same connection remains
 usable after these errors.
+Non-object input metadata is also rejected before frame allocation and callback
+dispatch, with the same connection recovery guarantee.
 
 The real backend test starts the compiled Agora Mind server and a local scripted
 custom-model endpoint. It verifies that `benchmark.fdb_v3` is installed in the
