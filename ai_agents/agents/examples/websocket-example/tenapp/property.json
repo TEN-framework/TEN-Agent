@@ -361,6 +361,19 @@
                   ]
                 }
               ]
+            },
+            {
+              "extension": "bridge",
+              "data": [
+                {
+                  "name": "error",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }

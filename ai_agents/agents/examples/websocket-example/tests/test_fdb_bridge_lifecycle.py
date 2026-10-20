@@ -206,3 +206,66 @@ async def test_late_session_creation_cannot_restore_invalidated_state(
     result = env.return_result.await_args.args[0]
     assert result.get_status_code() == StatusCode.ERROR
     assert "changed" in result.properties["response_json"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["rejected", "timeout", "missing_result"])
+async def test_input_failure_is_reported_once_with_case_metadata(
+    bridge, env, failure
+):
+    bridge.config.example_id = "case-errors"
+    response = json.dumps(
+        {
+            "type": "error",
+            "error": {"kind": "invalid_arguments", "message": "rejected"},
+        }
+    )
+    if failure == "timeout":
+
+        async def pending(_cmd):
+            await asyncio.Event().wait()
+
+        env.send_cmd.side_effect = pending
+    elif failure == "missing_result":
+        env.send_cmd.return_value = None, None
+    else:
+        result = Result.create(StatusCode.ERROR, Message("submit_user_input"))
+        result.set_property_string("response_json", response)
+        env.send_cmd.return_value = result, None
+    final = Message("asr_result", {"text": "Book the flight", "final": True})
+    await bridge.on_data(env, final)
+    await bridge.on_data(env, final)
+    env.send_cmd.assert_awaited_once()
+    env.send_data.assert_awaited_once()
+    error = env.send_data.await_args.args[0]
+    assert error.name == "error"
+    assert error.properties["module"] == "agora_mind_bridge"
+    assert error.properties["code"] == 1000
+    assert error.properties["metadata"]["session_id"] == "7"
+    assert error.properties["metadata"]["example_id"] == "case-errors"
+    if failure == "rejected":
+        assert error.properties["metadata"]["response_json"] == response
+
+
+@pytest.mark.asyncio
+async def test_old_input_failure_is_ignored_after_session_invalidation(
+    bridge, env
+):
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def submit(_cmd):
+        entered.set()
+        await release.wait()
+        return None, RuntimeError("old request failed")
+
+    env.send_cmd.side_effect = submit
+    pending = asyncio.create_task(
+        bridge.on_data(
+            env, Message("asr_result", {"text": "Book", "final": True})
+        )
+    )
+    await entered.wait()
+    bridge._reset_session(8)
+    release.set()
+    await pending
+    env.send_data.assert_not_awaited()

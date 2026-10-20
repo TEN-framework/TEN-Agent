@@ -48,6 +48,7 @@
       }
     ],
     "data_out": [
+      {"name": "error"},
       {
         "name": "tts_text_input",
         "property": {

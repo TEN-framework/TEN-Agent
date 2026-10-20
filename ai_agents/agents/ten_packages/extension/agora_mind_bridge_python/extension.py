@@ -202,20 +202,59 @@ class AgoraMindBridgeExtension(AsyncExtension):
         # Reserve before awaiting: concurrent duplicate finals and ambiguous
         # command timeouts must not resubmit an input that may be accepted.
         self._last_final_text = normalized
+        session_id = self.session_id
+        session_epoch = self._session_epoch
         result, error = await self._send_command(
             "submit_user_input",
             {
-                "session_id": self.session_id,
+                "session_id": session_id,
                 "input_json": json.dumps(input_payload, ensure_ascii=False),
             },
         )
+        if session_epoch != self._session_epoch:
+            return
         if error is not None or result is None:
-            ten_env.log_error(
-                f"submit_user_input failed: {error or 'missing result'}"
+            await self._report_input_error(
+                ten_env,
+                session_id,
+                f"submit_user_input failed: {error or 'missing result'}",
             )
             return
         if result.get_status_code() != StatusCode.OK:
-            ten_env.log_error("Agora Mind rejected ASR final")
+            await self._report_input_error(
+                ten_env,
+                session_id,
+                "Agora Mind rejected ASR final",
+                self._result_property(result, "response_json"),
+            )
+
+    async def _report_input_error(
+        self,
+        ten_env: AsyncTenEnv,
+        session_id: int,
+        message: str,
+        response_json: str | None = None,
+    ) -> None:
+        ten_env.log_error(message)
+        metadata = {
+            "session_id": str(session_id),
+            "example_id": self.config.example_id,
+        }
+        if response_json is not None:
+            metadata["response_json"] = response_json
+        output = Data.create("error")
+        output.set_property_from_json(
+            None,
+            json.dumps(
+                {
+                    "module": "agora_mind_bridge",
+                    "code": 1000,  # TEN NON_FATAL_ERROR; the bridge stays usable.
+                    "message": message,
+                    "metadata": metadata,
+                }
+            ),
+        )
+        await ten_env.send_data(output)
 
     async def _handle_agora_event(
         self, ten_env: AsyncTenEnv, payload: dict[str, Any]

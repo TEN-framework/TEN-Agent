@@ -96,6 +96,7 @@ def test_routes_are_complete_and_do_not_duplicate_delivery(graph):
         ("agora_mind", "agora_mind_event", "websocket_server"),
         ("tts", "tts_audio_end", "websocket_server"),
         ("tts", "tts_text_result", "websocket_server"),
+        ("bridge", "error", "websocket_server"),
     } <= data_routes
     socket_api = json.loads(
         (EXTENSIONS / "websocket_server/manifest.json").read_text()
@@ -111,7 +112,10 @@ def test_routes_are_complete_and_do_not_duplicate_delivery(graph):
         for command in bridge_api["cmd_in"]
     }
     # The bridge already addresses TTS directly. A second route duplicates output.
-    assert not any(source == "bridge" for source, _, _ in data_routes)
+    assert not any(
+        source == "bridge" and name == "tts_text_input"
+        for source, name, _ in data_routes
+    )
 
 
 def test_bridge_package_registers_its_addon(modules, monkeypatch):
