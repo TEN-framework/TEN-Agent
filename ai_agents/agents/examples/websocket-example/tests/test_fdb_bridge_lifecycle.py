@@ -217,7 +217,7 @@ async def test_input_failure_is_reported_once_with_case_metadata(
     response = json.dumps(
         {
             "type": "error",
-            "error": {"kind": "invalid_arguments", "message": "rejected"},
+            "error": {"type": "invalid_arguments", "detail": "rejected"},
         }
     )
     if failure == "timeout":

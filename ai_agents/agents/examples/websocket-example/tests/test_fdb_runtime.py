@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+from contextlib import asynccontextmanager
 import json
 import os
 import socket
@@ -71,6 +72,7 @@ class Services:
 
     def __init__(self):
         self.commands = []
+        self.input_failure = None
 
     async def handle(self, websocket):
         path = websocket.request.path
@@ -126,6 +128,25 @@ class Services:
         elif name == "session.user_input":
             assert command["session_id"] == 7
             assert command["input"]["text"] == "Book the flight"
+            if self.input_failure == "timeout":
+                return
+            if self.input_failure == "disconnect":
+                await websocket.close()
+                return
+            if self.input_failure == "rejected":
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "operation": name,
+                            "error": {
+                                "type": "invalid_arguments",
+                                "detail": "synthetic rejection",
+                            },
+                        }
+                    )
+                )
+                return
             response = {
                 "type": "session.user_input.accepted",
                 "session_id": 7,
@@ -136,6 +157,8 @@ class Services:
             response = {"type": "session.delete.completed", "session_id": 7}
         await websocket.send(json.dumps(response))
         if name == "session.user_input":
+            if self.input_failure == "no_completion":
+                return
             event = {
                 "type": "workspace.event",
                 "event": {
@@ -211,9 +234,9 @@ async def command(websocket, name, properties):
             return json.loads(result["data"]["response_json"])
 
 
-async def run_case(runtime, example_id):
-    api, port, endpoint, services = runtime
-    first_command = len(services.commands)
+@asynccontextmanager
+async def case(runtime, example_id, command_timeout_ms=30_000):
+    api, port, endpoint, _ = runtime
     result = await http(
         api,
         "/start",
@@ -224,39 +247,63 @@ async def run_case(runtime, example_id):
             "timeout": 120,
             "properties": {
                 "websocket_server": {"port": port},
-                "bridge": {"example_id": example_id},
+                "bridge": {
+                    "example_id": example_id,
+                    "command_timeout_ms": command_timeout_ms,
+                },
                 "stt": {"params": {"url": endpoint + "/asr"}},
                 "tts": {"params": {"base_url": endpoint + "/tts"}},
             },
         },
     )
     assert result["code"] == "0", result
-    client = await eventually(lambda: connect(f"ws://127.0.0.1:{port}"))
-    async with client:
-        await command(
-            client, "create_workspace", {"profile": "benchmark.fdb_v3"}
-        )
-        session = await command(
-            client,
-            "create_session",
-            {
-                "model": "custom",
-                "system_prompt_path": "prompts/fdb_v3.md",
-                "model_action_scope_json": json.dumps(ACTION_SCOPE),
-                "input_merge_policy_json": json.dumps(MERGE_POLICY),
-                "input_format": "pure_text",
-                "trigger_mode": "normal",
-            },
-        )
-        assert session["session_id"] == 7
-        await client.send(
-            json.dumps(
-                {
-                    "audio": base64.b64encode(PCM[:640]).decode(),
-                    "metadata": {"example_id": example_id},
-                }
+    try:
+        client = await eventually(lambda: connect(f"ws://127.0.0.1:{port}"))
+        async with client:
+            await command(
+                client, "create_workspace", {"profile": "benchmark.fdb_v3"}
             )
+            session = await command(
+                client,
+                "create_session",
+                {
+                    "model": "custom",
+                    "system_prompt_path": "prompts/fdb_v3.md",
+                    "model_action_scope_json": json.dumps(ACTION_SCOPE),
+                    "input_merge_policy_json": json.dumps(MERGE_POLICY),
+                    "input_format": "pure_text",
+                    "trigger_mode": "normal",
+                },
+            )
+            assert session["session_id"] == 7
+            yield client
+    finally:
+        stopped = await http(
+            api,
+            "/stop",
+            {"request_id": example_id, "channel_name": example_id},
         )
+        assert stopped["code"] == "0", stopped
+        workers = await http(api, "/list")
+        assert example_id not in json.dumps(workers), workers
+
+
+async def send_audio(client, example_id):
+    await client.send(
+        json.dumps(
+            {
+                "audio": base64.b64encode(PCM[:640]).decode(),
+                "metadata": {"example_id": example_id},
+            }
+        )
+    )
+
+
+async def run_case(runtime, example_id):
+    services = runtime[3]
+    first_command = len(services.commands)
+    async with case(runtime, example_id) as client:
+        await send_audio(client, example_id)
         output = bytearray()
         events = []
         while True:
@@ -281,14 +328,6 @@ async def run_case(runtime, example_id):
         assert "asr_result" in events
         assert events.count("tts_audio_start") == 1
         await command(client, "delete_session", {"session_id": 7})
-    stopped = await http(
-        api,
-        "/stop",
-        {"request_id": example_id, "channel_name": example_id},
-    )
-    assert stopped["code"] == "0", stopped
-    workers = await http(api, "/list")
-    assert example_id not in json.dumps(workers), workers
     assert [cmd["type"] for cmd in services.commands[first_command:]] == [
         "workspace.create",
         "session.create",
@@ -306,3 +345,66 @@ async def test_native_graph_pcm_roundtrip_and_case_isolation(runtime):
 
     # Metrics and reconnect events must not extend the test indefinitely.
     await asyncio.wait_for(exercise(), 45)
+
+
+@pytest.mark.parametrize(
+    "failure", ["rejected", "timeout", "disconnect", "no_completion"]
+)
+async def test_native_failure_cleanup_and_next_case_recovery(runtime, failure):
+    services = runtime[3]
+    services.input_failure = failure
+
+    async def exercise():
+        async with case(runtime, "fdb-failed", 500) as client:
+            await send_audio(client, "fdb-failed")
+
+            async def receive_failure():
+                while True:
+                    event = json.loads(await client.recv())
+                    assert event["type"] != "audio", event
+                    if event["type"] != "data":
+                        continue
+                    assert not event["name"].startswith("tts_"), event
+                    if event["name"] == "agora_mind_event":
+                        payload = json.loads(event["data"]["event_json"])
+                        if (
+                            failure == "disconnect"
+                            and payload.get("type")
+                            == "extension.connection_state"
+                            and payload.get("state") == "disconnected"
+                        ):
+                            return
+                    if (
+                        event["name"] == "error"
+                        and event["data"]["module"] == "agora_mind_bridge"
+                    ):
+                        error = event["data"]
+                        assert error["code"] == 1000
+                        assert error["metadata"]["example_id"] == "fdb-failed"
+                        if failure == "rejected":
+                            response = json.loads(
+                                error["metadata"]["response_json"]
+                            )
+                            assert (
+                                response["error"]["detail"]
+                                == "synthetic rejection"
+                            )
+                        elif failure == "timeout":
+                            assert "timed out" in error["message"]
+                        else:
+                            continue
+                        return
+
+            if failure == "no_completion":
+                # The runner owns the case deadline, including a missing turn.
+                with pytest.raises(asyncio.TimeoutError):
+                    await asyncio.wait_for(receive_failure(), 1)
+            else:
+                await asyncio.wait_for(receive_failure(), 5)
+        assert [c["type"] for c in services.commands].count(
+            "session.user_input"
+        ) == 1
+        services.input_failure = None
+        await run_case(runtime, "fdb-recovered")
+
+    await asyncio.wait_for(exercise(), 30)
