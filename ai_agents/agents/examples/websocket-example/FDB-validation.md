@@ -11,8 +11,8 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 42 passed, 9 opt-in skips |
-| Existing bridge unit tests | 8 passed |
+| Graph, transport and bridge lifecycle tests | 54 passed, 9 opt-in skips |
+| Existing bridge unit tests | 12 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
 | Existing ElevenLabs TTS extension suite | 9 passed, existing deprecation/mock warnings |
