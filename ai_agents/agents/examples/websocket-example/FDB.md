@@ -165,3 +165,28 @@ suppression, PCM metadata, and a real local WebSocket connection. ASR, TTS and
 the native Rust addon are replaced at their TEN boundaries in the graph flow
 test. A real audio benchmark additionally requires provider credentials and
 the Agora Mind server/runner.
+
+## Packaged graph test
+
+After building the runtime image, run this on a Linux host with Docker:
+
+```sh
+task test-fdb-runtime
+# To select another local image:
+task test-fdb-runtime IMAGE=my-fdb-image:tag
+```
+
+This test starts the actual five nodes in the selected image and supplies local
+WebSocket fixtures for ASR, Agora Mind and TTS. It runs two cases sequentially,
+using fresh workers and Sessions, and checks duplicate final/completion events,
+JSON command conversion, transcripts, PCM format/content, TTS completion, and
+worker cleanup. It uses temporary container names and available local ports,
+has a fixed deadline, and removes the container after success or failure.
+
+The regular `test-fdb` task skips this image test unless `FDB_RUNTIME_IMAGE` is
+set. To run it directly with pytest:
+
+```sh
+FDB_RUNTIME_IMAGE=agora-mind/fdb-ten-agent:ten-0.7.14 \
+  python3 -m pytest -q tests/test_fdb_runtime.py
+```

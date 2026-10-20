@@ -8,6 +8,13 @@ tasks:
     cmds:
       - python3 -m pytest -q tests/ {{.CLI_ARGS}}
 
+  test-fdb-runtime:
+    desc: test the packaged FDB graph with local service fixtures on Linux
+    env:
+      FDB_RUNTIME_IMAGE: '{{.IMAGE | default "agora-mind/fdb-ten-agent:ten-0.7.14"}}'
+    cmds:
+      - python3 -m pytest -q tests/test_fdb_runtime.py {{.CLI_ARGS}}
+
   # install scripts
   install-frontend:
     desc: install frontend dependencies
