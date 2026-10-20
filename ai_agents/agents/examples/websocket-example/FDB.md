@@ -120,6 +120,11 @@ Input must be 16 kHz, mono, signed 16-bit little-endian PCM. The Rust runner mus
 convert 48 kHz WAV and pace the PCM before injection. TEN does not accept a WAV
 container in the audio field.
 
+Each audio message must contain at least one complete PCM sample frame. With
+the graph's mono 16-bit format, the decoded byte count must be a positive
+multiple of two. Empty or incomplete audio returns a WebSocket `error` before
+TEN frame allocation; the connection remains usable for subsequent messages.
+
 Output audio uses `{"type":"audio","audio":"<base64 PCM>","metadata":{...}}`.
 Use the output metadata's `sample_rate`, `channels`, and `bytes_per_sample` when
 saving WAV. This graph requests 16 kHz PCM from TTS.

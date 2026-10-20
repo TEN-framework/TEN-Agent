@@ -52,3 +52,9 @@ Data routed into this extension is forwarded as
 properties. This includes ASR transcripts, Agora Mind events, TTS text and audio
 lifecycle events, metrics, and errors when connected in the graph. Audio messages
 continue to use base64 PCM and include their actual sample format in `metadata`.
+
+Decoded input audio must contain at least one complete sample frame: its byte
+count must be a positive multiple of `channels * bytes_per_sample`. Invalid
+lengths return `{"type":"error","error":"..."}` before allocating a TEN
+AudioFrame or writing an audio dump. The same client can continue sending valid
+audio after an error.

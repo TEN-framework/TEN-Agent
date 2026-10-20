@@ -1,6 +1,6 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `5e039d058159791b33a51b1a329d78acde9a7d08`.
+Tested TEN source commit: `71792bc80c359c3cfd544e193adcd1f138e8c57c`.
 Packaged graph regression test: `5e039d058` (`tests/test_fdb_runtime.py`).
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
@@ -10,7 +10,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 32 passed |
+| Graph, transport and bridge lifecycle tests | 36 passed |
 | Existing bridge unit tests | 8 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
@@ -19,7 +19,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression tests | 8 passed in 61.45 seconds |
+| Packaged graph regression tests | 8 passed in 61.50 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
@@ -51,6 +51,11 @@ then complete a second turn on the same worker. One uses periodic HTTP `/ping`;
 the other requests `timeout: -1` without pings. Both explicitly delete the Session
 and stop the worker. Before the API fix, `timeout: -1` incorrectly fell back to
 3 seconds and this regression reproduced the worker's automatic shutdown.
+
+PCM boundary tests reject empty buffers and incomplete sample frames before TEN
+allocation, covering mono/stereo and 16-/32-bit frame widths. The native TEN
+WebSocket test sends three malformed chunks, receives their transport errors,
+and then verifies a complete valid PCM roundtrip on the same connection.
 
 The regression is now checked into the repository. Run it with the local image:
 
@@ -87,7 +92,7 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:3347ef00c706ab219c79a7bfcfb0e8023f423cb808013d16389f288b79a2d700`
+`sha256:89650a5215500be6f9d96d588b9a78bb07de085ad22419b37b6463735c76ebc2`
 
 The image is local and has no published registry digest. Compilation and release
 completed using the common Dockerfile. After a Docker Hub timeout, the runtime
@@ -95,6 +100,7 @@ stage reused the completed builder and a cached Ubuntu 22.04 image. The final
 bridge Python files, bridge manifest and graph configuration were copied into
 the image after runtime tests verified the registration, TTS metadata, lifecycle,
 failure reporting and ASR replay fixes. Their hashes match the current checkout.
+The final WebSocket extension also includes the verified PCM frame validation.
 The API server was rebuilt from the tested source using Go 1.21.13 with
 `CGO_ENABLED=0` and copied into the image. Its SHA-256 matches the local build:
 `7e2064fa8953e15c570821c9ce62a09d9e2989137fc3701bef0f800cd2d39bcb`.
