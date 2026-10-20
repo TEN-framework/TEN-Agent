@@ -1,7 +1,7 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `ed39eb47f`.
-Packaged graph regression test: `ed39eb47f` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `7977bc326`.
+Packaged graph regression test: `7977bc326` (`tests/test_fdb_runtime.py`).
 Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
@@ -22,6 +22,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
 | Packaged graph regression tests | 8 passed in 61.50 seconds |
 | Real Agora Mind backend graph test | 1 passed in 3.83 seconds |
+| Real backend Taskfile entry (`test-fdb-real`) | 1 passed in 3.83 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
@@ -66,6 +67,13 @@ that a missing prompt path fails Session creation, and that the valid prompt
 executes `book_flight` before the final text reaches TEN TTS. It also checks the
 tool request contains the previous tool result and the case ID is present in
 the emitted FDB tool record.
+
+The production Agora Mind checkout currently does not contain
+`resources/prompts/fdb_v3.md`; the opt-in test creates a temporary prompt file
+to exercise the server's relative prompt resolution. The benchmark run must
+provide the real prompt under `AGORA_MIND_RESOURCES_ROOT` before using official
+cases. The same test uses the checked-in `examples/fdb_workspace_profiles.json`
+and real `capabilities/fdb` implementation from the Agora Mind checkout.
 
 The regression is now checked into the repository. Run it with the local image:
 
