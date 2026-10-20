@@ -60,6 +60,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._completed_finalizes: OrderedDict[str, None] = OrderedDict()
         self._finalize_contexts: dict[str, dict[str, Any]] = {}
         self._finalize_times: dict[str, float] = {}
+        # Finalize ids whose metadata was omitted and must be resolved after
+        # preceding audio (and buffered frames) at the queue boundary.
+        self._finalize_inherit_metadata: set[str] = set()
         self._buffer_flush_task: asyncio.Task[None] | None = None
         self._reconnect_pending = False
         self._finalize_locks: dict[str, asyncio.Lock] = {}
@@ -424,25 +427,34 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             )
             return
 
-        # Finalize metadata is optional. Start from the live audio context so a
-        # finalize that omits metadata cannot wipe metadata.session_id.
-        context = copy.deepcopy(self.metadata) if self.metadata else {}
+        # Finalize metadata is optional. Do not snapshot self.metadata here —
+        # it can lag behind audio still waiting on audio_frames_queue. When
+        # omitted, resolve inheritance at the queue boundary after prior frames.
+        provided: dict[str, Any] | None = None
         metadata_json, metadata_error = data.get_property_to_json("metadata")
         if not metadata_error and metadata_json:
             parsed = json.loads(metadata_json)
             if not isinstance(parsed, dict):
                 raise ValueError("StepFun finalize metadata must be an object")
             if parsed:
-                context.update(copy.deepcopy(parsed))
+                provided = copy.deepcopy(parsed)
 
+        inherit_metadata = provided is None
+        context = copy.deepcopy(provided) if provided is not None else {}
         received_at = asyncio.get_running_loop().time()
-        self._enqueue_finalize_boundary(finalize_id, received_at, context)
+        self._enqueue_finalize_boundary(
+            finalize_id,
+            received_at,
+            context,
+            inherit_metadata=inherit_metadata,
+        )
 
         # Install mutable context only after the boundary is queued, and only
         # while no in-flight result is emitting metrics from these fields.
+        # Inherited metadata is installed later in _handle_finalize.
         async with self._result_context_lock:
-            if context:
-                self.metadata = copy.deepcopy(context)
+            if provided is not None:
+                self.metadata = copy.deepcopy(provided)
                 self.session_id = self.metadata.get(
                     "session_id", self.session_id
                 )
@@ -489,6 +501,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         finalize_id: str,
         received_at: float,
         metadata: dict[str, Any],
+        *,
+        inherit_metadata: bool = False,
     ) -> None:
         """Queue a finalize tuple once, preserving input order vs audio.
 
@@ -501,9 +515,34 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._finalize_contexts[finalize_id] = context
         self._finalize_times[finalize_id] = received_at
         self._finalize_events[finalize_id] = asyncio.Event()
+        if inherit_metadata:
+            self._finalize_inherit_metadata.add(finalize_id)
+        else:
+            self._finalize_inherit_metadata.discard(finalize_id)
         self.audio_frames_queue.put_nowait(
             (finalize_id, received_at, context)
         )
+
+    def _resolve_finalize_metadata(
+        self,
+        finalize_id: str,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve finalize metadata after preceding audio has been consumed."""
+        inherit = finalize_id in self._finalize_inherit_metadata
+        if not inherit and metadata:
+            return copy.deepcopy(metadata)
+
+        resolved = copy.deepcopy(self.metadata) if self.metadata else {}
+        if self.recognition is not None:
+            current = self.recognition._current
+            if current.metadata:
+                resolved = copy.deepcopy(current.metadata)
+            elif current.session_id is not None:
+                resolved = {**resolved, "session_id": current.session_id}
+        if not inherit and metadata:
+            resolved.update(copy.deepcopy(metadata))
+        return resolved
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
@@ -516,9 +555,14 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             if self.last_finalize_time is not None
             else asyncio.get_running_loop().time()
         )
+        # Fallback path only; on_data normally pre-queues with inherit flags.
         metadata = copy.deepcopy(self.metadata) if self.metadata else {}
-        # on_data may have already queued the boundary in input order.
-        self._enqueue_finalize_boundary(finalize_id, received_at, metadata)
+        self._enqueue_finalize_boundary(
+            finalize_id,
+            received_at,
+            metadata,
+            inherit_metadata=not metadata,
+        )
         done = self._finalize_events.get(finalize_id)
         if done is None:
             return
@@ -542,10 +586,6 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         received_at: float,
         metadata: dict[str, Any],
     ) -> None:
-        # Inherit live audio context when the queued finalize metadata is empty.
-        if not metadata and self.metadata:
-            metadata = copy.deepcopy(self.metadata)
-        finalize_session_id = metadata.get("session_id", self.session_id)
         if finalize_id in self._completed_finalizes:
             # Timeout already completed this id; still seal/discard its audio
             # so the next turn does not inherit the open span.
@@ -553,42 +593,68 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 finalize_id
             ):
                 async with self._result_context_lock:
-                    await self._absorb_buffered_frames(
-                        metadata=metadata,
-                        session_id=finalize_session_id,
+                    resolved = await self._prepare_finalize_context(
+                        finalize_id, metadata
                     )
-                    await self.recognition.commit(
+                    recognition = self.recognition
+                    session_id = resolved.get("session_id", self.session_id)
+                # Commit outside the result lock: empty/final callbacks may
+                # re-enter on_result which needs the same lock.
+                if recognition is not None:
+                    await recognition.commit(
                         finalize_id,
                         received_at,
-                        metadata=metadata,
-                        session_id=finalize_session_id,
+                        metadata=resolved,
+                        session_id=session_id,
                     )
             return
+
         async with self._result_context_lock:
             self.finalize_id = finalize_id
             self.last_finalize_time = received_at
-            self.metadata = copy.deepcopy(metadata)
-            self.session_id = finalize_session_id
-
-            if self.recognition is None:
-                await self._finish_finalize(
-                    finalize_id,
-                    "StepFun recognition is unavailable",
-                    metadata=metadata,
-                )
-                return
-
-            # Include base-class disconnected audio in this finalize boundary.
-            await self._absorb_buffered_frames(
-                metadata=metadata,
-                session_id=finalize_session_id,
+            resolved = await self._prepare_finalize_context(
+                finalize_id, metadata
             )
-            await self.recognition.commit(
+            recognition = self.recognition
+            session_id = resolved.get("session_id", self.session_id)
+
+        if recognition is None:
+            await self._finish_finalize(
                 finalize_id,
-                received_at,
-                metadata=metadata,
-                session_id=finalize_session_id,
+                "StepFun recognition is unavailable",
+                metadata=resolved,
             )
+            return
+
+        await recognition.commit(
+            finalize_id,
+            received_at,
+            metadata=resolved,
+            session_id=session_id,
+        )
+
+    async def _prepare_finalize_context(
+        self,
+        finalize_id: str,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Absorb buffered audio, then resolve omitted finalize metadata."""
+        # Caller must hold _result_context_lock.
+        provisional = (
+            copy.deepcopy(metadata)
+            if metadata
+            else (copy.deepcopy(self.metadata) if self.metadata else {})
+        )
+        await self._absorb_buffered_frames(
+            metadata=provisional,
+            session_id=provisional.get("session_id", self.session_id),
+        )
+        resolved = self._resolve_finalize_metadata(finalize_id, metadata)
+        self.metadata = copy.deepcopy(resolved)
+        self.session_id = resolved.get("session_id", self.session_id)
+        self._finalize_contexts[finalize_id] = copy.deepcopy(resolved)
+        self._finalize_inherit_metadata.discard(finalize_id)
+        return resolved
 
     async def _absorb_buffered_frames(
         self,
@@ -660,26 +726,38 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             context = metadata
             if context is None:
                 context = self._finalize_contexts.get(finalize_id)
+            if context is None:
+                # Do not take _result_context_lock here: commit → on_result may
+                # call this while that lock is already held.
+                context = (
+                    copy.deepcopy(self.metadata) if self.metadata else {}
+                )
+            # Dedicated object so we can detect live audio overwriting it
+            # during await and avoid restoring a stale session over B.
+            emit_metadata = copy.deepcopy(context) if context else {}
             previous_finalize_id = self.finalize_id
             previous_metadata = self.metadata
             try:
                 self.finalize_id = finalize_id
-                if context is not None:
-                    self.metadata = copy.deepcopy(context)
+                self.metadata = emit_metadata
                 event = self._finalize_events.get(finalize_id)
                 if event:
                     event.set()
                 await self.send_asr_finalize_end()
             finally:
-                if self.finalize_id == finalize_id and (
-                    finalize_time is None
-                    or self.last_finalize_time == finalize_time
-                ):
-                    self.last_finalize_time = None
-                self.finalize_id = previous_finalize_id
-                self.metadata = previous_metadata
-                self._finalize_contexts.pop(finalize_id, None)
-                self._finalize_locks.pop(finalize_id, None)
+                if self.metadata is emit_metadata:
+                    self.metadata = previous_metadata
+                if self.finalize_id == finalize_id:
+                    self.finalize_id = previous_finalize_id
+                    if (
+                        finalize_time is None
+                        or self.last_finalize_time == finalize_time
+                    ):
+                        self.last_finalize_time = None
+
+            self._finalize_contexts.pop(finalize_id, None)
+            self._finalize_inherit_metadata.discard(finalize_id)
+            self._finalize_locks.pop(finalize_id, None)
 
     def _remember_completed_finalize(self, finalize_id: str) -> None:
         self._completed_finalizes[finalize_id] = None

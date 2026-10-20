@@ -2413,6 +2413,177 @@ async def test_finalize_without_metadata_keeps_audio_session():
 
 
 @pytest.mark.asyncio
+async def test_metadata_less_finalize_inherits_queued_session_b():
+    """Omitted finalize metadata must resolve after preceding queued audio."""
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    # Seal A so B becomes the open span once journaled.
+    await recognition.commit(
+        "final-a-prev",
+        asyncio.get_running_loop().time(),
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await recognition._handle_message(
+        {"type": "input_audio_buffer.committed", "item_id": "item-a-prev"}
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-a-prev",
+            "transcript": "a",
+            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
+        }
+    )
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    # Queue B before the metadata-less finalize while consumer is idle.
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x03\x04" * 160, {"session_id": "session-b"})
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-b", None)
+    data.get_property_to_json.return_value = ("", None)
+
+    finalize_task = asyncio.create_task(
+        StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    )
+    await finalize_task
+
+    for _ in range(50):
+        if any(
+            segment.finalize_id == "final-b" and segment.end is not None
+            for segment in recognition._pending
+        ):
+            break
+        await asyncio.sleep(0.01)
+
+    sealed_b = next(
+        segment
+        for segment in recognition._pending
+        if segment.finalize_id == "final-b"
+    )
+    assert sealed_b.session_id == "session-b"
+    assert sealed_b.metadata and sealed_b.metadata.get("session_id") == (
+        "session-b"
+    )
+    commits = [
+        msg
+        for msg in recognition.websocket.sent
+        if msg.get("type") == "input_audio_buffer.commit"
+    ]
+    assert commits
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert ends
+    assert ends[-1]["finalize_id"] == "final-b"
+    assert ends[-1]["metadata"].get("session_id") == "session-b"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_finish_finalize_does_not_restore_over_live_session():
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+    ext.finalize_id = "final-a"
+    ext.last_finalize_time = asyncio.get_running_loop().time()
+    ext._finalize_contexts["final-a"] = {"session_id": "session-a"}
+    ext._finalize_times["final-a"] = ext.last_finalize_time
+    ext._finalize_events["final-a"] = asyncio.Event()
+
+    release_end = asyncio.Event()
+    entered_end = asyncio.Event()
+    captured_ends: list[dict] = []
+    original_send = ext.ten_env.send_data
+
+    async def gated_send(data):
+        if data.get_name() == "asr_finalize_end":
+            captured_ends.append(
+                json.loads(data.get_property_to_json(None)[0])
+            )
+            entered_end.set()
+            await release_end.wait()
+        await original_send(data)
+
+    ext.ten_env.send_data = gated_send
+
+    finish_task = asyncio.create_task(
+        ext._finish_finalize(
+            "final-a",
+            metadata={"session_id": "session-a"},
+        )
+    )
+    await entered_end.wait()
+
+    await StepFunASRExtension._handle_audio_frame(
+        ext,
+        ext.ten_env,
+        _audio_frame(b"\x05\x06" * 160, {"session_id": "session-b"}),
+    )
+    assert ext.session_id == "session-b"
+    assert ext.metadata["session_id"] == "session-b"
+
+    release_end.set()
+    await finish_task
+
+    assert ext.session_id == "session-b"
+    assert ext.metadata["session_id"] == "session-b"
+    assert captured_ends[-1]["finalize_id"] == "final-a"
+    assert captured_ends[-1]["metadata"].get("session_id") == "session-a"
+
+    # Metadata-less finalize for B must target B's open audio.
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-b", None)
+    data.get_property_to_json.return_value = ("", None)
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    for _ in range(50):
+        if any(seg.finalize_id == "final-b" for seg in recognition._pending):
+            break
+        await asyncio.sleep(0.01)
+    sealed = next(
+        seg for seg in recognition._pending if seg.finalize_id == "final-b"
+    )
+    assert sealed.session_id == "session-b"
+    assert captured_ends[-1]["finalize_id"] == "final-b"
+    assert captured_ends[-1]["metadata"].get("session_id") == "session-b"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
 async def test_empty_string_finalize_id_acks_once_with_boundary():
     ext = _real_output_extension()
     ext.config = _config()
