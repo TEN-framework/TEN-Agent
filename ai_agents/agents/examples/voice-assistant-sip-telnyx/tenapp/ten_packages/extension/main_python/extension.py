@@ -537,13 +537,8 @@ class TelnyxControlExtension(AsyncExtension):
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
-            stream_id = self.server_instance.active_call_sessions[call_id].get(
-                "stream_id"
-            )
-
             message = {
                 "event": "media",
-                "streamSid": stream_id,
                 "media": {"payload": audio_base64},
             }
 

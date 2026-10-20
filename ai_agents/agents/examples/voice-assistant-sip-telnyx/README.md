@@ -227,17 +227,17 @@ docker run --rm -it --env-file .env -p 9000:9000 -p 3000:3000 voice-assistant-si
 
 ### RESTful API Endpoints
 
-- `POST /api/calls` - Create new outbound call
+- `POST /api/call` - Create new outbound call
 - `GET /api/calls` - List all active calls
-- `GET /api/calls/{call_id}` - Get call information
-- `DELETE /api/calls/{call_id}` - Stop and delete call
+- `GET /api/call/{call_id}` - Get call information
+- `DELETE /api/call/{call_id}` - Stop and delete call
 - `POST /webhook/status` - Telnyx status callback
 - `GET /health` - Health check
 
 ### Starting a Call
 
 ```bash
-curl -X POST http://localhost:9000/api/calls \
+curl -X POST http://localhost:9000/api/call \
   -H "Content-Type: application/json" \
   -d '{
     "phone_number": "+1234567890",
@@ -248,7 +248,7 @@ curl -X POST http://localhost:9000/api/calls \
 ### Getting Call Information
 
 ```bash
-curl http://localhost:9000/api/calls/CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+curl http://localhost:9000/api/call/v3:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ### Listing All Calls
@@ -260,14 +260,14 @@ curl http://localhost:9000/api/calls
 ### Stopping a Call
 
 ```bash
-curl -X DELETE http://localhost:9000/api/calls/CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+curl -X DELETE http://localhost:9000/api/call/v3:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ## Learn More
 
 - [Telnyx Programmable Voice Documentation](https://developers.telnyx.com/api/v2)
 - [Telnyx Media Streams Documentation](https://developers.telnyx.com/api/v2/calls/voice)
-- [Telnyx Python SDK](https://github.com/team-telnyx/telnyx-python)
+- [Telnyx Call Control API](https://developers.telnyx.com/api-reference/call-commands/dial)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)

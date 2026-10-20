@@ -4,20 +4,20 @@ Telnyx Server for Voice Call Handling
 Handles call creation, media streaming, and webhook status
 """
 import asyncio
+import aiohttp
 import json
 import os
 import signal
 import sys
 from typing import Dict, Any, Optional
 from datetime import datetime
+from urllib.parse import quote
+from urllib import request as urllib_request
 
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException, WebSocket
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from telnyx import Telnyx
-from telnyx.api.call import Call
-from telnyx.models.control import Control
 
 from .config import TelnyxConfig
 
@@ -38,9 +38,6 @@ class TelnyxCallServer:
             allow_methods=["*"],  # Allow all methods
             allow_headers=["*"],  # Allow all headers
         )
-
-        # Telnyx client
-        self.telnyx_client = Telnyx(config.telnyx_api_key)
 
         # Active call sessions
         self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
@@ -69,6 +66,151 @@ class TelnyxCallServer:
         else:
             print(f"DEBUG: {message}")
 
+    def _media_ws_url(self) -> Optional[str]:
+        if not self.config.telnyx_public_server_url:
+            return None
+
+        ws_protocol = "wss" if self.config.telnyx_use_wss else "ws"
+        return f"{ws_protocol}://{self.config.telnyx_public_server_url}/media"
+
+    def _webhook_url(self) -> Optional[str]:
+        if not self.config.telnyx_public_server_url:
+            return None
+
+        http_protocol = "https" if self.config.telnyx_use_https else "http"
+        return (
+            f"{http_protocol}://"
+            f"{self.config.telnyx_public_server_url}/webhook/status"
+        )
+
+    def _streaming_params(self) -> Dict[str, Any]:
+        media_ws_url = self._media_ws_url()
+        if not media_ws_url:
+            return {}
+
+        return {
+            "stream_url": media_ws_url,
+            "stream_track": "both_tracks",
+            "stream_codec": "PCMU",
+            "stream_bidirectional_mode": "rtp",
+            "stream_bidirectional_codec": "PCMU",
+        }
+
+    def _headers(self) -> Dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.config.telnyx_api_key}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+    async def _post_telnyx(self, path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        url = f"https://api.telnyx.com/v2{path}"
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url,
+                headers=self._headers(),
+                json=payload,
+            ) as response:
+                response_body = await response.text()
+                if response.status >= 400:
+                    raise HTTPException(
+                        status_code=response.status,
+                        detail=response_body,
+                    )
+                if not response_body:
+                    return {}
+                return json.loads(response_body)
+
+    def _post_telnyx_sync(
+        self, path: str, payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib_request.Request(
+            f"https://api.telnyx.com/v2{path}",
+            data=data,
+            headers=self._headers(),
+            method="POST",
+        )
+        with urllib_request.urlopen(request, timeout=10) as response:
+            response_body = response.read().decode("utf-8")
+            if not response_body:
+                return {}
+            return json.loads(response_body)
+
+    async def _dial_call(self, phone_number: str) -> Dict[str, Any]:
+        call_params = {
+            "to": phone_number,
+            "from": self.config.telnyx_from_number,
+            "connection_id": self.config.telnyx_connection_id,
+            **self._streaming_params(),
+        }
+
+        webhook_url = self._webhook_url()
+        if webhook_url:
+            call_params["webhook_url"] = webhook_url
+            call_params["webhook_url_method"] = "POST"
+
+        return await self._post_telnyx("/calls", call_params)
+
+    async def _hangup_call(self, call_control_id: str) -> Dict[str, Any]:
+        encoded_call_control_id = quote(call_control_id, safe="")
+        return await self._post_telnyx(
+            f"/calls/{encoded_call_control_id}/actions/hangup", {}
+        )
+
+    async def _answer_call(self, call_control_id: str) -> Dict[str, Any]:
+        encoded_call_control_id = quote(call_control_id, safe="")
+        return await self._post_telnyx(
+            f"/calls/{encoded_call_control_id}/actions/answer",
+            self._streaming_params(),
+        )
+
+    def _get_or_create_session(self, call_control_id: str) -> Dict[str, Any]:
+        if call_control_id not in self.active_call_sessions:
+            self.active_call_sessions[call_control_id] = {
+                "call_id": call_control_id,
+                "status": "unknown",
+                "created_at": datetime.now().isoformat(),
+            }
+
+        return self.active_call_sessions[call_control_id]
+
+    @staticmethod
+    def _parse_telnyx_event(
+        body: Dict[str, Any]
+    ) -> tuple[Optional[str], Dict[str, Any]]:
+        data = body.get("data") or {}
+        return data.get("event_type"), data.get("payload") or {}
+
+    def _update_session_from_event(
+        self, event_type: Optional[str], payload: Dict[str, Any]
+    ) -> Optional[str]:
+        call_control_id = payload.get("call_control_id")
+        if not call_control_id:
+            return None
+
+        session = self._get_or_create_session(call_control_id)
+        session.update(
+            {
+                "call_id": call_control_id,
+                "call_control_id": call_control_id,
+                "call_leg_id": payload.get("call_leg_id"),
+                "call_session_id": payload.get("call_session_id"),
+                "phone_number": payload.get("to") or session.get("phone_number"),
+                "from_number": payload.get("from") or session.get("from_number"),
+                "direction": payload.get("direction") or session.get("direction"),
+                "status": payload.get("state") or event_type or session["status"],
+                "last_event": event_type,
+                "updated_at": datetime.now().isoformat(),
+            }
+        )
+
+        if event_type in {"call.hangup", "streaming.stopped", "streaming.failed"}:
+            session["status"] = "completed"
+            session["ended_at"] = datetime.now().isoformat()
+
+        return call_control_id
+
     def _setup_routes(self):
         """Setup FastAPI routes"""
 
@@ -89,38 +231,37 @@ class TelnyxCallServer:
                     f"Creating call to {phone_number} with message: {message}"
                 )
 
-                # Build WebSocket URL for media streaming
-                if self.config.telnyx_public_server_url:
-                    ws_protocol = "wss" if self.config.telnyx_use_wss else "ws"
-                    media_ws_url = f"{ws_protocol}://{self.config.telnyx_public_server_url}/media"
+                if self._media_ws_url():
                     self._log_info(
-                        f"Adding media stream to WebSocket: {media_ws_url}"
+                        f"Adding media stream to WebSocket: {self._media_ws_url()}"
                     )
                 else:
-                    media_ws_url = None
                     self._log_info(
                         "No public server URL configured - media streaming disabled"
                     )
 
-                # Create Telnyx call
-                call_params = {
-                    "to": phone_number,
-                    "from_": self.config.telnyx_from_number,
-                    "connection_id": self.config.telnyx_connection_id,
-                    "answer_url": (
-                        f"{media_ws_url}/control" if media_ws_url else None
-                    ),
-                }
-
-                # Create the call using Telnyx SDK
-                call = self.telnyx_client.calls.create(**call_params)
+                response = await self._dial_call(phone_number)
+                call_data = response.get("data", response)
 
                 # Store call session
-                call_id = call.id if hasattr(call, "id") else str(call)
+                call_id = (
+                    call_data.get("call_control_id")
+                    or call_data.get("call_leg_id")
+                    or call_data.get("id")
+                )
+                if not call_id:
+                    raise HTTPException(
+                        status_code=502,
+                        detail="Telnyx call response did not include a call id",
+                    )
+
                 self.active_call_sessions[call_id] = {
                     "phone_number": phone_number,
                     "message": message,
                     "call_id": call_id,
+                    "call_control_id": call_data.get("call_control_id"),
+                    "call_leg_id": call_data.get("call_leg_id"),
+                    "call_session_id": call_data.get("call_session_id"),
                     "status": "initiated",
                     "created_at": datetime.now().isoformat(),
                 }
@@ -137,6 +278,8 @@ class TelnyxCallServer:
                     }
                 )
 
+            except HTTPException:
+                raise
             except Exception as e:
                 self._log_error(f"Failed to create call: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -152,8 +295,7 @@ class TelnyxCallServer:
 
                 self._log_info(f"Ending call: {call_id}")
 
-                # End call via Telnyx API
-                self.telnyx_client.calls(call_id).update(status="completed")
+                await self._hangup_call(call_id)
 
                 # Update session status
                 if call_id in self.active_call_sessions:
@@ -172,6 +314,8 @@ class TelnyxCallServer:
                     }
                 )
 
+            except HTTPException:
+                raise
             except Exception as e:
                 self._log_error(f"Failed to end call {call_id}: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -192,13 +336,15 @@ class TelnyxCallServer:
                         "success": True,
                         "call_id": call_id,
                         "status": session["status"],
-                        "phone_number": session["phone_number"],
-                        "message": session["message"],
+                        "phone_number": session.get("phone_number"),
+                        "message": session.get("message"),
                         "created_at": session["created_at"],
                         "ended_at": session.get("ended_at"),
                     }
                 )
 
+            except HTTPException:
+                raise
             except Exception as e:
                 self._log_error(
                     f"Failed to get call status {call_id}: {str(e)}"
@@ -217,50 +363,28 @@ class TelnyxCallServer:
             )
 
         @self.app.post("/webhook/status")
-        @self.app.get("/webhook/status")
         async def handle_status_webhook(request: Request):
             """Handle Telnyx status webhook"""
             try:
-                # Handle both GET and POST requests
-                if request.method == "GET":
-                    # For GET requests, get parameters from query string
-                    call_id = request.query_params.get(
-                        "CallSid"
-                    ) or request.query_params.get("call_id")
-                    call_status = request.query_params.get(
-                        "CallStatus"
-                    ) or request.query_params.get("status")
-                    call_duration = request.query_params.get(
-                        "CallDuration"
-                    ) or request.query_params.get("duration")
-                else:
-                    # For POST requests, get parameters from form data
-                    form_data = await request.form()
-                    call_id = form_data.get("CallSid") or form_data.get(
-                        "call_id"
-                    )
-                    call_status = form_data.get("CallStatus") or form_data.get(
-                        "status"
-                    )
-                    call_duration = form_data.get(
-                        "CallDuration"
-                    ) or form_data.get("duration")
+                body = await request.json()
+                event_type, payload = self._parse_telnyx_event(body)
+                call_id = self._update_session_from_event(event_type, payload)
 
                 self._log_info(
-                    f"Status webhook received for call {call_id}: {call_status}"
+                    f"Status webhook received for call {call_id}: {event_type}"
                 )
 
-                # Update call session status
-                if call_id in self.active_call_sessions:
-                    self.active_call_sessions[call_id]["status"] = call_status
-
-                    if call_status == "completed":
-                        self.active_call_sessions[call_id][
-                            "ended_at"
-                        ] = datetime.now().isoformat()
+                if (
+                    event_type == "call.initiated"
+                    and payload.get("direction") == "incoming"
+                    and call_id
+                ):
+                    await self._answer_call(call_id)
 
                 return JSONResponse(content={"success": True})
 
+            except HTTPException:
+                raise
             except Exception as e:
                 self._log_error(f"Failed to handle status webhook: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -284,12 +408,8 @@ class TelnyxCallServer:
             webhook_url = None
 
             if self.config.telnyx_public_server_url:
-                ws_protocol = "wss" if self.config.telnyx_use_wss else "ws"
-                http_protocol = (
-                    "https" if self.config.telnyx_use_https else "http"
-                )
-                media_ws_url = f"{ws_protocol}://{self.config.telnyx_public_server_url}/media"
-                webhook_url = f"{http_protocol}://{self.config.telnyx_public_server_url}/webhook/status"
+                media_ws_url = self._media_ws_url()
+                webhook_url = self._webhook_url()
 
             return JSONResponse(
                 content={
@@ -354,7 +474,7 @@ class TelnyxCallServer:
                             audio_payload = message.get("media", {}).get(
                                 "payload", ""
                             )
-                            stream_id = message.get("streamSid", "")
+                            stream_id = message.get("stream_id", "")
 
                             if audio_payload and call_id:
                                 # Forward audio to TEN framework
@@ -372,11 +492,20 @@ class TelnyxCallServer:
 
                         elif message.get("event") == "start":
                             self._log_info(f"Media stream started: {message}")
-                            stream_id = message.get("streamSid", "")
+                            stream_id = message.get("stream_id", "")
                             start = message.get("start", {})
-                            call_id = start.get("callSid", "") or start.get(
-                                "call_id", ""
-                            )
+                            call_id = start.get("call_control_id", "")
+                            if call_id and call_id not in self.active_call_sessions:
+                                self.active_call_sessions[call_id] = {
+                                    "call_id": call_id,
+                                    "call_control_id": call_id,
+                                    "call_session_id": start.get("call_session_id"),
+                                    "phone_number": start.get("to"),
+                                    "from_number": start.get("from"),
+                                    "status": "streaming",
+                                    "created_at": datetime.now().isoformat(),
+                                }
+
                             self.active_call_sessions[call_id][
                                 "stream_id"
                             ] = stream_id
@@ -449,10 +578,12 @@ class TelnyxCallServer:
     def cleanup(self):
         """Cleanup resources"""
         self._log_info("Cleaning up Telnyx Call Server")
-        # End all active calls
         for call_id in list(self.active_call_sessions.keys()):
             try:
-                self.telnyx_client.calls(call_id).update(status="completed")
+                encoded_call_control_id = quote(call_id, safe="")
+                self._post_telnyx_sync(
+                    f"/calls/{encoded_call_control_id}/actions/hangup", {}
+                )
                 self._log_info(f"Ended call {call_id}")
             except Exception as e:
                 self._log_error(f"Failed to end call {call_id}: {str(e)}")
