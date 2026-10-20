@@ -1,4 +1,4 @@
 pydantic>=2.0.0
-websockets>=11.0.0
+websockets>=14.2,<18
 aiofiles
 pysbd==0.3.4
