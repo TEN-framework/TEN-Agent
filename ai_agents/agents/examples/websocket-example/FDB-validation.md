@@ -1,6 +1,7 @@
 # FDB graph validation — 2026-10-20
 
 Tested TEN source commit: `e0620432cbc97ab49a0525ba4f1a0e3ccfa90220`.
+Packaged graph regression test: `17fb1c5a1` (`tests/test_fdb_runtime.py`).
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
 `f49df39aad9d439d7af64ea874a3e49010ae89605a2ee32b6991f9507c28dd5e`.
@@ -18,16 +19,26 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Runtime image and synthetic full graph smoke | Passed |
+| Packaged graph regression test | 1 passed; two sequential cases in 6.18 seconds |
+| Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
 runtime image. Local WebSocket fixtures replace the three external services;
 the real ASR extension, Rust Agora Mind addon, bridge and TTS extension run.
-It verifies `/graphs`, `/start`, Workspace/Session creation, PCM input, ASR final,
-one `session.user_input`, a completed turn, exactly 6400 bytes of expected output
-PCM at 16 kHz, `tts_audio_end`, Session deletion, and `/stop`.
+It verifies `/graphs`, `/start`, Workspace/Session creation, PCM input, repeated
+ASR finals and completed turns, exactly one `session.user_input` and TTS request
+per case, and 6400 bytes of expected output PCM at 16 kHz/mono/16-bit. It checks
+the successful `tts_audio_end` reason and exact 200 ms duration, Session deletion,
+and `/stop`. Two cases reuse the same audio port and Agora Mind Session ID with
+fresh workers; their case metadata remains isolated and `/list` confirms cleanup.
 
-The observed Agora Mind operations, in order, were:
+The regression is now checked into the repository. Run it with the local image:
+
+```sh
+task test-fdb-runtime
+```
+
+The observed Agora Mind operations for each case, in order, were:
 
 ```text
 workspace.create
