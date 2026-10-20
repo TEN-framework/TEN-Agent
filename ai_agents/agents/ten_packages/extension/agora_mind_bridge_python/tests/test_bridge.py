@@ -261,6 +261,56 @@ async def test_create_session_response_sets_session_id():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "name,properties",
+    [
+        ("flush_session", {"session_id": 7}),
+        ("set_session_debug", {"session_id": 7, "enabled": True}),
+        ("delete_session", {"session_id": 7}),
+    ],
+)
+async def test_session_control_commands_forward_properties_and_results(
+    name, properties
+):
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    command = FakeCmd(name)
+    command.properties = properties
+    await bridge.on_cmd(bridge.ten_env, command)
+    assert len(bridge.ten_env.commands) == 1
+    forwarded = bridge.ten_env.commands[0]
+    assert forwarded.name == name
+    assert forwarded.properties == properties
+    assert forwarded.destinations == [("", "", "agora_mind")]
+    assert returned[0].status == StatusCode.OK
+    assert json.loads(returned[0].response_json)["type"] == f"{name}.completed"
+    if name == "delete_session":
+        assert bridge.session_id is None
+
+
+@pytest.mark.asyncio
+async def test_unsupported_command_returns_bridge_error_without_forwarding():
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    await bridge.on_cmd(bridge.ten_env, FakeCmd("unknown_command"))
+    assert not bridge.ten_env.commands
+    assert returned[0].status == StatusCode.ERROR
+    error = json.loads(returned[0].response_json)
+    assert error["error"]["kind"] == "bridge"
+    assert "unsupported bridge command" in error["error"]["message"]
+
+
+@pytest.mark.asyncio
 async def test_delete_session_clears_cached_session():
     bridge = bridge_with_session()
     command = FakeCmd("delete_session")
