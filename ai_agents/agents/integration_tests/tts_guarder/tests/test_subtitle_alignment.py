@@ -41,6 +41,7 @@ SUPPORTED_TTS_EXTENSIONS = {
     "bytedance_tts_duplex",
     "minimax_tts_websocket",
     "soul_tts_python",
+    "azure_tts",
 }
 REQUEST_IDS = ["subtitle_alignment_first", "subtitle_alignment_second"]
 

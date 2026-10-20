@@ -49,9 +49,9 @@ task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 `test_subtitle_alignment.py` supports `cartesia_tts`,
 `minimax_tts_websocket_duplex`, `elevenlabs_multiple_context_tts_python`,
 `bytedance_tts`, `bytedance_tts_duplex`, `minimax_tts_websocket`, and
-`soul_tts_python`. It validates two sequential requests against the cumulative
-PCM clock. Vendors with a registered hook also compare TEN word timestamps with
-untouched provider messages. See
+`soul_tts_python`, and `azure_tts`. It validates two sequential requests against
+the cumulative PCM clock. Vendors with a registered hook also compare TEN word
+timestamps with untouched provider messages. See
 [the timing checks](tests/SUBTITLE_TIMING.md) for the validation rules and their
 limits.
 
@@ -64,5 +64,7 @@ Only `minimax_tts_websocket_duplex`, `cartesia_tts`,
 `bytedance_tts_duplex` install a vendor timing hook. A hook applies to the
 alignment test's matching connections and restores the client dependency
 afterward. Unregistered vendors receive no hook, and other Guarder cases retain
-their behavior. `minimax_tts_websocket` and `soul_tts_python` use the
-strengthened generic alignment checks without a vendor hook.
+their behavior. `minimax_tts_websocket`, `soul_tts_python`, and `azure_tts` use
+the strengthened generic alignment checks without a vendor hook. `azure_tts` is
+a C++ extension that is not part of this checkout, so its runs use a guarder
+copy in the conversational agent tree.

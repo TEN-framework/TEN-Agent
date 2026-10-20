@@ -93,9 +93,11 @@ Unregistered extensions install no vendor observer. Generic bounds checks alone
 cannot prove that the first-word offset was converted correctly: shifted words
 can still lie within the audio span. `minimax_tts_websocket_duplex`,
 `cartesia_tts`, `elevenlabs_multiple_context_tts_python`, and `bytedance_tts`
-have a registered hook today; `minimax_tts_websocket` and `soul_tts_python`
-receive generic checks only. Other extensions skip this case until they are
-added to the supported list and have a subtitle configuration.
+have a registered hook today; `minimax_tts_websocket`, `soul_tts_python`, and
+`azure_tts` receive generic checks only. `azure_tts` is a C++ extension that
+lives in the conversational agent tree, so its runs copy this guarder there and
+keep the subtitle configuration in that tree. Other extensions skip this case
+until they are added to the supported list and have a subtitle configuration.
 
 ### 1. Prepare the extension and configuration
 
