@@ -137,6 +137,50 @@ async def test_finalize_includes_buffered_audio_boundary():
 
 
 @pytest.mark.asyncio
+async def test_finalize_keeps_captured_session_after_buffer_absorption():
+    ext = _extension()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    frame = FakeFrame(b"\x01\x02" * 160, {"session_id": "session-a"})
+    ext.buffered_frames.put_nowait(frame)
+    ext.buffered_frames_size = len(frame.get_buf())
+
+    await ext._handle_finalize(
+        "final-b",
+        asyncio.get_running_loop().time(),
+        {"session_id": "session-b"},
+    )
+
+    segment = recognition._pending[0]
+    assert segment.session_id == "session-b"
+    assert segment.metadata["session_id"] == "session-b"
+
+
+@pytest.mark.asyncio
+async def test_empty_finalize_clears_its_ttlw_context():
+    ext = _extension()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    received_at = asyncio.get_running_loop().time()
+    await ext._handle_finalize(
+        "empty-final",
+        received_at,
+        {"session_id": "session-a"},
+    )
+
+    assert ext.last_finalize_time is None
+    ext.send_asr_finalize_end.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_fatal_state_still_completes_finalize():
     ext = _extension()
     ext._fatal = True
@@ -236,9 +280,7 @@ async def test_active_final_leaves_ttlw_timestamp_cleared():
 async def test_send_failure_journals_but_reports_delivery_false():
     callback = CapturingCallback()
     recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
-    recognition.websocket = FakeWebSocket(
-        fail_send=RuntimeError("send failed")
-    )
+    recognition.websocket = FakeWebSocket(fail_send=RuntimeError("send failed"))
     recognition._started = True
     recognition._generation = 1
 
@@ -255,9 +297,7 @@ async def test_flush_does_not_requeue_journaled_failed_delivery():
     recognition = StepFunASRRecognition(
         ext.config, SimpleNamespace(), CapturingCallback()
     )
-    recognition.websocket = FakeWebSocket(
-        fail_send=RuntimeError("send failed")
-    )
+    recognition.websocket = FakeWebSocket(fail_send=RuntimeError("send failed"))
     recognition._started = True
     recognition._generation = 1
     ext.recognition = recognition
@@ -275,9 +315,7 @@ async def test_failed_first_delivery_does_not_set_first_audio_time():
     recognition = StepFunASRRecognition(
         ext.config, SimpleNamespace(), CapturingCallback()
     )
-    recognition.websocket = FakeWebSocket(
-        fail_send=RuntimeError("send failed")
-    )
+    recognition.websocket = FakeWebSocket(fail_send=RuntimeError("send failed"))
     recognition._started = True
     recognition._generation = 1
     ext.recognition = recognition

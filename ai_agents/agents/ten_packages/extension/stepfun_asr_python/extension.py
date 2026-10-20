@@ -59,6 +59,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._finalize_events: dict[str, asyncio.Event] = {}
         self._completed_finalizes: OrderedDict[str, None] = OrderedDict()
         self._finalize_contexts: dict[str, dict[str, Any]] = {}
+        self._finalize_times: dict[str, float] = {}
         self._buffer_flush_task: asyncio.Task[None] | None = None
         self._reconnect_pending = False
         self._finalize_locks: dict[str, asyncio.Lock] = {}
@@ -163,7 +164,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._connecting = True
         try:
             await self._connect_once()
-            self.reconnect_manager.mark_connection_successful()
+            if self.is_connected():
+                self.reconnect_manager.mark_connection_successful()
         except Exception as exc:
             await self._handle_connect_failure(exc)
         finally:
@@ -193,6 +195,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             await self.on_disconnected(
                 code=ModuleErrorCode.FATAL_ERROR.value,
                 message=message,
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=vendor_code,
+                    message=message,
+                ),
             )
             return
 
@@ -204,6 +211,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         await self.on_disconnected(
             code=ModuleErrorCode.NON_FATAL_ERROR.value,
             message=message,
+            vendor_info=ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=vendor_code,
+                message=message,
+            ),
         )
         self.reconnect_manager.record_failed_attempt()
         if self.stopped or self._fatal:
@@ -227,9 +239,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return
         self._schedule_reconnect()
 
-    def _classify_connect_error(
-        self, exc: Exception
-    ) -> tuple[bool, str, str]:
+    def _classify_connect_error(self, exc: Exception) -> tuple[bool, str, str]:
         message = str(exc)
         status = _extract_http_status(exc)
         if status in {401, 403}:
@@ -311,13 +321,19 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         if data.get_name() == "asr_finalize":
             # Capture finalize metadata before the base helper runs so the
             # finalize context is not overwritten by the latest audio frame.
-            metadata_json, metadata_error = data.get_property_to_json("metadata")
+            metadata_json, metadata_error = data.get_property_to_json(
+                "metadata"
+            )
             if not metadata_error and metadata_json:
                 metadata = json.loads(metadata_json)
                 if not isinstance(metadata, dict):
-                    raise ValueError("StepFun finalize metadata must be an object")
+                    raise ValueError(
+                        "StepFun finalize metadata must be an object"
+                    )
                 self.metadata = copy.deepcopy(metadata)
-                self.session_id = self.metadata.get("session_id", self.session_id)
+                self.session_id = self.metadata.get(
+                    "session_id", self.session_id
+                )
         await super().on_data(ten_env, data)
 
     @override
@@ -361,6 +377,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         )
         metadata = copy.deepcopy(self.metadata) if self.metadata else {}
         self._finalize_contexts[finalize_id] = metadata
+        self._finalize_times[finalize_id] = received_at
         done = asyncio.Event()
         self._finalize_events[finalize_id] = done
         await self.audio_frames_queue.put((finalize_id, received_at, metadata))
@@ -376,6 +393,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             )
         finally:
             self._finalize_events.pop(finalize_id, None)
+            self._finalize_times.pop(finalize_id, None)
 
     async def _handle_finalize(
         self,
@@ -385,10 +403,13 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     ) -> None:
         if not finalize_id:
             raise ValueError("StepFun asr_finalize requires finalize_id")
+        if finalize_id in self._completed_finalizes:
+            return
         self.finalize_id = finalize_id
         self.last_finalize_time = received_at
         self.metadata = copy.deepcopy(metadata)
-        self.session_id = metadata.get("session_id", self.session_id)
+        finalize_session_id = metadata.get("session_id", self.session_id)
+        self.session_id = finalize_session_id
 
         if self.recognition is None:
             await self._finish_finalize(
@@ -399,15 +420,23 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return
 
         # Include base-class disconnected audio in this finalize boundary.
-        await self._absorb_buffered_frames()
+        await self._absorb_buffered_frames(
+            metadata=metadata,
+            session_id=finalize_session_id,
+        )
         await self.recognition.commit(
             finalize_id,
             received_at,
             metadata=metadata,
-            session_id=self.session_id,
+            session_id=finalize_session_id,
         )
 
-    async def _absorb_buffered_frames(self) -> None:
+    async def _absorb_buffered_frames(
+        self,
+        *,
+        metadata: dict[str, Any],
+        session_id: str | None,
+    ) -> None:
         """Move base-class buffered frames into the transport journal."""
         while True:
             try:
@@ -415,19 +444,29 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
-            if await self._consume_buffered_frame(frame):
+            if await self._consume_buffered_frame(
+                frame,
+                metadata=metadata,
+                session_id=session_id,
+            ):
                 continue
             self.buffered_frames.put_nowait(frame)
             return
 
-    async def _consume_buffered_frame(self, frame: AudioFrame) -> bool:
+    async def _consume_buffered_frame(
+        self,
+        frame: AudioFrame,
+        *,
+        metadata: dict[str, Any] | None = None,
+        session_id: str | None = None,
+    ) -> bool:
         """Journal a buffered frame; True means the frame must not be requeued."""
         if self.recognition is None:
             return False
         frame_len = len(frame.get_buf())
-        tail_before = self.recognition._tail
-        await self.send_audio(frame, self.session_id)
-        if self.recognition._tail > tail_before:
+        tail_before = self.recognition.journal_tail
+        await self.send_audio(frame, session_id, fallback_metadata=metadata)
+        if self.recognition.journal_tail > tail_before:
             self.buffered_frames_size = max(
                 0, self.buffered_frames_size - frame_len
             )
@@ -449,6 +488,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             if finalize_id in self._completed_finalizes:
                 return
             self._remember_completed_finalize(finalize_id)
+            finalize_time = self._finalize_times.get(finalize_id)
             if timed_out and self.recognition is not None:
                 self.recognition.mark_finalize_timed_out(finalize_id)
             if error:
@@ -472,6 +512,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     event.set()
                 await self.send_asr_finalize_end()
             finally:
+                if self.finalize_id == finalize_id and (
+                    finalize_time is None
+                    or self.last_finalize_time == finalize_time
+                ):
+                    self.last_finalize_time = None
                 self.finalize_id = previous_finalize_id
                 self.metadata = previous_metadata
                 self._finalize_contexts.pop(finalize_id, None)
@@ -499,16 +544,24 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
 
     @override
     async def send_audio(
-        self, frame: AudioFrame, _session_id: str | None
+        self,
+        frame: AudioFrame,
+        _session_id: str | None,
+        *,
+        fallback_metadata: dict[str, Any] | None = None,
     ) -> bool:
         if self.recognition is None:
             return False
-        metadata, error = frame.get_property_to_json("metadata")
-        if not error and metadata:
-            parsed = json.loads(metadata)
+        metadata_json, error = frame.get_property_to_json("metadata")
+        parsed = None
+        if not error and metadata_json:
+            parsed = json.loads(metadata_json)
             if isinstance(parsed, dict):
-                self.metadata = parsed
-                self.session_id = parsed.get("session_id", self.session_id)
+                self.metadata = copy.deepcopy(parsed)
+                self.session_id = parsed.get("session_id", _session_id)
+        if not isinstance(parsed, dict) and fallback_metadata is not None:
+            self.metadata = copy.deepcopy(fallback_metadata)
+            self.session_id = _session_id
         buf = frame.lock_buf()
         try:
             audio_data = bytes(buf)
@@ -519,11 +572,13 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
         # Delivery status for the base consumer/TTFW; journal ownership is
-        # tracked separately via recognition._tail for flush paths.
+        # tracked separately for buffered flush paths.
         return await self.recognition.send_audio(
             audio_data,
             metadata=(
-                copy.deepcopy(self.metadata) if self.metadata is not None else None
+                copy.deepcopy(self.metadata)
+                if self.metadata is not None
+                else None
             ),
             session_id=self.session_id,
         )

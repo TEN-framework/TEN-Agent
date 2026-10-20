@@ -102,6 +102,8 @@ class StepFunASRRecognition:
         self._item_starts: dict[str, int] = {}
         self._completed_items: deque[str] = deque()
         self._completed_item_set: set[str] = set()
+        self._timed_out_finalizes: deque[str] = deque()
+        self._timed_out_finalize_set: set[str] = set()
         self._awaiting_ack: deque[TranscriptSegment] = deque()
         self._replay_confirmed: list[tuple[int, int]] = []
 
@@ -114,10 +116,15 @@ class StepFunASRRecognition:
             // 8
         )
 
+    @property
+    def journal_tail(self) -> int:
+        """Return the absolute end offset of the recovery journal."""
+        return self._tail
+
     async def start(self) -> None:
+        await self.close()
+        self._closing = False
         async with self._pump_lock:
-            await self.close()
-            self._closing = False
             self._session_ready.clear()
             self._session_confirmed = False
             self._session_error = None
@@ -137,75 +144,78 @@ class StepFunASRRecognition:
             self._replay_confirmed = [
                 span for span in self._replay_confirmed if span[1] > self._base
             ]
-            if self.config.server_vad and not any(
-                segment.finalize_id is not None for segment in self._pending
-            ):
-                self._pending.clear()
-                self._current = TranscriptSegment(self._base)
-            try:
-                self.websocket = await websockets.connect(
-                    self.config.url,
-                    additional_headers={
-                        "Authorization": f"Bearer {self.config.api_key}",
-                    },
-                    open_timeout=self.config.connection_timeout,
-                    ping_interval=20,
-                    ping_timeout=20,
-                    close_timeout=2,
-                    max_size=None,
-                )
-                self._receive_task = asyncio.create_task(self._receive_loop())
-                input_config: dict[str, Any] = {
-                    "format": {
-                        "type": "pcm",
-                        "codec": "pcm_s16le",
-                        "rate": self.config.sample_rate,
-                        "bits": self.config.bits,
-                        "channel": self.config.channels,
-                    },
-                    "transcription": {
-                        "model": self.config.model,
-                        "language": self.config.language,
-                        "full_rerun_on_commit": self.config.full_rerun_on_commit,
-                        "enable_itn": self.config.enable_itn,
-                        "enable_timestamp_align": (
-                            self.config.enable_timestamp_align
-                        ),
-                    },
+
+        try:
+            self.websocket = await websockets.connect(
+                self.config.url,
+                additional_headers={
+                    "Authorization": f"Bearer {self.config.api_key}",
+                },
+                open_timeout=self.config.connection_timeout,
+                ping_interval=20,
+                ping_timeout=20,
+                close_timeout=2,
+                max_size=None,
+            )
+            self._receive_task = asyncio.create_task(self._receive_loop())
+            input_config: dict[str, Any] = {
+                "format": {
+                    "type": "pcm",
+                    "codec": "pcm_s16le",
+                    "rate": self.config.sample_rate,
+                    "bits": self.config.bits,
+                    "channel": self.config.channels,
+                },
+                "transcription": {
+                    "model": self.config.model,
+                    "language": self.config.language,
+                    "full_rerun_on_commit": self.config.full_rerun_on_commit,
+                    "enable_itn": self.config.enable_itn,
+                    "enable_timestamp_align": (
+                        self.config.enable_timestamp_align
+                    ),
+                },
+            }
+            if self.config.server_vad:
+                input_config["turn_detection"] = {
+                    "type": "server_vad",
+                    "silence_duration_ms": self.config.silence_duration_ms,
+                    "threshold": self.config.vad_threshold,
                 }
-                if self.config.server_vad:
-                    input_config["turn_detection"] = {
-                        "type": "server_vad",
-                        "silence_duration_ms": self.config.silence_duration_ms,
-                        "threshold": self.config.vad_threshold,
-                    }
-                await self._send_json(
-                    "session.update",
-                    session={"audio": {"input": input_config}},
+            await self._send_json(
+                "session.update",
+                session={"audio": {"input": input_config}},
+            )
+            await asyncio.wait_for(
+                self._session_ready.wait(),
+                self.config.connection_timeout,
+            )
+            if not self._session_confirmed:
+                raise ConnectionError(
+                    self._session_error
+                    or "StepFun session closed during handshake"
                 )
-                await asyncio.wait_for(
-                    self._session_ready.wait(),
-                    self.config.connection_timeout,
-                )
-                if not self._session_confirmed:
-                    raise ConnectionError(
-                        self._session_error
-                        or "StepFun session closed during handshake"
-                    )
-                self._started = True
-                await self._pump()
-                if not self.is_connected():
-                    raise ConnectionError(
-                        "StepFun session closed during recovery"
-                    )
-                await self.callback.on_open()
-                if not self.is_connected():
-                    raise ConnectionError(
-                        "StepFun session closed while publishing ready"
-                    )
-            except BaseException:
+            self._started = True
+            try:
+                # Keep the network handshake outside this lock. Finalize must
+                # be able to claim a timeout while a replacement session opens.
+                async with self._pump_lock:
+                    await self._pump()
+            except ConnectionClosedOK:
+                self._started = False
                 await self.close()
-                raise
+                await self.callback.on_close()
+                return
+            if not self.is_connected():
+                raise ConnectionError("StepFun session closed during recovery")
+            await self.callback.on_open()
+            if not self.is_connected():
+                raise ConnectionError(
+                    "StepFun session closed while publishing ready"
+                )
+        except BaseException:
+            await self.close()
+            raise
 
     async def _receive_loop(self) -> None:
         try:
@@ -482,6 +492,12 @@ class StepFunASRRecognition:
         segment.result = None
 
     def mark_finalize_timed_out(self, finalize_id: str) -> None:
+        if finalize_id not in self._timed_out_finalize_set:
+            self._timed_out_finalizes.append(finalize_id)
+            self._timed_out_finalize_set.add(finalize_id)
+            while len(self._timed_out_finalizes) > self._MAX_COMPLETED_ITEMS:
+                retired = self._timed_out_finalizes.popleft()
+                self._timed_out_finalize_set.discard(retired)
         for segment in self._pending:
             if segment.finalize_id == finalize_id:
                 segment.timed_out = True
@@ -545,16 +561,16 @@ class StepFunASRRecognition:
                             dict(metadata) if metadata is not None else None
                         ),
                         session_id=session_id,
+                        timed_out=finalize_id in self._timed_out_finalize_set,
                     ),
                 )
                 return
             segment = self._seal_current(end)
             segment.finalize_id = finalize_id
             segment.finalize_time = finalize_time
-            segment.metadata = (
-                dict(metadata) if metadata is not None else None
-            )
-            segment.session_id = session_id
+            segment.metadata = dict(metadata) if metadata is not None else None
+            segment.session_id = session_id or segment.session_id
+            segment.timed_out = finalize_id in self._timed_out_finalize_set
             await self._pump_or_reconnect()
 
     async def _pump_or_reconnect(self) -> bool:
