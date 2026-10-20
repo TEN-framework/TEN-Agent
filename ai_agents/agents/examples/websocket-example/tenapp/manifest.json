@@ -143,6 +143,6 @@
     }
   ],
   "scripts": {
-    "start": "python scripts/start.py"
+    "start": "python3 scripts/start.py"
   }
 }

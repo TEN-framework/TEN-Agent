@@ -26,7 +26,7 @@ tasks:
     deps: [install-tenapp]
     dir: ./tenapp
     cmds:
-      - python scripts/install_python_deps.py
+      - python3 scripts/install_python_deps.py
 
   build-api-server:
     desc: build api server
@@ -41,7 +41,6 @@ tasks:
     desc: install dependencies
     dir: ./tenapp
     cmds:
-      - task: install-tenapp
       - task: install-tenapp-python-deps
       - task: install-frontend
       - task: build-api-server
