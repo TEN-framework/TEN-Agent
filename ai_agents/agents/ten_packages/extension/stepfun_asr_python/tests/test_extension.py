@@ -2652,6 +2652,194 @@ async def test_metadata_less_finalize_fatal_emits_queued_session():
 
 
 @pytest.mark.asyncio
+async def test_fatal_finalize_metadata_stops_at_dequeued_boundary():
+    """Later queued audio must not override the discarded pre-boundary session."""
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    ext._fatal = True
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x01\x02" * 160, {"session_id": "session-a"})
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-a", None)
+    data.get_property_to_json.return_value = ("", None)
+
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x03\x04" * 160, {"session_id": "session-b"})
+    )
+
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == "final-a"
+    assert ends[0]["metadata"].get("session_id") == "session-a"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_metadata_less_finalize_fatal_prefers_discarded_over_journal():
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    assert recognition._current.session_id == "session-a"
+
+    ext._fatal = True
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x03\x04" * 160, {"session_id": "session-b"})
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-b", None)
+    data.get_property_to_json.return_value = ("", None)
+
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == "final-b"
+    assert ends[0]["metadata"].get("session_id") == "session-b"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_metadata_less_finalize_timeout_prefers_queued_over_journal():
+    ext = _real_output_extension()
+    ext.config = _config(finalize_timeout=0.05, server_vad=False)
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x03\x04" * 160, {"session_id": "session-b"})
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-b", None)
+    data.get_property_to_json.return_value = ("", None)
+
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == "final-b"
+    assert ends[0]["metadata"].get("session_id") == "session-b"
+
+
+@pytest.mark.asyncio
+async def test_replay_emits_stable_result_ids_per_segment():
+    ext = _real_output_extension()
+    ext.send_asr_result = AsyncASRBaseExtension.send_asr_result.__get__(ext)
+    ext.config = _config(server_vad=True)
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "a"},
+        session_id="a",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-a0",
+            "audio_end_ms": 20,
+        }
+    )
+    seg_a = recognition._pending[0]
+
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "b"},
+        session_id="b",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-b0",
+            "audio_end_ms": 40,
+        }
+    )
+    seg_b = recognition._pending[1]
+
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.delta",
+            "text": "partial-a",
+        },
+        seg_a,
+    )
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.completed",
+            "transcript": "b",
+            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
+        },
+        seg_b,
+    )
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.completed",
+            "transcript": "a",
+            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
+        },
+        seg_a,
+    )
+
+    results = _capture_named(ext, "asr_result")
+    assert len(results) == 3
+    id_partial_a, id_final_b, id_final_a = (
+        results[0]["id"],
+        results[1]["id"],
+        results[2]["id"],
+    )
+    assert id_partial_a == id_final_a
+    assert id_final_b != id_final_a
+
+
+@pytest.mark.asyncio
 async def test_finish_finalize_serializes_with_in_flight_result():
     ext = _real_output_extension()
     ext.config = _config()

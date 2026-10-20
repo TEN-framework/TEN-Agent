@@ -545,6 +545,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self,
         finalize_id: str,
         metadata: dict[str, Any],
+        *,
+        use_journal_context: bool = True,
     ) -> dict[str, Any]:
         """Resolve finalize metadata after preceding audio has been consumed."""
         inherit = finalize_id in self._finalize_inherit_metadata
@@ -552,7 +554,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return copy.deepcopy(metadata)
 
         resolved = copy.deepcopy(self.metadata) if self.metadata else {}
-        if self.recognition is not None:
+        if use_journal_context and self.recognition is not None:
             current = self.recognition._current
             if current.metadata:
                 resolved = copy.deepcopy(current.metadata)
@@ -564,9 +566,13 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
 
     def _metadata_from_audio_queue_before_finalize(
         self, finalize_id: str
-    ) -> dict[str, Any]:
-        """Read frame metadata queued before a finalize tuple (no dequeuing)."""
+    ) -> dict[str, Any] | None:
+        """Read frame metadata queued before a finalize tuple (no dequeuing).
+
+        Returns None when the finalize tuple is not present (already dequeued).
+        """
         inherited: dict[str, Any] = {}
+        found = False
         for item in self.audio_frames_queue._queue:  # noqa: SLF001
             if isinstance(item, AudioFrame):
                 parsed = self._metadata_from_audio_frame(item)
@@ -575,7 +581,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 continue
             queued_id, _, _queued_meta = item
             if queued_id == finalize_id:
+                found = True
                 break
+        if not found:
+            return None
         return inherited
 
     async def _resolve_finalize_emit_context(
@@ -591,14 +600,30 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 queued = self._metadata_from_audio_queue_before_finalize(
                     finalize_id
                 )
-                if not queued and self._fatal_discarded_frame_metadata:
-                    queued = copy.deepcopy(self._fatal_discarded_frame_metadata)
-                if queued:
-                    self.metadata = copy.deepcopy(queued)
-                    self.session_id = queued.get(
+                if queued is None:
+                    source = (
+                        copy.deepcopy(self._fatal_discarded_frame_metadata)
+                        if self._fatal_discarded_frame_metadata
+                        else {}
+                    )
+                elif queued:
+                    source = queued
+                elif self._fatal_discarded_frame_metadata:
+                    source = copy.deepcopy(
+                        self._fatal_discarded_frame_metadata
+                    )
+                else:
+                    source = {}
+                if source:
+                    self.metadata = copy.deepcopy(source)
+                    self.session_id = source.get(
                         "session_id", self.session_id
                     )
-                return self._resolve_finalize_metadata(finalize_id, metadata)
+                return self._resolve_finalize_metadata(
+                    finalize_id,
+                    metadata,
+                    use_journal_context=False,
+                )
             finally:
                 self.metadata = previous_metadata
                 self.session_id = previous_session_id
@@ -1029,6 +1054,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                         # Automatic VAD finals must not consume another turn's
                         # finalize timestamp.
                         self.last_finalize_time = None
+                    if segment.result_id is None:
+                        segment.result_id = self._get_uuid()
+                    self.uuid = segment.result_id
                     asr_result = ASRResult(
                         text=text,
                         final=final,

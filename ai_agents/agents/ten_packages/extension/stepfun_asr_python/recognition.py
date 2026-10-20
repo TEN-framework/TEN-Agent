@@ -27,6 +27,8 @@ class TranscriptSegment:
     start: int
     end: int | None = None
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    # Stable asr_result.id for partial/final pairs on this span.
+    result_id: str | None = None
     finalize_id: str | None = None
     finalize_time: float | None = None
     metadata: dict[str, Any] | None = None
