@@ -2,9 +2,10 @@
 
 The extension selects one of two protocols from the model: the TTS modules
 report request-relative character times, while the text-to-dialogue (TTD)
-client restarts alignment at zero in every chunk and continues from the
-previous chunk's text. The hook follows the same protocol and reads only
-the provider's own alignment payload.
+client restarts alignment at zero in every chunk. Each chunk is anchored where
+its audio starts, so a provider whose spans do not exactly match the audio
+cannot accumulate drift. The hook follows the same protocol and reads only the
+provider's own alignment payload.
 """
 
 import base64
@@ -34,7 +35,6 @@ class ElevenLabsTimingHook:
         self.pcm_bytes = 0
         self.groups = []
         self.origin = None
-        self.chunk_base_ms = 0
         self.ttd = False
         self.error = None
 
@@ -69,7 +69,6 @@ class ElevenLabsTimingHook:
             # Alignment times are relative to each generation request, so the
             # origin must not carry over from the previous request.
             self.origin = None
-            self.chunk_base_ms = 0
             self.error = None
 
     def observe_send(self, payload):
@@ -85,6 +84,8 @@ class ElevenLabsTimingHook:
             if context_id != self.request_id:
                 return
             audio = data.get("audio")
+            # The chunk's audio starts where the previous messages ended.
+            pcm_before = self.pcm_bytes
             if audio:
                 self.pcm_bytes += len(base64.b64decode(audio))
             alignment = data.get("alignment")
@@ -106,7 +107,7 @@ class ElevenLabsTimingHook:
             ]
             if not chars_words:
                 return
-            offset = self._segment_offset(starts)
+            offset = self._segment_offset(starts, pcm_before)
             words = []
             current = []
             for char, start, duration in chars_words:
@@ -122,18 +123,17 @@ class ElevenLabsTimingHook:
             if current:
                 words.append(_reference_word(current, offset))
             self.groups.append(tuple(words))
-            if self.ttd:
-                # The next chunk continues where this chunk's text ended.
-                self.chunk_base_ms += (
-                    chars_words[-1][1] + chars_words[-1][2]
-                )
         except (ValueError, TypeError, KeyError, json.JSONDecodeError) as error:
             self.error = "ElevenLabs capture failed: " + type(error).__name__
 
-    def _segment_offset(self, starts):
+    def _segment_offset(self, starts, pcm_before):
         if self.ttd:
-            # TTD character times are zero-based within each chunk.
-            return -self.chunk_base_ms
+            # TTD character times are zero-based within each chunk, whose
+            # audio starts after pcm_before bytes.
+            bytes_per_ms = self.sample_rate * self.channels * 2 / 1000
+            if bytes_per_ms <= 0:
+                return 0.0
+            return -(pcm_before / bytes_per_ms)
         if self.origin is None:
             self.origin = starts[0]
         return self.origin
