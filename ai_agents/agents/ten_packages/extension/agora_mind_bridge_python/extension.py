@@ -49,6 +49,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._last_final_text: str | None = None
         self._completed_turns: set[tuple[Any, ...]] = set()
         self._turn_index = 0
+        self._session_epoch = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -56,7 +57,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         if error:
             raise ValueError(f"failed to read bridge properties: {error}")
         self.config = AgoraMindBridgeConfig.model_validate_json(config_json)
-        self.session_id = self.config.session_id
+        self._reset_session(self.config.session_id)
         ten_env.log_info(
             "config: "
             + json.dumps(
@@ -83,6 +84,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 ten_env.log_warn("could not delete Agora Mind Session on stop")
 
     def _reset_session(self, session_id: int | None = None) -> None:
+        self._session_epoch += 1
         self.session_id = session_id
         self._last_final_text = None
         self._completed_turns.clear()
@@ -111,12 +113,18 @@ class AgoraMindBridgeExtension(AsyncExtension):
             )
             return
 
+        session_epoch = self._session_epoch
         result, send_error = await self._send_command(name, properties)
         if send_error is not None or result is None:
             await self._return_error(
                 ten_env,
                 cmd,
                 str(send_error or "Agora Mind command returned no result"),
+            )
+            return
+        if session_epoch != self._session_epoch:
+            await self._return_error(
+                ten_env, cmd, "Session changed while command was pending"
             )
             return
 

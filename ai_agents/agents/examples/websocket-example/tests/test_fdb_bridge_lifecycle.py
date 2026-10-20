@@ -158,3 +158,51 @@ async def test_new_workspace_clears_previous_session(bridge, env):
     assert bridge.session_id is None
     await bridge.on_data(env, completed())
     env.send_data.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("transition", ["disconnect", "stop"])
+async def test_late_session_creation_cannot_restore_invalidated_state(
+    bridge, env, transition
+):
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def create(command):
+        result = Result.create(StatusCode.OK, command)
+        if command.name == "create_session":
+            entered.set()
+            await release.wait()
+            result.set_property_string(
+                "response_json",
+                json.dumps({"type": "session.created", "session_id": 8}),
+            )
+        return result, None
+
+    env.send_cmd.side_effect = create
+    pending = asyncio.create_task(
+        bridge.on_cmd(env, Message("create_session", {}))
+    )
+    await entered.wait()
+    if transition == "stop":
+        await bridge.on_stop(env)
+    else:
+        await bridge.on_data(
+            env,
+            Message(
+                "agora_mind_event",
+                {
+                    "event_json": json.dumps(
+                        {
+                            "type": "extension.connection_state",
+                            "state": "disconnected",
+                        }
+                    )
+                },
+            ),
+        )
+    release.set()
+    await pending
+    assert bridge.session_id is None
+    result = env.return_result.await_args.args[0]
+    assert result.get_status_code() == StatusCode.ERROR
+    assert "changed" in result.properties["response_json"]
