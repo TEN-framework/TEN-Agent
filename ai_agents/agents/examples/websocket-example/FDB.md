@@ -138,7 +138,14 @@ docker build -f ai_agents/Dockerfile \
 The image contains TEN speech processing and the two bridge addons. Supply
 runtime environment variables and publish ports `8080` and `8765`; provide a
 container-reachable `AGORA_MIND_ENDPOINT`. The API starts workers on demand via
-`/start`. Record the TEN commit, build-image digest, final-image digest, addon
+`/start`. The shared API also requires its usual process settings:
+`SERVER_PORT=8080`, `LOG_PATH=/tmp/ten-fdb`, `LOG_STDOUT=true`, `WORKERS_MAX=1`,
+and `WORKER_QUIT_TIMEOUT_SECONDS=120`. Its current startup validation requires
+a 32-character `AGORA_APP_ID` even for WebSocket graphs; for this graph use
+`00000000000000000000000000000000` as a placeholder. The FDB graph itself uses
+no RTC connection.
+
+Record the TEN commit, build-image digest, final-image digest, addon
 version, graph name, and provider versions with benchmark results.
 
 ## Quick tests

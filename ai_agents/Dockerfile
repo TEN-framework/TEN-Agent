@@ -34,9 +34,10 @@ WORKDIR /app
 
 COPY --from=builder /app/agents/.release/ agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
+COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/server/bin/api"]
+ENTRYPOINT ["/app/server/bin/api", "-tenapp_dir=/app/agents"]
