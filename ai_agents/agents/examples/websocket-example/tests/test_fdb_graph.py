@@ -1,8 +1,10 @@
 """Validate the FDB graph and exercise its TEN message path without providers."""
 
 from collections import Counter
+import importlib.util
 import json
 from pathlib import Path
+import sys
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -110,6 +112,37 @@ def test_routes_are_complete_and_do_not_duplicate_delivery(graph):
     }
     # The bridge already addresses TTS directly. A second route duplicates output.
     assert not any(source == "bridge" for source, _, _ in data_routes)
+
+
+def test_bridge_package_registers_its_addon(modules, monkeypatch):
+    registered = []
+
+    def register(name):
+        def decorator(addon):
+            registered.append((name, addon))
+            return addon
+
+        return decorator
+
+    monkeypatch.setattr(modules.runtime, "Addon", object, raising=False)
+    monkeypatch.setattr(
+        modules.runtime, "register_addon_as_extension", register, raising=False
+    )
+    alias = "_fdb_test_registration"
+    spec = importlib.util.spec_from_file_location(
+        alias, EXTENSIONS / "agora_mind_bridge_python/__init__.py"
+    )
+    package = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, alias, package)
+    spec.loader.exec_module(package)
+    assert len(registered) == 1
+    name, addon_class = registered[0]
+    assert name == "agora_mind_bridge_python"
+    ten = Mock()
+    addon_class().on_create_instance(ten, "bridge", "context")
+    instance, context = ten.on_create_instance_done.call_args.args
+    assert instance.__class__.__name__ == "AgoraMindBridgeExtension"
+    assert context == "context"
 
 
 @pytest.mark.asyncio
