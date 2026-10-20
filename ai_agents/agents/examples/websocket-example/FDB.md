@@ -1,5 +1,8 @@
 # FDB-v3 graph
 
+For tested image/package versions and verification results, see
+[FDB-validation.md](FDB-validation.md).
+
 Select `fdb_v3` through the API's `/start` endpoint. It connects:
 
 ```text
