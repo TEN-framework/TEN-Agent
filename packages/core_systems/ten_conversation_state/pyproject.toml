@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ten-conversation-state"
+version = "0.1.0"
+description = "Opt-in conversation checkpoint and resume for TEN applications"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+packages = ["ten_conversation_state"]

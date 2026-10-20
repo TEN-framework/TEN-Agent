@@ -1,0 +1,28 @@
+name: Conversation State
+
+on:
+  pull_request:
+    paths:
+      - "packages/core_systems/ten_conversation_state/**"
+      - ".github/workflows/conversation_state.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install package
+        run: python -m pip install ./packages/core_systems/ten_conversation_state
+      - name: Test checkpoint lifecycle and process recovery
+        run: python -m unittest discover -s packages/core_systems/ten_conversation_state/tests -v

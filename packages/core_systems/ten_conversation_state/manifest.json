@@ -1,0 +1,20 @@
+{
+  "type": "system",
+  "name": "ten_conversation_state",
+  "version": "0.1.0",
+  "dependencies": [],
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Opt-in conversation checkpoint and resume for Python applications."
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "README.md"
+      }
+    }
+  }
+}
