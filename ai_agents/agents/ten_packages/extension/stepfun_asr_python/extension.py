@@ -65,6 +65,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._finalize_locks: dict[str, asyncio.Lock] = {}
         self._connect_attempt = 0
         self._connect_task: asyncio.Task[None] | None = None
+        self._result_context_lock = asyncio.Lock()
 
     @staticmethod
     def _sanitize_config_error(exc: Exception) -> str:
@@ -489,33 +490,50 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     ) -> None:
         if not finalize_id:
             raise ValueError("StepFun asr_finalize requires finalize_id")
-        if finalize_id in self._completed_finalizes:
-            return
-        self.finalize_id = finalize_id
-        self.last_finalize_time = received_at
-        self.metadata = copy.deepcopy(metadata)
         finalize_session_id = metadata.get("session_id", self.session_id)
-        self.session_id = finalize_session_id
-
-        if self.recognition is None:
-            await self._finish_finalize(
-                finalize_id,
-                "StepFun recognition is unavailable",
-                metadata=metadata,
-            )
+        if finalize_id in self._completed_finalizes:
+            # Timeout already completed this id; still seal/discard its audio
+            # so the next turn does not inherit the open span.
+            if self.recognition is not None and self.recognition.is_finalize_timed_out(
+                finalize_id
+            ):
+                async with self._result_context_lock:
+                    await self._absorb_buffered_frames(
+                        metadata=metadata,
+                        session_id=finalize_session_id,
+                    )
+                    await self.recognition.commit(
+                        finalize_id,
+                        received_at,
+                        metadata=metadata,
+                        session_id=finalize_session_id,
+                    )
             return
+        async with self._result_context_lock:
+            self.finalize_id = finalize_id
+            self.last_finalize_time = received_at
+            self.metadata = copy.deepcopy(metadata)
+            self.session_id = finalize_session_id
 
-        # Include base-class disconnected audio in this finalize boundary.
-        await self._absorb_buffered_frames(
-            metadata=metadata,
-            session_id=finalize_session_id,
-        )
-        await self.recognition.commit(
-            finalize_id,
-            received_at,
-            metadata=metadata,
-            session_id=finalize_session_id,
-        )
+            if self.recognition is None:
+                await self._finish_finalize(
+                    finalize_id,
+                    "StepFun recognition is unavailable",
+                    metadata=metadata,
+                )
+                return
+
+            # Include base-class disconnected audio in this finalize boundary.
+            await self._absorb_buffered_frames(
+                metadata=metadata,
+                session_id=finalize_session_id,
+            )
+            await self.recognition.commit(
+                finalize_id,
+                received_at,
+                metadata=metadata,
+                session_id=finalize_session_id,
+            )
 
     async def _absorb_buffered_frames(
         self,
@@ -771,73 +789,80 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 start_ms = self._timeline_ms(segment.start)
                 end_ms = self._timeline_ms(segment.end or segment.start)
             duration_ms = max(0, int(end_ms) - start_ms)
-            # Restore the originating finalize/session before base helpers
-            # shallow-merge self.metadata and compute TTLW.
-            previous_metadata = self.metadata
-            previous_session = self.session_id
-            previous_finalize_time = self.last_finalize_time
-            previous_finalize_id = self.finalize_id
-            try:
-                if segment.metadata is not None:
-                    self.metadata = copy.deepcopy(segment.metadata)
-                elif segment.session_id is not None:
-                    # Server-VAD spans may only have session_id stamped.
-                    self.metadata = {"session_id": segment.session_id}
-                if segment.session_id is not None:
-                    self.session_id = segment.session_id
-                if segment.finalize_id is not None:
-                    self.finalize_id = segment.finalize_id
-                if segment.timed_out:
-                    # Timed-out segments must not consume the next turn's TTLW.
-                    self.last_finalize_time = None
-                elif final and segment.finalize_time is not None:
-                    self.last_finalize_time = segment.finalize_time
-                elif final:
-                    # Automatic VAD finals must not consume another turn's
-                    # finalize timestamp.
-                    self.last_finalize_time = None
-                asr_result = ASRResult(
-                    text=text,
-                    final=final,
-                    start_ms=max(0, start_ms),
-                    duration_ms=max(0, duration_ms),
-                    language=_normalize_language(
-                        str(
-                            message.get("language")
-                            or (self.config.language if self.config else "en")
-                        )
-                    ),
-                    words=words,
-                    metadata={
-                        "asr_info": {
-                            "vendor": self.vendor(),
-                            "model": self.config.model if self.config else "",
-                            "provider_item_id": message.get("item_id", ""),
-                            "finalize_id": segment.finalize_id,
-                            "contains_stash": (
-                                bool(message.get("stash"))
-                                if not final
-                                else False
-                            ),
-                        }
-                    },
-                )
-                await self.send_asr_result(asr_result)
-            finally:
-                self.metadata = previous_metadata
-                self.session_id = previous_session
-                self.finalize_id = previous_finalize_id
-                # Keep an active turn's consumed TTLW timestamp cleared, but
-                # restore a newer turn when publishing an older late result.
-                if (
-                    final
-                    and not segment.timed_out
-                    and segment.finalize_id is not None
-                    and previous_finalize_id == segment.finalize_id
-                ):
-                    pass
-                else:
-                    self.last_finalize_time = previous_finalize_time
+            # Serialize against finalize/input so awaited metrics helpers cannot
+            # observe another turn's mutable metadata/finalize timestamp.
+            async with self._result_context_lock:
+                previous_metadata = self.metadata
+                previous_session = self.session_id
+                previous_finalize_time = self.last_finalize_time
+                previous_finalize_id = self.finalize_id
+                try:
+                    if segment.metadata is not None:
+                        self.metadata = copy.deepcopy(segment.metadata)
+                    elif segment.session_id is not None:
+                        # Server-VAD spans may only have session_id stamped.
+                        self.metadata = {"session_id": segment.session_id}
+                    if segment.session_id is not None:
+                        self.session_id = segment.session_id
+                    if segment.finalize_id is not None:
+                        self.finalize_id = segment.finalize_id
+                    if segment.timed_out:
+                        # Timed-out segments must not consume the next turn's TTLW.
+                        self.last_finalize_time = None
+                    elif final and segment.finalize_time is not None:
+                        self.last_finalize_time = segment.finalize_time
+                    elif final:
+                        # Automatic VAD finals must not consume another turn's
+                        # finalize timestamp.
+                        self.last_finalize_time = None
+                    asr_result = ASRResult(
+                        text=text,
+                        final=final,
+                        start_ms=max(0, start_ms),
+                        duration_ms=max(0, duration_ms),
+                        language=_normalize_language(
+                            str(
+                                message.get("language")
+                                or (
+                                    self.config.language
+                                    if self.config
+                                    else "en"
+                                )
+                            )
+                        ),
+                        words=words,
+                        metadata={
+                            "asr_info": {
+                                "vendor": self.vendor(),
+                                "model": (
+                                    self.config.model if self.config else ""
+                                ),
+                                "provider_item_id": message.get("item_id", ""),
+                                "finalize_id": segment.finalize_id,
+                                "contains_stash": (
+                                    bool(message.get("stash"))
+                                    if not final
+                                    else False
+                                ),
+                            }
+                        },
+                    )
+                    await self.send_asr_result(asr_result)
+                finally:
+                    self.metadata = previous_metadata
+                    self.session_id = previous_session
+                    self.finalize_id = previous_finalize_id
+                    # Keep an active turn's consumed TTLW timestamp cleared, but
+                    # restore a newer turn when publishing an older late result.
+                    if (
+                        final
+                        and not segment.timed_out
+                        and segment.finalize_id is not None
+                        and previous_finalize_id == segment.finalize_id
+                    ):
+                        pass
+                    else:
+                        self.last_finalize_time = previous_finalize_time
         if final and segment.finalize_id is not None and not segment.timed_out:
             await self._finish_finalize(
                 segment.finalize_id,

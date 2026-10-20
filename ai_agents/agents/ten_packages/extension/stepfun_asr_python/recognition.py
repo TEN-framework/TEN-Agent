@@ -268,9 +268,19 @@ class StepFunASRRecognition:
                 await self.callback.on_close()
                 return
             if not self.is_connected():
+                if self._normal_close:
+                    self._started = False
+                    await self.close()
+                    await self.callback.on_close()
+                    return
                 raise ConnectionError("StepFun session closed during recovery")
             await self.callback.on_open()
             if not self.is_connected():
+                if self._normal_close:
+                    self._started = False
+                    await self.close()
+                    await self.callback.on_close()
+                    return
                 raise ConnectionError(
                     "StepFun session closed while publishing ready"
                 )
@@ -489,6 +499,8 @@ class StepFunASRRecognition:
                 return
             if segment.published:
                 self._remember_completed_item(item)
+                # Replacement finals must still advance journal retirement.
+                self._retire_published_prefix()
                 return
             if segment.end is None:
                 words = message.get("words") or []
@@ -516,16 +528,20 @@ class StepFunASRRecognition:
                 self._remove_replayed_words(message), segment
             )
             segment.published = True
-            while self._pending and self._pending[0].published:
-                completed = self._pending[0]
-                # Keep published confirmed spans in pending until a replacement
-                # item is mapped/completed for this recovery generation.
-                if not self._segment_mappings_retirable(completed):
-                    break
-                self._pending.popleft()
-                self._retire_segment_mappings(completed)
-                self._base = completed.end
-                self._release_confirmed_audio()
+            self._retire_published_prefix()
+
+    def _retire_published_prefix(self) -> None:
+        """Drop leading published spans whose replay identities are settled."""
+        while self._pending and self._pending[0].published:
+            completed = self._pending[0]
+            # Keep published confirmed spans in pending until a replacement
+            # item is mapped/completed for this recovery generation.
+            if not self._segment_mappings_retirable(completed):
+                break
+            self._pending.popleft()
+            self._retire_segment_mappings(completed)
+            self._base = completed.end
+            self._release_confirmed_audio()
 
     def _remove_replayed_words(self, message: dict[str, Any]) -> dict[str, Any]:
         if not self._replay_confirmed or not message.get("transcript"):
@@ -631,6 +647,9 @@ class StepFunASRRecognition:
                 # Keep a bounded duplicate window; drop start map with item.
                 self._item_starts.pop(item, None)
         segment.result = None
+
+    def is_finalize_timed_out(self, finalize_id: str) -> bool:
+        return finalize_id in self._timed_out_finalize_set
 
     def mark_finalize_timed_out(self, finalize_id: str) -> None:
         if finalize_id not in self._timed_out_finalize_set:

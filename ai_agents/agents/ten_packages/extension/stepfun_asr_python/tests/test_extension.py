@@ -569,6 +569,11 @@ async def test_confirmed_replay_survives_before_replacement_item_mapping(
     )
     assert callback.errors == []
     assert seg_b.published is True
+    assert seg_b not in recognition._pending
+    assert recognition._base >= seg_b.end
+    # Confirmed PCM released — subsequent audio must not hit the journal ceiling.
+    await recognition.send_audio(b"\x05\x06" * 160, session_id="c")
+    assert recognition._tail > recognition._base
     await recognition.shutdown()
 
 
@@ -1285,6 +1290,61 @@ async def test_handshake_iterator_exhaustion_is_normal_close(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_normal_close_during_gated_on_open_does_not_raise(monkeypatch):
+    gate = asyncio.Event()
+    opened = asyncio.Event()
+    allow_receive_end = asyncio.Event()
+
+    class GatedCallback(CapturingCallback):
+        async def on_open(self):
+            opened.set()
+            await gate.wait()
+            await super().on_open()
+
+    gated = GatedCallback()
+    recognition = StepFunASRRecognition(_config(), SimpleNamespace(), gated)
+
+    class CloseAfterUpdatedWebSocket:
+        open = True
+
+        def __init__(self):
+            self._messages = [json.dumps({"type": "session.updated"})]
+
+        async def send(self, _raw):
+            return None
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self._messages:
+                return self._messages.pop(0)
+            await allow_receive_end.wait()
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.open = False
+            allow_receive_end.set()
+
+    async def connect(_url, **_kwargs):
+        return CloseAfterUpdatedWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+
+    start_task = asyncio.create_task(recognition.start())
+    await opened.wait()
+    # Finish the receive loop while on_open is still gated.
+    allow_receive_end.set()
+    await asyncio.sleep(0)
+    assert recognition.normal_close is True
+    gate.set()
+    await start_task
+    assert gated.errors == []
+
+
+@pytest.mark.asyncio
 async def test_normal_handshake_closes_consume_retry_budget():
     ext = _extension()
     ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
@@ -1377,6 +1437,147 @@ async def test_finalize_timeout_uses_actual_error_and_finalize_outputs():
         "finalize_id": "final-timeout",
         "metadata": {"session_id": "session-timeout"},
     }
+
+
+@pytest.mark.asyncio
+async def test_finalize_timeout_seals_queued_turn_before_next_finalize():
+    """Blocked consumer + timeout A must not merge A's audio into finalize B."""
+    ext = _extension()
+    ext.config = _config(finalize_timeout=0.05, server_vad=False)
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext.audio_frames_queue = asyncio.Queue()
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    open_end = recognition._tail
+
+    block = asyncio.Event()
+    entered = asyncio.Event()
+    original_finalize = ext._handle_finalize
+
+    async def gated_finalize(finalize_id, received_at, metadata):
+        entered.set()
+        await block.wait()
+        await original_finalize(finalize_id, received_at, metadata)
+
+    ext._handle_finalize = gated_finalize
+    consumer = asyncio.create_task(ext._audio_frame_consumer())
+
+    ext.finalize_id = "final-a"
+    ext.metadata = {"session_id": "session-a"}
+    ext.last_finalize_time = asyncio.get_running_loop().time()
+    finalize_task = asyncio.create_task(ext.finalize("session-a"))
+    await entered.wait()
+    await finalize_task
+    assert "final-a" in ext._completed_finalizes
+
+    block.set()
+    for _ in range(50):
+        if recognition._pending and recognition._pending[0].timed_out:
+            break
+        await asyncio.sleep(0.01)
+    assert recognition._pending
+    assert recognition._pending[0].finalize_id == "final-a"
+    assert recognition._pending[0].timed_out is True
+    assert recognition._pending[0].end == open_end
+
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await original_finalize(
+        "final-b",
+        asyncio.get_running_loop().time(),
+        {"session_id": "session-a"},
+    )
+    assert recognition._pending[-1].finalize_id == "final-b"
+    assert recognition._pending[-1].start == open_end
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_result_ttlw_context_isolated_from_concurrent_finalize():
+    ext = _real_output_extension()
+    ext.config = _config()
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    ext.ttfw_sent = False
+    ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
+    ttfw_gate = asyncio.Event()
+    ttlw_values = []
+
+    original_ttfw = ext._send_metrics_ttfw
+    original_ttlw = ext._send_metrics_ttlw
+
+    async def gated_ttfw(latency_ms):
+        ttfw_gate.clear()
+        ttfw_gate.set()  # signal that we entered TTFW
+        await asyncio.sleep(0.05)
+        await original_ttfw(latency_ms)
+
+    async def capture_ttlw(latency_ms):
+        ttlw_values.append(
+            {
+                "latency_ms": latency_ms,
+                "finalize_id": ext.finalize_id,
+                "session_id": (
+                    ext.metadata.get("session_id") if ext.metadata else None
+                ),
+                "last_finalize_time": ext.last_finalize_time,
+            }
+        )
+        await original_ttlw(latency_ms)
+
+    ext._send_metrics_ttfw = gated_ttfw
+    ext._send_metrics_ttlw = capture_ttlw
+
+    result_task = asyncio.create_task(
+        ext.on_result(
+            {
+                "type": "response.audio_transcription.completed",
+                "item_id": "item-a",
+                "transcript": "from-a",
+                "words": [{"word": "from-a", "start": 0.0, "end": 0.1}],
+            },
+            TranscriptSegment(
+                0,
+                320,
+                finalize_id="final-a",
+                finalize_time=10.0,
+                metadata={"session_id": "session-a"},
+                session_id="session-a",
+            ),
+        )
+    )
+    # While A's result holds the context lock through TTFW, finalize B waits.
+    await asyncio.sleep(0)
+    finalize_task = asyncio.create_task(
+        ext._handle_finalize(
+            "final-b",
+            99.0,
+            {"session_id": "session-b"},
+        )
+    )
+    await result_task
+    await finalize_task
+
+    assert ttlw_values
+    assert ttlw_values[0]["finalize_id"] == "final-a"
+    assert ttlw_values[0]["session_id"] == "session-a"
+    # B's finalize ran after A's locked result path and owns the session.
+    assert ext.finalize_id == "final-b"
+    assert ext.session_id == "session-b"
+    assert ext.metadata["session_id"] == "session-b"
 
 
 @pytest.mark.asyncio
