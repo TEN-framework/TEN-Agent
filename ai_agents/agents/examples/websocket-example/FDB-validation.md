@@ -1,7 +1,7 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `7977bc326`.
-Packaged graph regression test: `7977bc326` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `5f2cb52e0`.
+Packaged graph regression test: `5f2cb52e0` (`tests/test_fdb_runtime.py`).
 Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
@@ -11,7 +11,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 36 passed |
+| Graph, transport and bridge lifecycle tests | 42 passed, 9 opt-in skips |
 | Existing bridge unit tests | 8 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
@@ -96,6 +96,16 @@ session.delete
 A two-turn case has two `session.user_input` operations before deletion. Quick
 tests also accept distinct intervals while the previous turn is still pending
 and preserve repeated turns when the ASR interval is unknown.
+
+The real backend probe intentionally sends `benchmark.fdb_v3` once to verify
+that a capability name is rejected as a profile; that failed probe accounts for
+the extra `workspace.create` visible in its raw operation log.
+
+The integration plan specifies the tool log target
+`agora_mind::fdb::tool_call`. The current Agora Mind source emits the verified
+record at `agora_mind::fdb` instead. TEN does not rewrite or filter that server
+log; the Agora Mind runner must either update the upstream target or explicitly
+support the current target before strict tool-call collection is enabled.
 
 The existing voice-assistant graph matches the configuration before this work.
 Official audio, external provider quality, fake tool execution and benchmark
