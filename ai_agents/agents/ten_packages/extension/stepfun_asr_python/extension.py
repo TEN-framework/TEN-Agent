@@ -405,41 +405,45 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
 
     @override
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        if data.get_name() == "asr_finalize":
-            # Handle finalize under the result lock so concurrent on_result
-            # cannot observe another turn's metadata/finalize timestamp.
-            # Do not call super(): the base writes finalize_id/time unlocked.
-            finalize_id, finalize_error = data.get_property_string(
-                "finalize_id"
-            )
-            if finalize_error:
-                ten_env.log_error(
-                    f"asr_finalize: failed to get finalize_id: {finalize_error}",
-                    category=LOG_CATEGORY_KEY_POINT,
-                )
-                return
-            async with self._result_context_lock:
-                metadata_json, metadata_error = data.get_property_to_json(
-                    "metadata"
-                )
-                if not metadata_error and metadata_json:
-                    metadata = json.loads(metadata_json)
-                    if not isinstance(metadata, dict):
-                        raise ValueError(
-                            "StepFun finalize metadata must be an object"
-                        )
-                    self.metadata = copy.deepcopy(metadata)
-                    self.session_id = self.metadata.get(
-                        "session_id", self.session_id
-                    )
-                self.finalize_id = finalize_id
-                self.last_finalize_time = asyncio.get_running_loop().time()
-            ten_env.log_info(
-                f"asr_finalize: finalize_id: {self.finalize_id}",
+        if data.get_name() != "asr_finalize":
+            await super().on_data(ten_env, data)
+            return
+
+        # Capture finalize fields and enqueue the boundary in input order
+        # before waiting on result-output serialization. Holding the result
+        # lock first would let later audio overtake the finalize tuple.
+        finalize_id, finalize_error = data.get_property_string("finalize_id")
+        if finalize_error:
+            ten_env.log_error(
+                f"asr_finalize: failed to get finalize_id: {finalize_error}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            await self.finalize(self.session_id)
             return
+
+        metadata: dict[str, Any] = {}
+        metadata_json, metadata_error = data.get_property_to_json("metadata")
+        if not metadata_error and metadata_json:
+            parsed = json.loads(metadata_json)
+            if not isinstance(parsed, dict):
+                raise ValueError("StepFun finalize metadata must be an object")
+            metadata = copy.deepcopy(parsed)
+
+        received_at = asyncio.get_running_loop().time()
+        self._enqueue_finalize_boundary(finalize_id, received_at, metadata)
+
+        # Install mutable context only after the boundary is queued, and only
+        # while no in-flight result is emitting metrics from these fields.
+        async with self._result_context_lock:
+            if metadata:
+                self.metadata = copy.deepcopy(metadata)
+                self.session_id = self.metadata.get(
+                    "session_id", self.session_id
+                )
+            self.finalize_id = finalize_id
+            self.last_finalize_time = received_at
+
+        # Required base hook (§4.1). Base finalize() waits on the pre-queued
+        # boundary instead of enqueuing a second time.
         await super().on_data(ten_env, data)
 
     @override
@@ -473,6 +477,23 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     once=True,
                 )
 
+    def _enqueue_finalize_boundary(
+        self,
+        finalize_id: str,
+        received_at: float,
+        metadata: dict[str, Any],
+    ) -> None:
+        """Queue a finalize tuple once, preserving input order vs audio."""
+        if not finalize_id or finalize_id in self._finalize_events:
+            return
+        context = copy.deepcopy(metadata)
+        self._finalize_contexts[finalize_id] = context
+        self._finalize_times[finalize_id] = received_at
+        self._finalize_events[finalize_id] = asyncio.Event()
+        self.audio_frames_queue.put_nowait(
+            (finalize_id, received_at, context)
+        )
+
     @override
     async def finalize(self, _session_id: str | None) -> None:
         finalize_id = self.finalize_id or ""
@@ -482,11 +503,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             else asyncio.get_running_loop().time()
         )
         metadata = copy.deepcopy(self.metadata) if self.metadata else {}
-        self._finalize_contexts[finalize_id] = metadata
-        self._finalize_times[finalize_id] = received_at
-        done = asyncio.Event()
-        self._finalize_events[finalize_id] = done
-        await self.audio_frames_queue.put((finalize_id, received_at, metadata))
+        # on_data may have already queued the boundary in input order.
+        self._enqueue_finalize_boundary(finalize_id, received_at, metadata)
+        done = self._finalize_events.get(finalize_id)
+        if done is None:
+            # Empty finalize_id cannot be tracked; complete immediately.
+            return
         try:
             timeout = self.config.finalize_timeout if self.config else 10.0
             await asyncio.wait_for(done.wait(), timeout)
@@ -494,7 +516,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             await self._finish_finalize(
                 finalize_id,
                 "StepFun finalize timed out",
-                metadata=metadata,
+                metadata=self._finalize_contexts.get(finalize_id, metadata),
                 timed_out=True,
             )
         finally:
@@ -666,6 +688,15 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         await self.ten_env.send_data(response)
 
     @override
+    async def _handle_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
+        # Base writes metadata/session before send_audio; serialize those
+        # writers with in-flight result metrics that read the same fields.
+        async with self._result_context_lock:
+            await super()._handle_audio_frame(ten_env, audio_frame)
+
+    @override
     async def send_audio(
         self,
         frame: AudioFrame,
@@ -675,6 +706,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     ) -> bool:
         if self.recognition is None:
             return False
+        # Callers that reach here outside _handle_audio_frame (finalize absorb
+        # / buffer flush) already hold _result_context_lock.
         metadata_json, error = frame.get_property_to_json("metadata")
         parsed = None
         if not error and metadata_json:

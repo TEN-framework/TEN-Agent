@@ -194,9 +194,7 @@ class StepFunASRRecognition:
                 for segment in self._pending
                 if segment.published and segment.end is not None
             )
-            self._replay_confirmed = [
-                span for span in self._replay_confirmed if span[1] > self._base
-            ]
+            self._prune_replay_confirmed()
 
         try:
             websocket = await websockets.connect(
@@ -547,15 +545,22 @@ class StepFunASRRecognition:
             self._retire_segment_mappings(completed)
             self._base = completed.end
             self._release_confirmed_audio()
+            self._prune_replay_confirmed()
+
+    def _prune_replay_confirmed(self) -> None:
+        """Drop confirmed replay ranges that can no longer overlap live audio."""
+        self._replay_confirmed = [
+            span for span in self._replay_confirmed if span[1] > self._base
+        ]
 
     def _remove_replayed_words(self, message: dict[str, Any]) -> dict[str, Any]:
         if not self._replay_confirmed or not message.get("transcript"):
             return message
         words = message.get("words") or []
         if not words:
-            raise ValueError(
-                "Recovered transcript has no word times for overlap reconciliation"
-            )
+            # Word timestamps are optional (alignment defaults off). Without
+            # them, keep the vendor transcript rather than failing recovery.
+            return message
         novel = []
         for word in words:
             start = self._session_offset + round(

@@ -13,6 +13,8 @@ from websockets.exceptions import ConnectionClosedOK, InvalidStatus
 from websockets.frames import Close
 from websockets.http11 import Response
 
+from ten_runtime import AudioFrame
+
 from stepfun_asr_python.config import StepFunASRConfig
 from stepfun_asr_python.extension import StepFunASRExtension
 from stepfun_asr_python.recognition import (
@@ -21,6 +23,17 @@ from stepfun_asr_python.recognition import (
     TranscriptSegment,
 )
 from stepfun_asr_python.reconnect_manager import ReconnectManager
+
+
+def _audio_frame(payload: bytes, metadata: dict | None = None) -> AudioFrame:
+    frame = AudioFrame.create("pcm")
+    frame.alloc_buf(len(payload))
+    buf = frame.lock_buf()
+    buf[:] = payload
+    frame.unlock_buf(buf)
+    if metadata is not None:
+        frame.set_property_from_json("metadata", json.dumps(metadata))
+    return frame
 
 
 def _config(**overrides):
@@ -1564,7 +1577,7 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
         json.dumps({"session_id": "session-b"}),
         None,
     )
-    # Public on_data path must wait for A's locked result before mutating.
+    # Boundary may enqueue immediately; context install still waits for A's lock.
     finalize_task = asyncio.create_task(
         StepFunASRExtension.on_data(ext, ext.ten_env, data)
     )
@@ -1581,6 +1594,7 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
     assert ext.finalize_id == "final-b"
     assert ext.session_id == "session-b"
     assert ext.metadata["session_id"] == "session-b"
+    # Base on_data hook invokes finalize exactly once.
     ext.finalize.assert_awaited_once()
 
 
@@ -1746,7 +1760,9 @@ async def test_on_data_routes_finalize_under_context_lock():
     assert ext.metadata["session_id"] == "sess-1"
     assert ext.finalize_id == "final-1"
     assert ext.last_finalize_time is not None
+    # Exactly one base-hook finalize invocation per asr_finalize.
     ext.finalize.assert_awaited_once()
+    assert "final-1" in ext._finalize_events or ext.audio_frames_queue.qsize() >= 1
 
 
 @pytest.mark.asyncio
@@ -2043,4 +2059,281 @@ async def test_retained_span_replay_via_replacement_socket(monkeypatch):
     assert callback.errors == []
     assert callback.messages[-1][1] is retained
     assert retained.published is True
+    await recognition.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_finalize_boundary_enqueued_before_result_lock():
+    """Finalize must seal pre-finalize audio even while result output holds the lock."""
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    assert recognition._tail == 320
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    gate = asyncio.Event()
+    original_ttfw = ext._send_metrics_ttfw
+    ext.ttfw_sent = False
+    ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
+
+    async def gated_ttfw(latency_ms):
+        await gate.wait()
+        await original_ttfw(latency_ms)
+
+    ext._send_metrics_ttfw = gated_ttfw
+
+    result_task = asyncio.create_task(
+        ext.on_result(
+            {
+                "type": "response.audio_transcription.delta",
+                "item_id": "item-a",
+                "text": "partial",
+            },
+            TranscriptSegment(
+                0,
+                None,
+                metadata={"session_id": "session-a"},
+                session_id="session-a",
+            ),
+        )
+    )
+    await asyncio.sleep(0)
+
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-a", None)
+    data.get_property_to_json.return_value = (
+        json.dumps({"session_id": "session-a"}),
+        None,
+    )
+    finalize_task = asyncio.create_task(
+        StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    )
+    await asyncio.sleep(0)
+    # Boundary is queued before on_data waits for the result lock.
+    assert "final-a" in ext._finalize_events
+
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x03\x04" * 160, {"session_id": "session-a"})
+    )
+    gate.set()
+    await result_task
+    await finalize_task
+
+    for _ in range(50):
+        if (
+            recognition._pending
+            and any(
+                segment.finalize_id == "final-a" and segment.end is not None
+                for segment in recognition._pending
+            )
+            and recognition._tail >= 640
+        ):
+            break
+        await asyncio.sleep(0.01)
+
+    assert recognition._pending
+    sealed = next(
+        segment
+        for segment in recognition._pending
+        if segment.finalize_id == "final-a"
+    )
+    assert sealed.end == 320
+    assert recognition._current.start >= 320
+    # Post-finalize audio must not be absorbed into the sealed finalize span.
+    assert recognition._tail >= 640
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_live_audio_cannot_replace_in_flight_result_session():
+    ext = _real_output_extension()
+    ext.config = _config()
+    ext.recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    ext.recognition.websocket = FakeWebSocket()
+    ext.recognition._started = True
+    ext.recognition._generation = 1
+    ext.ttfw_sent = False
+    ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+    ext._safe_is_connected = MagicMock(return_value=True)
+
+    gate = asyncio.Event()
+    original_ttfw = ext._send_metrics_ttfw
+
+    async def gated_ttfw(latency_ms):
+        await gate.wait()
+        await original_ttfw(latency_ms)
+
+    ext._send_metrics_ttfw = gated_ttfw
+
+    result_task = asyncio.create_task(
+        ext.on_result(
+            {
+                "type": "response.audio_transcription.delta",
+                "item_id": "item-a",
+                "text": "hello",
+            },
+            TranscriptSegment(
+                0,
+                320,
+                metadata={"session_id": "session-a"},
+                session_id="session-a",
+            ),
+        )
+    )
+    await asyncio.sleep(0)
+
+    audio_task = asyncio.create_task(
+        StepFunASRExtension._handle_audio_frame(
+            ext,
+            ext.ten_env,
+            _audio_frame(b"\x05\x06" * 160, {"session_id": "session-b"}),
+        )
+    )
+    await asyncio.sleep(0.02)
+    assert not audio_task.done()
+    assert ext.session_id == "session-a"
+
+    gate.set()
+    await result_task
+    await audio_task
+
+    metrics = _capture_named(ext, "metrics")
+    ttfw = [
+        item
+        for item in metrics
+        if ModuleMetricKey.ASR_TTFW in item.get("metrics", {})
+    ]
+    assert ttfw
+    assert ttfw[0].get("metadata", {}).get("session_id") == "session-a"
+    assert ext.session_id == "session-b"
+    assert ext.metadata["session_id"] == "session-b"
+
+
+@pytest.mark.asyncio
+async def test_replay_final_without_words_is_non_fatal(monkeypatch):
+    callback = CapturingCallback()
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), callback
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "a"},
+        session_id="a",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-a0",
+            "audio_end_ms": 20,
+        }
+    )
+    seg_a = recognition._pending[0]
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "b"},
+        session_id="b",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-b0",
+            "audio_end_ms": 40,
+        }
+    )
+    seg_b = recognition._pending[1]
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-b0",
+            "transcript": "b",
+            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
+        }
+    )
+    assert seg_b.published is True
+
+    async def connect(_url, **_kwargs):
+        return _ReadyWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+    await recognition.start()
+    assert recognition._replay_confirmed
+
+    recognition._items["item-a1"] = seg_a
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-a1",
+            "transcript": "a-without-words",
+        }
+    )
+    assert callback.errors == []
+    assert seg_a.published is True
+    assert any(
+        message.get("transcript") == "a-without-words"
+        for message, _ in callback.messages
+    )
+
+    # After retirement, obsolete confirmed ranges must not latch later turns.
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-b1",
+            "audio_end_ms": 40,
+        }
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-b1",
+            "transcript": "b-replay",
+            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
+        }
+    )
+    await recognition.send_audio(b"\x05\x06" * 160, session_id="c")
+    await recognition.commit(
+        "final-c",
+        asyncio.get_running_loop().time(),
+        metadata={"session_id": "c"},
+        session_id="c",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.committed",
+            "item_id": "item-c",
+        }
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-c",
+            "transcript": "later-turn-no-words",
+        }
+    )
+    assert callback.errors == []
+    assert recognition._replay_confirmed == []
     await recognition.shutdown()
