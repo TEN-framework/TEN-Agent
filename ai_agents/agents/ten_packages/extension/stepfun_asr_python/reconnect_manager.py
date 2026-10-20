@@ -16,11 +16,23 @@ class ReconnectManager:
     def mark_connection_successful(self) -> None:
         self.attempts = 0
 
+    def record_failed_attempt(self) -> None:
+        self.attempts += 1
+
+    def can_retry(self) -> bool:
+        return self.attempts < self.max_attempts
+
+    def next_delay(self) -> float:
+        if self.attempts <= 0:
+            return 0.0
+        return min(8.0, self.base_delay * 2 ** max(0, self.attempts - 1))
+
     async def handle_reconnect(
         self,
         connection_func: Callable[[], Awaitable[None]],
         should_abort: Callable[[], bool] | None = None,
     ) -> bool:
+        """Legacy single-loop helper kept for unit tests of delay math."""
         async with self._lock:
             for attempt in range(self.max_attempts):
                 if should_abort and should_abort():

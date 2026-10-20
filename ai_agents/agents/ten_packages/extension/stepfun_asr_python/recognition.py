@@ -29,6 +29,9 @@ class TranscriptSegment:
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     finalize_id: str | None = None
     finalize_time: float | None = None
+    metadata: dict[str, Any] | None = None
+    session_id: str | None = None
+    timed_out: bool = False
     result: dict[str, Any] | None = None
     published: bool = False
     generation: int = -1
@@ -64,6 +67,7 @@ class StepFunASRRecognition:
     """Reconnectable StepFun transport with bounded in-memory PCM journaling."""
 
     _MAX_AUDIO_BYTES = 10 * 1024 * 1024
+    _MAX_COMPLETED_ITEMS = 256
 
     def __init__(
         self,
@@ -96,7 +100,8 @@ class StepFunASRRecognition:
         self._current = TranscriptSegment(0)
         self._items: dict[str, TranscriptSegment] = {}
         self._item_starts: dict[str, int] = {}
-        self._completed_items: set[str] = set()
+        self._completed_items: deque[str] = deque()
+        self._completed_item_set: set[str] = set()
         self._awaiting_ack: deque[TranscriptSegment] = deque()
         self._replay_confirmed: list[tuple[int, int]] = []
 
@@ -122,6 +127,7 @@ class StepFunASRRecognition:
             self._items.clear()
             self._item_starts.clear()
             self._completed_items.clear()
+            self._completed_item_set.clear()
             self._awaiting_ack.clear()
             self._replay_confirmed.extend(
                 (segment.start, segment.end)
@@ -302,7 +308,7 @@ class StepFunASRRecognition:
             kind == "input_audio_buffer.speech_stopped"
             and self.config.server_vad
         ):
-            if item in self._completed_items:
+            if item in self._completed_item_set:
                 return
             end_ms = message.get("audio_end_ms", message.get("audio_start_ms"))
             if end_ms is not None:
@@ -319,7 +325,7 @@ class StepFunASRRecognition:
             if self._awaiting_ack:
                 self._items[item] = self._awaiting_ack.popleft()
         elif kind.endswith((".delta", ".completed")):
-            if item in self._completed_items:
+            if item in self._completed_item_set:
                 return
             if kind.endswith(".delta") and not any(
                 message.get(field) for field in ("text", "stash", "words")
@@ -335,7 +341,7 @@ class StepFunASRRecognition:
                     await self.callback.on_result(message, segment)
                 return
             if segment.published:
-                self._completed_items.add(item)
+                self._remember_completed_item(item)
                 return
             if segment.end is None:
                 words = message.get("words") or []
@@ -357,7 +363,7 @@ class StepFunASRRecognition:
                     "missing_commit_boundary",
                 )
                 return
-            self._completed_items.add(item)
+            self._remember_completed_item(item)
             segment.result = message
             await self.callback.on_result(
                 self._remove_replayed_words(message), segment
@@ -365,6 +371,7 @@ class StepFunASRRecognition:
             segment.published = True
             while self._pending and self._pending[0].published:
                 completed = self._pending.popleft()
+                self._retire_segment_mappings(completed)
                 self._base = completed.end
                 self._release_confirmed_audio()
 
@@ -433,7 +440,38 @@ class StepFunASRRecognition:
         self._audio = retained
         self._storage_base = self._base
 
+    def _remember_completed_item(self, item: str) -> None:
+        if not item or item in self._completed_item_set:
+            return
+        self._completed_items.append(item)
+        self._completed_item_set.add(item)
+        while len(self._completed_items) > self._MAX_COMPLETED_ITEMS:
+            retired = self._completed_items.popleft()
+            self._completed_item_set.discard(retired)
+            self._items.pop(retired, None)
+            self._item_starts.pop(retired, None)
+
+    def _retire_segment_mappings(self, segment: TranscriptSegment) -> None:
+        """Drop completed segment transcript bookkeeping after publish."""
+        for item, mapped in list(self._items.items()):
+            if mapped is segment:
+                self._items.pop(item, None)
+                # Keep a bounded duplicate window; drop start map with item.
+                self._item_starts.pop(item, None)
+        segment.result = None
+
+    def mark_finalize_timed_out(self, finalize_id: str) -> None:
+        for segment in self._pending:
+            if segment.finalize_id == finalize_id:
+                segment.timed_out = True
+
     async def send_audio(self, audio_data: bytes) -> bool:
+        """Journal PCM and attempt delivery.
+
+        Returns True once the frame is owned by the recovery journal, even if
+        the live WebSocket send fails. Callers must not re-queue journaled
+        frames into a second buffer.
+        """
         if not audio_data:
             return True
         if len(audio_data) % (self.config.bits // 8 * self.config.channels):
@@ -447,9 +485,17 @@ class StepFunASRRecognition:
             self._audio.seek(self._tail - self._storage_base)
             self._audio.write(audio_data)
             self._tail += len(audio_data)
-            return await self._pump_or_reconnect()
+            await self._pump_or_reconnect()
+            return True
 
-    async def commit(self, finalize_id: str, finalize_time: float) -> None:
+    async def commit(
+        self,
+        finalize_id: str,
+        finalize_time: float,
+        *,
+        metadata: dict[str, Any] | None = None,
+        session_id: str | None = None,
+    ) -> None:
         async with self._pump_lock:
             end = self._tail
             if end == self._current.start:
@@ -463,12 +509,20 @@ class StepFunASRRecognition:
                         end,
                         finalize_id=finalize_id,
                         finalize_time=finalize_time,
+                        metadata=(
+                            dict(metadata) if metadata is not None else None
+                        ),
+                        session_id=session_id,
                     ),
                 )
                 return
             segment = self._seal_current(end)
             segment.finalize_id = finalize_id
             segment.finalize_time = finalize_time
+            segment.metadata = (
+                dict(metadata) if metadata is not None else None
+            )
+            segment.session_id = session_id
             await self._pump_or_reconnect()
 
     async def _pump_or_reconnect(self) -> bool:
@@ -477,6 +531,11 @@ class StepFunASRRecognition:
         try:
             await self._pump()
             return True
+        except ConnectionClosedOK:
+            # Completed normal close must not emit an ASR error.
+            self._started = False
+            await self.callback.on_close()
+            return False
         except Exception as exc:
             self._started = False
             await self.callback.on_error(str(exc), "send_failed")

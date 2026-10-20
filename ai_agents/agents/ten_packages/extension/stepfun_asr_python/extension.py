@@ -5,10 +5,12 @@ import copy
 import json
 import os
 import time
+from collections import OrderedDict
 from contextlib import suppress
 from typing import Any
 
 from typing_extensions import override
+from websockets.exceptions import InvalidStatus
 
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -36,6 +38,9 @@ from .recognition import (
 from .reconnect_manager import ReconnectManager
 
 
+_MAX_COMPLETED_FINALIZES = 256
+
+
 class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     """TEN adapter for StepAudio 2.5 real-time WebSocket recognition."""
 
@@ -52,7 +57,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._fatal_error_sent = False
         self._connect_started_at: float | None = None
         self._finalize_events: dict[str, asyncio.Event] = {}
-        self._completed_finalizes: set[str] = set()
+        self._completed_finalizes: OrderedDict[str, None] = OrderedDict()
+        self._finalize_contexts: dict[str, dict[str, Any]] = {}
         self._buffer_flush_task: asyncio.Task[None] | None = None
 
     @override
@@ -149,25 +155,15 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 message="StepFun API key is required",
             )
             return
+        if self._connecting:
+            return
 
         self._connecting = True
         try:
-            connected = await self.reconnect_manager.handle_reconnect(
-                self._connect_once,
-                should_abort=lambda: self.stopped or self._fatal,
-            )
-            if not connected and not self.stopped:
-                self._fatal = True
-                await self._send_error(
-                    "StepFun reconnect attempts exhausted; transcription is incomplete",
-                    ModuleErrorCode.FATAL_ERROR.value,
-                    "reconnect_exhausted",
-                    once=True,
-                )
-                await self.on_disconnected(
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="StepFun reconnect attempts exhausted",
-                )
+            await self._connect_once()
+            self.reconnect_manager.mark_connection_successful()
+        except Exception as exc:
+            await self._handle_connect_failure(exc)
         finally:
             self._connecting = False
 
@@ -176,14 +172,85 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             raise ConnectionError("StepFun connection recovery stopped")
         assert self.recognition is not None
         self._connect_started_at = time.monotonic()
-        try:
-            await self.recognition.start()
-        except Exception as exc:
-            self.ten_env.log_warn(
-                f"StepFun connection attempt failed: {exc}",
-                category=LOG_CATEGORY_VENDOR,
+        await self.recognition.start()
+
+    async def _handle_connect_failure(self, exc: Exception) -> None:
+        fatal, vendor_code, message = self._classify_connect_error(exc)
+        self.ten_env.log_warn(
+            f"StepFun connection attempt failed: {message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+        if fatal:
+            self._fatal = True
+            await self._send_error(
+                message,
+                ModuleErrorCode.FATAL_ERROR.value,
+                vendor_code,
+                once=True,
             )
-            raise
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=message,
+            )
+            return
+
+        await self._send_error(
+            message,
+            ModuleErrorCode.NON_FATAL_ERROR.value,
+            vendor_code,
+        )
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=message,
+        )
+        self.reconnect_manager.record_failed_attempt()
+        if self.stopped or self._fatal:
+            return
+        if not self.reconnect_manager.can_retry():
+            self._fatal = True
+            await self._send_error(
+                "StepFun reconnect attempts exhausted; transcription is incomplete",
+                ModuleErrorCode.FATAL_ERROR.value,
+                "reconnect_exhausted",
+                once=True,
+            )
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="StepFun reconnect attempts exhausted",
+            )
+            return
+        self._schedule_reconnect()
+
+    def _classify_connect_error(
+        self, exc: Exception
+    ) -> tuple[bool, str, str]:
+        message = str(exc)
+        status = _extract_http_status(exc)
+        if status in {401, 403}:
+            return True, str(status), message
+        lower = message.lower()
+        if "401" in message or "403" in message or "unauthorized" in lower:
+            code = "401" if "401" in message or "unauthorized" in lower else "403"
+            return True, code, message
+        if status is not None:
+            return False, str(status), message
+        return False, type(exc).__name__, message
+
+    def _schedule_reconnect(self) -> None:
+        if self.stopped or self._fatal:
+            return
+        if self._recovery_task is not None and not self._recovery_task.done():
+            return
+        self._recovery_task = asyncio.create_task(self._reconnect_after_delay())
+
+    async def _reconnect_after_delay(self) -> None:
+        delay = self.reconnect_manager.next_delay()
+        if delay:
+            await asyncio.sleep(delay)
+        if self.stopped or self._fatal:
+            return
+        # Re-enter through the public hook so connecting is reported again.
+        await self.start_connection()
 
     @override
     async def stop_connection(self) -> None:
@@ -208,10 +275,15 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     @override
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         if data.get_name() == "asr_finalize":
-            await self.audio_frames_queue.put(
-                (data.clone(), asyncio.get_running_loop().time())
-            )
-            return
+            # Capture finalize metadata before the base helper runs so the
+            # finalize context is not overwritten by the latest audio frame.
+            metadata_json, metadata_error = data.get_property_to_json("metadata")
+            if not metadata_error and metadata_json:
+                metadata = json.loads(metadata_json)
+                if not isinstance(metadata, dict):
+                    raise ValueError("StepFun finalize metadata must be an object")
+                self.metadata = copy.deepcopy(metadata)
+                self.session_id = self.metadata.get("session_id", self.session_id)
         await super().on_data(ten_env, data)
 
     @override
@@ -220,13 +292,20 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         while not self.stopped:
             try:
                 item = await self.audio_frames_queue.get()
-                if self._fatal:
-                    continue
                 if isinstance(item, AudioFrame):
+                    if self._fatal:
+                        continue
                     await self._handle_audio_frame(self.ten_env, item)
-                else:
-                    data, received_at = item
-                    await self._handle_finalize(data, received_at)
+                    continue
+                finalize_id, received_at, metadata = item
+                if self._fatal:
+                    await self._finish_finalize(
+                        finalize_id,
+                        "StepFun ASR is in a fatal error state",
+                        metadata=metadata,
+                    )
+                    continue
+                await self._handle_finalize(finalize_id, received_at, metadata)
             except asyncio.CancelledError:
                 break
             except Exception as exc:
@@ -238,45 +317,88 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     once=True,
                 )
 
-    async def _handle_finalize(self, data: Data, received_at: float) -> None:
-        finalize_id, error = data.get_property_string("finalize_id")
-        if error or not finalize_id:
-            raise ValueError("StepFun asr_finalize requires finalize_id")
-        metadata_json, metadata_error = data.get_property_to_json("metadata")
-        if not metadata_error and metadata_json:
-            metadata = json.loads(metadata_json)
-            if not isinstance(metadata, dict):
-                raise ValueError("StepFun finalize metadata must be an object")
-            self.metadata = copy.deepcopy(metadata)
-            self.session_id = self.metadata.get("session_id", self.session_id)
-
-        self.finalize_id = finalize_id
-        self.last_finalize_time = received_at
+    @override
+    async def finalize(self, _session_id: str | None) -> None:
+        finalize_id = self.finalize_id or ""
+        received_at = (
+            self.last_finalize_time
+            if self.last_finalize_time is not None
+            else asyncio.get_running_loop().time()
+        )
+        metadata = copy.deepcopy(self.metadata) if self.metadata else {}
+        self._finalize_contexts[finalize_id] = metadata
         done = asyncio.Event()
         self._finalize_events[finalize_id] = done
+        await self.audio_frames_queue.put((finalize_id, received_at, metadata))
         try:
-            if self.recognition is None:
-                await self._finish_finalize(
-                    finalize_id,
-                    "StepFun recognition is unavailable",
-                )
-                return
-            await self.recognition.commit(finalize_id, received_at)
-            try:
-                await asyncio.wait_for(
-                    done.wait(),
-                    self.config.finalize_timeout if self.config else 10.0,
-                )
-            except asyncio.TimeoutError:
-                await self._finish_finalize(
-                    finalize_id,
-                    "StepFun finalize timed out",
-                )
+            timeout = self.config.finalize_timeout if self.config else 10.0
+            await asyncio.wait_for(done.wait(), timeout)
+        except asyncio.TimeoutError:
+            await self._finish_finalize(
+                finalize_id,
+                "StepFun finalize timed out",
+                metadata=metadata,
+                timed_out=True,
+            )
         finally:
             self._finalize_events.pop(finalize_id, None)
 
+    async def _handle_finalize(
+        self,
+        finalize_id: str,
+        received_at: float,
+        metadata: dict[str, Any],
+    ) -> None:
+        if not finalize_id:
+            raise ValueError("StepFun asr_finalize requires finalize_id")
+        self.finalize_id = finalize_id
+        self.last_finalize_time = received_at
+        self.metadata = copy.deepcopy(metadata)
+        self.session_id = metadata.get("session_id", self.session_id)
+
+        if self.recognition is None:
+            await self._finish_finalize(
+                finalize_id,
+                "StepFun recognition is unavailable",
+                metadata=metadata,
+            )
+            return
+
+        # Include base-class disconnected audio in this finalize boundary.
+        await self._absorb_buffered_frames()
+        await self.recognition.commit(
+            finalize_id,
+            received_at,
+            metadata=metadata,
+            session_id=self.session_id,
+        )
+
+    async def _absorb_buffered_frames(self) -> None:
+        """Move base-class buffered frames into the transport journal."""
+        while True:
+            try:
+                frame = self.buffered_frames.get_nowait()
+            except asyncio.QueueEmpty:
+                self.buffered_frames_size = 0
+                return
+            frame_len = len(frame.get_buf())
+            accepted = await self.send_audio(frame, self.session_id)
+            if accepted:
+                self.buffered_frames_size = max(
+                    0, self.buffered_frames_size - frame_len
+                )
+                continue
+            # Journal rejected the frame; put it back and stop.
+            self.buffered_frames.put_nowait(frame)
+            return
+
     async def _finish_finalize(
-        self, finalize_id: str, error: str | None = None
+        self,
+        finalize_id: str,
+        error: str | None = None,
+        *,
+        metadata: dict[str, Any] | None = None,
+        timed_out: bool = False,
     ):
         if finalize_id in self._completed_finalizes:
             return
@@ -284,14 +406,34 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             await self._send_error(
                 error,
                 ModuleErrorCode.NON_FATAL_ERROR.value,
-                "finalize_timeout",
+                "finalize_timeout" if timed_out else "finalize_error",
             )
-        self.finalize_id = finalize_id
-        self._completed_finalizes.add(finalize_id)
-        event = self._finalize_events.get(finalize_id)
-        if event:
-            event.set()
-        await self.send_asr_finalize_end()
+        if timed_out and self.recognition is not None:
+            self.recognition.mark_finalize_timed_out(finalize_id)
+
+        context = metadata
+        if context is None:
+            context = self._finalize_contexts.get(finalize_id)
+        previous_finalize_id = self.finalize_id
+        previous_metadata = self.metadata
+        try:
+            self.finalize_id = finalize_id
+            if context is not None:
+                self.metadata = copy.deepcopy(context)
+            self._remember_completed_finalize(finalize_id)
+            event = self._finalize_events.get(finalize_id)
+            if event:
+                event.set()
+            await self.send_asr_finalize_end()
+        finally:
+            self.finalize_id = previous_finalize_id
+            self.metadata = previous_metadata
+            self._finalize_contexts.pop(finalize_id, None)
+
+    def _remember_completed_finalize(self, finalize_id: str) -> None:
+        self._completed_finalizes[finalize_id] = None
+        while len(self._completed_finalizes) > _MAX_COMPLETED_FINALIZES:
+            self._completed_finalizes.popitem(last=False)
 
     async def _check_complete(self, data: Data) -> None:
         check_id, error = data.get_property_string("check_id")
@@ -329,15 +471,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return True
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
+        # True means the recovery journal owns the frame; do not re-buffer it.
         return await self.recognition.send_audio(audio_data)
-
-    @override
-    async def finalize(self, _session_id: str | None) -> None:
-        if self.recognition:
-            await self.recognition.commit(
-                self.finalize_id or "",
-                asyncio.get_running_loop().time(),
-            )
 
     @override
     def is_connected(self) -> bool:
@@ -397,13 +532,14 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 except asyncio.QueueEmpty:
                     self.buffered_frames_size = 0
                     return
-                if await self.send_audio(frame, self.session_id):
-                    self.sent_buffer_length += len(frame.get_buf())
-                    if self.first_audio_time is None:
-                        self.first_audio_time = (
-                            asyncio.get_running_loop().time()
-                        )
-                    self.buffered_frames_size -= len(frame.get_buf())
+                frame_len = len(frame.get_buf())
+                # send_audio journals before attempting delivery; never requeue
+                # a journaled frame or PCM/timestamps will duplicate.
+                accepted = await self.send_audio(frame, self.session_id)
+                if accepted:
+                    self.buffered_frames_size = max(
+                        0, self.buffered_frames_size - frame_len
+                    )
                     continue
                 self.buffered_frames.put_nowait(frame)
                 return
@@ -444,30 +580,61 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 start_ms = self._timeline_ms(segment.start)
                 end_ms = self._timeline_ms(segment.end or segment.start)
             duration_ms = max(0, int(end_ms) - start_ms)
-            asr_result = ASRResult(
-                text=text,
-                final=final,
-                start_ms=max(0, start_ms),
-                duration_ms=max(0, duration_ms),
-                language=_normalize_language(
-                    str(message.get("language") or self.config.language)
-                ),
-                words=words,
-                metadata={
-                    "asr_info": {
-                        "vendor": self.vendor(),
-                        "model": self.config.model if self.config else "",
-                        "provider_item_id": message.get("item_id", ""),
-                        "finalize_id": segment.finalize_id,
-                        "contains_stash": (
-                            bool(message.get("stash")) if not final else False
-                        ),
-                    }
-                },
+            # Restore the originating finalize/session before base helpers
+            # shallow-merge self.metadata and compute TTLW.
+            previous_metadata = self.metadata
+            previous_session = self.session_id
+            previous_finalize_time = self.last_finalize_time
+            previous_finalize_id = self.finalize_id
+            try:
+                if segment.metadata is not None:
+                    self.metadata = copy.deepcopy(segment.metadata)
+                if segment.session_id is not None:
+                    self.session_id = segment.session_id
+                if segment.finalize_id is not None:
+                    self.finalize_id = segment.finalize_id
+                if segment.timed_out:
+                    # Timed-out segments must not consume the next turn's TTLW.
+                    self.last_finalize_time = None
+                elif segment.finalize_time is not None:
+                    self.last_finalize_time = segment.finalize_time
+                asr_result = ASRResult(
+                    text=text,
+                    final=final,
+                    start_ms=max(0, start_ms),
+                    duration_ms=max(0, duration_ms),
+                    language=_normalize_language(
+                        str(
+                            message.get("language")
+                            or (self.config.language if self.config else "en")
+                        )
+                    ),
+                    words=words,
+                    metadata={
+                        "asr_info": {
+                            "vendor": self.vendor(),
+                            "model": self.config.model if self.config else "",
+                            "provider_item_id": message.get("item_id", ""),
+                            "finalize_id": segment.finalize_id,
+                            "contains_stash": (
+                                bool(message.get("stash"))
+                                if not final
+                                else False
+                            ),
+                        }
+                    },
+                )
+                await self.send_asr_result(asr_result)
+            finally:
+                self.metadata = previous_metadata
+                self.session_id = previous_session
+                self.last_finalize_time = previous_finalize_time
+                self.finalize_id = previous_finalize_id
+        if final and segment.finalize_id is not None and not segment.timed_out:
+            await self._finish_finalize(
+                segment.finalize_id,
+                metadata=segment.metadata,
             )
-            await self.send_asr_result(asr_result)
-        if final and segment.finalize_id is not None:
-            await self._finish_finalize(segment.finalize_id)
 
     def _timeline_ms(self, byte_offset: int) -> int:
         if self.recognition is None:
@@ -562,8 +729,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             code=ModuleErrorCode.NON_FATAL_ERROR.value,
             message="StepFun connection closed",
         )
-        if self._recovery_task is None or self._recovery_task.done():
-            self._recovery_task = asyncio.create_task(self.start_connection())
+        self._schedule_reconnect()
 
     async def _send_error(
         self,
@@ -585,6 +751,19 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 message=message,
             ),
         )
+
+
+def _extract_http_status(exc: Exception) -> int | None:
+    if isinstance(exc, InvalidStatus):
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+        return int(status) if status is not None else None
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    if status is not None:
+        return int(status)
+    status = getattr(exc, "status_code", None)
+    return int(status) if status is not None else None
 
 
 def _normalize_language(language: str) -> str:
