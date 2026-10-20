@@ -49,7 +49,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self.session_id: int | None = None
         self._last_final_text: str | None = None
         self._completed_turns: set[tuple[Any, ...]] = set()
-        self._submitted_finals: set[tuple[str, int, int, str]] = set()
+        self._submitted_finals: set[tuple[int, int, str]] = set()
         self._session_epoch = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:

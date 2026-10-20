@@ -27,14 +27,11 @@ def pure_text_input(text: str, created_at: Any = None) -> dict[str, str]:
 
 def asr_final_key(
     payload: dict[str, Any], text: str
-) -> tuple[str, int, int, str] | None:
-    """Identify a final by ASR stream, audio interval and normalized text."""
+) -> tuple[int, int, str] | None:
+    """Identify a final within the graph's single ASR audio timeline."""
 
-    stream_id = payload.get("id")
     start_ms = payload.get("start_ms")
     duration_ms = payload.get("duration_ms")
-    if not isinstance(stream_id, str) or not stream_id:
-        return None
     if any(
         not isinstance(value, int) or isinstance(value, bool)
         for value in (start_ms, duration_ms)
@@ -42,7 +39,7 @@ def asr_final_key(
         return None
     if start_ms < 0 or duration_ms <= 0:
         return None
-    return stream_id, start_ms, duration_ms, text
+    return start_ms, duration_ms, text
 
 
 def session_id_from_response(response_json: str) -> int | None:

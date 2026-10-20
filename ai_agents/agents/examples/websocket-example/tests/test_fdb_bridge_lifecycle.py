@@ -291,7 +291,9 @@ async def test_asr_final_replay_after_turn_completion_is_not_resubmitted(
     final = timed_final()
     await bridge.on_data(env, final)
     await bridge.on_data(env, completed())
-    await bridge.on_data(env, final)
+    replay = timed_final()
+    replay.properties["id"] = "new-event-id-for-the-same-audio"
+    await bridge.on_data(env, replay)
     env.send_cmd.assert_awaited_once()
 
 
