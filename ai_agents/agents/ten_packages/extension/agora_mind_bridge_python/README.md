@@ -19,6 +19,13 @@ On stop it attempts a bounded `delete_session` for any remaining active Session.
 Late command results after a Session reset are rejected, so a disconnect or
 shutdown cannot be undone by a pending `create_session` result.
 
+Finals with a positive audio duration are identified by `start_ms`, `duration_ms`
+and normalized text within this graph's single ASR timeline. TEN regenerates the
+ASR result `id` after each final. The interval identity suppresses replays after a
+turn completes and accepts the same words at a new interval. A text-only cache
+would keep less state but drop legitimate repeated speech. Without a reliable
+interval, the bridge retains consecutive-text suppression until turn completion.
+
 Failed ASR submissions emit the standard TEN `error` data shape with module
 `agora_mind_bridge`, code `1000`, a message, and Session/case metadata. A rejected
 native command also preserves its `response_json` in metadata. The bridge does

@@ -112,9 +112,16 @@ The graph also exposes the following through
 - `asr_result`: input transcripts, including interim/final markers;
 - `agora_mind_event`: raw Agora Mind envelopes in `data.event_json`, including
   final turn text, connection state and failures;
-- `tts_text_result`: synthesized text;
+- `tts_text_result`: synthesized text when emitted by the selected TTS addon;
 - `tts_audio_start`, `tts_audio_end`, `tts_flush_end`: output lifecycle;
 - `error`, `metrics`: provider failures and timing.
+
+Collect the Agent's final transcript from `session_turn_completed` inside
+`agora_mind_event`. The current ElevenLabs addon does not emit `tts_text_result`.
+Timed ASR finals are deduplicated by audio interval and text, so a delayed replay
+does not submit another input and identical speech at a new interval remains a
+new input. ASR addons should populate the standard `start_ms` and `duration_ms`
+fields; a result `id` alone does not identify an utterance.
 
 ASR submission failures also produce `error` with `module=agora_mind_bridge`
 and `code=1000`. Its metadata contains `session_id` and `example_id`, plus the
@@ -188,6 +195,8 @@ using fresh workers and Sessions, and checks duplicate final/completion events,
 JSON command conversion, transcripts, PCM format/content, TTS completion, and
 worker cleanup. It uses temporary container names and available local ports,
 has a fixed deadline, and removes the container after success or failure.
+It replays ASR finals after responses complete and checks one- and two-turn
+cases with identical speech in separate audio intervals.
 It also covers rejection, submission timeout, disconnect, and a missing turn
 completion. Each failed case must clean up and allow a subsequent normal case.
 The test's case deadline models the Rust runner's deadline.
