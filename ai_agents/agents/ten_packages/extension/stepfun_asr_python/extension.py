@@ -108,6 +108,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 )
                 await self.audio_dumper.start()
         except Exception as exc:
+            self.config = None
+            self.recognition = None
             self._fatal = True
             await self._send_error(
                 str(exc),
@@ -166,6 +168,13 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             await self._connect_once()
             if self.is_connected():
                 self.reconnect_manager.mark_connection_successful()
+            elif self.recognition and self.recognition.normal_close:
+                await self._handle_connect_failure(
+                    ConnectionError("StepFun connection closed normally"),
+                    report_error=False,
+                )
+            else:
+                raise ConnectionError("StepFun connection ended before ready")
         except Exception as exc:
             await self._handle_connect_failure(exc)
         finally:
@@ -178,7 +187,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._connect_started_at = time.monotonic()
         await self.recognition.start()
 
-    async def _handle_connect_failure(self, exc: Exception) -> None:
+    async def _handle_connect_failure(
+        self,
+        exc: Exception,
+        *,
+        report_error: bool = True,
+    ) -> None:
         fatal, vendor_code, message = self._classify_connect_error(exc)
         self.ten_env.log_warn(
             f"StepFun connection attempt failed: {message}",
@@ -203,11 +217,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             )
             return
 
-        await self._send_error(
-            message,
-            ModuleErrorCode.NON_FATAL_ERROR.value,
-            vendor_code,
-        )
+        if report_error:
+            await self._send_error(
+                message,
+                ModuleErrorCode.NON_FATAL_ERROR.value,
+                vendor_code,
+            )
         await self.on_disconnected(
             code=ModuleErrorCode.NON_FATAL_ERROR.value,
             message=message,

@@ -85,7 +85,7 @@ class StepFunASRRecognition:
         self._session_ready = asyncio.Event()
         self._session_confirmed = False
         self._session_error: str | None = None
-        self._normal_close_during_handshake = False
+        self._normal_close = False
         self._started = False
         self._closing = False
         self._generation = 0
@@ -123,6 +123,11 @@ class StepFunASRRecognition:
         """Return the absolute end offset of the recovery journal."""
         return self._tail
 
+    @property
+    def normal_close(self) -> bool:
+        """Whether the latest connection ended with a normal close."""
+        return self._normal_close
+
     async def start(self) -> None:
         await self.close()
         self._closing = False
@@ -130,7 +135,7 @@ class StepFunASRRecognition:
             self._session_ready.clear()
             self._session_confirmed = False
             self._session_error = None
-            self._normal_close_during_handshake = False
+            self._normal_close = False
             self._generation += 1
             self._session_offset = self._base
             self._sent = self._base
@@ -193,7 +198,7 @@ class StepFunASRRecognition:
                 self._session_ready.wait(),
                 self.config.connection_timeout,
             )
-            if self._normal_close_during_handshake:
+            if self._normal_close:
                 self._started = False
                 await self.close()
                 await self.callback.on_close()
@@ -222,6 +227,7 @@ class StepFunASRRecognition:
                     "StepFun session closed while publishing ready"
                 )
         except ConnectionClosedOK:
+            self._normal_close = True
             self._started = False
             await self.close()
             await self.callback.on_close()
@@ -236,13 +242,16 @@ class StepFunASRRecognition:
                 if not isinstance(raw, bytes):
                     await self._handle_message(json.loads(raw))
         except ConnectionClosedOK:
-            self._normal_close_during_handshake = not self._started
+            self._normal_close = True
         except (ConnectionClosedError, WebSocketException) as exc:
             if not self._closing:
                 await self.callback.on_error(str(exc), "connection_closed")
         except Exception as exc:
             if not self._closing:
                 await self.callback.on_error(str(exc), "invalid_response")
+        else:
+            # websockets closes a normal async iterator without raising.
+            self._normal_close = True
         finally:
             was_started = self._started
             self._started = False
@@ -597,6 +606,17 @@ class StepFunASRRecognition:
     ) -> None:
         async with self._pump_lock:
             end = self._tail
+            if end > self._current.start:
+                segment = self._seal_current(end)
+                segment.finalize_id = finalize_id
+                segment.finalize_time = finalize_time
+                segment.metadata = (
+                    dict(metadata) if metadata is not None else None
+                )
+                segment.session_id = session_id or segment.session_id
+                segment.timed_out = finalize_id in self._timed_out_finalize_set
+                await self._pump_or_reconnect()
+                return
             pending_segment = next(
                 (
                     segment
@@ -643,12 +663,6 @@ class StepFunASRRecognition:
                     ),
                 )
                 return
-            segment = self._seal_current(end)
-            segment.finalize_id = finalize_id
-            segment.finalize_time = finalize_time
-            segment.metadata = dict(metadata) if metadata is not None else None
-            segment.session_id = session_id or segment.session_id
-            segment.timed_out = finalize_id in self._timed_out_finalize_set
             await self._pump_or_reconnect()
 
     async def _pump_or_reconnect(self) -> bool:
