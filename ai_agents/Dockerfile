@@ -23,6 +23,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
   libc++1 \
   libssl-dev \
   python3 \
+  python-is-python3 \
   python3-venv \
   python3-pip \
   python3-dev \
