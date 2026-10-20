@@ -1,6 +1,6 @@
 # Subtitle timing checks
 
-As of: 2026-10-11
+As of: 2026-10-13
 
 Run with `--enable_subtitle_alignment=True`. The test observes two sequential
 requests through public TEN messages and audio frames. Each request has its own
@@ -44,11 +44,12 @@ offsets must be retained. Capture and calculation errors fail the timing check
 without changing the extension's wire path.
 
 The dependency binding is restored when the runner exits, including failure
-paths. Only MiniMax Duplex is registered. Other vendors do not import or
-install its hook, and other Guarder cases do not inject any hook. This module
-consolidation preserves the existing checks and enable/skip behavior. Tests
-sharing one extension module must run sequentially; parallel vendor runs require
-separate processes and installed app directories.
+paths. Only the vendors listed in [registry.py](timing_hooks/registry.py) are
+registered: a vendor without a registry entry installs no observer, and other
+Guarder cases do not inject any hook. This module consolidation preserves the
+existing checks and enable/skip behavior. Tests sharing one extension module
+must run sequentially; parallel vendor runs require separate processes and
+installed app directories.
 
 See [adding a TTS extension](#adding-a-tts-extension) below for setup,
 registration, and verification steps.
@@ -67,8 +68,17 @@ than a strict test using only TEN input/output ports.
 
 These checks protect timestamp conversion and the PCM timeline. They do not
 perform phonetic forced alignment or prove that a provider's word annotations
-match every acoustic onset. Other supported providers receive the generic
-checks; the raw protocol observer currently applies only to MiniMax Duplex.
+match every acoustic onset. Providers without a registry entry receive the
+generic checks only. The registered observers differ per vendor because each one
+hooks the client's actual transport entry point: MiniMax Duplex and ElevenLabs
+wrap the client module's `websockets` binding through
+[ObservedWebSockets](timing_hooks/transport.py), Cartesia wraps
+`aiohttp.ClientSession`, and ByteDance wraps the session's response handler.
+The ByteDance session hook also reads the provider's frontend word messages
+before the session converts them, and counts the audio bytes it delivered.
+The ByteDance duplex hook wraps the client's server-response handler, where
+sentence boundaries, provider word fields, and audio chunks are still in
+provider form.
 
 ## Adding a TTS extension
 
@@ -81,9 +91,13 @@ Choose the coverage level before adding support:
 
 Unregistered extensions install no vendor observer. Generic bounds checks alone
 cannot prove that the first-word offset was converted correctly: shifted words
-can still lie within the audio span. Currently MiniMax Duplex has a hook and
-Cartesia receives generic checks. Other extensions skip this case until they
-are added to the supported list and have a subtitle configuration.
+can still lie within the audio span. `minimax_tts_websocket_duplex`,
+`cartesia_tts`, `elevenlabs_multiple_context_tts_python`, and `bytedance_tts`
+have a registered hook today; `minimax_tts_websocket`, `soul_tts_python`, and
+`azure_tts` receive generic checks only. `azure_tts` is a C++ extension that
+lives in the conversational agent tree, so its runs copy this guarder there and
+keep the subtitle configuration in that tree. Other extensions skip this case
+until they are added to the supported list and have a subtitle configuration.
 
 ### 1. Prepare the extension and configuration
 
@@ -130,6 +144,13 @@ settings, original word timestamps, and sentence audio positions. When word
 times are relative to a sentence, count all preceding audio packets, including
 packets without subtitles. Connection-level audio settings may arrive before
 the first request; retain still-effective settings when resetting a request.
+
+Build the reference from the provider's own fields. Reading the already
+converted TEN words, or the extension's own sentence bookkeeping, makes the
+comparison move with the conversion it verifies and accept a wrong one.
+Sentence positions come from the audio bytes the provider delivered, counted
+at its own sentence boundaries, and a request's origin is reset before each
+request.
 
 `reference()` interprets protocol units, sentence boundaries, duplicate word
 markers, and space markers, then returns the structures in
@@ -222,7 +243,9 @@ reference data must fail the check rather than fall back to generic-only checks.
 Verify that:
 
 - Both requests reset their reference identity and accumulated audio positions.
-- Nonzero first-word offsets are retained and incorrect offsets are rejected.
+- Nonzero first-word offsets are retained and incorrect offsets are rejected,
+  except where a vendor section documents that the extension aligns a
+  sentence's first word with its audio start.
 - Success and failure restore injected dependencies.
 - Unregistered extensions receive no injection.
 
@@ -235,6 +258,12 @@ adaptations. Redact credentials from logs and configuration before sharing them.
 
 These checks validate timestamp conversion; they do not perform acoustic forced
 alignment or prove that provider annotations match actual speech onsets.
+For `bytedance_tts_duplex` the provider sends turn-relative times and the
+extension aligns each sentence's first word with the start of that sentence's
+audio, so about 100ms of provider lead-in silence per sentence is normalized
+away and the ByteDance duplex reference mirrors that alignment instead of
+rejecting it. The remaining word offsets within a sentence are still compared
+against the provider's own fields and independently counted audio bytes.
 Review findings for actual buffer-length validation, nonterminal subtitles with
 empty `words`, and MiniMax `params.url` matching remain unresolved. These
 instructions do not imply that those gaps have been fixed. New vendors should

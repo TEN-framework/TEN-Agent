@@ -277,10 +277,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def _start_websocket(self) -> None:
         """Start websocket connection only (without audio dumper)."""
         assert self.config is not None
-        start_request = json.dumps(self.config.params)
+        api_key = self.config.params.get("api_key")
+        start_params = {
+            key: value
+            for key, value in self.config.params.items()
+            if key != "api_key"
+        }
+        start_request = json.dumps(start_params)
         ws = SonioxWebsocketClient(
             self.config.url,
             start_request,
+            api_key,
             enable_keepalive=self.config.enable_keepalive,
         )
         ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)

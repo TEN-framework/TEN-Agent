@@ -1,10 +1,10 @@
 [project]
 name = "soniox-asr-python"
-version = "0.6.3"
+version = "0.6.4"
 requires-python = ">=3.10"
 dependencies = [
   "aiofiles>=25.1.0",
   "pydantic>=2.0.0",
   "pysbd==0.3.4",
-  "websockets>=11.0.0",
+  "websockets>=14.2,<18",
 ]
