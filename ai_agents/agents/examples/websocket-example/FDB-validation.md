@@ -1,7 +1,8 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `71792bc80c359c3cfd544e193adcd1f138e8c57c`.
-Packaged graph regression test: `5e039d058` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `ed39eb47f`.
+Packaged graph regression test: `ed39eb47f` (`tests/test_fdb_runtime.py`).
+Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
 `06d9cd66ee212346e9e8df03c37d0d9333de60a1943a9025ea94b0334c2edcf7`.
