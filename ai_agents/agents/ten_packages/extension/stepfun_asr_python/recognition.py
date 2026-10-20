@@ -35,6 +35,7 @@ class TranscriptSegment:
     result: dict[str, Any] | None = None
     published: bool = False
     generation: int = -1
+    commit_generation: int = -1
 
 
 class StepFunASRRecognitionCallback:
@@ -84,6 +85,7 @@ class StepFunASRRecognition:
         self._session_ready = asyncio.Event()
         self._session_confirmed = False
         self._session_error: str | None = None
+        self._normal_close_during_handshake = False
         self._started = False
         self._closing = False
         self._generation = 0
@@ -128,6 +130,7 @@ class StepFunASRRecognition:
             self._session_ready.clear()
             self._session_confirmed = False
             self._session_error = None
+            self._normal_close_during_handshake = False
             self._generation += 1
             self._session_offset = self._base
             self._sent = self._base
@@ -190,6 +193,11 @@ class StepFunASRRecognition:
                 self._session_ready.wait(),
                 self.config.connection_timeout,
             )
+            if self._normal_close_during_handshake:
+                self._started = False
+                await self.close()
+                await self.callback.on_close()
+                return
             if not self._session_confirmed:
                 raise ConnectionError(
                     self._session_error
@@ -213,6 +221,11 @@ class StepFunASRRecognition:
                 raise ConnectionError(
                     "StepFun session closed while publishing ready"
                 )
+        except ConnectionClosedOK:
+            self._started = False
+            await self.close()
+            await self.callback.on_close()
+            return
         except BaseException:
             await self.close()
             raise
@@ -223,7 +236,7 @@ class StepFunASRRecognition:
                 if not isinstance(raw, bytes):
                     await self._handle_message(json.loads(raw))
         except ConnectionClosedOK:
-            pass
+            self._normal_close_during_handshake = not self._started
         except (ConnectionClosedError, WebSocketException) as exc:
             if not self._closing:
                 await self.callback.on_error(str(exc), "connection_closed")
@@ -241,11 +254,34 @@ class StepFunASRRecognition:
         segment = self._current
         segment.end = end
         self._pending.append(segment)
-        self._current = TranscriptSegment(end)
+        has_unsealed_suffix = self._tail > end
+        self._current = TranscriptSegment(
+            end,
+            metadata=(
+                dict(segment.metadata)
+                if has_unsealed_suffix and segment.metadata is not None
+                else None
+            ),
+            session_id=segment.session_id if has_unsealed_suffix else None,
+        )
         for item, mapped in list(self._items.items()):
             if mapped is segment and self._item_starts.get(item, -1) >= end:
                 self._items[item] = self._current
         return segment
+
+    def _unmapped_replay_segment(self) -> TranscriptSegment | None:
+        mapped = tuple(self._items.values())
+        for segment in self._pending:
+            if (
+                segment.generation == self._generation
+                and not segment.published
+                and segment.result is None
+                and not any(
+                    mapped_segment is segment for mapped_segment in mapped
+                )
+            ):
+                return segment
+        return None
 
     def _stamp_open_segment(
         self,
@@ -289,17 +325,20 @@ class StepFunASRRecognition:
         ):
             segment = None
         if segment is None:
+            if start is None:
+                segment = self._unmapped_replay_segment()
             candidates = list(self._pending)
-            segment = next(
-                (
-                    candidate
-                    for candidate in candidates
-                    if start is not None
-                    and candidate.end is not None
-                    and candidate.start <= start < candidate.end
-                ),
-                None,
-            )
+            if segment is None:
+                segment = next(
+                    (
+                        candidate
+                        for candidate in candidates
+                        if start is not None
+                        and candidate.end is not None
+                        and candidate.start <= start < candidate.end
+                    ),
+                    None,
+                )
             if segment is None:
                 segment = (
                     next(
@@ -347,6 +386,18 @@ class StepFunASRRecognition:
                     float(end_ms) * self.bytes_per_second / 1000
                 )
                 end = min(end, self._sent)
+                boundary_segment = next(
+                    (
+                        candidate
+                        for candidate in self._pending
+                        if not candidate.published and candidate.end == end
+                    ),
+                    None,
+                )
+                if boundary_segment is not None:
+                    if item:
+                        self._items[item] = boundary_segment
+                    return
                 if end > self._current.start:
                     segment = self._seal_current(end)
                     segment.generation = self._generation
@@ -546,6 +597,33 @@ class StepFunASRRecognition:
     ) -> None:
         async with self._pump_lock:
             end = self._tail
+            pending_segment = next(
+                (
+                    segment
+                    for segment in reversed(self._pending)
+                    if not segment.published and segment.finalize_id is None
+                ),
+                None,
+            )
+            if pending_segment is not None:
+                pending_segment.finalize_id = finalize_id
+                pending_segment.finalize_time = finalize_time
+                pending_segment.metadata = (
+                    dict(metadata) if metadata is not None else None
+                )
+                pending_segment.session_id = (
+                    session_id or pending_segment.session_id
+                )
+                pending_segment.timed_out = (
+                    finalize_id in self._timed_out_finalize_set
+                )
+                if self.is_connected():
+                    if pending_segment.generation != self._generation:
+                        await self._send_range(pending_segment.end)
+                        pending_segment.generation = self._generation
+                    await self._queue_commit(pending_segment)
+                await self._pump_or_reconnect()
+                return
             if end == self._current.start:
                 await self.callback.on_result(
                     {
@@ -599,9 +677,15 @@ class StepFunASRRecognition:
             await self._send_range(segment.end)
             segment.generation = self._generation
             if segment.finalize_id is not None or not self.config.server_vad:
-                self._awaiting_ack.append(segment)
-                await self._send_json("input_audio_buffer.commit")
+                await self._queue_commit(segment)
         await self._send_range(self._tail)
+
+    async def _queue_commit(self, segment: TranscriptSegment) -> None:
+        if segment.commit_generation == self._generation:
+            return
+        segment.commit_generation = self._generation
+        self._awaiting_ack.append(segment)
+        await self._send_json("input_audio_buffer.commit")
 
     async def _send_range(self, end: int) -> None:
         while self._sent < end:

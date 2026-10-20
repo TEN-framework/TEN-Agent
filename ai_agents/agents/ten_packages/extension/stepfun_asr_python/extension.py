@@ -702,6 +702,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     self.last_finalize_time = None
                 elif final and segment.finalize_time is not None:
                     self.last_finalize_time = segment.finalize_time
+                elif final:
+                    # Automatic VAD finals must not consume another turn's
+                    # finalize timestamp.
+                    self.last_finalize_time = None
                 asr_result = ASRResult(
                     text=text,
                     final=final,
