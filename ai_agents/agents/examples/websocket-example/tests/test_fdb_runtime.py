@@ -263,6 +263,8 @@ async def run_case(runtime, example_id):
             event = json.loads(await client.recv())
             if event["type"] == "audio":
                 assert event["metadata"]["sample_rate"] == 16000
+                assert event["metadata"]["channels"] == 1
+                assert event["metadata"]["bytes_per_sample"] == 2
                 assert event["metadata"]["session_id"] == "7"
                 assert event["metadata"]["example_id"] == example_id
                 output.extend(base64.b64decode(event["audio"]))
@@ -270,6 +272,10 @@ async def run_case(runtime, example_id):
                 events.append(event["name"])
                 if event["name"] == "tts_audio_end":
                     assert event["data"]["request_id"] == "fdb-tts-7-1"
+                    assert event["data"]["reason"] == 1  # REQUEST_END
+                    assert (
+                        event["data"]["request_total_audio_duration_ms"] == 200
+                    )
                     break
         assert output == PCM
         assert "asr_result" in events
