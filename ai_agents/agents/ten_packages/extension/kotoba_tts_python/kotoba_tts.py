@@ -21,6 +21,7 @@ from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_ai_base.message import ModuleErrorVendorInfo
 from ten_runtime import AsyncTenEnv
 
+from .aio import cancel_and_wait, wait_done
 from .config import KotobaTTSConfig
 
 # Server error codes that mean the configuration can never work.
@@ -304,12 +305,10 @@ class KotobaTTSClient:
         receiver = getattr(session, "_receiver_task", None)
         if receiver is None:
             return
-        try:
-            await asyncio.shield(receiver)
-        except Exception:
-            # Receiver errors are reported through synthesize(); here only
-            # the fact that it ended matters. Cancellation passes through.
-            pass
+        # Only the fact that the receiver ended matters here; its errors
+        # are reported through synthesize(). A receiver cancelled by
+        # session.close() also counts as ended.
+        await wait_done(receiver)
         if self._session is not session:
             return
         if self._response_active:
@@ -347,11 +346,7 @@ class KotobaTTSClient:
     async def close(self) -> None:
         self._closed = True
         if self._drain_task is not None:
-            self._drain_task.cancel()
-            try:
-                await self._drain_task
-            except (asyncio.CancelledError, Exception):
-                pass
+            await cancel_and_wait(self._drain_task)
             self._drain_task = None
         await self.drop(message="closed")
 
@@ -510,13 +505,13 @@ class KotobaTTSClient:
         if task is None:
             return
         try:
-            await asyncio.shield(task)
+            # The drain's own outcome, including being cancelled by
+            # close(), is not this caller's failure.
+            await wait_done(task)
         except asyncio.CancelledError:
             task.cancel()
             await self.drop(message="drain interrupted")
             raise
-        except Exception:
-            pass
         finally:
             if self._drain_task is task:
                 self._drain_task = None

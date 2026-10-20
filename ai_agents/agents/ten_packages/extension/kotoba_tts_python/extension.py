@@ -24,6 +24,7 @@ from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_runtime import AsyncTenEnv
 
+from .aio import cancel_and_wait, wait_done
 from .config import KotobaTTSConfig
 from .kotoba_tts import KotobaTTSClient, KotobaTTSError, classify_error
 from .segmenter import SentenceBuffer
@@ -605,26 +606,20 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         self, request: _RequestState, task: asyncio.Task | None, what: str
     ) -> None:
         """Shutdown found a request's worker or dump close in flight: wait
-        for it, bounded, shielding it so the wait's own timeout does not
-        cancel it. On timeout cancel it; the caller completes the rest."""
+        for it, bounded. The task may end in any way, including being
+        cancelled by a concurrent flush takeover: that is a completed join.
+        On timeout cancel it; the caller completes the rest."""
         if task is None or task.done() or task is asyncio.current_task():
             return
-        try:
-            await asyncio.wait_for(asyncio.shield(task), _TERMINAL_JOIN_SECONDS)
-        except asyncio.TimeoutError:
-            self.ten_env.log_warn(
-                f"request {request.request_id}: {what} did not finish "
-                f"within {_TERMINAL_JOIN_SECONDS:g} s of stop; cancelling it"
-            )
-            task.cancel()
-            try:
-                await task
-            except (asyncio.CancelledError, Exception):
-                pass
-            if task is request.worker:
-                request.worker = None
-        except Exception:
-            pass
+        if await wait_done(task, _TERMINAL_JOIN_SECONDS):
+            return
+        self.ten_env.log_warn(
+            f"request {request.request_id}: {what} did not finish "
+            f"within {_TERMINAL_JOIN_SECONDS:g} s of stop; cancelling it"
+        )
+        await cancel_and_wait(task)
+        if task is request.worker:
+            request.worker = None
 
     # -- helpers -----------------------------------------------------------
 
@@ -659,11 +654,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             return
         if worker is asyncio.current_task():
             return
-        worker.cancel()
-        try:
-            await worker
-        except (asyncio.CancelledError, Exception):
-            pass
+        await cancel_and_wait(worker)
 
     async def _close_recorder(self, request: _RequestState) -> None:
         recorder = request.recorder

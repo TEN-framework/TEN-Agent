@@ -986,3 +986,71 @@ def test_flush_during_streaming_does_not_wait_for_dump_io():
     finally:
         server.stop()
         shutil.rmtree(dump_dir, ignore_errors=True)
+
+
+def test_flush_takeover_during_shutdown_does_not_abort_stop():
+    """A terminal event hangs. Flush starts waiting for it, then the app
+    stops while that wait is still running. Flush times out first and
+    cancels the worker that on_stop is joining. on_stop must treat that as
+    a completed join, finish its cleanup (dump file exact, socket closed)
+    and return normally instead of letting the CancelledError escape."""
+    import os
+    import shutil
+    import tempfile
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    dump_dir = tempfile.mkdtemp(prefix="kotoba_stopjoin_")
+    server = FakeKotobaServer(Scenario(chunks_per_response=2)).start()
+    state = {"calls": 0}
+    original = ext_mod.KotobaTTSExtension.send_tts_audio_end
+
+    async def hanging_first_audio_end(self, *args, **kwargs):
+        state["calls"] += 1
+        if state["calls"] == 1:
+            await asyncio.sleep(60)  # the worker's own terminal event
+        return await original(self, *args, **kwargs)
+
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.6), patch.object(
+            ext_mod.KotobaTTSExtension,
+            "send_tts_audio_end",
+            hanging_first_audio_end,
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "sj", "停止と接続。", end=True)
+                await tester.wait_for(
+                    lambda r: len(r.frames) >= 2 and state["calls"] >= 1,
+                    timeout_s=5.0,
+                )
+                await tester.send_flush(ten_env, "flush-sj")
+                # Return while flush is inside its 0.6 s wait: on_stop
+                # starts its own 0.6 s join on the same worker, and flush's
+                # timeout cancels that worker first.
+                await asyncio.sleep(0.2)
+
+            t0 = time.monotonic()
+            tester = run_tester(
+                script,
+                make_config(server.url, dump=True, dump_path=dump_dir),
+                timeout_s=10.0,
+            )
+            assert time.monotonic() - t0 < 6.0
+        with open(dump_path(dump_dir, "sj"), "rb") as f:
+            assert f.read() == tester.recording.audio_bytes("sj")
+        assert len(tester.recording.audio_bytes("sj")) == len(
+            server.expected_pcm(1)
+        )
+        # The transport was closed by on_stop (client.close() ran).
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline and not any(
+            kind == "close" for kind, _conn, _t in server.recorded.events
+        ):
+            time.sleep(0.02)
+        assert any(
+            kind == "close" for kind, _conn, _t in server.recorded.events
+        ), server.recorded.events
+    finally:
+        server.stop()
+        shutil.rmtree(dump_dir, ignore_errors=True)
