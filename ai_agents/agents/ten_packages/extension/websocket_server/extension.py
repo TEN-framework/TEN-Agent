@@ -256,6 +256,13 @@ class WebsocketServerExtension(AsyncExtension):
         Args:
             audio_data: Audio data container with PCM data and metadata
         """
+        bytes_per_frame = self.config.bytes_per_sample * self.config.channels
+        if (
+            not audio_data.pcm_data
+            or len(audio_data.pcm_data) % bytes_per_frame
+        ):
+            raise ValueError("audio must contain complete PCM sample frames")
+
         try:
             # Get ten_env (stored during initialization)
             ten_env = self.ten_env
@@ -291,9 +298,6 @@ class WebsocketServerExtension(AsyncExtension):
             audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
 
             # Calculate number of samples
-            bytes_per_frame = (
-                self.config.bytes_per_sample * self.config.channels
-            )
             samples_per_channel = len(audio_data.pcm_data) // bytes_per_frame
             audio_frame.set_samples_per_channel(samples_per_channel)
 

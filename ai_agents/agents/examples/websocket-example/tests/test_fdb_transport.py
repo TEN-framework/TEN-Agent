@@ -122,3 +122,26 @@ async def test_graph_data_reaches_websocket_without_conversion(
     extension.ws_server.broadcast.assert_awaited_once_with(
         {"type": "data", "name": name, "data": payload}
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "channels,sample_width,pcm",
+    [(1, 2, b""), (1, 2, b"\x00"), (2, 2, b"\x00\x00"), (1, 4, b"\x00\x00")],
+)
+async def test_incomplete_pcm_is_rejected_before_frame_allocation(
+    modules, env, channels, sample_width, pcm
+):
+    extension = modules.websocket.WebsocketServerExtension("websocket_server")
+    extension.ten_env = env
+    extension.config = modules.websocket.WebSocketServerConfig(
+        channels=channels, bytes_per_sample=sample_width
+    )
+    frame = Mock()
+    frame.lock_buf.return_value = bytearray(len(pcm))
+    modules.runtime.AudioFrame.create.return_value = frame
+    audio = modules.websocket.AudioData(pcm, "client", {})
+    with pytest.raises(ValueError, match="complete PCM sample frames"):
+        await extension._on_audio_received(audio)
+    modules.runtime.AudioFrame.create.assert_not_called()
+    env.send_audio_frame.assert_not_awaited()

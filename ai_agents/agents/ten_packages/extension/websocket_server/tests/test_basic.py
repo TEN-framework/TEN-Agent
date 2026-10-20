@@ -115,6 +115,13 @@ class ExtensionTesterWebSocket(AsyncExtensionTester):
             assert json.loads(reply["data"]["response_json"])["session_id"] == 7
             event = next(msg for msg in messages if msg["type"] == "data")
             assert event["name"] == "tts_audio_end"
+            for malformed in (b"", b"\x00", b"\x00\x00\x00"):
+                await client.send(
+                    json.dumps({"audio": base64.b64encode(malformed).decode()})
+                )
+                error = json.loads(await client.recv())
+                assert error["type"] == "error", error
+                assert "complete PCM sample frames" in error["error"]
             pcm = b"\x00\x00\xff\x7f" * 160
             await client.send(
                 json.dumps(
