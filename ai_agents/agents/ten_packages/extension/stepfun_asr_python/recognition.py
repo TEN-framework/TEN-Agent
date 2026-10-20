@@ -37,6 +37,45 @@ class TranscriptSegment:
     generation: int = -1
     commit_generation: int = -1
 
+    def can_bind_finalize(self, session_id: str | None) -> bool:
+        """Whether an empty/open finalize may claim this sealed span."""
+        if self.published or self.finalize_id is not None:
+            return False
+        if self.session_id is None or session_id is None:
+            return True
+        return self.session_id == session_id
+
+    def bind_finalize(
+        self,
+        finalize_id: str,
+        finalize_time: float,
+        *,
+        metadata: dict[str, Any] | None = None,
+        session_id: str | None = None,
+        timed_out: bool = False,
+        force_identity: bool = False,
+    ) -> None:
+        """Attach finalize identity once.
+
+        Pending claims keep existing session/metadata (write-once). Sealing the
+        open span for this finalize may force the finalize's identity.
+        """
+        if self.finalize_id is not None:
+            return
+        self.finalize_id = finalize_id
+        self.finalize_time = finalize_time
+        self.timed_out = timed_out
+        if force_identity:
+            if metadata is not None:
+                self.metadata = dict(metadata)
+            if session_id is not None:
+                self.session_id = session_id
+            return
+        if self.metadata is None and metadata is not None:
+            self.metadata = dict(metadata)
+        if self.session_id is None and session_id is not None:
+            self.session_id = session_id
+
 
 class StepFunASRRecognitionCallback:
     async def on_open(self) -> None:
@@ -128,6 +167,9 @@ class StepFunASRRecognition:
         """Whether the latest connection ended with a normal close."""
         return self._normal_close
 
+    def _mark_normal_close(self) -> None:
+        self._normal_close = True
+
     async def start(self) -> None:
         await self.close()
         self._closing = False
@@ -154,7 +196,7 @@ class StepFunASRRecognition:
             ]
 
         try:
-            self.websocket = await websockets.connect(
+            websocket = await websockets.connect(
                 self.config.url,
                 additional_headers={
                     "Authorization": f"Bearer {self.config.api_key}",
@@ -165,6 +207,11 @@ class StepFunASRRecognition:
                 close_timeout=2,
                 max_size=None,
             )
+            if self._closing:
+                with suppress(Exception):
+                    await websocket.close()
+                return
+            self.websocket = websocket
             self._receive_task = asyncio.create_task(self._receive_loop())
             input_config: dict[str, Any] = {
                 "format": {
@@ -215,6 +262,7 @@ class StepFunASRRecognition:
                 async with self._pump_lock:
                     await self._pump()
             except ConnectionClosedOK:
+                self._mark_normal_close()
                 self._started = False
                 await self.close()
                 await self.callback.on_close()
@@ -227,7 +275,7 @@ class StepFunASRRecognition:
                     "StepFun session closed while publishing ready"
                 )
         except ConnectionClosedOK:
-            self._normal_close = True
+            self._mark_normal_close()
             self._started = False
             await self.close()
             await self.callback.on_close()
@@ -242,7 +290,7 @@ class StepFunASRRecognition:
                 if not isinstance(raw, bytes):
                     await self._handle_message(json.loads(raw))
         except ConnectionClosedOK:
-            self._normal_close = True
+            self._mark_normal_close()
         except (ConnectionClosedError, WebSocketException) as exc:
             if not self._closing:
                 await self.callback.on_error(str(exc), "connection_closed")
@@ -251,7 +299,7 @@ class StepFunASRRecognition:
                 await self.callback.on_error(str(exc), "invalid_response")
         else:
             # websockets closes a normal async iterator without raising.
-            self._normal_close = True
+            self._mark_normal_close()
         finally:
             was_started = self._started
             self._started = False
@@ -325,6 +373,10 @@ class StepFunASRRecognition:
         if item and start is not None:
             self._item_starts.setdefault(item, start)
         segment = self._items.get(item)
+        # Confirmed / in-flight replay of an already published span must keep
+        # its identity — do not fall through to empty _current.
+        if segment is not None and segment.published:
+            return segment
         if (
             segment is not None
             and segment.result is not None
@@ -462,7 +514,10 @@ class StepFunASRRecognition:
             segment.published = True
             while self._pending and self._pending[0].published:
                 completed = self._pending.popleft()
-                self._retire_segment_mappings(completed)
+                # Keep item maps for published spans that still have in-flight
+                # replay identities (new item_id not yet completed).
+                if self._segment_mappings_retirable(completed):
+                    self._retire_segment_mappings(completed)
                 self._base = completed.end
                 self._release_confirmed_audio()
 
@@ -542,6 +597,13 @@ class StepFunASRRecognition:
             self._items.pop(retired, None)
             self._item_starts.pop(retired, None)
 
+    def _segment_mappings_retirable(self, segment: TranscriptSegment) -> bool:
+        """True when no incomplete item still points at this segment."""
+        for item, mapped in self._items.items():
+            if mapped is segment and item not in self._completed_item_set:
+                return False
+        return True
+
     def _retire_segment_mappings(self, segment: TranscriptSegment) -> None:
         """Drop completed segment transcript bookkeeping after publish."""
         for item, mapped in list(self._items.items()):
@@ -608,34 +670,31 @@ class StepFunASRRecognition:
             end = self._tail
             if end > self._current.start:
                 segment = self._seal_current(end)
-                segment.finalize_id = finalize_id
-                segment.finalize_time = finalize_time
-                segment.metadata = (
-                    dict(metadata) if metadata is not None else None
+                segment.bind_finalize(
+                    finalize_id,
+                    finalize_time,
+                    metadata=metadata,
+                    session_id=session_id,
+                    timed_out=finalize_id in self._timed_out_finalize_set,
+                    force_identity=True,
                 )
-                segment.session_id = session_id or segment.session_id
-                segment.timed_out = finalize_id in self._timed_out_finalize_set
                 await self._pump_or_reconnect()
                 return
             pending_segment = next(
                 (
                     segment
                     for segment in reversed(self._pending)
-                    if not segment.published and segment.finalize_id is None
+                    if segment.can_bind_finalize(session_id)
                 ),
                 None,
             )
             if pending_segment is not None:
-                pending_segment.finalize_id = finalize_id
-                pending_segment.finalize_time = finalize_time
-                pending_segment.metadata = (
-                    dict(metadata) if metadata is not None else None
-                )
-                pending_segment.session_id = (
-                    session_id or pending_segment.session_id
-                )
-                pending_segment.timed_out = (
-                    finalize_id in self._timed_out_finalize_set
+                pending_segment.bind_finalize(
+                    finalize_id,
+                    finalize_time,
+                    metadata=metadata,
+                    session_id=session_id,
+                    timed_out=finalize_id in self._timed_out_finalize_set,
                 )
                 if self.is_connected():
                     if pending_segment.generation != self._generation:
@@ -673,6 +732,7 @@ class StepFunASRRecognition:
             return True
         except ConnectionClosedOK:
             # Completed normal close must not emit an ASR error.
+            self._mark_normal_close()
             self._started = False
             await self.callback.on_close()
             return False

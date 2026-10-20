@@ -63,6 +63,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._buffer_flush_task: asyncio.Task[None] | None = None
         self._reconnect_pending = False
         self._finalize_locks: dict[str, asyncio.Lock] = {}
+        self._connect_attempt = 0
+        self._connect_task: asyncio.Task[None] | None = None
 
     @override
     def vendor(self) -> str:
@@ -164,8 +166,16 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return
 
         self._connecting = True
+        attempt = self._connect_attempt
+        current = asyncio.current_task()
+        if current is not None:
+            self._connect_task = current
         try:
-            await self._connect_once()
+            await self._connect_once(attempt=attempt)
+            if self.stopped or attempt != self._connect_attempt:
+                if self.recognition:
+                    await self.recognition.shutdown()
+                return
             if self.is_connected():
                 self.reconnect_manager.mark_connection_successful()
             elif self.recognition and self.recognition.normal_close:
@@ -176,16 +186,30 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             else:
                 raise ConnectionError("StepFun connection ended before ready")
         except Exception as exc:
+            if self.stopped or attempt != self._connect_attempt:
+                return
             await self._handle_connect_failure(exc)
         finally:
             self._connecting = False
+            if self._connect_task is current:
+                self._connect_task = None
 
-    async def _connect_once(self) -> None:
+    async def _connect_once(self, *, attempt: int | None = None) -> None:
         if self._fatal or self.stopped:
             raise ConnectionError("StepFun connection recovery stopped")
+        if (
+            attempt is not None
+            and attempt != self._connect_attempt
+        ):
+            raise ConnectionError("StepFun connection attempt invalidated")
         assert self.recognition is not None
         self._connect_started_at = time.monotonic()
         await self.recognition.start()
+        if self.stopped or (
+            attempt is not None and attempt != self._connect_attempt
+        ):
+            await self.recognition.shutdown()
+            raise ConnectionError("StepFun connection attempt invalidated")
 
     async def _handle_connect_failure(
         self,
@@ -313,6 +337,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
 
     @override
     async def stop_connection(self) -> None:
+        self._connect_attempt += 1
         if (
             self._buffer_flush_task is not None
             and self._buffer_flush_task is not asyncio.current_task()
@@ -321,13 +346,18 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             with suppress(asyncio.CancelledError):
                 await self._buffer_flush_task
         self._buffer_flush_task = None
-        for task in (self._recovery_task, self._input_task):
+        for task in (
+            self._recovery_task,
+            self._input_task,
+            self._connect_task,
+        ):
             if task is not None and task is not asyncio.current_task():
                 task.cancel()
                 with suppress(asyncio.CancelledError):
                     await task
         self._recovery_task = None
         self._input_task = None
+        self._connect_task = None
         if self.recognition:
             await self.recognition.shutdown()
 
@@ -619,6 +649,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         return ASRBufferConfigModeKeep(byte_limit=10 * 1024 * 1024)
 
     async def on_open(self) -> None:
+        if self.stopped or self._fatal:
+            if self.recognition:
+                await self.recognition.shutdown()
+            return
         self.reconnect_manager.mark_connection_successful()
         await self.on_connected()
         if self._connect_started_at is not None:

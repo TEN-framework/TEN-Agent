@@ -1,11 +1,13 @@
 import asyncio
 import json
+from contextlib import suppress
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from ten_ai_base.dumper import Dumper
+from ten_ai_base.message import ModuleMetricKey
 from websockets.datastructures import Headers
 from websockets.exceptions import ConnectionClosedOK, InvalidStatus
 from websockets.frames import Close
@@ -464,6 +466,88 @@ async def test_server_vad_segment_keeps_originating_session_metadata():
 
 
 @pytest.mark.asyncio
+async def test_replay_final_for_published_span_survives_earlier_pending_final():
+    callback = CapturingCallback()
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), callback
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "a"},
+        session_id="a",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-a0",
+            "audio_end_ms": 20,
+        }
+    )
+    seg_a = recognition._pending[0]
+
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "b"},
+        session_id="b",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-b0",
+            "audio_end_ms": 40,
+        }
+    )
+    seg_b = recognition._pending[1]
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-b0",
+            "transcript": "b",
+            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
+        }
+    )
+    assert seg_b.published is True
+
+    recognition._generation = 2
+    recognition._items.clear()
+    recognition._item_starts.clear()
+    recognition._completed_item_set.clear()
+    recognition._completed_items.clear()
+    recognition._awaiting_ack.clear()
+    seg_a.generation = 2
+    seg_b.generation = 2
+    recognition._items["item-a1"] = seg_a
+    recognition._items["item-b1"] = seg_b
+
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-a1",
+            "transcript": "a",
+            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
+        }
+    )
+    assert recognition._items.get("item-b1") is seg_b
+
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-b1",
+            "transcript": "b",
+            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
+        }
+    )
+    assert callback.errors == []
+    assert not any(
+        code == "missing_commit_boundary" for _, _, code in callback.errors
+    )
+
+
+@pytest.mark.asyncio
 async def test_replayed_vad_item_uses_retained_pending_segment():
     callback = CapturingCallback()
     recognition = StepFunASRRecognition(
@@ -606,6 +690,58 @@ async def test_finalize_waits_for_pending_vad_result():
     )
 
     assert ext.send_asr_finalize_end.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_empty_finalize_does_not_claim_other_session_pending_vad():
+    ext = _real_output_extension()
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), ext
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-a",
+            "audio_end_ms": 20,
+        }
+    )
+    assert recognition._pending[0].session_id == "session-a"
+    assert recognition._current.start == recognition._tail
+
+    await ext._handle_finalize(
+        "final-b",
+        asyncio.get_running_loop().time(),
+        {"session_id": "session-b"},
+    )
+
+    pending_a = recognition._pending[0]
+    assert pending_a.finalize_id is None
+    assert pending_a.session_id == "session-a"
+    assert pending_a.metadata["session_id"] == "session-a"
+
+    outputs = [
+        json.loads(data.get_property_to_json(None)[0])
+        for call in ext.ten_env.send_data.await_args_list
+        for data in [call.args[0]]
+        if data.get_name() in {"asr_result", "asr_finalize_end"}
+    ]
+    finalize_ends = [item for item in outputs if "finalize_id" in item]
+    assert [item["finalize_id"] for item in finalize_ends] == ["final-b"]
+    assert all(
+        item.get("metadata", {}).get("session_id") != "session-a"
+        or item.get("finalize_id") != "final-b"
+        for item in outputs
+    )
 
 
 @pytest.mark.asyncio
@@ -794,6 +930,87 @@ async def test_handshake_normal_close_does_not_emit_error(
 
     assert callback.errors == []
     assert callback.closed == 1
+
+
+@pytest.mark.asyncio
+async def test_recovery_replay_normal_close_sets_flag(monkeypatch):
+    callback = CapturingCallback()
+    recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
+    await recognition.send_audio(b"\x01\x02" * 160)
+
+    class ReplayCloseWebSocket:
+        open = True
+
+        def __init__(self):
+            self._ready = asyncio.Event()
+            self._messages = [json.dumps({"type": "session.updated"})]
+
+        async def send(self, raw):
+            message = json.loads(raw)
+            if message.get("type") == "input_audio_buffer.append":
+                raise ConnectionClosedOK(
+                    Close(1000, "bye"), Close(1000, "bye"), True
+                )
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self._messages:
+                return self._messages.pop(0)
+            await self._ready.wait()
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.open = False
+            self._ready.set()
+
+    async def connect(_url, **_kwargs):
+        return ReplayCloseWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+
+    await recognition.start()
+
+    assert callback.errors == []
+    assert recognition.normal_close is True
+    assert callback.closed >= 1
+
+
+@pytest.mark.asyncio
+async def test_stop_cancels_in_flight_connect(monkeypatch):
+    ext = _extension()
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    gate = asyncio.Event()
+    connect_entered = asyncio.Event()
+    installed = {"count": 0}
+
+    class LateWebSocket(ExhaustingWebSocket):
+        def __init__(self):
+            super().__init__()
+            installed["count"] += 1
+
+    async def slow_connect(_url, **_kwargs):
+        connect_entered.set()
+        await gate.wait()
+        return LateWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", slow_connect
+    )
+
+    connect_task = asyncio.create_task(ext.start_connection())
+    await connect_entered.wait()
+    ext.stopped = True
+    await ext.stop_connection()
+    gate.set()
+    with suppress(asyncio.CancelledError):
+        await connect_task
+
+    assert installed["count"] == 0
+    ext.on_connected.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -1017,3 +1234,262 @@ async def test_stop_cancels_reconnect_without_restart():
     await ext.stop_connection()
     assert ext._recovery_task is None
     ext.recognition.shutdown.assert_awaited()
+
+
+class _ReadyWebSocket:
+    """Confirmed session that stays open until close()."""
+
+    open = True
+
+    def __init__(self):
+        self.sent = []
+        self._messages = [json.dumps({"type": "session.updated"})]
+        self._closed = asyncio.Event()
+
+    async def send(self, raw):
+        self.sent.append(json.loads(raw))
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self._messages:
+            return self._messages.pop(0)
+        await self._closed.wait()
+        raise StopAsyncIteration
+
+    async def close(self):
+        self.open = False
+        self._closed.set()
+
+
+def _capture_named(ext: StepFunASRExtension, *names: str) -> list[dict]:
+    payloads = []
+    for call in ext.ten_env.send_data.await_args_list:
+        data = call.args[0]
+        if data.get_name() in names:
+            payloads.append(json.loads(data.get_property_to_json(None)[0]))
+    return payloads
+
+
+@pytest.mark.asyncio
+async def test_successful_connection_status_masks_credentials(monkeypatch):
+    ext = _real_output_extension()
+    ext.config = _config(api_key="secret-api-key-value")
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    ext.metadata = {"session_id": "sess-connect"}
+    ext.session_id = "sess-connect"
+
+    async def connect(_url, **_kwargs):
+        return _ReadyWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+    try:
+        await ext.start_connection()
+
+        statuses = _capture_named(ext, "connection_status_changed")
+        assert [item["current"] for item in statuses] == [
+            "connecting",
+            "connected",
+        ]
+        vendor_meta = statuses[-1]["metadata"]["vendor_metadata"]
+        assert vendor_meta["url"] == "wss://example.test/asr"
+        assert vendor_meta["api_key"] != "secret-api-key-value"
+        assert "secret-api-key-value" not in json.dumps(statuses)
+
+        metrics = _capture_named(ext, "metrics")
+        assert any(
+            ModuleMetricKey.ASR_CONNECT_DELAY in item.get("metrics", {})
+            for item in metrics
+        )
+    finally:
+        ext.stopped = True
+        await ext.stop_connection()
+
+
+@pytest.mark.asyncio
+async def test_connect_delay_ttfw_ttlw_json_and_session(monkeypatch):
+    ext = _real_output_extension()
+    ext.config = _config()
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    ext.metadata = {"session_id": "sess-metrics"}
+    ext.session_id = "sess-metrics"
+
+    async def connect(_url, **_kwargs):
+        return _ReadyWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+    try:
+        await ext.start_connection()
+        assert ext.is_connected()
+
+        ext.first_audio_time = asyncio.get_running_loop().time() - 0.05
+        ext.finalize_id = "final-metrics"
+        ext.last_finalize_time = asyncio.get_running_loop().time() - 0.02
+        await ext.on_result(
+            {
+                "type": "response.audio_transcription.completed",
+                "item_id": "item-metrics",
+                "transcript": "hello",
+                "words": [{"word": "hello", "start": 0.0, "end": 0.1}],
+            },
+            TranscriptSegment(
+                0,
+                320,
+                finalize_id="final-metrics",
+                finalize_time=ext.last_finalize_time,
+                metadata={"session_id": "sess-metrics"},
+                session_id="sess-metrics",
+            ),
+        )
+
+        metrics = _capture_named(ext, "metrics")
+        metric_keys = {
+            key for item in metrics for key in item.get("metrics", {})
+        }
+        assert ModuleMetricKey.ASR_CONNECT_DELAY in metric_keys
+        assert ModuleMetricKey.ASR_TTFW in metric_keys
+        assert ModuleMetricKey.ASR_TTLW in metric_keys
+
+        results = _capture_named(ext, "asr_result")
+        assert results[-1]["metadata"]["session_id"] == "sess-metrics"
+        assert (
+            results[-1]["metadata"]["asr_info"]["finalize_id"]
+            == "final-metrics"
+        )
+    finally:
+        ext.stopped = True
+        await ext.stop_connection()
+
+
+@pytest.mark.asyncio
+async def test_two_complete_same_session_cycles(monkeypatch):
+    ext = _real_output_extension()
+    ext.config = _config()
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    ext.metadata = {"session_id": "sess-loop"}
+    ext.session_id = "sess-loop"
+
+    async def connect(_url, **_kwargs):
+        return _ReadyWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+    try:
+        await ext.start_connection()
+
+        for index, finalize_id in enumerate(("final-1", "final-2"), start=1):
+            ext.ten_env.send_data.reset_mock()
+            audio = bytes([index, index + 1]) * 160
+            assert (
+                await ext.recognition.send_audio(
+                    audio,
+                    metadata={"session_id": "sess-loop"},
+                    session_id="sess-loop",
+                )
+                is True
+            )
+            received_at = asyncio.get_running_loop().time()
+            await ext._handle_finalize(
+                finalize_id,
+                received_at,
+                {"session_id": "sess-loop"},
+            )
+            pending = ext.recognition._pending[-1]
+            await ext.recognition._handle_message(
+                {
+                    "type": "input_audio_buffer.committed",
+                    "item_id": f"item-{index}",
+                }
+            )
+            await ext.recognition._handle_message(
+                {
+                    "type": "response.audio_transcription.completed",
+                    "item_id": f"item-{index}",
+                    "transcript": f"turn-{index}",
+                    "words": [
+                        {"word": f"turn-{index}", "start": 0.0, "end": 0.1}
+                    ],
+                }
+            )
+            outputs = _capture_named(ext, "asr_result", "asr_finalize_end")
+            results = [item for item in outputs if "text" in item]
+            ends = [item for item in outputs if "finalize_id" in item]
+            assert results[-1]["text"] == f"turn-{index}"
+            assert results[-1]["metadata"]["session_id"] == "sess-loop"
+            assert ends[-1]["finalize_id"] == finalize_id
+            assert pending.finalize_id == finalize_id
+    finally:
+        ext.stopped = True
+        await ext.stop_connection()
+
+
+@pytest.mark.asyncio
+async def test_retained_span_replay_via_replacement_socket(monkeypatch):
+    callback = CapturingCallback()
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), callback
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-old",
+            "audio_end_ms": 20,
+        }
+    )
+    retained = recognition._pending[0]
+    first_generation = recognition._generation
+
+    ready = _ReadyWebSocket()
+
+    async def connect(_url, **_kwargs):
+        return ready
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+    await recognition.start()
+    assert recognition._generation == first_generation + 1
+    assert recognition.is_connected()
+
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.delta",
+            "item_id": "item-replayed",
+            "text": "hello",
+        }
+    )
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-replayed",
+            "audio_end_ms": 20,
+        }
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-replayed",
+            "transcript": "hello",
+            "words": [{"word": "hello", "start": 0.0, "end": 0.1}],
+        }
+    )
+
+    assert callback.errors == []
+    assert callback.messages[-1][1] is retained
+    assert retained.published is True
+    await recognition.shutdown()
