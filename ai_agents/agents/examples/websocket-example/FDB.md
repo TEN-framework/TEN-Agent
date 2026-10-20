@@ -36,6 +36,10 @@ Configure these variables in `ai_agents/.env` or the runtime container:
 
 Configure `AGORA_MIND_RESOURCES_ROOT` on the **Agora Mind server** to resolve
 `prompts/fdb_v3.md`. The prompt stays in Agora Mind's resources directory.
+Also configure `AGORA_MIND_WORKSPACE_PROFILES_CONFIG` with Agora Mind's
+`examples/fdb_workspace_profiles.json`. That file defines profile `fdb`, whose
+capability is `benchmark.fdb_v3`; `create_workspace.profile` selects the profile
+name. The default Agora Mind profile does not include the FDB tools.
 The graph uses Deepgram Nova-3 multilingual recognition and ElevenLabs
 `eleven_multilingual_v2`; provider settings can be overridden through `/start`.
 
@@ -58,6 +62,9 @@ Send this body to `POST http://localhost:8080/start`. Set the same case ID in
 `AGORA_MIND_FDB_EXAMPLE_ID` on the Agora Mind server so its tool logs correlate
 with TEN's TTS metadata. `AGORA_MIND_FDB_EXAMPLE_ID` is also an optional default
 for the bridge when `/start` does not override `example_id`.
+The current Agora Mind FDB tools read this ID from the server's environment
+when the Workspace is created. Start the server with each case's ID when cases
+need different tool-log IDs.
 
 Connect the runner to `ws://localhost:8765` (publish this port when using Docker).
 The graph listens on `0.0.0.0` for container access and accepts one client.
@@ -88,7 +95,7 @@ for each successful `cmd_result`. Results carry the original `request_id`, a TEN
 response. A timeout or routing error has a nonzero status and `data.error`.
 
 ```json
-{"type":"cmd","name":"create_workspace","request_id":"case-1-workspace","data":{"profile":"benchmark.fdb_v3"}}
+{"type":"cmd","name":"create_workspace","request_id":"case-1-workspace","data":{"profile":"fdb"}}
 ```
 
 ```json

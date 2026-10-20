@@ -117,7 +117,7 @@ class Services:
         name = command["type"]
         if name == "workspace.create":
             self.input_sequence = 0
-            assert command["profile"] == "benchmark.fdb_v3"
+            assert command["profile"] == "fdb"
             response = {"type": "workspace.created", "workspace_id": 1}
         elif name == "session.create":
             assert command["system_prompt_path"] == "prompts/fdb_v3.md"
@@ -280,7 +280,7 @@ async def case(
         client = await eventually(lambda: connect(f"ws://127.0.0.1:{port}"))
         async with client:
             await command(
-                client, "create_workspace", {"profile": "benchmark.fdb_v3"}
+                client, "create_workspace", {"profile": "fdb"}
             )
             session = await command(
                 client,

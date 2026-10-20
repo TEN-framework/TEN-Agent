@@ -205,7 +205,7 @@ async def test_graph_session_asr_turn_tts_and_cleanup(graph, modules):
 
     assert (
         await socket._on_cmd_received(
-            "create_workspace", {"profile": "benchmark.fdb_v3"}
+            "create_workspace", {"profile": "fdb"}
         )
     )["status"] == 0
     properties = {
