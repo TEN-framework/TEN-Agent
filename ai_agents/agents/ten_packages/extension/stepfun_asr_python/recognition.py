@@ -451,7 +451,11 @@ class StepFunASRRecognition:
                     (
                         candidate
                         for candidate in self._pending
-                        if not candidate.published and candidate.end == end
+                        if candidate.end == end
+                        and (
+                            not candidate.published
+                            or self._is_confirmed_replay_span(candidate)
+                        )
                     ),
                     None,
                 )
@@ -513,11 +517,13 @@ class StepFunASRRecognition:
             )
             segment.published = True
             while self._pending and self._pending[0].published:
-                completed = self._pending.popleft()
-                # Keep item maps for published spans that still have in-flight
-                # replay identities (new item_id not yet completed).
-                if self._segment_mappings_retirable(completed):
-                    self._retire_segment_mappings(completed)
+                completed = self._pending[0]
+                # Keep published confirmed spans in pending until a replacement
+                # item is mapped/completed for this recovery generation.
+                if not self._segment_mappings_retirable(completed):
+                    break
+                self._pending.popleft()
+                self._retire_segment_mappings(completed)
                 self._base = completed.end
                 self._release_confirmed_audio()
 
@@ -597,11 +603,24 @@ class StepFunASRRecognition:
             self._items.pop(retired, None)
             self._item_starts.pop(retired, None)
 
+    def _is_confirmed_replay_span(self, segment: TranscriptSegment) -> bool:
+        if self._generation <= 1 or segment.end is None:
+            return False
+        return any(
+            left == segment.start and right == segment.end
+            for left, right in self._replay_confirmed
+        )
+
     def _segment_mappings_retirable(self, segment: TranscriptSegment) -> bool:
-        """True when no incomplete item still points at this segment."""
+        """True when no incomplete/confirmed-replay identity still needs it."""
         for item, mapped in self._items.items():
             if mapped is segment and item not in self._completed_item_set:
                 return False
+        if self._is_confirmed_replay_span(segment) and not any(
+            mapped is segment and item in self._completed_item_set
+            for item, mapped in self._items.items()
+        ):
+            return False
         return True
 
     def _retire_segment_mappings(self, segment: TranscriptSegment) -> None:
@@ -669,6 +688,28 @@ class StepFunASRRecognition:
         async with self._pump_lock:
             end = self._tail
             if end > self._current.start:
+                if not self._current.can_bind_finalize(session_id):
+                    # Open span belongs to another session — leave it alone and
+                    # acknowledge this finalize as empty.
+                    await self.callback.on_result(
+                        {
+                            "type": "empty.completed",
+                            "transcript": "",
+                        },
+                        TranscriptSegment(
+                            end,
+                            end,
+                            finalize_id=finalize_id,
+                            finalize_time=finalize_time,
+                            metadata=(
+                                dict(metadata) if metadata is not None else None
+                            ),
+                            session_id=session_id,
+                            timed_out=finalize_id
+                            in self._timed_out_finalize_set,
+                        ),
+                    )
+                    return
                 segment = self._seal_current(end)
                 segment.bind_finalize(
                     finalize_id,

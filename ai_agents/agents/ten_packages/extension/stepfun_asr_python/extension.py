@@ -66,6 +66,25 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._connect_attempt = 0
         self._connect_task: asyncio.Task[None] | None = None
 
+    @staticmethod
+    def _sanitize_config_error(exc: Exception) -> str:
+        """Drop Pydantic input_value dumps that may embed credentials."""
+        errors = getattr(exc, "errors", None)
+        if callable(errors):
+            try:
+                errors()
+            except Exception:
+                pass
+            return "StepFun configuration is invalid"
+        message = str(exc)
+        lowered = message.lower()
+        if any(
+            key in lowered
+            for key in ("api_key", "input_value", "password", "secret", "token")
+        ):
+            return "StepFun configuration is invalid"
+        return message
+
     @override
     def vendor(self) -> str:
         return "stepfun"
@@ -114,7 +133,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             self.recognition = None
             self._fatal = True
             await self._send_error(
-                str(exc),
+                self._sanitize_config_error(exc),
                 ModuleErrorCode.FATAL_ERROR.value,
                 "invalid_config",
                 once=True,
@@ -163,6 +182,16 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             )
             return
         if self._connecting:
+            # Wait for the in-flight attempt instead of returning immediately —
+            # otherwise recovery with delay=0 busy-spins on this early return.
+            active = self._connect_task
+            if (
+                active is not None
+                and active is not asyncio.current_task()
+                and not active.done()
+            ):
+                with suppress(BaseException):
+                    await active
             return
 
         self._connecting = True
@@ -327,6 +356,18 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 await asyncio.sleep(delay)
             if self.stopped or self._fatal:
                 return
+            active = self._connect_task
+            if (
+                active is not None
+                and active is not asyncio.current_task()
+                and not active.done()
+            ):
+                # Defer until the original attempt finishes; do not spin.
+                with suppress(BaseException):
+                    await active
+                if self.is_connected() or self.stopped or self._fatal:
+                    return
+                continue
             # Re-enter through the public hook so connecting is reported again.
             await self.start_connection()
             if self.is_connected() or self._fatal:
