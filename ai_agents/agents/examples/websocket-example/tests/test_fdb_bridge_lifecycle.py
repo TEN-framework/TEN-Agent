@@ -269,3 +269,50 @@ async def test_old_input_failure_is_ignored_after_session_invalidation(
     release.set()
     await pending
     env.send_data.assert_not_awaited()
+
+
+def timed_final(start_ms=100, duration_ms=20):
+    return Message(
+        "asr_result",
+        {
+            "id": "asr-stream-1",
+            "text": "Yes",
+            "final": True,
+            "start_ms": start_ms,
+            "duration_ms": duration_ms,
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_asr_final_replay_after_turn_completion_is_not_resubmitted(
+    bridge, env
+):
+    final = timed_final()
+    await bridge.on_data(env, final)
+    await bridge.on_data(env, completed())
+    await bridge.on_data(env, final)
+    env.send_cmd.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("finish_first_turn", [False, True])
+async def test_same_text_at_a_new_audio_interval_is_a_new_input(
+    bridge, env, finish_first_turn
+):
+    await bridge.on_data(env, timed_final(start_ms=100))
+    if finish_first_turn:
+        await bridge.on_data(env, completed())
+    await bridge.on_data(env, timed_final(start_ms=200))
+    assert env.send_cmd.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_unknown_audio_interval_does_not_merge_repeated_turns(
+    bridge, env
+):
+    final = timed_final(start_ms=0, duration_ms=0)
+    await bridge.on_data(env, final)
+    await bridge.on_data(env, completed())
+    await bridge.on_data(env, final)
+    assert env.send_cmd.await_count == 2

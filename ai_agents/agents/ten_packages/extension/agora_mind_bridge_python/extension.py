@@ -23,6 +23,7 @@ from ten_runtime import (
 
 from .config import AgoraMindBridgeConfig
 from .protocol import (
+    asr_final_key,
     pure_text_input,
     session_id_from_response,
     turn_key,
@@ -48,7 +49,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self.session_id: int | None = None
         self._last_final_text: str | None = None
         self._completed_turns: set[tuple[Any, ...]] = set()
-        self._turn_index = 0
+        self._submitted_finals: set[tuple[str, int, int, str]] = set()
         self._session_epoch = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -88,7 +89,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self.session_id = session_id
         self._last_final_text = None
         self._completed_turns.clear()
-        self._turn_index = 0
+        self._submitted_finals.clear()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         name = cmd.get_name()
@@ -189,7 +190,10 @@ class AgoraMindBridgeExtension(AsyncExtension):
         if not isinstance(text, str) or not text.strip():
             return
         normalized = text.strip()
-        if normalized == self._last_final_text:
+        key = asr_final_key(payload, normalized)
+        if key in self._submitted_finals or (
+            key is None and normalized == self._last_final_text
+        ):
             ten_env.log_debug("duplicate ASR final ignored")
             return
         if self.session_id is None:
@@ -202,6 +206,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
         # Reserve before awaiting: concurrent duplicate finals and ambiguous
         # command timeouts must not resubmit an input that may be accepted.
         self._last_final_text = normalized
+        if key is not None:
+            self._submitted_finals.add(key)
         session_id = self.session_id
         session_epoch = self._session_epoch
         result, error = await self._send_command(
@@ -287,7 +293,9 @@ class AgoraMindBridgeExtension(AsyncExtension):
             return
 
         key = turn_key(event_json)
-        if key is not None and key in self._completed_turns:
+        if key is None:
+            return
+        if key in self._completed_turns:
             ten_env.log_debug("duplicate Agora Mind turn ignored")
             return
         completed = turn_text_from_event(event_json, self.session_id)
@@ -295,7 +303,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
             return
         session_id, text = completed
         self.session_id = session_id
-        turn_index = self._turn_index + 1
+        turn_index = len(self._completed_turns) + 1
         output = Data.create("tts_text_input")
         output.set_dests([Loc("", "", self.config.tts_extension)])
         output.set_property_from_json(
@@ -316,9 +324,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         )
         # Reserve before sending so overlapping or delayed completion events
         # cannot synthesize a response twice.
-        self._turn_index = turn_index
-        if key is not None:
-            self._completed_turns.add(key)
+        self._completed_turns.add(key)
         self._last_final_text = None
         await ten_env.send_data(output)
 
