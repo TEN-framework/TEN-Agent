@@ -203,3 +203,29 @@ async def test_invalid_base64_is_rejected_before_audio_callback(modules, env):
     assert error["type"] == "error"
     assert "Invalid base64 audio data" in error["error"]
     callback.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("metadata", [None, [], "case-1", 7])
+async def test_non_object_metadata_is_rejected_before_audio_callback(
+    modules, env, metadata
+):
+    callback = AsyncMock()
+    server = modules.websocket.WebSocketServerManager(
+        "127.0.0.1", 0, env, on_audio_callback=callback
+    )
+    client = Mock(send=AsyncMock())
+    await server._process_message(
+        json.dumps(
+            {
+                "audio": base64.b64encode(b"\x00\x00").decode(),
+                "metadata": metadata,
+            }
+        ),
+        client,
+        "client",
+    )
+    error = json.loads(client.send.await_args.args[0])
+    assert error["type"] == "error"
+    assert "metadata must be a JSON object" in error["error"]
+    callback.assert_not_awaited()

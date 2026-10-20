@@ -208,6 +208,9 @@ class WebSocketServerManager:
 
             # Extract metadata
             metadata = data.get("metadata", {})
+            if not isinstance(metadata, dict):
+                raise ValueError("metadata must be a JSON object")
+            metadata = dict(metadata)
             metadata["client_id"] = client_id
 
             # Create audio data container
