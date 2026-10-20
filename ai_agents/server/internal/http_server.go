@@ -303,7 +303,7 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 	worker.HttpServerPort = req.WorkerHttpServerPort
 	worker.GraphName = req.GraphName // Save graphName in the Worker instance
 
-	if req.QuitTimeoutSeconds > 0 {
+	if req.QuitTimeoutSeconds > 0 || req.QuitTimeoutSeconds == WORKER_TIMEOUT_INFINITY {
 		worker.QuitTimeoutSeconds = req.QuitTimeoutSeconds
 	} else {
 		worker.QuitTimeoutSeconds = s.config.WorkerQuitTimeoutSeconds

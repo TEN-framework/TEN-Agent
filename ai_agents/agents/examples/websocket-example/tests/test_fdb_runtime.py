@@ -195,7 +195,7 @@ class Services:
 
 
 @pytest_asyncio.fixture
-async def runtime():
+async def runtime(request):
     name = f"ten-fdb-test-{uuid4().hex[:12]}"
     services = Services()
     with socket.socket() as api_socket, socket.socket() as audio_socket:
@@ -211,7 +211,7 @@ async def runtime():
             "LOG_PATH": "/tmp/ten-fdb",
             "LOG_STDOUT": "true",
             "WORKERS_MAX": "1",
-            "WORKER_QUIT_TIMEOUT_SECONDS": "120",
+            "WORKER_QUIT_TIMEOUT_SECONDS": str(getattr(request, "param", 120)),
             "AGORA_APP_ID": "0" * 32,
             "DEEPGRAM_API_KEY": "runtime-test",
             "ELEVENLABS_TTS_KEY": "runtime-test",
@@ -252,7 +252,9 @@ async def command(websocket, name, properties):
 
 
 @asynccontextmanager
-async def case(runtime, example_id, command_timeout_ms=30_000):
+async def case(
+    runtime, example_id, command_timeout_ms=30_000, idle_timeout=120
+):
     api, port, endpoint, _ = runtime
     result = await http(
         api,
@@ -261,7 +263,7 @@ async def case(runtime, example_id, command_timeout_ms=30_000):
             "request_id": example_id,
             "channel_name": example_id,
             "graph_name": "fdb_v3",
-            "timeout": 120,
+            "timeout": idle_timeout,
             "properties": {
                 "websocket_server": {"port": port},
                 "bridge": {
@@ -452,3 +454,35 @@ async def test_native_failure_cleanup_and_next_case_recovery(runtime, failure):
         await run_case(runtime, "fdb-recovered")
 
     await asyncio.wait_for(exercise(), 30)
+
+
+@pytest.mark.parametrize("runtime", [3], indirect=True)
+@pytest.mark.parametrize("keepalive", ["ping", "no_idle_timeout"])
+async def test_native_long_case_keepalive(runtime, keepalive):
+    api = runtime[0]
+    example_id = "fdb-long-case"
+
+    async def exercise():
+        timeout = -1 if keepalive == "no_idle_timeout" else 3
+        async with case(runtime, example_id, idle_timeout=timeout) as client:
+            await send_audio(client, example_id)
+            await receive_turn(client, example_id, 1)
+            # Exceed the configured idle timeout and the server's 5s cleanup
+            # scan plus 2s shutdown grace, then continue on the same worker.
+            deadline = asyncio.get_running_loop().time() + 8
+            while asyncio.get_running_loop().time() < deadline:
+                if keepalive == "ping":
+                    result = await http(
+                        api,
+                        "/ping",
+                        {"request_id": example_id, "channel_name": example_id},
+                    )
+                    assert result["code"] == "0", result
+                await asyncio.sleep(0.5)
+            workers = await http(api, "/list")
+            assert example_id in json.dumps(workers), workers
+            await send_audio(client, example_id)
+            await receive_turn(client, example_id, 2)
+            await command(client, "delete_session", {"session_id": 7})
+
+    await asyncio.wait_for(exercise(), 20)
