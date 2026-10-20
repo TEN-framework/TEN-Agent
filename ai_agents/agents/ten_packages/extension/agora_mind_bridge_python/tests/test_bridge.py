@@ -233,6 +233,7 @@ async def test_turn_completion_is_sent_to_tts_once_with_case_metadata():
     assert output.payload["text"] == "Flight booked."
     assert output.payload["text_input_end"] is True
     assert output.payload["metadata"]["example_id"] == "case-1"
+    assert output.payload["metadata"]["session_id"] == "7"
 
 
 @pytest.mark.asyncio

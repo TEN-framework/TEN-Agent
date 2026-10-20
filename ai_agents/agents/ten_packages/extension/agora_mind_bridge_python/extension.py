@@ -259,7 +259,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
                     "text": text,
                     "text_input_end": True,
                     "metadata": {
-                        "session_id": session_id,
+                        "session_id": str(session_id),
                         "example_id": self.config.example_id,
                         "turn_id": turn_index,
                     },

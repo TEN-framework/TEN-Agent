@@ -249,6 +249,9 @@ async def test_graph_session_asr_turn_tts_and_cleanup(graph, modules):
     assert tts_input[0].name == "tts_text_input"
     assert tts_input[0].properties["text"] == "Flight booked."
     assert tts_input[0].properties["metadata"]["example_id"] == "case-1"
+    # TEN's TTS interface requires a string Session ID in metadata, while
+    # Agora Mind commands use a uint64 Session ID.
+    assert tts_input[0].properties["metadata"]["session_id"] == "7"
     end = Message(
         "tts_audio_end",
         {
