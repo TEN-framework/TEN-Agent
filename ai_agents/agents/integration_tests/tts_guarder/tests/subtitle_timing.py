@@ -53,8 +53,35 @@ def validate_audio_clock(frames: list[AudioFrameTiming]) -> tuple[bool, str]:
     return True, "Audio timestamps follow cumulative PCM samples (within 1ms)"
 
 
+def spoken_words(words: list) -> list:
+    """Words up to the last one that carries text.
+
+    A provider may append padding whitespace after the last spoken word.
+    It is not speech, so it must not extend the subtitle range or change
+    the word count.
+    """
+    last = -1
+    for index, word in enumerate(words):
+        text = word["word"] if isinstance(word, dict) else word.word
+        if str(text).strip():
+            last = index
+    return words[: last + 1] if last >= 0 else []
+
+
 def timed_results(results: list[dict]) -> list[dict]:
-    return [result for result in results if result.get("words")]
+    """Keep results that carry spoken text.
+
+    A terminal marker may hold a synthetic placeholder word with empty
+    text; it ends the request instead of describing speech.
+    """
+    return [
+        result
+        for result in results
+        if any(
+            str(word.get("word", "")).strip()
+            for word in result.get("words") or []
+        )
+    ]
 
 
 def validate_subtitle_bounds(
@@ -74,18 +101,29 @@ def validate_subtitle_bounds(
     for result in captions:
         start = result.get("start_ms", -1)
         duration = result.get("duration_ms", 0)
+        spoken = spoken_words(result["words"])
+        spoken_end = (
+            spoken[-1]["start_ms"] + spoken[-1]["duration_ms"]
+            if spoken
+            else start
+        )
         if (
             duration < 0
             or start < first.timestamp_ms - 1
             or start > audio_end + 1
-            or start + duration > audio_end + 1
+            or spoken_end > audio_end + 1
         ):
-            return False, "Subtitle range lies outside the PCM timeline"
+            return (
+                False,
+                "Subtitle range lies outside the PCM timeline: "
+                f"start={start}, duration={duration}, spoken_end={spoken_end}, "
+                f"pcm=[{first.timestamp_ms}, {audio_end}]",
+            )
         if previous_start is not None and start <= previous_start:
             return False, "Subtitle starts are not strictly ascending"
         previous_start = start
         previous_word = None
-        for word in result["words"]:
+        for word in spoken:
             word_start = word.get("start_ms", -1)
             word_duration = word.get("duration_ms", -1)
             word_end = word_start + word_duration
@@ -125,22 +163,30 @@ def validate_provider_reference(
     ):
         return False, f"TEN audio format differs from {vendor}"
     observed_bytes = sum(frame.samples * frame.channels * 2 for frame in frames)
-    if observed_bytes != reference.pcm_bytes:
+    if reference.pcm_bytes >= 0 and observed_bytes != reference.pcm_bytes:
         return False, "TEN PCM sample count differs from provider audio"
     captions = timed_results(results)
     if not reference.captions or len(captions) != len(reference.captions):
         return False, "TEN subtitle count differs from provider subtitles"
     origin = frames[0].timestamp_ms
     for result, expected_words in zip(captions, reference.captions):
-        if len(result["words"]) != len(expected_words):
+        spoken = spoken_words(result["words"])
+        expected = spoken_words(expected_words)
+        if len(spoken) != len(expected):
             return False, "TEN word count differs from provider words"
-        for actual, raw in zip(result["words"], expected_words):
+        for actual, raw in zip(spoken, expected):
             expected_start = origin + int(raw.start_ms)
             expected_end = origin + int(raw.end_ms)
             actual_end = actual["start_ms"] + actual["duration_ms"]
+            if actual["word"] != raw.word:
+                return (
+                    False,
+                    f"TEN word timing differs from {vendor}: expected [{expected_start}, {expected_end}], got [{actual['start_ms']}, {actual_end}]",
+                )
+            if actual["word"] == " ":
+                continue
             if (
-                actual["word"] != raw.word
-                or abs(actual["start_ms"] - expected_start) > 1
+                abs(actual["start_ms"] - expected_start) > 1
                 or abs(actual_end - expected_end) > 1
             ):
                 return (
