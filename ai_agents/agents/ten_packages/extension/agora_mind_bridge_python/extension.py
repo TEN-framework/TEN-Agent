@@ -47,7 +47,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self.ten_env: AsyncTenEnv | None = None
         self.session_id: int | None = None
         self._last_final_text: str | None = None
-        self._last_turn_key: tuple[Any, ...] | None = None
+        self._completed_turns: set[tuple[Any, ...]] = set()
         self._turn_index = 0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -68,10 +68,24 @@ class AgoraMindBridgeExtension(AsyncExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("Agora Mind bridge started")
 
-    async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
-        self.session_id = None
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        session_id = self.session_id
+        self._reset_session()
+        if session_id is not None:
+            result, error = await self._send_command(
+                "delete_session", {"session_id": session_id}
+            )
+            if (
+                error is not None
+                or result is None
+                or result.get_status_code() != StatusCode.OK
+            ):
+                ten_env.log_warn("could not delete Agora Mind Session on stop")
+
+    def _reset_session(self, session_id: int | None = None) -> None:
+        self.session_id = session_id
         self._last_final_text = None
-        self._last_turn_key = None
+        self._completed_turns.clear()
         self._turn_index = 0
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -111,18 +125,16 @@ class AgoraMindBridgeExtension(AsyncExtension):
             name == "create_session"
             and result.get_status_code() == StatusCode.OK
         ):
-            self.session_id = session_id_from_response(response_json or "")
-            self._last_final_text = None
-            self._last_turn_key = None
-            self._turn_index = 0
+            self._reset_session(session_id_from_response(response_json or ""))
         elif (
-            name == "delete_session"
+            name in {"create_workspace", "delete_session"}
             and result.get_status_code() == StatusCode.OK
+            and (
+                name == "create_workspace"
+                or properties.get("session_id") == self.session_id
+            )
         ):
-            self.session_id = None
-            self._last_final_text = None
-            self._last_turn_key = None
-            self._turn_index = 0
+            self._reset_session()
 
         forwarded_result = CmdResult.create(result.get_status_code(), cmd)
         forwarded_result.set_property_string(
@@ -179,6 +191,9 @@ class AgoraMindBridgeExtension(AsyncExtension):
         metadata = payload.get("metadata")
         metadata = metadata if isinstance(metadata, dict) else {}
         input_payload = pure_text_input(normalized, metadata.get("created_at"))
+        # Reserve before awaiting: concurrent duplicate finals and ambiguous
+        # command timeouts must not resubmit an input that may be accepted.
+        self._last_final_text = normalized
         result, error = await self._send_command(
             "submit_user_input",
             {
@@ -191,8 +206,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 f"submit_user_input failed: {error or 'missing result'}"
             )
             return
-        if result.get_status_code() == StatusCode.OK:
-            self._last_final_text = normalized
+        if result.get_status_code() != StatusCode.OK:
+            ten_env.log_error("Agora Mind rejected ASR final")
 
     async def _handle_agora_event(
         self, ten_env: AsyncTenEnv, payload: dict[str, Any]
@@ -211,22 +226,21 @@ class AgoraMindBridgeExtension(AsyncExtension):
             return
         if event_payload.get("type") == "extension.connection_state":
             if event_payload.get("state") == "disconnected":
-                self.session_id = None
-                self._last_final_text = None
-                self._last_turn_key = None
+                self._reset_session()
             return
         event = event_payload.get("event")
-        if isinstance(event, dict) and event.get("type") in {
-            "session_failed",
-            "session_deleted",
-        }:
-            self.session_id = None
-            self._last_final_text = None
-            self._last_turn_key = None
+        if (
+            isinstance(event, dict)
+            and event.get("type") in {"session_failed", "session_deleted"}
+            and event.get("session_id") == self.session_id
+        ):
+            self._reset_session()
+            return
+        if self.session_id is None:
             return
 
         key = turn_key(event_json)
-        if key is not None and key == self._last_turn_key:
+        if key is not None and key in self._completed_turns:
             ten_env.log_debug("duplicate Agora Mind turn ignored")
             return
         completed = turn_text_from_event(event_json, self.session_id)
@@ -253,11 +267,13 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 ensure_ascii=False,
             ),
         )
-        await ten_env.send_data(output)
+        # Reserve before sending so overlapping or delayed completion events
+        # cannot synthesize a response twice.
         self._turn_index = turn_index
         if key is not None:
-            self._last_turn_key = key
+            self._completed_turns.add(key)
         self._last_final_text = None
+        await ten_env.send_data(output)
 
     async def _send_command(
         self, name: str, properties: dict[str, Any]

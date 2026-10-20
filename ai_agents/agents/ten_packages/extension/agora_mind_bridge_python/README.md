@@ -10,9 +10,12 @@ translations needed by the agent:
 - a top-level `session_turn_completed` in `agora_mind_event` becomes one
   `tts_text_input` data message.
 
-The bridge suppresses consecutive duplicate ASR finals and duplicate turn
-completion events. It learns `session_id` from the `create_session` command
-result and clears it when the Agora Mind extension reports a disconnect.
+The bridge reserves ASR finals before submitting them, suppressing overlapping
+duplicates even when a command times out after possible acceptance. It remembers
+completed turns for the active Session so delayed completion replays produce no
+extra TTS. It learns `session_id` from `create_session`, clears it on disconnect
+or Workspace replacement, and ignores events from other or deleted Sessions.
+On stop it attempts a bounded `delete_session` for any remaining active Session.
 
 ## Configuration
 
