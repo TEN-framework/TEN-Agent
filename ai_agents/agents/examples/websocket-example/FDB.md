@@ -116,6 +116,12 @@ The graph also exposes the following through
 - `tts_audio_start`, `tts_audio_end`, `tts_flush_end`: output lifecycle;
 - `error`, `metrics`: provider failures and timing.
 
+ASR submission failures also produce `error` with `module=agora_mind_bridge`
+and `code=1000`. Its metadata contains `session_id` and `example_id`, plus the
+native command's JSON-encoded `response_json` when available. End the failed
+case and stop its worker. An input timeout may occur after acceptance, so the
+bridge suppresses duplicate finals instead of retrying the submission.
+
 The bridge addresses TTS directly, so its TTS input has no additional graph
 route. This keeps each final response on a single synthesis path. Wait for
 `tts_audio_end` matching the output request ID, including all preceding audio
@@ -182,6 +188,9 @@ using fresh workers and Sessions, and checks duplicate final/completion events,
 JSON command conversion, transcripts, PCM format/content, TTS completion, and
 worker cleanup. It uses temporary container names and available local ports,
 has a fixed deadline, and removes the container after success or failure.
+It also covers rejection, submission timeout, disconnect, and a missing turn
+completion. Each failed case must clean up and allow a subsequent normal case.
+The test's case deadline models the Rust runner's deadline.
 
 The regular `test-fdb` task skips this image test unless `FDB_RUNTIME_IMAGE` is
 set. To run it directly with pytest:

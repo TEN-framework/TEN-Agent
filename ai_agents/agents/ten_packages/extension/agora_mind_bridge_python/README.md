@@ -16,6 +16,14 @@ completed turns for the active Session so delayed completion replays produce no
 extra TTS. It learns `session_id` from `create_session`, clears it on disconnect
 or Workspace replacement, and ignores events from other or deleted Sessions.
 On stop it attempts a bounded `delete_session` for any remaining active Session.
+Late command results after a Session reset are rejected, so a disconnect or
+shutdown cannot be undone by a pending `create_session` result.
+
+Failed ASR submissions emit the standard TEN `error` data shape with module
+`agora_mind_bridge`, code `1000`, a message, and Session/case metadata. A rejected
+native command also preserves its `response_json` in metadata. The bridge does
+not retry an input after an ambiguous timeout; the runner handles case failure
+and its overall deadline.
 
 ## Configuration
 
@@ -39,6 +47,7 @@ these messages:
 ```text
 stt.asr_result          -> bridge.asr_result
 agora_mind.agora_mind_event -> bridge.agora_mind_event
+bridge.error           -> websocket_server.error
 ```
 
 The bridge sends its Agora Mind commands directly to the extension instance

@@ -1,16 +1,16 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `e0620432cbc97ab49a0525ba4f1a0e3ccfa90220`.
-Packaged graph regression test: `17fb1c5a1` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `40520ec20736156aa626ba6b24c4595714784a60`.
+Packaged graph regression test: `71f255d3a` (`tests/test_fdb_runtime.py`).
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
-`f49df39aad9d439d7af64ea874a3e49010ae89605a2ee32b6991f9507c28dd5e`.
+`06d9cd66ee212346e9e8df03c37d0d9333de60a1943a9025ea94b0334c2edcf7`.
 
 ## Results
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 22 passed |
+| Graph, transport and bridge lifecycle tests | 28 passed |
 | Existing bridge unit tests | 8 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
@@ -19,7 +19,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression test | 1 passed; two sequential cases in 6.18 seconds |
+| Packaged graph regression tests | 5 passed in 32.71 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
@@ -32,13 +32,21 @@ the successful `tts_audio_end` reason and exact 200 ms duration, Session deletio
 and `/stop`. Two cases reuse the same audio port and Agora Mind Session ID with
 fresh workers; their case metadata remains isolated and `/list` confirms cleanup.
 
+Four additional tests inject a rejected input, a submission timeout, a
+disconnected Agora Mind socket, and an accepted input with no completed turn.
+Each test checks the failure event or runner deadline, suppresses duplicate
+submissions and TTS, stops the failed worker, and then completes a normal case
+using the same audio port. Quick regressions also verify that late Session
+creation results cannot restore state after disconnect/stop, and stale input
+failures do not affect a replacement Session.
+
 The regression is now checked into the repository. Run it with the local image:
 
 ```sh
 task test-fdb-runtime
 ```
 
-The observed Agora Mind operations for each case, in order, were:
+The observed Agora Mind operations for each successful case, in order, were:
 
 ```text
 workspace.create
@@ -63,13 +71,14 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:0e571007cf6519d7bac2e0a2793b8786716e23c4fa4515a0a55bb6a0fc845fae`
+`sha256:8fbda86bec5cd58cf26605e39aea6318c22e564270ce3b41ce4c7c4ffb750828`
 
 The image is local and has no published registry digest. Compilation and release
 completed using the common Dockerfile. After a Docker Hub timeout, the runtime
 stage reused the completed builder and a cached Ubuntu 22.04 image. The final
-bridge Python files were copied into the image after the runtime smoke exposed
-and verified fixes for addon registration and the TTS metadata Session ID type.
+bridge Python files, bridge manifest and graph configuration were copied into
+the image after runtime tests verified the registration, TTS metadata, lifecycle
+and failure-reporting fixes. Their hashes match the current checkout.
 
 | Package | Version |
 | --- | --- |
