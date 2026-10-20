@@ -56,6 +56,48 @@ async def test_socket_accepts_pcm_and_correlates_command_results(modules, env):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
+    "name,properties",
+    [
+        ("create_workspace", {"profile": "fdb"}),
+        ("create_session", {"model": "custom"}),
+        ("flush_session", {"session_id": 7}),
+        ("set_session_debug", {"session_id": 7, "enabled": True}),
+        ("delete_session", {"session_id": 7}),
+    ],
+)
+async def test_all_session_control_commands_preserve_properties(
+    modules, env, name, properties
+):
+    command = AsyncMock(return_value={"status": 0, "data": {"ok": True}})
+    server = modules.websocket.WebSocketServerManager(
+        "127.0.0.1", 0, env, on_cmd_callback=command
+    )
+    await server.start()
+    try:
+        port = server.server.sockets[0].getsockname()[1]
+        async with websockets.connect(f"ws://127.0.0.1:{port}") as client:
+            await client.send(
+                json.dumps(
+                    {
+                        "type": "cmd",
+                        "name": name,
+                        "request_id": f"request-{name}",
+                        "data": properties,
+                    }
+                )
+            )
+            result = json.loads(await asyncio.wait_for(client.recv(), 1))
+            assert result["type"] == "cmd_result"
+            assert result["name"] == name
+            assert result["request_id"] == f"request-{name}"
+            assert result["status"] == 0
+            command.assert_awaited_once_with(name, properties)
+    finally:
+        await server.stop()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
     "payload",
     [
         [],
