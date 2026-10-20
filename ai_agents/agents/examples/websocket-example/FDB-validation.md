@@ -1,7 +1,7 @@
 # FDB graph validation — 2026-10-20
 
-Tested TEN source commit: `9b041b378ef838fd28c7e0c72807a61e53ef7b89`.
-Packaged graph regression test: `159312426` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `5e039d058159791b33a51b1a329d78acde9a7d08`.
+Packaged graph regression test: `5e039d058` (`tests/test_fdb_runtime.py`).
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
 `06d9cd66ee212346e9e8df03c37d0d9333de60a1943a9025ea94b0334c2edcf7`.
@@ -19,7 +19,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression tests | 6 passed in 38.95 seconds |
+| Packaged graph regression tests | 8 passed in 61.45 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
@@ -44,6 +44,13 @@ submissions and TTS, stops the failed worker, and then completes a normal case
 using the same audio port. Quick regressions also verify that late Session
 creation results cannot restore state after disconnect/stop, and stale input
 failures do not affect a replacement Session.
+
+Two long-case tests configure a 3-second API idle timeout. After a first audio
+turn they pause for 8 seconds, exceeding the cleanup scan and shutdown grace,
+then complete a second turn on the same worker. One uses periodic HTTP `/ping`;
+the other requests `timeout: -1` without pings. Both explicitly delete the Session
+and stop the worker. Before the API fix, `timeout: -1` incorrectly fell back to
+3 seconds and this regression reproduced the worker's automatic shutdown.
 
 The regression is now checked into the repository. Run it with the local image:
 
@@ -80,7 +87,7 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:da85d31114699081ace76b5602b0c645b26fee774ddcfaa535b8cbe162b3c4a3`
+`sha256:3347ef00c706ab219c79a7bfcfb0e8023f423cb808013d16389f288b79a2d700`
 
 The image is local and has no published registry digest. Compilation and release
 completed using the common Dockerfile. After a Docker Hub timeout, the runtime
@@ -88,6 +95,9 @@ stage reused the completed builder and a cached Ubuntu 22.04 image. The final
 bridge Python files, bridge manifest and graph configuration were copied into
 the image after runtime tests verified the registration, TTS metadata, lifecycle,
 failure reporting and ASR replay fixes. Their hashes match the current checkout.
+The API server was rebuilt from the tested source using Go 1.21.13 with
+`CGO_ENABLED=0` and copied into the image. Its SHA-256 matches the local build:
+`7e2064fa8953e15c570821c9ce62a09d9e2989137fc3701bef0f800cd2d39bcb`.
 
 | Package | Version |
 | --- | --- |

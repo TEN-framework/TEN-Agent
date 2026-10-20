@@ -62,6 +62,24 @@ for the bridge when `/start` does not override `example_id`.
 Connect the runner to `ws://localhost:8765` (publish this port when using Docker).
 The graph listens on `0.0.0.0` for container access and accepts one client.
 
+## Worker keepalive
+
+The API's `timeout` measures time since the last HTTP `/ping`. WebSocket audio
+and WebSocket protocol pings do not refresh it. The Rust runner separately
+enforces the overall case deadline.
+
+For the example's `timeout: 120`, send this body to `POST /ping` every 30 seconds
+until the case finishes, including time spent waiting for the Agent or TTS:
+
+```json
+{"request_id":"case-1-ping","channel_name":"fdb-case-1"}
+```
+
+Prefer a positive timeout with pings to release workers if the runner disappears.
+An isolated runner can instead pass `timeout: -1` to disable idle cleanup and
+use its own deadline plus `/stop` in its cleanup path. This needs no ping loop
+and leaves worker cleanup entirely to the runner or container shutdown.
+
 ## Session control
 
 Before sending audio, send these commands on the TEN WebSocket in order and wait
@@ -200,6 +218,8 @@ cases with identical speech in separate audio intervals.
 It also covers rejection, submission timeout, disconnect, and a missing turn
 completion. Each failed case must clean up and allow a subsequent normal case.
 The test's case deadline models the Rust runner's deadline.
+Long-case tests use a short API idle timeout and verify that both HTTP pings and
+`timeout: -1` preserve the same worker through a pause before a second turn.
 
 The regular `test-fdb` task skips this image test unless `FDB_RUNTIME_IMAGE` is
 set. To run it directly with pytest:
