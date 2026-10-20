@@ -20,7 +20,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression tests | 8 passed in 61.50 seconds |
+| Packaged graph regression tests | 8 passed in 61.48 seconds |
 | Real Agora Mind backend graph test | 1 passed in 3.83 seconds |
 | Real backend Taskfile entry (`test-fdb-real`) | 1 passed in 3.83 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
@@ -59,6 +59,9 @@ PCM boundary tests reject empty buffers and incomplete sample frames before TEN
 allocation, covering mono/stereo and 16-/32-bit frame widths. The native TEN
 WebSocket test sends three malformed chunks, receives their transport errors,
 and then verifies a complete valid PCM roundtrip on the same connection.
+Base64 decoding uses strict validation; illegal characters and non-string audio
+fields are rejected before the audio callback. The same connection remains
+usable after these errors.
 
 The real backend test starts the compiled Agora Mind server and a local scripted
 custom-model endpoint. It verifies that `benchmark.fdb_v3` is installed in the
@@ -110,7 +113,7 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:89650a5215500be6f9d96d588b9a78bb07de085ad22419b37b6463735c76ebc2`
+`sha256:e95dc666914ce7315e1b5e841f20b3b501a5d01002f54090f2b42e9df6ae14e3`
 
 The image is local and has no published registry digest. Compilation and release
 completed using the common Dockerfile. After a Docker Hub timeout, the runtime
@@ -118,7 +121,8 @@ stage reused the completed builder and a cached Ubuntu 22.04 image. The final
 bridge Python files, bridge manifest and graph configuration were copied into
 the image after runtime tests verified the registration, TTS metadata, lifecycle,
 failure reporting and ASR replay fixes. Their hashes match the current checkout.
-The final WebSocket extension also includes the verified PCM frame validation.
+The final WebSocket extension also includes verified PCM frame validation and
+strict base64 decoding.
 The API server was rebuilt from the tested source using Go 1.21.13 with
 `CGO_ENABLED=0` and copied into the image. Its SHA-256 matches the local build:
 `7e2064fa8953e15c570821c9ce62a09d9e2989137fc3701bef0f800cd2d39bcb`.
