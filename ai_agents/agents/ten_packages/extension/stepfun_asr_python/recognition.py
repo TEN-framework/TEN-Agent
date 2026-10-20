@@ -237,6 +237,27 @@ class StepFunASRRecognition:
                 self._items[item] = self._current
         return segment
 
+    def _stamp_open_segment(
+        self,
+        metadata: dict[str, Any] | None,
+        session_id: str | None,
+    ) -> None:
+        """Bind input session metadata to the open audio span."""
+        if (
+            session_id is not None
+            and self._current.session_id is not None
+            and session_id != self._current.session_id
+            and self._tail > self._current.start
+        ):
+            # Client session boundary arrived before the vendor sealed the
+            # previous turn; keep each span's originating metadata.
+            self._seal_current(self._tail)
+        if self._current.metadata is None and metadata is not None:
+            self._current.metadata = dict(metadata)
+            self._current.session_id = session_id
+        elif self._current.session_id is None and session_id is not None:
+            self._current.session_id = session_id
+
     def _segment_for(self, message: dict[str, Any]) -> TranscriptSegment:
         item = str(message.get("item_id") or "")
         words = message.get("words") or []
@@ -465,12 +486,19 @@ class StepFunASRRecognition:
             if segment.finalize_id == finalize_id:
                 segment.timed_out = True
 
-    async def send_audio(self, audio_data: bytes) -> bool:
-        """Journal PCM and attempt delivery.
+    async def send_audio(
+        self,
+        audio_data: bytes,
+        *,
+        metadata: dict[str, Any] | None = None,
+        session_id: str | None = None,
+    ) -> bool:
+        """Journal PCM and attempt vendor delivery.
 
-        Returns True once the frame is owned by the recovery journal, even if
-        the live WebSocket send fails. Callers must not re-queue journaled
-        frames into a second buffer.
+        Returns True only when the frame is delivered to the live vendor send
+        path (base-class send_audio contract / TTFW). The frame is always
+        owned by the recovery journal after this call returns without raising,
+        so flush paths must not re-queue it even when the return is False.
         """
         if not audio_data:
             return True
@@ -482,11 +510,15 @@ class StepFunASRRecognition:
                 > self._MAX_AUDIO_BYTES
             ):
                 raise BufferError("StepFun audio recovery buffer is full")
+            self._stamp_open_segment(metadata, session_id)
             self._audio.seek(self._tail - self._storage_base)
             self._audio.write(audio_data)
             self._tail += len(audio_data)
-            await self._pump_or_reconnect()
-            return True
+            # Keep metadata on the open span after the bytes land.
+            if self._current.metadata is None and metadata is not None:
+                self._current.metadata = dict(metadata)
+                self._current.session_id = session_id
+            return await self._pump_or_reconnect()
 
     async def commit(
         self,

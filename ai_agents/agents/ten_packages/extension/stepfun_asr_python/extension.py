@@ -60,6 +60,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._completed_finalizes: OrderedDict[str, None] = OrderedDict()
         self._finalize_contexts: dict[str, dict[str, Any]] = {}
         self._buffer_flush_task: asyncio.Task[None] | None = None
+        self._reconnect_pending = False
+        self._finalize_locks: dict[str, asyncio.Lock] = {}
 
     @override
     def vendor(self) -> str:
@@ -219,6 +221,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 message="StepFun reconnect attempts exhausted",
             )
             return
+        # When already inside the recovery task, the retry loop continues after
+        # start_connection() returns — do not schedule a nested successor.
+        if asyncio.current_task() is self._recovery_task:
+            return
         self._schedule_reconnect()
 
     def _classify_connect_error(
@@ -230,7 +236,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return True, str(status), message
         lower = message.lower()
         if "401" in message or "403" in message or "unauthorized" in lower:
-            code = "401" if "401" in message or "unauthorized" in lower else "403"
+            code = (
+                "401" if "401" in message or "unauthorized" in lower else "403"
+            )
             return True, code, message
         if status is not None:
             return False, str(status), message
@@ -240,17 +248,43 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         if self.stopped or self._fatal:
             return
         if self._recovery_task is not None and not self._recovery_task.done():
+            self._reconnect_pending = True
             return
-        self._recovery_task = asyncio.create_task(self._reconnect_after_delay())
+        self._reconnect_pending = False
+        task = asyncio.create_task(self._reconnect_loop())
+        self._recovery_task = task
 
-    async def _reconnect_after_delay(self) -> None:
-        delay = self.reconnect_manager.next_delay()
-        if delay:
-            await asyncio.sleep(delay)
-        if self.stopped or self._fatal:
-            return
-        # Re-enter through the public hook so connecting is reported again.
-        await self.start_connection()
+        def _clear(done_task: asyncio.Task[None]) -> None:
+            if self._recovery_task is not done_task:
+                return
+            self._recovery_task = None
+            pending = self._reconnect_pending
+            self._reconnect_pending = False
+            if (
+                pending
+                and not self.stopped
+                and not self._fatal
+                and not self.is_connected()
+            ):
+                self._schedule_reconnect()
+
+        task.add_done_callback(_clear)
+
+    async def _reconnect_loop(self) -> None:
+        """Own consecutive reconnect attempts until success, fatal, or budget."""
+        while not self.stopped and not self._fatal:
+            delay = self.reconnect_manager.next_delay()
+            if delay:
+                await asyncio.sleep(delay)
+            if self.stopped or self._fatal:
+                return
+            # Re-enter through the public hook so connecting is reported again.
+            await self.start_connection()
+            if self.is_connected() or self._fatal:
+                return
+            if not self.reconnect_manager.can_retry():
+                return
+            # Another failed attempt was recorded; continue the same owner.
 
     @override
     async def stop_connection(self) -> None:
@@ -381,16 +415,24 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             except asyncio.QueueEmpty:
                 self.buffered_frames_size = 0
                 return
-            frame_len = len(frame.get_buf())
-            accepted = await self.send_audio(frame, self.session_id)
-            if accepted:
-                self.buffered_frames_size = max(
-                    0, self.buffered_frames_size - frame_len
-                )
+            if await self._consume_buffered_frame(frame):
                 continue
-            # Journal rejected the frame; put it back and stop.
             self.buffered_frames.put_nowait(frame)
             return
+
+    async def _consume_buffered_frame(self, frame: AudioFrame) -> bool:
+        """Journal a buffered frame; True means the frame must not be requeued."""
+        if self.recognition is None:
+            return False
+        frame_len = len(frame.get_buf())
+        tail_before = self.recognition._tail
+        await self.send_audio(frame, self.session_id)
+        if self.recognition._tail > tail_before:
+            self.buffered_frames_size = max(
+                0, self.buffered_frames_size - frame_len
+            )
+            return True
+        return False
 
     async def _finish_finalize(
         self,
@@ -400,35 +442,40 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         metadata: dict[str, Any] | None = None,
         timed_out: bool = False,
     ):
-        if finalize_id in self._completed_finalizes:
-            return
-        if error:
-            await self._send_error(
-                error,
-                ModuleErrorCode.NON_FATAL_ERROR.value,
-                "finalize_timeout" if timed_out else "finalize_error",
-            )
-        if timed_out and self.recognition is not None:
-            self.recognition.mark_finalize_timed_out(finalize_id)
-
-        context = metadata
-        if context is None:
-            context = self._finalize_contexts.get(finalize_id)
-        previous_finalize_id = self.finalize_id
-        previous_metadata = self.metadata
-        try:
-            self.finalize_id = finalize_id
-            if context is not None:
-                self.metadata = copy.deepcopy(context)
+        lock = self._finalize_locks.setdefault(finalize_id, asyncio.Lock())
+        async with lock:
+            # Claim completion before any await so timeout/final races cannot
+            # emit asr_finalize_end twice for the same finalize_id.
+            if finalize_id in self._completed_finalizes:
+                return
             self._remember_completed_finalize(finalize_id)
-            event = self._finalize_events.get(finalize_id)
-            if event:
-                event.set()
-            await self.send_asr_finalize_end()
-        finally:
-            self.finalize_id = previous_finalize_id
-            self.metadata = previous_metadata
-            self._finalize_contexts.pop(finalize_id, None)
+            if timed_out and self.recognition is not None:
+                self.recognition.mark_finalize_timed_out(finalize_id)
+            if error:
+                await self._send_error(
+                    error,
+                    ModuleErrorCode.NON_FATAL_ERROR.value,
+                    "finalize_timeout" if timed_out else "finalize_error",
+                )
+
+            context = metadata
+            if context is None:
+                context = self._finalize_contexts.get(finalize_id)
+            previous_finalize_id = self.finalize_id
+            previous_metadata = self.metadata
+            try:
+                self.finalize_id = finalize_id
+                if context is not None:
+                    self.metadata = copy.deepcopy(context)
+                event = self._finalize_events.get(finalize_id)
+                if event:
+                    event.set()
+                await self.send_asr_finalize_end()
+            finally:
+                self.finalize_id = previous_finalize_id
+                self.metadata = previous_metadata
+                self._finalize_contexts.pop(finalize_id, None)
+                self._finalize_locks.pop(finalize_id, None)
 
     def _remember_completed_finalize(self, finalize_id: str) -> None:
         self._completed_finalizes[finalize_id] = None
@@ -471,8 +518,15 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return True
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
-        # True means the recovery journal owns the frame; do not re-buffer it.
-        return await self.recognition.send_audio(audio_data)
+        # Delivery status for the base consumer/TTFW; journal ownership is
+        # tracked separately via recognition._tail for flush paths.
+        return await self.recognition.send_audio(
+            audio_data,
+            metadata=(
+                copy.deepcopy(self.metadata) if self.metadata is not None else None
+            ),
+            session_id=self.session_id,
+        )
 
     @override
     def is_connected(self) -> bool:
@@ -532,16 +586,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 except asyncio.QueueEmpty:
                     self.buffered_frames_size = 0
                     return
-                frame_len = len(frame.get_buf())
-                # send_audio journals before attempting delivery; never requeue
-                # a journaled frame or PCM/timestamps will duplicate.
-                accepted = await self.send_audio(frame, self.session_id)
-                if accepted:
-                    self.buffered_frames_size = max(
-                        0, self.buffered_frames_size - frame_len
-                    )
+                if await self._consume_buffered_frame(frame):
                     continue
-                self.buffered_frames.put_nowait(frame)
                 return
         except Exception as exc:
             self.ten_env.log_error(
@@ -589,6 +635,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             try:
                 if segment.metadata is not None:
                     self.metadata = copy.deepcopy(segment.metadata)
+                elif segment.session_id is not None:
+                    # Server-VAD spans may only have session_id stamped.
+                    self.metadata = {"session_id": segment.session_id}
                 if segment.session_id is not None:
                     self.session_id = segment.session_id
                 if segment.finalize_id is not None:
@@ -596,7 +645,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 if segment.timed_out:
                     # Timed-out segments must not consume the next turn's TTLW.
                     self.last_finalize_time = None
-                elif segment.finalize_time is not None:
+                elif final and segment.finalize_time is not None:
                     self.last_finalize_time = segment.finalize_time
                 asr_result = ASRResult(
                     text=text,
@@ -628,8 +677,18 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             finally:
                 self.metadata = previous_metadata
                 self.session_id = previous_session
-                self.last_finalize_time = previous_finalize_time
                 self.finalize_id = previous_finalize_id
+                # Keep an active turn's consumed TTLW timestamp cleared, but
+                # restore a newer turn when publishing an older late result.
+                if (
+                    final
+                    and not segment.timed_out
+                    and segment.finalize_id is not None
+                    and previous_finalize_id == segment.finalize_id
+                ):
+                    pass
+                else:
+                    self.last_finalize_time = previous_finalize_time
         if final and segment.finalize_id is not None and not segment.timed_out:
             await self._finish_finalize(
                 segment.finalize_id,

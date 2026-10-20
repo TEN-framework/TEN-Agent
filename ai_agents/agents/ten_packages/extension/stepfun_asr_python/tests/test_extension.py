@@ -1,9 +1,11 @@
 import asyncio
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from ten_ai_base.dumper import Dumper
 from websockets.datastructures import Headers
 from websockets.exceptions import ConnectionClosedOK, InvalidStatus
 from websockets.frames import Close
@@ -31,12 +33,13 @@ def _config(**overrides):
         "reconnect_max_attempts": 3,
         "reconnect_base_delay": 0,
         "finalize_timeout": 0.05,
+        "server_vad": False,
     }
     params.update(overrides)
     return StepFunASRConfig.model_validate({"params": params})
 
 
-def _extension() -> StepFunASRExtension:
+def _extension(*, mock_result: bool = True) -> StepFunASRExtension:
     ext = StepFunASRExtension("stepfun_asr_python")
     ext.ten_env = MagicMock()
     ext.ten_env.send_data = AsyncMock()
@@ -47,7 +50,8 @@ def _extension() -> StepFunASRExtension:
     ext.config = _config()
     ext.reconnect_manager = ReconnectManager(max_attempts=3, base_delay=0)
     ext.send_asr_error = AsyncMock()
-    ext.send_asr_result = AsyncMock()
+    if mock_result:
+        ext.send_asr_result = AsyncMock()
     ext.send_asr_finalize_end = AsyncMock()
     ext.on_connected = AsyncMock()
     ext.on_disconnected = AsyncMock()
@@ -59,6 +63,10 @@ class CapturingCallback(StepFunASRRecognitionCallback):
     def __init__(self):
         self.errors = []
         self.closed = 0
+        self.messages = []
+
+    async def on_result(self, message, segment: TranscriptSegment):
+        self.messages.append((message, segment))
 
     async def on_error(self, message, error_type="", error_code=""):
         self.errors.append((message, error_type, error_code))
@@ -82,6 +90,26 @@ class FakeWebSocket:
         self.open = False
 
 
+class FakeFrame:
+    def __init__(self, payload: bytes, metadata: dict | None = None):
+        self.payload = bytearray(payload)
+        self._metadata = metadata
+
+    def get_buf(self):
+        return bytes(self.payload)
+
+    def lock_buf(self):
+        return self.payload
+
+    def unlock_buf(self, _buf):
+        return None
+
+    def get_property_to_json(self, key):
+        if key == "metadata" and self._metadata is not None:
+            return json.dumps(self._metadata), None
+        return "", None
+
+
 @pytest.mark.asyncio
 async def test_finalize_includes_buffered_audio_boundary():
     ext = _extension()
@@ -93,11 +121,7 @@ async def test_finalize_includes_buffered_audio_boundary():
     recognition._generation = 1
     ext.recognition = recognition
 
-    frame = MagicMock()
-    frame.get_buf.return_value = b"\x01\x02" * 160
-    frame.lock_buf.return_value = memoryview(b"\x01\x02" * 160)
-    frame.unlock_buf = MagicMock()
-    frame.get_property_to_json.return_value = ("", None)
+    frame = FakeFrame(b"\x01\x02" * 160)
     ext.buffered_frames.put_nowait(frame)
     ext.buffered_frames_size = len(frame.get_buf())
 
@@ -135,28 +159,16 @@ async def test_fatal_state_still_completes_finalize():
 
 
 @pytest.mark.asyncio
-async def test_late_final_keeps_originating_session_metadata():
-    ext = _extension()
+async def test_late_final_keeps_originating_session_and_ttlw_via_real_helper():
+    ext = _extension(mock_result=False)
     ext.metadata = {"session_id": "session-b"}
     ext.session_id = "session-b"
     ext.last_finalize_time = 99.0
     ext.finalize_id = "final-b"
     ext.first_audio_time = None
     ext.ttfw_sent = True
-
-    emitted = []
-
-    async def capture_result(result):
-        # Reproduce the base helper's shallow metadata merge so the test
-        # asserts against the JSON shape callers actually observe.
-        payload = json.loads(result.model_dump_json())
-        if ext.metadata is not None:
-            metadata = dict(payload.get("metadata") or {})
-            metadata.update(ext.metadata)
-            payload["metadata"] = metadata
-        emitted.append(payload)
-
-    ext.send_asr_result = capture_result
+    ext._send_metrics_ttfw = AsyncMock()
+    ext._send_metrics_ttlw = AsyncMock()
 
     segment = TranscriptSegment(
         0,
@@ -177,9 +189,11 @@ async def test_late_final_keeps_originating_session_metadata():
         segment,
     )
 
-    assert emitted[0]["metadata"]["session_id"] == "session-a"
-    assert emitted[0]["metadata"]["asr_info"]["finalize_id"] == "final-a"
-    # Current turn TTLW context must remain intact.
+    sent = ext.ten_env.send_data.await_args.args[0]
+    payload = json.loads(sent.get_property_to_json(None)[0])
+    assert payload["metadata"]["session_id"] == "session-a"
+    assert payload["metadata"]["asr_info"]["finalize_id"] == "final-a"
+    ext._send_metrics_ttlw.assert_not_awaited()
     assert ext.last_finalize_time == 99.0
     assert ext.finalize_id == "final-b"
     assert ext.session_id == "session-b"
@@ -187,7 +201,39 @@ async def test_late_final_keeps_originating_session_metadata():
 
 
 @pytest.mark.asyncio
-async def test_send_failure_still_transfers_journal_ownership():
+async def test_active_final_leaves_ttlw_timestamp_cleared():
+    ext = _extension(mock_result=False)
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+    ext.last_finalize_time = 10.0
+    ext.finalize_id = "final-a"
+    ext.ttfw_sent = True
+    ext._send_metrics_ttfw = AsyncMock()
+    ext._send_metrics_ttlw = AsyncMock()
+
+    segment = TranscriptSegment(
+        0,
+        320,
+        finalize_id="final-a",
+        finalize_time=10.0,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.completed",
+            "transcript": "hello",
+            "words": [{"word": "hello", "start": 0.0, "end": 0.1}],
+        },
+        segment,
+    )
+
+    ext._send_metrics_ttlw.assert_awaited()
+    assert ext.last_finalize_time is None
+
+
+@pytest.mark.asyncio
+async def test_send_failure_journals_but_reports_delivery_false():
     callback = CapturingCallback()
     recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
     recognition.websocket = FakeWebSocket(
@@ -197,12 +243,49 @@ async def test_send_failure_still_transfers_journal_ownership():
     recognition._generation = 1
 
     audio = b"\x01\x02" * 160
-    # Even when the live send fails, the frame is owned by the journal so
-    # callers (flush) must not re-queue it into buffered_frames.
-    assert await recognition.send_audio(audio) is True
+    assert await recognition.send_audio(audio) is False
     assert recognition._tail == len(audio)
     assert callback.closed == 1
     assert callback.errors
+
+
+@pytest.mark.asyncio
+async def test_flush_does_not_requeue_journaled_failed_delivery():
+    ext = _extension()
+    recognition = StepFunASRRecognition(
+        ext.config, SimpleNamespace(), CapturingCallback()
+    )
+    recognition.websocket = FakeWebSocket(
+        fail_send=RuntimeError("send failed")
+    )
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    frame = FakeFrame(b"\x01\x02" * 160)
+    ext.buffered_frames_size = 320
+    assert await ext._consume_buffered_frame(frame) is True
+    assert recognition._tail == 320
+    assert ext.buffered_frames.qsize() == 0
+
+
+@pytest.mark.asyncio
+async def test_failed_first_delivery_does_not_set_first_audio_time():
+    ext = _extension()
+    recognition = StepFunASRRecognition(
+        ext.config, SimpleNamespace(), CapturingCallback()
+    )
+    recognition.websocket = FakeWebSocket(
+        fail_send=RuntimeError("send failed")
+    )
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    delivered = await ext.send_audio(FakeFrame(b"\x01\x02" * 160), "sess")
+    assert delivered is False
+    assert ext.first_audio_time is None
+    assert recognition._tail == 320
 
 
 @pytest.mark.asyncio
@@ -210,32 +293,42 @@ async def test_send_path_connection_closed_ok_skips_asr_error():
     callback = CapturingCallback()
     recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
     recognition.websocket = FakeWebSocket(
-        fail_send=ConnectionClosedOK(Close(1000, "bye"), Close(1000, "bye"), True)
+        fail_send=ConnectionClosedOK(
+            Close(1000, "bye"), Close(1000, "bye"), True
+        )
     )
     recognition._started = True
     recognition._generation = 1
 
-    assert await recognition.send_audio(b"\x01\x02" * 160) is True
+    assert await recognition.send_audio(b"\x01\x02" * 160) is False
     assert callback.errors == []
     assert callback.closed == 1
 
 
 @pytest.mark.asyncio
-async def test_connect_failure_reports_disconnected_and_retries_via_public_hook():
+async def test_reconnect_loop_continues_after_scheduled_failure():
     ext = _extension()
     ext.recognition = MagicMock()
-    ext.recognition.start = AsyncMock(side_effect=ConnectionError("refused"))
-    ext._schedule_reconnect = MagicMock()
-    ext.reconnect_manager.base_delay = 0
+    attempts = {"n": 0}
 
+    async def flaky_start():
+        attempts["n"] += 1
+        if attempts["n"] < 3:
+            raise ConnectionError(f"refused-{attempts['n']}")
+        ext.recognition.is_connected = MagicMock(return_value=True)
+
+    ext.recognition.start = AsyncMock(side_effect=flaky_start)
+    ext.recognition.is_connected = MagicMock(return_value=False)
+    ext.reconnect_manager = ReconnectManager(max_attempts=5, base_delay=0)
+
+    # First failure from outside schedules the recovery owner.
     await ext.start_connection()
+    assert ext._recovery_task is not None
+    await asyncio.wait_for(ext._recovery_task, timeout=2)
 
-    ext.send_asr_error.assert_awaited()
-    error = ext.send_asr_error.await_args.args[0]
-    assert error.code != 0
-    ext.on_disconnected.assert_awaited()
-    assert ext.reconnect_manager.attempts == 1
-    ext._schedule_reconnect.assert_called_once()
+    assert attempts["n"] == 3
+    assert ext._fatal is False
+    assert ext.reconnect_manager.attempts == 0 or ext.is_connected()
 
 
 @pytest.mark.asyncio
@@ -252,6 +345,96 @@ async def test_auth_handshake_failure_is_fatal_without_retry():
     vendor = ext.send_asr_error.await_args.args[1]
     assert vendor.code == "401"
     ext._schedule_reconnect.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_server_vad_segment_keeps_originating_session_metadata():
+    callback = CapturingCallback()
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), callback
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "session-b"},
+        session_id="session-b",
+    )
+    # Session boundary sealed span A before B's audio.
+    assert recognition._pending[0].session_id == "session-a"
+    assert recognition._pending[0].metadata["session_id"] == "session-a"
+    assert recognition._current.session_id == "session-b"
+
+    await recognition._handle_message(
+        {
+            "type": "input_audio_buffer.speech_stopped",
+            "item_id": "item-b",
+            "audio_end_ms": 20,
+        }
+    )
+    # Force end within sent range for the open B span.
+    recognition._sent = recognition._tail
+    sealed = recognition._pending[-1]
+    assert sealed.session_id in {"session-a", "session-b"}
+
+    ext = _extension(mock_result=False)
+    ext.metadata = {"session_id": "session-b"}
+    ext.session_id = "session-b"
+    ext.ttfw_sent = True
+    ext._send_metrics_ttfw = AsyncMock()
+    ext._send_metrics_ttlw = AsyncMock()
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.completed",
+            "transcript": "from-a",
+            "words": [{"word": "from-a", "start": 0.0, "end": 0.1}],
+        },
+        recognition._pending[0],
+    )
+    sent = ext.ten_env.send_data.await_args.args[0]
+    payload = json.loads(sent.get_property_to_json(None)[0])
+    assert payload["metadata"]["session_id"] == "session-a"
+
+
+@pytest.mark.asyncio
+async def test_finalize_timeout_and_vendor_final_emit_once():
+    ext = _extension()
+    ext.recognition = MagicMock()
+    gate = asyncio.Event()
+    calls = {"n": 0}
+
+    async def slow_error(*_args, **_kwargs):
+        calls["n"] += 1
+        await gate.wait()
+
+    ext._send_error = slow_error
+    timeout_task = asyncio.create_task(
+        ext._finish_finalize(
+            "final-race",
+            "StepFun finalize timed out",
+            metadata={"session_id": "s"},
+            timed_out=True,
+        )
+    )
+    await asyncio.sleep(0)
+    vendor_task = asyncio.create_task(
+        ext._finish_finalize(
+            "final-race",
+            metadata={"session_id": "s"},
+        )
+    )
+    await asyncio.sleep(0)
+    gate.set()
+    await asyncio.gather(timeout_task, vendor_task)
+    assert ext.send_asr_finalize_end.await_count == 1
+    assert list(ext._completed_finalizes) == ["final-race"]
 
 
 @pytest.mark.asyncio
@@ -282,11 +465,47 @@ async def test_on_data_routes_finalize_through_super():
         None,
     )
 
-    # Bypass base connection checks by stubbing the wrapped path pieces used
-    # inside AsyncASRBaseExtension.on_data.
     ext._safe_is_connected = MagicMock(return_value=True)
     await StepFunASRExtension.on_data(ext, ext.ten_env, data)
 
     assert ext.metadata["session_id"] == "sess-1"
     assert ext.finalize_id == "final-1"
     ext.finalize.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_dump_matches_raw_pcm_input(tmp_path):
+    ext = _extension()
+    dump_path = Path(tmp_path) / "dump.pcm"
+    ext.audio_dumper = Dumper(str(dump_path))
+    await ext.audio_dumper.start()
+    recognition = StepFunASRRecognition(
+        ext.config, SimpleNamespace(), CapturingCallback()
+    )
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    payload = b"\x11\x22" * 160
+    assert await ext.send_audio(FakeFrame(payload), "sess") is True
+    await ext.audio_dumper.stop()
+    assert dump_path.read_bytes() == payload
+
+
+@pytest.mark.asyncio
+async def test_stop_cancels_reconnect_without_restart():
+    ext = _extension()
+    ext.recognition = MagicMock()
+    ext.recognition.shutdown = AsyncMock()
+    started = asyncio.Event()
+
+    async def slow_reconnect():
+        started.set()
+        await asyncio.sleep(60)
+
+    ext._recovery_task = asyncio.create_task(slow_reconnect())
+    await started.wait()
+    await ext.stop_connection()
+    assert ext._recovery_task is None
+    ext.recognition.shutdown.assert_awaited()
