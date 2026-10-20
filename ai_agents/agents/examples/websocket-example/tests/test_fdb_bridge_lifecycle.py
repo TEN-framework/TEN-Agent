@@ -152,9 +152,7 @@ async def test_cleanup_timeout_still_clears_case_state(bridge, env):
 
 @pytest.mark.asyncio
 async def test_new_workspace_clears_previous_session(bridge, env):
-    await bridge.on_cmd(
-        env, Message("create_workspace", {"profile": "fdb"})
-    )
+    await bridge.on_cmd(env, Message("create_workspace", {"profile": "fdb"}))
     assert bridge.session_id is None
     await bridge.on_data(env, completed())
     env.send_data.assert_not_awaited()

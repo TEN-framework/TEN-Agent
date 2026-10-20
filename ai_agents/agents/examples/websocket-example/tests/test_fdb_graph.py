@@ -204,9 +204,7 @@ async def test_graph_session_asr_turn_tts_and_cleanup(graph, modules):
         instance.ten_env = environments[name] = environment
 
     assert (
-        await socket._on_cmd_received(
-            "create_workspace", {"profile": "fdb"}
-        )
+        await socket._on_cmd_received("create_workspace", {"profile": "fdb"})
     )["status"] == 0
     properties = {
         "model": "custom",
