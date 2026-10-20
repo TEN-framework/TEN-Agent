@@ -37,6 +37,9 @@ def _audio_frame(payload: bytes, metadata: dict | None = None) -> AudioFrame:
     return frame
 
 
+_CONFIG_ROOT_KEYS = frozenset({"finalize_timeout", "dump", "dump_path"})
+
+
 def _config(**overrides):
     params = {
         "api_key": "test-key",
@@ -48,11 +51,15 @@ def _config(**overrides):
         "channels": 1,
         "reconnect_max_attempts": 3,
         "reconnect_base_delay": 0,
-        "finalize_timeout": 0.05,
         "server_vad": False,
     }
-    params.update(overrides)
-    return StepFunASRConfig.model_validate({"params": params})
+    root = {"finalize_timeout": overrides.pop("finalize_timeout", 0.05)}
+    for key, value in overrides.items():
+        if key in _CONFIG_ROOT_KEYS:
+            root[key] = value
+        else:
+            params[key] = value
+    return StepFunASRConfig.model_validate({"params": params, **root})
 
 
 def _extension(*, mock_result: bool = True) -> StepFunASRExtension:
@@ -1675,7 +1682,7 @@ async def test_recovery_flush_journals_before_concurrent_finalize():
 
     flush_task = asyncio.create_task(ext._flush_buffered_frames())
     await dump_entered.wait()
-    # Frame is journaled before dump gates; finalize must wait on the lock.
+    # Journal lands before dump gates; finalize prep no longer blocks on dump I/O.
     assert recognition._tail > 0
     finalize_task = asyncio.create_task(
         ext._handle_finalize(
@@ -1685,7 +1692,6 @@ async def test_recovery_flush_journals_before_concurrent_finalize():
         )
     )
     await asyncio.sleep(0.02)
-    assert not finalize_task.done()
     dump_gate.set()
     await flush_task
     await finalize_task
@@ -2837,6 +2843,109 @@ async def test_replay_emits_stable_result_ids_per_segment():
     )
     assert id_partial_a == id_final_a
     assert id_final_b != id_final_a
+
+
+@pytest.mark.asyncio
+async def test_finalize_trace_metadata_preserves_session_in_outputs():
+    ext = _real_output_extension()
+    ext.send_asr_result = AsyncASRBaseExtension.send_asr_result.__get__(ext)
+    ext.config = _config(server_vad=False)
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x01\x02" * 160, {"session_id": "session-a"})
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-trace", None)
+    data.get_property_to_json.side_effect = lambda key: (
+        (json.dumps({"trace_id": "trace-1"}), None)
+        if key == "metadata"
+        else ("", None)
+    )
+
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+
+    seg = recognition._pending[0]
+    await ext.on_result(
+        {
+            "type": "response.audio_transcription.completed",
+            "transcript": "hello",
+            "words": [{"word": "hello", "start": 0.0, "end": 0.2}],
+        },
+        seg,
+    )
+
+    results = _capture_named(ext, "asr_result")
+    assert results[-1]["metadata"].get("session_id") == "session-a"
+    assert results[-1]["metadata"].get("trace_id") == "trace-1"
+
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert ends[-1]["metadata"].get("session_id") == "session-a"
+    assert ends[-1]["metadata"].get("trace_id") == "trace-1"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_finalize_timeout_while_vendor_send_blocked():
+    ext = _real_output_extension()
+    ext.config = _config(finalize_timeout=0.08, server_vad=False)
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+
+    send_entered = asyncio.Event()
+    release_send = asyncio.Event()
+    original_send = recognition.send_audio
+
+    async def gated_send_audio(*args, **kwargs):
+        send_entered.set()
+        await release_send.wait()
+        return await original_send(*args, **kwargs)
+
+    recognition.send_audio = gated_send_audio
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    await ext.audio_frames_queue.put(
+        _audio_frame(b"\x01\x02" * 160, {"session_id": "session-blocked"})
+    )
+    await asyncio.wait_for(send_entered.wait(), timeout=1.0)
+
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-blocked", None)
+    data.get_property_to_json.return_value = ("", None)
+
+    started = asyncio.get_running_loop().time()
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    elapsed = asyncio.get_running_loop().time() - started
+
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == "final-blocked"
+    assert elapsed < 0.5
+    assert not release_send.is_set()
+
+    release_send.set()
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
 
 
 @pytest.mark.asyncio

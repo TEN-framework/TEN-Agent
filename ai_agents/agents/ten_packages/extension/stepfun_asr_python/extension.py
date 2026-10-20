@@ -18,7 +18,12 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_VENDOR,
+    PROPERTY_KEY_METADATA,
+    PROPERTY_KEY_SESSION_ID,
+)
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleError,
@@ -71,6 +76,16 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._result_context_lock = asyncio.Lock()
         # Metadata from audio frames dropped while _fatal skips journaling.
         self._fatal_discarded_frame_metadata: dict[str, Any] | None = None
+
+    @staticmethod
+    def _metadata_with_session(
+        metadata: dict[str, Any] | None,
+        session_id: str | None,
+    ) -> dict[str, Any]:
+        merged = copy.deepcopy(metadata) if metadata else {}
+        if session_id is not None and "session_id" not in merged:
+            merged["session_id"] = session_id
+        return merged
 
     @staticmethod
     def _metadata_from_audio_frame(frame: AudioFrame) -> dict[str, Any] | None:
@@ -551,7 +566,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         """Resolve finalize metadata after preceding audio has been consumed."""
         inherit = finalize_id in self._finalize_inherit_metadata
         if not inherit and metadata:
-            return copy.deepcopy(metadata)
+            resolved = copy.deepcopy(metadata)
+            known_session = resolved.get("session_id", self.session_id)
+            if known_session is None and self.recognition is not None:
+                known_session = self.recognition._current.session_id
+            return self._metadata_with_session(resolved, known_session)
 
         resolved = copy.deepcopy(self.metadata) if self.metadata else {}
         if use_journal_context and self.recognition is not None:
@@ -634,11 +653,13 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         finalize_id = (
             self.finalize_id if self.finalize_id is not None else ""
         )
-        received_at = (
-            self.last_finalize_time
-            if self.last_finalize_time is not None
-            else asyncio.get_running_loop().time()
-        )
+        received_at = self._finalize_times.get(finalize_id)
+        if received_at is None:
+            received_at = (
+                self.last_finalize_time
+                if self.last_finalize_time is not None
+                else asyncio.get_running_loop().time()
+            )
         # Fallback path only; on_data normally pre-queues with inherit flags.
         metadata = copy.deepcopy(self.metadata) if self.metadata else {}
         self._enqueue_finalize_boundary(
@@ -652,7 +673,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             return
         try:
             timeout = self.config.finalize_timeout if self.config else 10.0
-            await asyncio.wait_for(done.wait(), timeout)
+            loop = asyncio.get_running_loop()
+            elapsed = loop.time() - received_at
+            remaining = timeout - elapsed
+            if remaining <= 0:
+                raise asyncio.TimeoutError
+            await asyncio.wait_for(done.wait(), remaining)
         except asyncio.TimeoutError:
             queued = self._finalize_contexts.get(finalize_id, metadata)
             emit_metadata = await self._resolve_finalize_emit_context(
@@ -680,14 +706,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             if self.recognition is not None and self.recognition.is_finalize_timed_out(
                 finalize_id
             ):
-                async with self._result_context_lock:
-                    resolved = await self._prepare_finalize_context(
-                        finalize_id, metadata
-                    )
-                    recognition = self.recognition
-                    session_id = resolved.get("session_id", self.session_id)
-                # Commit outside the result lock: empty/final callbacks may
-                # re-enter on_result which needs the same lock.
+                resolved = await self._prepare_finalize_context(
+                    finalize_id, metadata
+                )
+                recognition = self.recognition
+                session_id = resolved.get("session_id", self.session_id)
                 if recognition is not None:
                     await recognition.commit(
                         finalize_id,
@@ -700,11 +723,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         async with self._result_context_lock:
             self.finalize_id = finalize_id
             self.last_finalize_time = received_at
-            resolved = await self._prepare_finalize_context(
-                finalize_id, metadata
-            )
-            recognition = self.recognition
-            session_id = resolved.get("session_id", self.session_id)
+        resolved = await self._prepare_finalize_context(finalize_id, metadata)
+        recognition = self.recognition
+        session_id = resolved.get("session_id", self.session_id)
 
         if recognition is None:
             await self._finish_finalize(
@@ -727,22 +748,24 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         metadata: dict[str, Any],
     ) -> dict[str, Any]:
         """Absorb buffered audio, then resolve omitted finalize metadata."""
-        # Caller must hold _result_context_lock.
-        provisional = (
-            copy.deepcopy(metadata)
-            if metadata
-            else (copy.deepcopy(self.metadata) if self.metadata else {})
-        )
+        async with self._result_context_lock:
+            provisional = (
+                copy.deepcopy(metadata)
+                if metadata
+                else (copy.deepcopy(self.metadata) if self.metadata else {})
+            )
+            session_for_absorb = provisional.get("session_id", self.session_id)
         await self._absorb_buffered_frames(
             metadata=provisional,
-            session_id=provisional.get("session_id", self.session_id),
+            session_id=session_for_absorb,
         )
-        resolved = self._resolve_finalize_metadata(finalize_id, metadata)
-        self.metadata = copy.deepcopy(resolved)
-        self.session_id = resolved.get("session_id", self.session_id)
-        self._finalize_contexts[finalize_id] = copy.deepcopy(resolved)
-        self._finalize_inherit_metadata.discard(finalize_id)
-        return resolved
+        async with self._result_context_lock:
+            resolved = self._resolve_finalize_metadata(finalize_id, metadata)
+            self.metadata = copy.deepcopy(resolved)
+            self.session_id = resolved.get("session_id", self.session_id)
+            self._finalize_contexts[finalize_id] = copy.deepcopy(resolved)
+            self._finalize_inherit_metadata.discard(finalize_id)
+            return resolved
 
     async def _absorb_buffered_frames(
         self,
@@ -823,6 +846,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     copy.deepcopy(self.metadata) if self.metadata else {}
                 )
             emit_metadata = copy.deepcopy(context) if context else {}
+            emit_metadata = self._metadata_with_session(
+                emit_metadata,
+                emit_metadata.get("session_id", self.session_id),
+            )
             async with self._result_context_lock:
                 previous_finalize_id = self.finalize_id
                 previous_metadata = self.metadata
@@ -873,10 +900,61 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     async def _handle_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
-        # Base writes metadata/session before send_audio; serialize those
-        # writers with in-flight result metrics that read the same fields.
+        frame_buf = audio_frame.get_buf()
+        if not frame_buf:
+            ten_env.log_warn("send_frame: empty pcm_frame detected.")
+            return
+
+        if not self._safe_is_connected():
+            if self.auto_connect or self._connection_requested:
+                ten_env.log_debug("send_frame: service not connected.")
+            buffer_strategy = self.buffer_strategy()
+            if isinstance(buffer_strategy, ASRBufferConfigModeKeep):
+                byte_limit = buffer_strategy.byte_limit
+                while self.buffered_frames_size + len(frame_buf) > byte_limit:
+                    if self.buffered_frames.empty():
+                        break
+                    discard_frame = await self.buffered_frames.get()
+                    self.buffered_frames_size -= len(discard_frame.get_buf())
+                    self.dropped_audio_frames += 1
+                self.buffered_frames.put_nowait(audio_frame)
+                self.buffered_frames_size += len(frame_buf)
+            else:
+                self.audio_timeline.add_dropped_audio(len(frame_buf))
+                self.dropped_audio_frames += 1
+            return
+
         async with self._result_context_lock:
-            await super()._handle_audio_frame(ten_env, audio_frame)
+            metadata, _ = audio_frame.get_property_to_json(PROPERTY_KEY_METADATA)
+            if metadata:
+                try:
+                    metadata_json = json.loads(metadata)
+                    self.metadata = metadata_json
+                    self.session_id = metadata_json.get(
+                        PROPERTY_KEY_SESSION_ID, self.session_id
+                    )
+                except json.JSONDecodeError as exc:
+                    ten_env.log_warn(
+                        f"send_frame: invalid metadata json - {exc}"
+                    )
+
+        if self.buffered_frames.qsize() > 0:
+            ten_env.log_debug(
+                f"send_frame: flushing {self.buffered_frames.qsize()} buffered frames."
+            )
+            while True:
+                try:
+                    buffered_frame = self.buffered_frames.get_nowait()
+                    await self.send_audio(buffered_frame, self.session_id)
+                except asyncio.QueueEmpty:
+                    break
+            self.buffered_frames_size = 0
+
+        success = await self.send_audio(audio_frame, self.session_id)
+        if success:
+            self.sent_buffer_length += len(frame_buf)
+            if self.first_audio_time is None:
+                self.first_audio_time = asyncio.get_running_loop().time()
 
     @override
     async def send_audio(
@@ -978,18 +1056,16 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     async def _flush_buffered_frames(self) -> None:
         """Flush frames held by the base class during a connection outage."""
         try:
-            # Serialize with finalize/result so a dequeued frame is journaled
-            # before another path can empty-ack the turn.
-            async with self._result_context_lock:
-                while True:
-                    try:
-                        frame = self.buffered_frames.get_nowait()
-                    except asyncio.QueueEmpty:
-                        self.buffered_frames_size = 0
-                        return
-                    if await self._consume_buffered_frame(frame):
-                        continue
+            while True:
+                try:
+                    frame = self.buffered_frames.get_nowait()
+                except asyncio.QueueEmpty:
+                    self.buffered_frames_size = 0
                     return
+                if await self._consume_buffered_frame(frame):
+                    continue
+                self.buffered_frames.put_nowait(frame)
+                return
         except Exception as exc:
             self.ten_env.log_error(
                 f"StepFun buffered audio flush failed: {exc}",
@@ -1036,7 +1112,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 previous_finalize_id = self.finalize_id
                 try:
                     if segment.metadata:
-                        self.metadata = copy.deepcopy(segment.metadata)
+                        self.metadata = self._metadata_with_session(
+                            segment.metadata,
+                            segment.session_id,
+                        )
                     elif segment.session_id is not None:
                         # Server-VAD spans may only have session_id stamped.
                         # Empty metadata dict must not block this fallback.

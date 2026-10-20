@@ -76,6 +76,9 @@ class TranscriptSegment:
                 self.metadata = dict(metadata)
             if session_id is not None:
                 self.session_id = session_id
+            if self.session_id is not None and self.metadata is not None:
+                if "session_id" not in self.metadata:
+                    self.metadata["session_id"] = self.session_id
             return
         if self.metadata is None and metadata:
             self.metadata = dict(metadata)
