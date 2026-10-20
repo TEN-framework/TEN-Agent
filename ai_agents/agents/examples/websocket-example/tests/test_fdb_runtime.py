@@ -73,9 +73,12 @@ class Services:
     def __init__(self):
         self.commands = []
         self.input_failure = None
+        self.input_sequence = 0
+        self.last_asr = None
 
     async def handle(self, websocket):
         path = websocket.request.path
+        start_ms = 0
         async for raw in websocket:
             if path.startswith("/asr"):
                 if isinstance(raw, bytes):
@@ -83,7 +86,7 @@ class Services:
                         "type": "Results",
                         "is_final": True,
                         "speech_final": True,
-                        "start": 0,
+                        "start": start_ms / 1000,
                         "duration": 0.02,
                         "channel": {
                             "alternatives": [
@@ -91,6 +94,8 @@ class Services:
                             ]
                         },
                     }
+                    self.last_asr = websocket, result
+                    start_ms += 20
                     # Both finals describe the same input audio.
                     await websocket.send(json.dumps(result))
                     await websocket.send(json.dumps(result))
@@ -111,6 +116,7 @@ class Services:
         self.commands.append(command)
         name = command["type"]
         if name == "workspace.create":
+            self.input_sequence = 0
             assert command["profile"] == "benchmark.fdb_v3"
             response = {"type": "workspace.created", "workspace_id": 1}
         elif name == "session.create":
@@ -147,10 +153,11 @@ class Services:
                     )
                 )
                 return
+            self.input_sequence += 1
             response = {
                 "type": "session.user_input.accepted",
                 "session_id": 7,
-                "input_sequence": 1,
+                "input_sequence": self.input_sequence,
             }
         else:
             assert name == "session.delete", command
@@ -166,15 +173,25 @@ class Services:
                     "session_id": 7,
                     "session_name": "runtime-test",
                     "source": {"type": "top_level"},
-                    "input_sequence_range": {"first": 1, "last": 1},
+                    "input_sequence_range": {
+                        "first": self.input_sequence,
+                        "last": self.input_sequence,
+                    },
                     "input_sources": [
-                        {"input_sequence": 1, "text": "Book the flight"}
+                        {
+                            "input_sequence": self.input_sequence,
+                            "text": "Book the flight",
+                        }
                     ],
                     "result": [{"type": "text", "text": "Flight booked."}],
                 },
             }
             await websocket.send(json.dumps(event))
             await websocket.send(json.dumps(event))
+
+    async def replay_asr_final(self):
+        websocket, result = self.last_asr
+        await websocket.send(json.dumps(result))
 
 
 @pytest_asyncio.fixture
@@ -299,49 +316,76 @@ async def send_audio(client, example_id):
     )
 
 
-async def run_case(runtime, example_id):
+async def receive_turn(client, example_id, turn_index):
+    output = bytearray()
+    events = []
+    agent_transcript_seen = False
+    while True:
+        event = json.loads(await client.recv())
+        if event["type"] == "audio":
+            assert event["metadata"]["sample_rate"] == 16000
+            assert event["metadata"]["channels"] == 1
+            assert event["metadata"]["bytes_per_sample"] == 2
+            assert event["metadata"]["session_id"] == "7"
+            assert event["metadata"]["example_id"] == example_id
+            assert event["metadata"]["turn_id"] == turn_index
+            output.extend(base64.b64decode(event["audio"]))
+        elif event["type"] == "data":
+            events.append(event["name"])
+            if event["name"] == "agora_mind_event":
+                payload = json.loads(event["data"]["event_json"])
+                completed = payload.get("event", {})
+                if completed.get("type") == "session_turn_completed":
+                    assert completed["session_id"] == 7
+                    assert (
+                        completed["input_sequence_range"]["last"] == turn_index
+                    )
+                    assert completed["result"] == [
+                        {"type": "text", "text": "Flight booked."}
+                    ]
+                    agent_transcript_seen = True
+            if event["name"] == "tts_audio_end":
+                assert event["data"]["request_id"] == f"fdb-tts-7-{turn_index}"
+                assert event["data"]["reason"] == 1  # REQUEST_END
+                assert event["data"]["request_total_audio_duration_ms"] == 200
+                break
+    assert output == PCM
+    assert "asr_result" in events
+    assert events.count("tts_audio_start") == 1
+    assert agent_transcript_seen
+
+
+async def run_case(runtime, example_id, turns=1):
     services = runtime[3]
     first_command = len(services.commands)
     async with case(runtime, example_id) as client:
-        await send_audio(client, example_id)
-        output = bytearray()
-        events = []
+        for turn_index in range(1, turns + 1):
+            await send_audio(client, example_id)
+            await receive_turn(client, example_id, turn_index)
+        # Replay only after the last answer. Observe its ASR event before asking
+        # the native command queue to drain through delete_session.
+        await services.replay_asr_final()
         while True:
             event = json.loads(await client.recv())
-            if event["type"] == "audio":
-                assert event["metadata"]["sample_rate"] == 16000
-                assert event["metadata"]["channels"] == 1
-                assert event["metadata"]["bytes_per_sample"] == 2
-                assert event["metadata"]["session_id"] == "7"
-                assert event["metadata"]["example_id"] == example_id
-                output.extend(base64.b64decode(event["audio"]))
-            elif event["type"] == "data":
-                events.append(event["name"])
-                if event["name"] == "tts_audio_end":
-                    assert event["data"]["request_id"] == "fdb-tts-7-1"
-                    assert event["data"]["reason"] == 1  # REQUEST_END
-                    assert (
-                        event["data"]["request_total_audio_duration_ms"] == 200
-                    )
-                    break
-        assert output == PCM
-        assert "asr_result" in events
-        assert events.count("tts_audio_start") == 1
+            assert event["type"] != "audio", event
+            if event["type"] == "data" and event["name"] == "asr_result":
+                break
         await command(client, "delete_session", {"session_id": 7})
     assert [cmd["type"] for cmd in services.commands[first_command:]] == [
         "workspace.create",
         "session.create",
-        "session.user_input",
+        *(["session.user_input"] * turns),
         "session.delete",
     ]
 
 
-async def test_native_graph_pcm_roundtrip_and_case_isolation(runtime):
+@pytest.mark.parametrize("turns", [1, 2])
+async def test_native_graph_pcm_roundtrip_and_case_isolation(runtime, turns):
     async def exercise():
         graphs = await http(runtime[0], "/graphs")
         assert "fdb_v3" in json.dumps(graphs), graphs
         for example_id in ("fdb-native-1", "fdb-native-2"):
-            await run_case(runtime, example_id)
+            await run_case(runtime, example_id, turns)
 
     # Metrics and reconnect events must not extend the test indefinitely.
     await asyncio.wait_for(exercise(), 45)
