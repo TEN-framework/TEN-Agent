@@ -104,6 +104,8 @@ class FakeEnv:
 
 
 runtime = types.ModuleType("ten_runtime")
+runtime.Addon = object
+runtime.register_addon_as_extension = lambda _name: lambda addon: addon
 runtime.AsyncExtension = type(
     "AsyncExtension", (), {"__init__": lambda self, _name: None}
 )
