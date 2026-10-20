@@ -4,7 +4,7 @@ from google import genai
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 from ten_ai_base.struct import TTS2HttpResponseEventType
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from .config import GeminiTTSConfig
 
 
@@ -56,9 +56,13 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             }
 
             self.ten_env.log_debug(
-                f"Generating speech for text: '{text[:100]}...' "
+                f"Generating speech: text_length={len(text)} "
                 f"(model: {model}, voice: {voice}, "
                 f"language: {language_code})"
+            )
+            self.ten_env.log_debug(
+                f"Generating speech for text: '{text[:100]}...'",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # Prepare contents
@@ -115,8 +119,12 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         except Exception as e:
             error_message = str(e)
             self.ten_env.log_error(
-                f"vendor_error: reason: {error_message}",
+                f"vendor_error: reason_type={type(e).__name__}",
                 category=LOG_CATEGORY_VENDOR,
+            )
+            self.ten_env.log_debug(
+                f"vendor_error details: {error_message}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # Check if it's an authentication error

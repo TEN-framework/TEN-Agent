@@ -635,8 +635,13 @@ class CartesiaTTSClient:
 
         self.ten_env.log_debug(
             f"receive_timestamps: context_id={context_id}, "
-            f"words={raw_words}, start={raw_starts}, end={raw_ends}",
+            f"word_count={len(raw_words)}",
             category=LOG_CATEGORY_VENDOR,
+        )
+        self.ten_env.log_debug(
+            f"receive_timestamps details: context_id={context_id}, "
+            f"words={raw_words}, start={raw_starts}, end={raw_ends}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         # Use the same base_start_ms as audio frames for alignment
