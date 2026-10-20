@@ -145,3 +145,19 @@ async def test_incomplete_pcm_is_rejected_before_frame_allocation(
         await extension._on_audio_received(audio)
     modules.runtime.AudioFrame.create.assert_not_called()
     env.send_audio_frame.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_invalid_base64_is_rejected_before_audio_callback(modules, env):
+    callback = AsyncMock()
+    server = modules.websocket.WebSocketServerManager(
+        "127.0.0.1", 0, env, on_audio_callback=callback
+    )
+    client = Mock(send=AsyncMock())
+    await server._process_message(
+        json.dumps({"audio": "%%%="}), client, "client"
+    )
+    error = json.loads(client.send.await_args.args[0])
+    assert error["type"] == "error"
+    assert "Invalid base64 audio data" in error["error"]
+    callback.assert_not_awaited()

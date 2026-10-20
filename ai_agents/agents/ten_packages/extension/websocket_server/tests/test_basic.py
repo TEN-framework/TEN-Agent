@@ -122,6 +122,10 @@ class ExtensionTesterWebSocket(AsyncExtensionTester):
                 error = json.loads(await client.recv())
                 assert error["type"] == "error", error
                 assert "complete PCM sample frames" in error["error"]
+            await client.send(json.dumps({"audio": "%%%="}))
+            invalid_base64 = json.loads(await client.recv())
+            assert invalid_base64["type"] == "error"
+            assert "Invalid base64 audio data" in invalid_base64["error"]
             pcm = b"\x00\x00\xff\x7f" * 160
             await client.send(
                 json.dumps(

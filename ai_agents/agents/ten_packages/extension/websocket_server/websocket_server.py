@@ -197,7 +197,9 @@ class WebSocketServerManager:
             # Decode base64 audio
             try:
                 audio_base64 = data["audio"]
-                pcm_data = base64.b64decode(audio_base64)
+                if not isinstance(audio_base64, str):
+                    raise ValueError("audio must be a base64 string")
+                pcm_data = base64.b64decode(audio_base64, validate=True)
             except Exception as e:
                 await self._send_error(
                     websocket, f"Invalid base64 audio data: {e}"
