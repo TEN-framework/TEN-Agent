@@ -20,6 +20,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
 | Packaged graph regression tests | 8 passed in 61.50 seconds |
+| Real Agora Mind backend graph test | 1 passed in 3.83 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
 
 The native runtime smoke starts the API and the actual five graph nodes in the
@@ -56,6 +57,14 @@ PCM boundary tests reject empty buffers and incomplete sample frames before TEN
 allocation, covering mono/stereo and 16-/32-bit frame widths. The native TEN
 WebSocket test sends three malformed chunks, receives their transport errors,
 and then verifies a complete valid PCM roundtrip on the same connection.
+
+The real backend test starts the compiled Agora Mind server and a local scripted
+custom-model endpoint. It verifies that `benchmark.fdb_v3` is installed in the
+`fdb` workspace profile, that `benchmark.fdb_v3` is rejected as a profile name,
+that a missing prompt path fails Session creation, and that the valid prompt
+executes `book_flight` before the final text reaches TEN TTS. It also checks the
+tool request contains the previous tool result and the case ID is present in
+the emitted FDB tool record.
 
 The regression is now checked into the repository. Run it with the local image:
 

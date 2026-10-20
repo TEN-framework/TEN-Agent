@@ -232,7 +232,7 @@ async def runtime(request):
                 docker("rm", "-f", name)
 
 
-async def command(websocket, name, properties):
+async def command_result(websocket, name, properties):
     await websocket.send(
         json.dumps(
             {
@@ -247,8 +247,13 @@ async def command(websocket, name, properties):
         result = json.loads(await websocket.recv())
         if result["type"] == "cmd_result":
             assert result["request_id"] == name
-            assert result["status"] == 0, result
-            return json.loads(result["data"]["response_json"])
+            return result
+
+
+async def command(websocket, name, properties):
+    result = await command_result(websocket, name, properties)
+    assert result["status"] == 0, result
+    return json.loads(result["data"]["response_json"])
 
 
 @asynccontextmanager
@@ -279,9 +284,7 @@ async def case(
     try:
         client = await eventually(lambda: connect(f"ws://127.0.0.1:{port}"))
         async with client:
-            await command(
-                client, "create_workspace", {"profile": "fdb"}
-            )
+            await command(client, "create_workspace", {"profile": "fdb"})
             session = await command(
                 client,
                 "create_session",

@@ -15,6 +15,14 @@ tasks:
     cmds:
       - python3 -m pytest -q tests/test_fdb_runtime.py {{.CLI_ARGS}}
 
+  test-fdb-real:
+    desc: run the graph against a compiled Agora Mind server and scripted custom model
+    env:
+      FDB_RUNTIME_IMAGE: '{{.IMAGE | default "agora-mind/fdb-ten-agent:ten-0.7.14"}}'
+      FDB_AGORA_MIND_ROOT: '{{.AGORA_MIND_ROOT | default ""}}'
+    cmds:
+      - python3 -m pytest -q tests/test_fdb_real_backend.py {{.CLI_ARGS}}
+
   # install scripts
   install-frontend:
     desc: install frontend dependencies

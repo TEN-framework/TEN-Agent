@@ -240,3 +240,23 @@ set. To run it directly with pytest:
 FDB_RUNTIME_IMAGE=agora-mind/fdb-ten-agent:ten-0.7.14 \
   python3 -m pytest -q tests/test_fdb_runtime.py
 ```
+
+## Real Agora Mind backend test
+
+The opt-in backend test starts a compiled `agora-mind-web-server`, loads the
+checked-in `examples/fdb_workspace_profiles.json`, and points the custom model
+at a local scripted OpenAI-compatible endpoint. The real Agora Mind server
+validates the `fdb` profile, resolves the prompt path, runs the `book_flight`
+fake tool, logs its `example_id`, feeds the tool result back to the model, and
+returns the final text through the TEN bridge and TTS graph.
+
+Build Agora Mind first, then run:
+
+```sh
+cd ai_agents/agents/examples/websocket-example
+task test-fdb-real AGORA_MIND_ROOT=/home/niezhihe/agora-mind
+```
+
+The test requires both `FDB_RUNTIME_IMAGE` and `FDB_AGORA_MIND_ROOT`; it is
+skipped by the regular `test-fdb` and `test-fdb-runtime` tasks. It uses no model
+provider credentials and shuts down both temporary servers after the case.
