@@ -3,6 +3,11 @@ version: "3"
 dotenv: ["../../../.env"]
 
 tasks:
+  test-fdb:
+    desc: run the FDB graph and WebSocket tests without provider credentials
+    cmds:
+      - python3 -m pytest -q tests/ {{.CLI_ARGS}}
+
   # install scripts
   install-frontend:
     desc: install frontend dependencies

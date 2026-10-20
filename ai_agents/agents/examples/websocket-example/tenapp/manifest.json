@@ -132,6 +132,14 @@
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/agora_mind_bridge_python"
+    },
+    {
+      "type": "extension",
+      "name": "agora_mind_extension_rust",
+      "version": "0.1.0"
     }
   ],
   "scripts": {

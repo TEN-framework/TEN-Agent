@@ -30,16 +30,17 @@ the `create_session` command, which the bridge forwards unchanged.
 
 ## Graph wiring contract
 
-The eventual FDB graph should connect these messages:
+The `fdb_v3` graph in `examples/websocket-example/tenapp/property.json` connects
+these messages:
 
 ```text
 stt.asr_result          -> bridge.asr_result
 agora_mind.agora_mind_event -> bridge.agora_mind_event
-bridge.tts_text_input   -> tts.tts_text_input
 ```
 
 The bridge sends its Agora Mind commands directly to the extension instance
 named by `agora_mind_extension` (default: `agora_mind`). The graph therefore
-needs an `agora_mind_extension_rust` addon supplied by the TEN image build; the
-bridge package does not vendor that Rust transport or assume a checkout path
-outside the TEN build context.
+installs the published `agora_mind_extension_rust` addon. It also sends
+`tts_text_input` directly to `tts_extension`, so no additional route is needed
+for either path. See the example's [FDB guide](../../../examples/websocket-example/FDB.md)
+for WebSocket commands, case isolation and runtime-image setup.

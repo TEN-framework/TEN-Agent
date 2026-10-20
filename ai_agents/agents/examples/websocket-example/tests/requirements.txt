@@ -1,0 +1,4 @@
+pytest>=8
+pytest-asyncio>=0.25
+pydantic>=2
+websockets>=12

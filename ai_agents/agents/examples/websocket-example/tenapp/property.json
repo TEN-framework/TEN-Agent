@@ -149,6 +149,221 @@
             }
           ]
         }
+      },
+      {
+        "name": "fdb_v3",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "websocket_server",
+              "addon": "websocket_server",
+              "extension_group": "default",
+              "property": {
+                "host": "0.0.0.0",
+                "port": 8765,
+                "sample_rate": 16000,
+                "channels": 1,
+                "bytes_per_sample": 2,
+                "command_timeout_ms": 35000
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "multi",
+                  "model": "nova-3",
+                  "sample_rate": 16000,
+                  "encoding": "linear16"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "agora_mind",
+              "addon": "agora_mind_extension_rust",
+              "extension_group": "agora_mind",
+              "property": {
+                "endpoint": "${env:AGORA_MIND_ENDPOINT}",
+                "model": "custom"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "bridge",
+              "addon": "agora_mind_bridge_python",
+              "extension_group": "bridge",
+              "property": {
+                "agora_mind_extension": "agora_mind",
+                "tts_extension": "tts",
+                "example_id": "${env:AGORA_MIND_FDB_EXAMPLE_ID|}",
+                "command_timeout_ms": 30000
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "params": {
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
+                }
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "websocket_server",
+              "cmd": [
+                {
+                  "names": [
+                    "create_workspace",
+                    "create_session",
+                    "flush_session",
+                    "set_session_debug",
+                    "delete_session"
+                  ],
+                  "dest": [
+                    {
+                      "extension": "bridge"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "data": [
+                {
+                  "name": "asr_result",
+                  "dest": [
+                    {
+                      "extension": "bridge"
+                    },
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "error",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "metrics",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_mind",
+              "data": [
+                {
+                  "name": "agora_mind_event",
+                  "dest": [
+                    {
+                      "extension": "bridge"
+                    },
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_text_result",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_flush_end",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "error",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                },
+                {
+                  "name": "metrics",
+                  "dest": [
+                    {
+                      "extension": "websocket_server"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {
