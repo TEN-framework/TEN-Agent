@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from ten_ai_base.dumper import Dumper
-from ten_ai_base.message import ModuleMetricKey
+from ten_ai_base.message import ModuleErrorCode, ModuleMetricKey
 from websockets.datastructures import Headers
 from websockets.exceptions import ConnectionClosedOK, InvalidStatus
 from websockets.frames import Close
@@ -2337,3 +2337,211 @@ async def test_replay_final_without_words_is_non_fatal(monkeypatch):
     assert callback.errors == []
     assert recognition._replay_confirmed == []
     await recognition.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_finalize_without_metadata_keeps_audio_session():
+    """Optional finalize metadata must not wipe originating audio session_id."""
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-a", None)
+    # Interface allows omitting metadata entirely.
+    data.get_property_to_json.return_value = ("", None)
+
+    finalize_task = asyncio.create_task(
+        StepFunASRExtension.on_data(ext, ext.ten_env, data)
+    )
+    for _ in range(50):
+        if (
+            recognition._pending
+            and recognition._pending[0].finalize_id == "final-a"
+        ):
+            break
+        await asyncio.sleep(0.01)
+
+    assert recognition._pending
+    sealed = recognition._pending[0]
+    assert sealed.end == 320
+    assert sealed.session_id == "session-a"
+    assert sealed.metadata and sealed.metadata.get("session_id") == "session-a"
+
+    await recognition._handle_message(
+        {"type": "input_audio_buffer.committed", "item_id": "item-a"}
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-a",
+            "transcript": "hello",
+            "words": [{"word": "hello", "start": 0.0, "end": 0.1}],
+        }
+    )
+    await finalize_task
+
+    payloads = _capture_named(ext, "asr_result", "asr_finalize_end")
+    results = [item for item in payloads if "text" in item]
+    ends = [item for item in payloads if "finalize_id" in item]
+    assert results
+    assert results[-1]["metadata"]["session_id"] == "session-a"
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == "final-a"
+    assert ends[0]["metadata"].get("session_id") == "session-a"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_empty_string_finalize_id_acks_once_with_boundary():
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext._safe_is_connected = MagicMock(return_value=True)
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+
+    consumer = asyncio.create_task(
+        StepFunASRExtension._audio_frame_consumer(ext)
+    )
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("", None)
+    data.get_property_to_json.return_value = (
+        json.dumps({"session_id": "session-a"}),
+        None,
+    )
+
+    await StepFunASRExtension.on_data(ext, ext.ten_env, data)
+
+    for _ in range(50):
+        ends = _capture_named(ext, "asr_finalize_end")
+        if ends:
+            break
+        await asyncio.sleep(0.01)
+
+    sealed = next(
+        (
+            segment
+            for segment in recognition._pending
+            if segment.finalize_id == ""
+        ),
+        None,
+    )
+    assert sealed is not None
+    assert sealed.end == 320
+    ends = _capture_named(ext, "asr_finalize_end")
+    assert len(ends) == 1
+    assert ends[0]["finalize_id"] == ""
+    assert ends[0]["metadata"].get("session_id") == "session-a"
+
+    consumer.cancel()
+    with suppress(asyncio.CancelledError):
+        await consumer
+
+
+@pytest.mark.asyncio
+async def test_ws_config_rejection_reports_structured_fatal_once(monkeypatch):
+    ext = _real_output_extension()
+    ext.config = _config()
+    ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
+    ext._schedule_reconnect = MagicMock()
+
+    class RejectWebSocket:
+        open = True
+
+        def __init__(self):
+            self.sent = []
+            self._messages = [
+                json.dumps(
+                    {
+                        "type": "error",
+                        "error": {
+                            "type": "invalid_request_error",
+                            "code": "invalid_value",
+                            "message": "bad turn_detection",
+                        },
+                    }
+                )
+            ]
+            self._closed = asyncio.Event()
+
+        async def send(self, raw):
+            self.sent.append(json.loads(raw))
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self._messages:
+                return self._messages.pop(0)
+            await self._closed.wait()
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.open = False
+            self._closed.set()
+
+    async def connect(_url, **_kwargs):
+        return RejectWebSocket()
+
+    monkeypatch.setattr(
+        "stepfun_asr_python.recognition.websockets.connect", connect
+    )
+
+    gate = asyncio.Event()
+    entered = asyncio.Event()
+    original_send_error = ext._send_error
+
+    async def gated_send_error(*args, **kwargs):
+        entered.set()
+        await gate.wait()
+        return await original_send_error(*args, **kwargs)
+
+    ext._send_error = gated_send_error
+
+    connect_task = asyncio.create_task(ext.start_connection())
+    await entered.wait()
+    # Handshake waiter must not race ahead and emit a second error while the
+    # structured fatal report is still suspended.
+    await asyncio.sleep(0.05)
+    assert not connect_task.done()
+    gate.set()
+    await connect_task
+
+    assert ext._fatal is True
+    errors = _capture_named(ext, "error")
+    assert len(errors) == 1
+    assert int(errors[0]["code"]) == int(ModuleErrorCode.FATAL_ERROR.value)
+    assert errors[0]["vendor_info"]["code"] == "invalid_value"
+    ext._schedule_reconnect.assert_not_called()

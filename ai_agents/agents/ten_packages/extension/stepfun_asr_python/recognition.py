@@ -69,12 +69,13 @@ class TranscriptSegment:
         self.finalize_time = finalize_time
         self.timed_out = timed_out
         if force_identity:
-            if metadata is not None:
+            # Empty finalize metadata must not wipe the originating audio context.
+            if metadata:
                 self.metadata = dict(metadata)
             if session_id is not None:
                 self.session_id = session_id
             return
-        if self.metadata is None and metadata is not None:
+        if self.metadata is None and metadata:
             self.metadata = dict(metadata)
         if self.session_id is None and session_id is not None:
             self.session_id = session_id
@@ -441,13 +442,16 @@ class StepFunASRRecognition:
             self._session_error = str(
                 error.get("message") or "StepFun ASR error"
             )
-            if not self._started:
-                self._session_ready.set()
+            # Deliver the structured error before waking the handshake waiter so
+            # start()/close() cannot cancel this report mid-flight, and so the
+            # fatal latch is owned by on_error rather than a plain ConnectionError.
             await self.callback.on_error(
                 self._session_error,
                 str(error.get("type") or ""),
                 str(error.get("code") or ""),
             )
+            if not self._started:
+                self._session_ready.set()
         elif (
             kind == "input_audio_buffer.speech_stopped"
             and self.config.server_vad

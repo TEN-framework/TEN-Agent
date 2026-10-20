@@ -247,6 +247,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         *,
         report_error: bool = True,
     ) -> None:
+        # Structured handshake/vendor errors already latched fatal via on_error;
+        # do not emit a second contradictory NON_FATAL ConnectionError.
+        if self._fatal:
+            return
         fatal, vendor_code, message = self._classify_connect_error(exc)
         self.ten_env.log_warn(
             f"StepFun connection attempt failed: {message}",
@@ -420,22 +424,25 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             )
             return
 
-        metadata: dict[str, Any] = {}
+        # Finalize metadata is optional. Start from the live audio context so a
+        # finalize that omits metadata cannot wipe metadata.session_id.
+        context = copy.deepcopy(self.metadata) if self.metadata else {}
         metadata_json, metadata_error = data.get_property_to_json("metadata")
         if not metadata_error and metadata_json:
             parsed = json.loads(metadata_json)
             if not isinstance(parsed, dict):
                 raise ValueError("StepFun finalize metadata must be an object")
-            metadata = copy.deepcopy(parsed)
+            if parsed:
+                context.update(copy.deepcopy(parsed))
 
         received_at = asyncio.get_running_loop().time()
-        self._enqueue_finalize_boundary(finalize_id, received_at, metadata)
+        self._enqueue_finalize_boundary(finalize_id, received_at, context)
 
         # Install mutable context only after the boundary is queued, and only
         # while no in-flight result is emitting metrics from these fields.
         async with self._result_context_lock:
-            if metadata:
-                self.metadata = copy.deepcopy(metadata)
+            if context:
+                self.metadata = copy.deepcopy(context)
                 self.session_id = self.metadata.get(
                     "session_id", self.session_id
                 )
@@ -483,8 +490,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         received_at: float,
         metadata: dict[str, Any],
     ) -> None:
-        """Queue a finalize tuple once, preserving input order vs audio."""
-        if not finalize_id or finalize_id in self._finalize_events:
+        """Queue a finalize tuple once, preserving input order vs audio.
+
+        Empty-string finalize_id is a valid echoed id and must still get a
+        boundary plus exactly one asr_finalize_end.
+        """
+        if finalize_id in self._finalize_events:
             return
         context = copy.deepcopy(metadata)
         self._finalize_contexts[finalize_id] = context
@@ -496,7 +507,10 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
-        finalize_id = self.finalize_id or ""
+        # Preserve "" — do not coerce with `or`, which would drop a valid empty id.
+        finalize_id = (
+            self.finalize_id if self.finalize_id is not None else ""
+        )
         received_at = (
             self.last_finalize_time
             if self.last_finalize_time is not None
@@ -507,7 +521,6 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._enqueue_finalize_boundary(finalize_id, received_at, metadata)
         done = self._finalize_events.get(finalize_id)
         if done is None:
-            # Empty finalize_id cannot be tracked; complete immediately.
             return
         try:
             timeout = self.config.finalize_timeout if self.config else 10.0
@@ -529,8 +542,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         received_at: float,
         metadata: dict[str, Any],
     ) -> None:
-        if not finalize_id:
-            raise ValueError("StepFun asr_finalize requires finalize_id")
+        # Inherit live audio context when the queued finalize metadata is empty.
+        if not metadata and self.metadata:
+            metadata = copy.deepcopy(self.metadata)
         finalize_session_id = metadata.get("session_id", self.session_id)
         if finalize_id in self._completed_finalizes:
             # Timeout already completed this id; still seal/discard its audio
@@ -853,10 +867,11 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 previous_finalize_time = self.last_finalize_time
                 previous_finalize_id = self.finalize_id
                 try:
-                    if segment.metadata is not None:
+                    if segment.metadata:
                         self.metadata = copy.deepcopy(segment.metadata)
                     elif segment.session_id is not None:
                         # Server-VAD spans may only have session_id stamped.
+                        # Empty metadata dict must not block this fallback.
                         self.metadata = {"session_id": segment.session_id}
                     if segment.session_id is not None:
                         self.session_id = segment.session_id
