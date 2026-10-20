@@ -69,6 +69,18 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self._connect_attempt = 0
         self._connect_task: asyncio.Task[None] | None = None
         self._result_context_lock = asyncio.Lock()
+        # Metadata from audio frames dropped while _fatal skips journaling.
+        self._fatal_discarded_frame_metadata: dict[str, Any] | None = None
+
+    @staticmethod
+    def _metadata_from_audio_frame(frame: AudioFrame) -> dict[str, Any] | None:
+        metadata_json, error = frame.get_property_to_json("metadata")
+        if error or not metadata_json:
+            return None
+        parsed = json.loads(metadata_json)
+        if isinstance(parsed, dict) and parsed:
+            return copy.deepcopy(parsed)
+        return None
 
     @staticmethod
     def _sanitize_config_error(exc: Exception) -> str:
@@ -473,15 +485,21 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 item = await self.audio_frames_queue.get()
                 if isinstance(item, AudioFrame):
                     if self._fatal:
+                        parsed = self._metadata_from_audio_frame(item)
+                        if parsed is not None:
+                            self._fatal_discarded_frame_metadata = parsed
                         continue
                     await self._handle_audio_frame(self.ten_env, item)
                     continue
                 finalize_id, received_at, metadata = item
                 if self._fatal:
+                    emit_metadata = await self._resolve_finalize_emit_context(
+                        finalize_id, metadata
+                    )
                     await self._finish_finalize(
                         finalize_id,
                         "StepFun ASR is in a fatal error state",
-                        metadata=metadata,
+                        metadata=emit_metadata,
                     )
                     continue
                 await self._handle_finalize(finalize_id, received_at, metadata)
@@ -544,6 +562,47 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             resolved.update(copy.deepcopy(metadata))
         return resolved
 
+    def _metadata_from_audio_queue_before_finalize(
+        self, finalize_id: str
+    ) -> dict[str, Any]:
+        """Read frame metadata queued before a finalize tuple (no dequeuing)."""
+        inherited: dict[str, Any] = {}
+        for item in self.audio_frames_queue._queue:  # noqa: SLF001
+            if isinstance(item, AudioFrame):
+                parsed = self._metadata_from_audio_frame(item)
+                if parsed is not None:
+                    inherited = parsed
+                continue
+            queued_id, _, _queued_meta = item
+            if queued_id == finalize_id:
+                break
+        return inherited
+
+    async def _resolve_finalize_emit_context(
+        self,
+        finalize_id: str,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve omitted finalize metadata for emit-only fallback paths."""
+        async with self._result_context_lock:
+            previous_metadata = self.metadata
+            previous_session_id = self.session_id
+            try:
+                queued = self._metadata_from_audio_queue_before_finalize(
+                    finalize_id
+                )
+                if not queued and self._fatal_discarded_frame_metadata:
+                    queued = copy.deepcopy(self._fatal_discarded_frame_metadata)
+                if queued:
+                    self.metadata = copy.deepcopy(queued)
+                    self.session_id = queued.get(
+                        "session_id", self.session_id
+                    )
+                return self._resolve_finalize_metadata(finalize_id, metadata)
+            finally:
+                self.metadata = previous_metadata
+                self.session_id = previous_session_id
+
     @override
     async def finalize(self, _session_id: str | None) -> None:
         # Preserve "" — do not coerce with `or`, which would drop a valid empty id.
@@ -570,10 +629,14 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             timeout = self.config.finalize_timeout if self.config else 10.0
             await asyncio.wait_for(done.wait(), timeout)
         except asyncio.TimeoutError:
+            queued = self._finalize_contexts.get(finalize_id, metadata)
+            emit_metadata = await self._resolve_finalize_emit_context(
+                finalize_id, queued if queued is not None else {}
+            )
             await self._finish_finalize(
                 finalize_id,
                 "StepFun finalize timed out",
-                metadata=self._finalize_contexts.get(finalize_id, metadata),
+                metadata=emit_metadata,
                 timed_out=True,
             )
         finally:
@@ -726,38 +789,40 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             context = metadata
             if context is None:
                 context = self._finalize_contexts.get(finalize_id)
-            if context is None:
-                # Do not take _result_context_lock here: commit → on_result may
-                # call this while that lock is already held.
+            if finalize_id in self._finalize_inherit_metadata or not context:
+                context = await self._resolve_finalize_emit_context(
+                    finalize_id, context if context is not None else {}
+                )
+            elif context is None:
                 context = (
                     copy.deepcopy(self.metadata) if self.metadata else {}
                 )
-            # Dedicated object so we can detect live audio overwriting it
-            # during await and avoid restoring a stale session over B.
             emit_metadata = copy.deepcopy(context) if context else {}
-            previous_finalize_id = self.finalize_id
-            previous_metadata = self.metadata
-            try:
-                self.finalize_id = finalize_id
-                self.metadata = emit_metadata
-                event = self._finalize_events.get(finalize_id)
-                if event:
-                    event.set()
-                await self.send_asr_finalize_end()
-            finally:
-                if self.metadata is emit_metadata:
-                    self.metadata = previous_metadata
-                if self.finalize_id == finalize_id:
-                    self.finalize_id = previous_finalize_id
-                    if (
-                        finalize_time is None
-                        or self.last_finalize_time == finalize_time
-                    ):
-                        self.last_finalize_time = None
+            async with self._result_context_lock:
+                previous_finalize_id = self.finalize_id
+                previous_metadata = self.metadata
+                try:
+                    self.finalize_id = finalize_id
+                    self.metadata = emit_metadata
+                    event = self._finalize_events.get(finalize_id)
+                    if event:
+                        event.set()
+                    await self.send_asr_finalize_end()
+                finally:
+                    if self.metadata is emit_metadata:
+                        self.metadata = previous_metadata
+                    if self.finalize_id == finalize_id:
+                        self.finalize_id = previous_finalize_id
+                        if (
+                            finalize_time is None
+                            or self.last_finalize_time == finalize_time
+                        ):
+                            self.last_finalize_time = None
 
             self._finalize_contexts.pop(finalize_id, None)
             self._finalize_inherit_metadata.discard(finalize_id)
             self._finalize_locks.pop(finalize_id, None)
+            self._fatal_discarded_frame_metadata = None
 
     def _remember_completed_finalize(self, finalize_id: str) -> None:
         self._completed_finalizes[finalize_id] = None
