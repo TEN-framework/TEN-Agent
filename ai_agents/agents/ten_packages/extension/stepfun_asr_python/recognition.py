@@ -36,6 +36,9 @@ class TranscriptSegment:
     published: bool = False
     generation: int = -1
     commit_generation: int = -1
+    # Local session-boundary seals must still get a vendor commit under
+    # server_vad so consecutive sessions are not one continuous utterance.
+    needs_vendor_commit: bool = False
 
     def can_bind_finalize(self, session_id: str | None) -> bool:
         """Whether an empty/open finalize may claim this sealed span."""
@@ -363,8 +366,10 @@ class StepFunASRRecognition:
             and self._tail > self._current.start
         ):
             # Client session boundary arrived before the vendor sealed the
-            # previous turn; keep each span's originating metadata.
-            self._seal_current(self._tail)
+            # previous turn; keep each span's originating metadata and force a
+            # vendor commit even when server_vad owns endpoints.
+            sealed = self._seal_current(self._tail)
+            sealed.needs_vendor_commit = True
         if self._current.metadata is None and metadata is not None:
             self._current.metadata = dict(metadata)
             self._current.session_id = session_id
@@ -810,8 +815,13 @@ class StepFunASRRecognition:
                 continue
             await self._send_range(segment.end)
             segment.generation = self._generation
-            if segment.finalize_id is not None or not self.config.server_vad:
+            if (
+                segment.finalize_id is not None
+                or not self.config.server_vad
+                or segment.needs_vendor_commit
+            ):
                 await self._queue_commit(segment)
+                segment.needs_vendor_commit = False
         await self._send_range(self._tail)
 
     async def _queue_commit(self, segment: TranscriptSegment) -> None:

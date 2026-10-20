@@ -406,21 +406,40 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     @override
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         if data.get_name() == "asr_finalize":
-            # Capture finalize metadata before the base helper runs so the
-            # finalize context is not overwritten by the latest audio frame.
-            metadata_json, metadata_error = data.get_property_to_json(
-                "metadata"
+            # Handle finalize under the result lock so concurrent on_result
+            # cannot observe another turn's metadata/finalize timestamp.
+            # Do not call super(): the base writes finalize_id/time unlocked.
+            finalize_id, finalize_error = data.get_property_string(
+                "finalize_id"
             )
-            if not metadata_error and metadata_json:
-                metadata = json.loads(metadata_json)
-                if not isinstance(metadata, dict):
-                    raise ValueError(
-                        "StepFun finalize metadata must be an object"
-                    )
-                self.metadata = copy.deepcopy(metadata)
-                self.session_id = self.metadata.get(
-                    "session_id", self.session_id
+            if finalize_error:
+                ten_env.log_error(
+                    f"asr_finalize: failed to get finalize_id: {finalize_error}",
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
+                return
+            async with self._result_context_lock:
+                metadata_json, metadata_error = data.get_property_to_json(
+                    "metadata"
+                )
+                if not metadata_error and metadata_json:
+                    metadata = json.loads(metadata_json)
+                    if not isinstance(metadata, dict):
+                        raise ValueError(
+                            "StepFun finalize metadata must be an object"
+                        )
+                    self.metadata = copy.deepcopy(metadata)
+                    self.session_id = self.metadata.get(
+                        "session_id", self.session_id
+                    )
+                self.finalize_id = finalize_id
+                self.last_finalize_time = asyncio.get_running_loop().time()
+            ten_env.log_info(
+                f"asr_finalize: finalize_id: {self.finalize_id}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self.finalize(self.session_id)
+            return
         await super().on_data(ten_env, data)
 
     @override
@@ -673,11 +692,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             frame.unlock_buf(buf)
         if not audio_data:
             return True
-        if self.audio_dumper:
-            await self.audio_dumper.push_bytes(audio_data)
-        # Delivery status for the base consumer/TTFW; journal ownership is
-        # tracked separately for buffered flush paths.
-        return await self.recognition.send_audio(
+        # Journal before dump so finalize cannot observe a frame that left the
+        # base buffer but is not yet in the recovery journal.
+        delivered = await self.recognition.send_audio(
             audio_data,
             metadata=(
                 copy.deepcopy(self.metadata)
@@ -686,6 +703,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             ),
             session_id=self.session_id,
         )
+        if self.audio_dumper:
+            await self.audio_dumper.push_bytes(audio_data)
+        return delivered
 
     @override
     def is_connected(self) -> bool:
@@ -743,15 +763,18 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     async def _flush_buffered_frames(self) -> None:
         """Flush frames held by the base class during a connection outage."""
         try:
-            while True:
-                try:
-                    frame = self.buffered_frames.get_nowait()
-                except asyncio.QueueEmpty:
-                    self.buffered_frames_size = 0
+            # Serialize with finalize/result so a dequeued frame is journaled
+            # before another path can empty-ack the turn.
+            async with self._result_context_lock:
+                while True:
+                    try:
+                        frame = self.buffered_frames.get_nowait()
+                    except asyncio.QueueEmpty:
+                        self.buffered_frames_size = 0
+                        return
+                    if await self._consume_buffered_frame(frame):
+                        continue
                     return
-                if await self._consume_buffered_frame(frame):
-                    continue
-                return
         except Exception as exc:
             self.ten_env.log_error(
                 f"StepFun buffered audio flush failed: {exc}",

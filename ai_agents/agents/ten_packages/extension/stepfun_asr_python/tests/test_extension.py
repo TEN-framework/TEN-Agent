@@ -1513,15 +1513,12 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
     ext.recognition = StepFunASRRecognition(ext.config, ext.ten_env, ext)
     ext.ttfw_sent = False
     ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
-    ttfw_gate = asyncio.Event()
     ttlw_values = []
 
     original_ttfw = ext._send_metrics_ttfw
     original_ttlw = ext._send_metrics_ttlw
 
     async def gated_ttfw(latency_ms):
-        ttfw_gate.clear()
-        ttfw_gate.set()  # signal that we entered TTFW
         await asyncio.sleep(0.05)
         await original_ttfw(latency_ms)
 
@@ -1533,13 +1530,13 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
                 "session_id": (
                     ext.metadata.get("session_id") if ext.metadata else None
                 ),
-                "last_finalize_time": ext.last_finalize_time,
             }
         )
         await original_ttlw(latency_ms)
 
     ext._send_metrics_ttfw = gated_ttfw
     ext._send_metrics_ttlw = capture_ttlw
+    ext.finalize = AsyncMock()
 
     result_task = asyncio.create_task(
         ext.on_result(
@@ -1559,14 +1556,17 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
             ),
         )
     )
-    # While A's result holds the context lock through TTFW, finalize B waits.
     await asyncio.sleep(0)
+    data = MagicMock()
+    data.get_name.return_value = "asr_finalize"
+    data.get_property_string.return_value = ("final-b", None)
+    data.get_property_to_json.return_value = (
+        json.dumps({"session_id": "session-b"}),
+        None,
+    )
+    # Public on_data path must wait for A's locked result before mutating.
     finalize_task = asyncio.create_task(
-        ext._handle_finalize(
-            "final-b",
-            99.0,
-            {"session_id": "session-b"},
-        )
+        StepFunASRExtension.on_data(ext, ext.ten_env, data)
     )
     await result_task
     await finalize_task
@@ -1574,10 +1574,108 @@ async def test_result_ttlw_context_isolated_from_concurrent_finalize():
     assert ttlw_values
     assert ttlw_values[0]["finalize_id"] == "final-a"
     assert ttlw_values[0]["session_id"] == "session-a"
-    # B's finalize ran after A's locked result path and owns the session.
+    metrics = _capture_named(ext, "metrics")
+    assert any(
+        ModuleMetricKey.ASR_TTLW in item.get("metrics", {}) for item in metrics
+    )
     assert ext.finalize_id == "final-b"
     assert ext.session_id == "session-b"
     assert ext.metadata["session_id"] == "session-b"
+    ext.finalize.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_server_vad_session_boundary_emits_vendor_commit():
+    recognition = StepFunASRRecognition(
+        _config(server_vad=True), SimpleNamespace(), CapturingCallback()
+    )
+    websocket = FakeWebSocket()
+    recognition.websocket = websocket
+    recognition._started = True
+    recognition._generation = 1
+
+    await recognition.send_audio(
+        b"\x01\x02" * 160,
+        metadata={"session_id": "session-a"},
+        session_id="session-a",
+    )
+    await recognition.send_audio(
+        b"\x03\x04" * 160,
+        metadata={"session_id": "session-b"},
+        session_id="session-b",
+    )
+    seg_a = recognition._pending[0]
+    assert seg_a.session_id == "session-a"
+    commits = [
+        msg
+        for msg in websocket.sent
+        if msg.get("type") == "input_audio_buffer.commit"
+    ]
+    assert len(commits) >= 1
+    assert seg_a.commit_generation == recognition._generation
+
+    await recognition._handle_message(
+        {"type": "input_audio_buffer.committed", "item_id": "item-a"}
+    )
+    await recognition._handle_message(
+        {
+            "type": "response.audio_transcription.completed",
+            "item_id": "item-a",
+            "transcript": "from-a",
+            "words": [{"word": "from-a", "start": 0.0, "end": 0.1}],
+        }
+    )
+    assert seg_a.published is True
+    assert recognition._base >= seg_a.end
+
+
+@pytest.mark.asyncio
+async def test_recovery_flush_journals_before_concurrent_finalize():
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+
+    dump_gate = asyncio.Event()
+    dump_entered = asyncio.Event()
+
+    class GatedDumper:
+        async def push_bytes(self, _data):
+            dump_entered.set()
+            await dump_gate.wait()
+
+        async def start(self):
+            return None
+
+        async def stop(self):
+            return None
+
+    ext.audio_dumper = GatedDumper()
+    frame = FakeFrame(b"\x01\x02" * 160, {"session_id": "session-a"})
+    ext.buffered_frames.put_nowait(frame)
+    ext.buffered_frames_size = len(frame.get_buf())
+
+    flush_task = asyncio.create_task(ext._flush_buffered_frames())
+    await dump_entered.wait()
+    # Frame is journaled before dump gates; finalize must wait on the lock.
+    assert recognition._tail > 0
+    finalize_task = asyncio.create_task(
+        ext._handle_finalize(
+            "final-a",
+            asyncio.get_running_loop().time(),
+            {"session_id": "session-a"},
+        )
+    )
+    await asyncio.sleep(0.02)
+    assert not finalize_task.done()
+    dump_gate.set()
+    await flush_task
+    await finalize_task
+    assert recognition._pending[0].finalize_id == "final-a"
+    assert recognition._pending[0].session_id == "session-a"
 
 
 @pytest.mark.asyncio
@@ -1631,7 +1729,7 @@ async def test_completed_item_bookkeeping_is_bounded():
 
 
 @pytest.mark.asyncio
-async def test_on_data_routes_finalize_through_super():
+async def test_on_data_routes_finalize_under_context_lock():
     ext = _extension()
     ext.finalize = AsyncMock()
     data = MagicMock()
@@ -1647,6 +1745,7 @@ async def test_on_data_routes_finalize_through_super():
 
     assert ext.metadata["session_id"] == "sess-1"
     assert ext.finalize_id == "final-1"
+    assert ext.last_finalize_time is not None
     ext.finalize.assert_awaited_once()
 
 
