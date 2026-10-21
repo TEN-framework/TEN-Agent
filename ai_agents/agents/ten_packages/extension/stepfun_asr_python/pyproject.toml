@@ -1,0 +1,12 @@
+[project]
+name = "stepfun-asr-python"
+version = "0.1.2"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.13.4",
+    "typing-extensions>=4.12.0",
+    "websockets>=14.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,18 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "finalize_timeout": 10.0,
+  "params": {
+    "api_key": "${env:STEPFUN_API_KEY|}",
+    "url": "wss://api.stepfun.com/v1/realtime/asr/stream",
+    "model": "stepaudio-2.5-asr-stream",
+    "language": "en",
+    "sample_rate": 16000,
+    "bits": 16,
+    "channels": 1,
+    "enable_itn": true,
+    "full_rerun_on_commit": true,
+    "enable_timestamp_align": false,
+    "server_vad": false
+  }
+}

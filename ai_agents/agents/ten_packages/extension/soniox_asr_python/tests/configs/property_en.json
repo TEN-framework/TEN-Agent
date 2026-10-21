@@ -1,11 +1,12 @@
 {
     "params": {
         "api_key": "${env:SONIOX_ASR_API_KEY}",
-        "url": "wss://stt-rt.soniox.com/transcribe-websocket",
+        "url": "wss://stt-rt.jp.soniox.com/transcribe-websocket",
         "model": "stt-rt-v4",
         "language_hints": [
             "en"
         ],
+        "language_hints_strict": true,
         "sample_rate": 16000
     }
 }
