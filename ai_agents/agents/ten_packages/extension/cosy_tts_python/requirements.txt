@@ -1,2 +1,4 @@
-dashscope
-pydantic
+dashscope==1.26.4
+pydantic>=2.13.4
+# Isolate each TEN test app; DashScope keeps process-global SDK state.
+pytest-forked>=1.6.0
