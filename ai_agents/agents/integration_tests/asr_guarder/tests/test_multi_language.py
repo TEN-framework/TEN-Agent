@@ -19,7 +19,6 @@ import json
 import asyncio
 import os
 
-
 # Constants for audio configuration
 AUDIO_CHUNK_SIZE = 320
 AUDIO_SAMPLE_RATE = 16000
@@ -38,7 +37,11 @@ MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES = "es-ES"
 # Extensions that do not support Chinese and use Spanish as the second language
 # (smallest: Chinese is region-gated on the vendor side; Spanish is
 # universally enabled)
-_EXTENSIONS_USE_SPANISH = {"oracle_asr_python", "smallest_asr_python"}
+_EXTENSIONS_USE_SPANISH = {
+    "oracle_asr_python",
+    "smallest_asr_python",
+    "oruk_asr_python",
+}
 
 
 RESULT_WAIT_TIMEOUT_SECS = 30

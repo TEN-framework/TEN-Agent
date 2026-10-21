@@ -1,0 +1,11 @@
+{
+  "params": {
+    "key": "${env:ORUK_API_KEY|}",
+    "language": "en",
+    "sample_rate": 16000,
+    "phrase_emotions": true,
+    "result_language_default": "en-US"
+  },
+  "dump": true,
+  "dump_path": "/tmp"
+}

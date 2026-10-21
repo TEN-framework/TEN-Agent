@@ -1,0 +1,2 @@
+pydantic>=2.13.4
+aiohttp>=3.10,<4
