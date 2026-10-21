@@ -1,14 +1,9 @@
 """Capture the duplex provider's own word times at the transport boundary.
 
 Only server messages are read: sentence boundaries, the provider's word
-fields, and the number of audio bytes it delivered. Sentence positions are
-accumulated from those counts instead of the extension's own accounting,
-so the reference does not depend on the conversion it verifies.
-
-The provider sends turn-relative times, and the extension aligns the first
-word of each sentence with the start of that sentence's audio. The
-reference mirrors that alignment, so a lost or shifted first-word offset is
-not detected for this vendor; see SUBTITLE_TIMING.md.
+fields, and the number of audio bytes it delivered. The provider's word times
+are cumulative within the request, so the reference uses them directly rather
+than duplicating the extension's sentence bookkeeping.
 """
 
 import json
@@ -32,9 +27,6 @@ class ByteDanceDuplexTimingHook:
         self.error = None
         self.active = False
         self.events = {}
-        self.base_ms = 0
-        self.sentence_start_ms = 0
-        self.accumulated_ms = 0
 
     def install(self, monkeypatch, config):
         module = import_module(CLIENT_MODULE)
@@ -53,9 +45,7 @@ class ByteDanceDuplexTimingHook:
         params = config.get("params") or {}
         audio_params = params.get("audio_params") or {}
         self.sample_rate = int(
-            audio_params.get("sample_rate")
-            or config.get("sample_rate")
-            or 24000
+            audio_params.get("sample_rate") or config.get("sample_rate") or 24000
         )
         self.channels = 1
         self.events = {
@@ -72,14 +62,7 @@ class ByteDanceDuplexTimingHook:
             if event == self.events["chunk"]:
                 payload = getattr(message, "payload", None) or b""
                 self.pcm_bytes += len(payload)
-                # The extension accumulates one truncated duration per
-                # audio chunk, so the reference counts the same way.
-                self.accumulated_ms += self._bytes_to_ms(len(payload))
-            elif event == self.events["sentence_start"]:
-                self.sentence_start_ms = self.base_ms
-                self.accumulated_ms = 0
             elif event == self.events["sentence_end"]:
-                self.base_ms = self.sentence_start_ms + self.accumulated_ms
                 self._capture_words(getattr(message, "payload_json", None))
         except (
             AttributeError,
@@ -88,35 +71,22 @@ class ByteDanceDuplexTimingHook:
             KeyError,
             json.JSONDecodeError,
         ) as error:
-            self.error = (
-                "ByteDance duplex capture failed: " + type(error).__name__
-            )
-
-    def _bytes_to_ms(self, byte_length: int) -> int:
-        bytes_per_second = self.sample_rate * self.channels * 2
-        return int(byte_length / bytes_per_second * 1000)
+            self.error = "ByteDance duplex capture failed: " + type(error).__name__
 
     def _capture_words(self, payload_json):
         if not payload_json:
             return
         data = (
-            json.loads(payload_json)
-            if isinstance(payload_json, str)
-            else payload_json
+            json.loads(payload_json) if isinstance(payload_json, str) else payload_json
         )
         raw_words = data.get("words") or []
         if not raw_words:
             return
-        # The provider sends turn-relative times and the extension aligns the
-        # first word of a sentence with the start of that sentence's audio.
-        first_start_ms = int(float(raw_words[0].get("startTime", 0.0)) * 1000)
         words = []
         for item in raw_words:
             start_sec = float(item.get("startTime", 0.0))
             end_sec = float(item.get("endTime", 0.0))
-            start_ms = (
-                self.sentence_start_ms + int(start_sec * 1000) - first_start_ms
-            )
+            start_ms = int(start_sec * 1000)
             duration_ms = int((end_sec - start_sec) * 1000)
             words.append(
                 ReferenceWord(
@@ -132,9 +102,6 @@ class ByteDanceDuplexTimingHook:
         self.pcm_bytes = 0
         self.groups = []
         self.error = None
-        self.base_ms = 0
-        self.sentence_start_ms = 0
-        self.accumulated_ms = 0
         self.active = True
 
     def reference(self, request_id):

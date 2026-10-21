@@ -211,9 +211,9 @@ def test_duplex_reference_follows_sentence_audio_positions():
                         {
                             "word": "hi",
                             "startTime": 0.042667,
-                            "endTime": 0.142667,
+                            "endTime": 0.062667,
                         },
-                        {"word": "there", "startTime": 0.2, "endTime": 0.3},
+                        {"word": "there", "startTime": 0.07, "endTime": 0.09},
                     ]
                 }
             ),
@@ -227,7 +227,7 @@ def test_duplex_reference_follows_sentence_audio_positions():
             payload_json=json.dumps(
                 {
                     "words": [
-                        {"word": "again", "startTime": 0.11, "endTime": 0.21},
+                        {"word": "again", "startTime": 0.11, "endTime": 0.13},
                     ],
                 }
             ),
@@ -238,16 +238,14 @@ def test_duplex_reference_follows_sentence_audio_positions():
     assert reference.error is None
     assert reference.pcm_bytes == 4800
     first, second = reference.captions
-    # Provider times are turn-relative; each sentence's first word is aligned
-    # with the start of that sentence's audio, as the extension does.
+    # Provider times are cumulative for the request, so sentence boundaries do
+    # not add another offset.
     assert [word.word for word in first] == ["hi", "there"]
-    assert first[0].start_ms == 0
-    assert first[1].start_ms == 158
-    # The second sentence's audio follows the first sentence's 100ms of audio.
+    assert first[0].start_ms == 42
+    assert first[1].start_ms == 70
     assert second[0].word == "again"
-    assert second[0].start_ms == 100
-    # The duration keeps the extension's own float truncation (0.21 - 0.11).
-    assert second[0].end_ms == 199
+    assert second[0].start_ms == 110
+    assert second[0].end_ms == 130
 
 
 def test_bytedance_reference_keeps_leading_silence_offset():
