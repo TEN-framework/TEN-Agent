@@ -1,37 +1,37 @@
 {
   "type": "app",
   "name": "default_app_go",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "addon_loader",
       "name": "nodejs_addon_loader",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "websocket_server_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "http_server_extension_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ]
 }
