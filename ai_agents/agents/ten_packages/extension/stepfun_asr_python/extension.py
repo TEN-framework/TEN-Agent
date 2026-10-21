@@ -564,14 +564,14 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             resolved = copy.deepcopy(metadata)
             known_session = resolved.get("session_id", self.session_id)
             if known_session is None and self.recognition is not None:
-                known_session = (
-                    self.recognition._current.session_id  # pylint: disable=protected-access
-                )
+                # pylint: disable=protected-access
+                known_session = self.recognition._current.session_id
             return self._metadata_with_session(resolved, known_session)
 
         resolved = copy.deepcopy(self.metadata) if self.metadata else {}
         if use_journal_context and self.recognition is not None:
-            current = self.recognition._current  # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            current = self.recognition._current
             if current.metadata:
                 resolved = copy.deepcopy(current.metadata)
             elif current.session_id is not None:
@@ -589,7 +589,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         """
         inherited: dict[str, Any] = {}
         found = False
-        for item in self.audio_frames_queue._queue:  # noqa: SLF001 pylint: disable=protected-access
+        # pylint: disable=protected-access
+        for item in self.audio_frames_queue._queue:  # noqa: SLF001
             if isinstance(item, AudioFrame):
                 parsed = self._metadata_from_audio_frame(item)
                 if parsed is not None:
