@@ -13,6 +13,7 @@ from ten_ai_base.utils import encrypt
 DEFAULT_URL = "wss://api.stepfun.com/v1/realtime/asr/stream"
 DEFAULT_MODEL = "stepaudio-2.5-asr-stream"
 
+
 def map_stepfun_language(language: str) -> str:
     """Map BCP-47 tags to StepFun primary language subtags (e.g. zh-CN -> zh)."""
     raw = str(language or "").strip()
@@ -45,7 +46,10 @@ class StepFunASRConfig(BaseModel):
         merged = dict(data)
         root_language = merged.pop("language", None)
         params = dict(merged.get("params") or {})
-        if root_language is not None and not str(params.get("language") or "").strip():
+        if (
+            root_language is not None
+            and not str(params.get("language") or "").strip()
+        ):
             params["language"] = root_language
         merged["params"] = params
         return merged
@@ -86,7 +90,10 @@ class StepFunASRConfig(BaseModel):
         if params:
             merged = dict(self.params)
             merged.update(params)
-            if "language" in merged and str(merged.get("language") or "").strip():
+            if (
+                "language" in merged
+                and str(merged.get("language") or "").strip()
+            ):
                 merged["language"] = map_stepfun_language(
                     str(merged["language"])
                 )

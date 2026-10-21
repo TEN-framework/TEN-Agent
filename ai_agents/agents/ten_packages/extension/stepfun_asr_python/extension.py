@@ -257,10 +257,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     async def _connect_once(self, *, attempt: int | None = None) -> None:
         if self._fatal or self.stopped:
             raise ConnectionError("StepFun connection recovery stopped")
-        if (
-            attempt is not None
-            and attempt != self._connect_attempt
-        ):
+        if attempt is not None and attempt != self._connect_attempt:
             raise ConnectionError("StepFun connection attempt invalidated")
         assert self.recognition is not None
         self._connect_started_at = time.monotonic()
@@ -552,9 +549,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             self._finalize_inherit_metadata.add(finalize_id)
         else:
             self._finalize_inherit_metadata.discard(finalize_id)
-        self.audio_frames_queue.put_nowait(
-            (finalize_id, received_at, context)
-        )
+        self.audio_frames_queue.put_nowait((finalize_id, received_at, context))
 
     def _resolve_finalize_metadata(
         self,
@@ -569,12 +564,14 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             resolved = copy.deepcopy(metadata)
             known_session = resolved.get("session_id", self.session_id)
             if known_session is None and self.recognition is not None:
-                known_session = self.recognition._current.session_id
+                known_session = (
+                    self.recognition._current.session_id  # pylint: disable=protected-access
+                )
             return self._metadata_with_session(resolved, known_session)
 
         resolved = copy.deepcopy(self.metadata) if self.metadata else {}
         if use_journal_context and self.recognition is not None:
-            current = self.recognition._current
+            current = self.recognition._current  # pylint: disable=protected-access
             if current.metadata:
                 resolved = copy.deepcopy(current.metadata)
             elif current.session_id is not None:
@@ -592,7 +589,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         """
         inherited: dict[str, Any] = {}
         found = False
-        for item in self.audio_frames_queue._queue:  # noqa: SLF001
+        for item in self.audio_frames_queue._queue:  # noqa: SLF001 pylint: disable=protected-access
             if isinstance(item, AudioFrame):
                 parsed = self._metadata_from_audio_frame(item)
                 if parsed is not None:
@@ -628,16 +625,12 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 elif queued:
                     source = queued
                 elif self._fatal_discarded_frame_metadata:
-                    source = copy.deepcopy(
-                        self._fatal_discarded_frame_metadata
-                    )
+                    source = copy.deepcopy(self._fatal_discarded_frame_metadata)
                 else:
                     source = {}
                 if source:
                     self.metadata = copy.deepcopy(source)
-                    self.session_id = source.get(
-                        "session_id", self.session_id
-                    )
+                    self.session_id = source.get("session_id", self.session_id)
                 return self._resolve_finalize_metadata(
                     finalize_id,
                     metadata,
@@ -650,9 +643,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     @override
     async def finalize(self, _session_id: str | None) -> None:
         # Preserve "" — do not coerce with `or`, which would drop a valid empty id.
-        finalize_id = (
-            self.finalize_id if self.finalize_id is not None else ""
-        )
+        finalize_id = self.finalize_id if self.finalize_id is not None else ""
         received_at = self._finalize_times.get(finalize_id)
         if received_at is None:
             received_at = (
@@ -703,8 +694,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         if finalize_id in self._completed_finalizes:
             # Timeout already completed this id; still seal/discard its audio
             # so the next turn does not inherit the open span.
-            if self.recognition is not None and self.recognition.is_finalize_timed_out(
-                finalize_id
+            if (
+                self.recognition is not None
+                and self.recognition.is_finalize_timed_out(finalize_id)
             ):
                 try:
                     resolved = await self._prepare_finalize_context(
@@ -850,9 +842,7 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     finalize_id, context if context is not None else {}
                 )
             elif context is None:
-                context = (
-                    copy.deepcopy(self.metadata) if self.metadata else {}
-                )
+                context = copy.deepcopy(self.metadata) if self.metadata else {}
             emit_metadata = copy.deepcopy(context) if context else {}
             emit_metadata = self._metadata_with_session(
                 emit_metadata,
@@ -923,17 +913,19 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                     if self.buffered_frames.empty():
                         break
                     discard_frame = await self.buffered_frames.get()
-                    self.buffered_frames_size -= len(discard_frame.get_buf())
-                    self.dropped_audio_frames += 1
+                    discarded_len = len(discard_frame.get_buf())
+                    self.buffered_frames_size -= discarded_len
+                    self.audio_timeline.add_dropped_audio(discarded_len)
                 self.buffered_frames.put_nowait(audio_frame)
                 self.buffered_frames_size += len(frame_buf)
             else:
                 self.audio_timeline.add_dropped_audio(len(frame_buf))
-                self.dropped_audio_frames += 1
             return
 
         async with self._result_context_lock:
-            metadata, _ = audio_frame.get_property_to_json(PROPERTY_KEY_METADATA)
+            metadata, _ = audio_frame.get_property_to_json(
+                PROPERTY_KEY_METADATA
+            )
             if metadata:
                 try:
                     metadata_json = json.loads(metadata)
@@ -986,7 +978,9 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
                 self.metadata = copy.deepcopy(fallback_metadata)
                 self.session_id = _session_id
             metadata_for_vendor = (
-                copy.deepcopy(self.metadata) if self.metadata is not None else None
+                copy.deepcopy(self.metadata)
+                if self.metadata is not None
+                else None
             )
             session_for_vendor = self.session_id
         buf = frame.lock_buf()

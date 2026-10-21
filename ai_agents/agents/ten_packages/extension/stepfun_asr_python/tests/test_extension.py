@@ -1845,7 +1845,9 @@ async def test_on_data_routes_finalize_under_context_lock():
     assert ext.last_finalize_time is not None
     # Exactly one base-hook finalize invocation per asr_finalize.
     ext.finalize.assert_awaited_once()
-    assert "final-1" in ext._finalize_events or ext.audio_frames_queue.qsize() >= 1
+    assert (
+        "final-1" in ext._finalize_events or ext.audio_frames_queue.qsize() >= 1
+    )
 
 
 @pytest.mark.asyncio
@@ -2608,9 +2610,7 @@ async def test_finish_finalize_does_not_restore_over_live_session():
 
     async def gated_send(data):
         if data.get_name() == "asr_finalize_end":
-            captured_ends.append(
-                json.loads(data.get_property_to_json(None)[0])
-            )
+            captured_ends.append(json.loads(data.get_property_to_json(None)[0]))
             entered_end.set()
             await release_end.wait()
         await original_send(data)
@@ -3050,9 +3050,7 @@ async def test_finish_finalize_serializes_with_in_flight_result():
             entered_result.set()
             await release_result.wait()
         if data.get_name() == "asr_finalize_end":
-            sent_payloads.append(
-                json.loads(data.get_property_to_json(None)[0])
-            )
+            sent_payloads.append(json.loads(data.get_property_to_json(None)[0]))
 
     ext.ten_env.send_data = gated_send
 
@@ -3091,7 +3089,9 @@ async def test_finish_finalize_serializes_with_in_flight_result():
     assert ext.session_id == "session-b"
     assert ext.metadata["session_id"] == "session-b"
     end_a = next(
-        payload for payload in sent_payloads if payload["finalize_id"] == "final-a"
+        payload
+        for payload in sent_payloads
+        if payload["finalize_id"] == "final-a"
     )
     assert end_a["metadata"].get("session_id") == "session-a"
 
