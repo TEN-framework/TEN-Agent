@@ -22,6 +22,19 @@ from ten_runtime import AsyncTenEnv
 from .config import StepFunASRConfig
 
 
+def _transcription_config(config: StepFunASRConfig) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "model": config.model,
+        "language": config.language,
+        "full_rerun_on_commit": config.full_rerun_on_commit,
+        "enable_itn": config.enable_itn,
+        "enable_timestamp_align": config.enable_timestamp_align,
+    }
+    if config.prompt is not None:
+        payload["prompt"] = config.prompt
+    return payload
+
+
 @dataclass
 class TranscriptSegment:
     start: int
@@ -228,15 +241,7 @@ class StepFunASRRecognition:
                     "bits": self.config.bits,
                     "channel": self.config.channels,
                 },
-                "transcription": {
-                    "model": self.config.model,
-                    "language": self.config.language,
-                    "full_rerun_on_commit": self.config.full_rerun_on_commit,
-                    "enable_itn": self.config.enable_itn,
-                    "enable_timestamp_align": (
-                        self.config.enable_timestamp_align
-                    ),
-                },
+                "transcription": _transcription_config(self.config),
             }
             if self.config.server_vad:
                 input_config["turn_detection"] = {

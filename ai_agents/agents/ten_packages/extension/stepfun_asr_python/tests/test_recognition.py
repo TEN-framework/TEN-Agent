@@ -9,6 +9,7 @@ from stepfun_asr_python.recognition import (
     StepFunASRRecognition,
     StepFunASRRecognitionCallback,
     TranscriptSegment,
+    _transcription_config,
 )
 
 
@@ -58,6 +59,15 @@ def config():
             }
         }
     )
+
+
+def test_transcription_config_includes_prompt_when_set():
+    cfg = config()
+    assert "prompt" not in _transcription_config(cfg)
+
+    cfg.update({"prompt": "专业术语：Agora"})
+    payload = _transcription_config(cfg)
+    assert payload["prompt"] == "专业术语：Agora"
 
 
 @pytest.mark.asyncio

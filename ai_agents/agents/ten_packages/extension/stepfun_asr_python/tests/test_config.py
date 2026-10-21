@@ -37,6 +37,17 @@ def test_config_redacts_api_key():
     assert "test-key" not in config.to_str(sensitive_handling=True)
 
 
+def test_config_prompt_optional_and_trimmed():
+    config = StepFunASRConfig.model_validate(valid_config())
+    assert config.prompt is None
+
+    config.update({"prompt": "  术语A  "})
+    assert config.prompt == "术语A"
+
+    config.update({"prompt": "   "})
+    assert config.prompt is None
+
+
 @pytest.mark.parametrize(
     ("configured", "expected"),
     [

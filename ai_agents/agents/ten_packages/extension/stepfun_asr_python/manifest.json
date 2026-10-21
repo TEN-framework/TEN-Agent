@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "stepfun_asr_python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "tags": [
     "python",
     "stepfun",
@@ -52,6 +52,9 @@
               "type": "string"
             },
             "language": {
+              "type": "string"
+            },
+            "prompt": {
               "type": "string"
             },
             "sample_rate": {

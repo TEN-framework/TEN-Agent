@@ -135,6 +135,14 @@ class StepFunASRConfig(BaseModel):
         return str(self.params_dict().get("language") or "en").strip()
 
     @property
+    def prompt(self) -> str | None:
+        value = self.params_dict().get("prompt")
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+    @property
     def sample_rate(self) -> int:
         return int(self.params_dict().get("sample_rate") or 16000)
 

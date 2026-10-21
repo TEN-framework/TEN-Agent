@@ -25,16 +25,18 @@ Example graph node:
   "property": {
     "params": {
       "api_key": "${env:STEPFUN_API_KEY}",
-      "language": "en"
+      "language": "zh",
+      "prompt": "专业术语：阶跃星辰、StepAudio"
     }
   }
 }
 ```
 
-Supported parameters are exposed in `manifest.json`. `server_vad` enables
-StepFun server-side VAD; otherwise the extension commits audio on TEN's
-`asr_finalize` input. `full_rerun_on_commit` and
-`enable_timestamp_align` are passed through to StepFun.
+Supported parameters are exposed in `manifest.json`. `prompt` is sent in
+`session.update` as StepFun transcription context (domain terms or
+instructions). `server_vad` enables StepFun server-side VAD; otherwise the
+extension commits audio on TEN's `asr_finalize` input. `full_rerun_on_commit`
+and `enable_timestamp_align` are passed through to StepFun.
 
 The extension retains up to 10 MB of unconfirmed PCM so a transient WebSocket
 disconnect can replay audio after reconnect. Replayed transcript words are
