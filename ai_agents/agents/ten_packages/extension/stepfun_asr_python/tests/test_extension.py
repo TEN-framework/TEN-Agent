@@ -26,6 +26,17 @@ from stepfun_asr_python.recognition import (
 from stepfun_asr_python.reconnect_manager import ReconnectManager
 
 
+def test_reconnect_manager_unlimited_never_exhausts_budget():
+    mgr = ReconnectManager(max_attempts=0)
+    for _ in range(50):
+        mgr.record_failed_attempt()
+    assert mgr.can_retry()
+    bounded = ReconnectManager(max_attempts=3)
+    for _ in range(3):
+        bounded.record_failed_attempt()
+    assert not bounded.can_retry()
+
+
 def _audio_frame(payload: bytes, metadata: dict | None = None) -> AudioFrame:
     frame = AudioFrame.create("pcm")
     frame.alloc_buf(len(payload))

@@ -5,10 +5,14 @@ from collections.abc import Awaitable, Callable
 
 
 class ReconnectManager:
-    """Bounded reconnect helper for one StepFun recognition session."""
+    """Reconnect helper for one StepFun recognition session.
 
-    def __init__(self, max_attempts: int = 5, base_delay: float = 0.5):
-        self.max_attempts = max(1, max_attempts)
+    When max_attempts <= 0, retries are unlimited until success or stop/fatal.
+    """
+
+    def __init__(self, max_attempts: int = 0, base_delay: float = 0.5):
+        self.max_attempts = max_attempts
+        self._unlimited = max_attempts <= 0
         self.base_delay = max(0.0, base_delay)
         self.attempts = 0
         self._lock = asyncio.Lock()
@@ -20,7 +24,9 @@ class ReconnectManager:
         self.attempts += 1
 
     def can_retry(self) -> bool:
-        return self.attempts < self.max_attempts
+        if self._unlimited:
+            return True
+        return self.attempts < max(1, self.max_attempts)
 
     def next_delay(self) -> float:
         if self.attempts <= 0:
@@ -34,16 +40,18 @@ class ReconnectManager:
     ) -> bool:
         """Legacy single-loop helper kept for unit tests of delay math."""
         async with self._lock:
-            for attempt in range(self.max_attempts):
+            attempt = 0
+            while self.can_retry():
                 if should_abort and should_abort():
                     return False
-                self.attempts = attempt + 1
                 if attempt:
                     await asyncio.sleep(
                         min(8.0, self.base_delay * 2 ** (attempt - 1))
                     )
                     if should_abort and should_abort():
                         return False
+                self.attempts = attempt + 1
+                attempt += 1
                 try:
                     await connection_func()
                 except Exception:
