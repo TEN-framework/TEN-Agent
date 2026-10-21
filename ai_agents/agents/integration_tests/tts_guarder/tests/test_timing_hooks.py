@@ -70,7 +70,7 @@ def _alignment_payload(request_id, chars, starts, durations):
     )
 
 
-def test_elevenlabs_origin_is_reset_for_each_request():
+def test_elevenlabs_reference_preserves_first_word_offsets_per_request():
     hook = ElevenLabsTimingHook()
 
     for request_id, first_start in (
@@ -88,15 +88,14 @@ def test_elevenlabs_origin_is_reset_for_each_request():
         )
         words = hook.reference(request_id).captions[0]
         assert [word.word for word in words] == ["hi"]
-        # Each request's alignment times are relative to that request.
-        assert words[0].start_ms == 0
-        assert words[0].end_ms == 40
+        # Each request keeps its own provider offset; no capture state leaks
+        # from the previous request.
+        assert words[0].start_ms == first_start
+        assert words[0].end_ms == first_start + 40
 
 
 def _duplex_message(event, payload=None, payload_json=None):
-    return SimpleNamespace(
-        event=event, payload=payload, payload_json=payload_json
-    )
+    return SimpleNamespace(event=event, payload=payload, payload_json=payload_json)
 
 
 def _duplex_hook():
@@ -138,9 +137,12 @@ def test_duplex_reference_follows_sentence_audio_positions():
     hook._capture(
         _duplex_message(
             351,
-            payload_json=(
-                '{"words": [{"word": "again", "startTime": 0.11, '
-                '"endTime": 0.21}]}'
+            payload_json=json.dumps(
+                {
+                    "words": [
+                        {"word": "again", "startTime": 0.11, "endTime": 0.21},
+                    ],
+                }
             ),
         )
     )
@@ -165,9 +167,7 @@ def test_bytedance_reference_keeps_leading_silence_offset():
     hook = ByteDanceTimingHook()
     hook.sample_rate = 16000
     hook.begin_request("req-1")
-    session = SimpleNamespace(
-        original_request_id="req-1", tts_input=SimpleNamespace()
-    )
+    session = SimpleNamespace(original_request_id="req-1", tts_input=SimpleNamespace())
 
     hook._observe_frontend_msg(
         session,
