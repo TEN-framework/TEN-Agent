@@ -59,12 +59,12 @@ See [adding a TTS extension](tests/SUBTITLE_TIMING.md#adding-a-tts-extension)
 for extension setup, the vendor object interface, registry entries, and
 verification steps.
 
-Only `minimax_tts_websocket_duplex`, `cartesia_tts`,
+Only `minimax_tts_websocket_duplex`, `minimax_tts_websocket`, `cartesia_tts`,
 `elevenlabs_multiple_context_tts_python`, `bytedance_tts`, and
 `bytedance_tts_duplex` install a vendor timing hook. A hook applies to the
 alignment test's matching connections and restores the client dependency
 afterward. Unregistered vendors receive no hook, and other Guarder cases retain
-their behavior. `minimax_tts_websocket`, `soul_tts_python`, and `azure_tts` use
-the strengthened generic alignment checks without a vendor hook. `azure_tts` is
+their behavior. `soul_tts_python` and `azure_tts` use the strengthened generic
+alignment checks without a vendor hook. `azure_tts` is
 a C++ extension that is not part of this checkout, so its runs use a guarder
 copy in the conversational agent tree.
