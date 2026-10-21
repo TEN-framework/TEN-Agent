@@ -1521,10 +1521,75 @@ async def test_finalize_timeout_seals_queued_turn_before_next_finalize():
     )
     assert recognition._pending[-1].finalize_id == "final-b"
     assert recognition._pending[-1].start == open_end
+    assert "final-a" not in ext._finalize_contexts
 
     consumer.cancel()
     with suppress(asyncio.CancelledError):
         await consumer
+
+
+@pytest.mark.asyncio
+async def test_recovery_flush_preserves_in_flight_ttfw_session():
+    ext = _real_output_extension()
+    ext.config = _config()
+    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
+    recognition.websocket = FakeWebSocket()
+    recognition._started = True
+    recognition._generation = 1
+    ext.recognition = recognition
+    ext.ttfw_sent = False
+    ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
+    ext.metadata = {"session_id": "session-a"}
+    ext.session_id = "session-a"
+
+    metrics_gate = asyncio.Event()
+    original_ttfw = ext._send_metrics_ttfw
+
+    async def gated_ttfw(latency_ms):
+        await metrics_gate.wait()
+        await original_ttfw(latency_ms)
+
+    ext._send_metrics_ttfw = gated_ttfw
+
+    result_task = asyncio.create_task(
+        ext.on_result(
+            {
+                "type": "response.audio_transcription.delta",
+                "item_id": "item-a",
+                "text": "hello",
+            },
+            TranscriptSegment(
+                0,
+                320,
+                metadata={"session_id": "session-a"},
+                session_id="session-a",
+            ),
+        )
+    )
+    await asyncio.sleep(0)
+
+    ext.buffered_frames.put_nowait(
+        FakeFrame(b"\x05\x06" * 160, {"session_id": "session-b"})
+    )
+    ext.buffered_frames_size = len(b"\x05\x06" * 160)
+    flush_task = asyncio.create_task(ext._flush_buffered_frames())
+    await asyncio.sleep(0.02)
+    assert not flush_task.done()
+    assert ext.session_id == "session-a"
+
+    metrics_gate.set()
+    await result_task
+    await flush_task
+
+    metrics = _capture_named(ext, "metrics")
+    ttfw = [
+        item
+        for item in metrics
+        if ModuleMetricKey.ASR_TTFW in item.get("metrics", {})
+    ]
+    assert ttfw
+    assert ttfw[0].get("metadata", {}).get("session_id") == "session-a"
+    assert ext.session_id == "session-b"
 
 
 @pytest.mark.asyncio

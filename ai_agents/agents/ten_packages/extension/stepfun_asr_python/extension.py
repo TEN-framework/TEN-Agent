@@ -706,18 +706,23 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             if self.recognition is not None and self.recognition.is_finalize_timed_out(
                 finalize_id
             ):
-                resolved = await self._prepare_finalize_context(
-                    finalize_id, metadata
-                )
-                recognition = self.recognition
-                session_id = resolved.get("session_id", self.session_id)
-                if recognition is not None:
-                    await recognition.commit(
+                try:
+                    resolved = await self._prepare_finalize_context(
                         finalize_id,
-                        received_at,
-                        metadata=resolved,
-                        session_id=session_id,
+                        metadata,
+                        register_context=False,
                     )
+                    recognition = self.recognition
+                    session_id = resolved.get("session_id", self.session_id)
+                    if recognition is not None:
+                        await recognition.commit(
+                            finalize_id,
+                            received_at,
+                            metadata=resolved,
+                            session_id=session_id,
+                        )
+                finally:
+                    self._finalize_contexts.pop(finalize_id, None)
             return
 
         async with self._result_context_lock:
@@ -746,6 +751,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         self,
         finalize_id: str,
         metadata: dict[str, Any],
+        *,
+        register_context: bool = True,
     ) -> dict[str, Any]:
         """Absorb buffered audio, then resolve omitted finalize metadata."""
         async with self._result_context_lock:
@@ -763,7 +770,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
             resolved = self._resolve_finalize_metadata(finalize_id, metadata)
             self.metadata = copy.deepcopy(resolved)
             self.session_id = resolved.get("session_id", self.session_id)
-            self._finalize_contexts[finalize_id] = copy.deepcopy(resolved)
+            if register_context:
+                self._finalize_contexts[finalize_id] = copy.deepcopy(resolved)
             self._finalize_inherit_metadata.discard(finalize_id)
             return resolved
 
@@ -966,18 +974,21 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
     ) -> bool:
         if self.recognition is None:
             return False
-        # Callers that reach here outside _handle_audio_frame (finalize absorb
-        # / buffer flush) already hold _result_context_lock.
-        metadata_json, error = frame.get_property_to_json("metadata")
-        parsed = None
-        if not error and metadata_json:
-            parsed = json.loads(metadata_json)
-            if isinstance(parsed, dict):
-                self.metadata = copy.deepcopy(parsed)
-                self.session_id = parsed.get("session_id", _session_id)
-        if not isinstance(parsed, dict) and fallback_metadata is not None:
-            self.metadata = copy.deepcopy(fallback_metadata)
-            self.session_id = _session_id
+        async with self._result_context_lock:
+            metadata_json, error = frame.get_property_to_json("metadata")
+            parsed = None
+            if not error and metadata_json:
+                parsed = json.loads(metadata_json)
+                if isinstance(parsed, dict):
+                    self.metadata = copy.deepcopy(parsed)
+                    self.session_id = parsed.get("session_id", _session_id)
+            if not isinstance(parsed, dict) and fallback_metadata is not None:
+                self.metadata = copy.deepcopy(fallback_metadata)
+                self.session_id = _session_id
+            metadata_for_vendor = (
+                copy.deepcopy(self.metadata) if self.metadata is not None else None
+            )
+            session_for_vendor = self.session_id
         buf = frame.lock_buf()
         try:
             audio_data = bytes(buf)
@@ -989,12 +1000,8 @@ class StepFunASRExtension(AsyncASRBaseExtension, StepFunASRRecognitionCallback):
         # base buffer but is not yet in the recovery journal.
         delivered = await self.recognition.send_audio(
             audio_data,
-            metadata=(
-                copy.deepcopy(self.metadata)
-                if self.metadata is not None
-                else None
-            ),
-            session_id=self.session_id,
+            metadata=metadata_for_vendor,
+            session_id=session_for_vendor,
         )
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
