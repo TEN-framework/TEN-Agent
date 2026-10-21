@@ -21,6 +21,7 @@ from .timing_hooks.bytedance import ByteDanceTimingHook
 from .timing_hooks.bytedance_duplex import ByteDanceDuplexTimingHook
 from .timing_hooks.cartesia import _add_spacing_groups
 from .timing_hooks.elevenlabs import ElevenLabsTimingHook
+from .timing_hooks.minimax import MiniMaxTimingHook
 
 # The cartesia client's own spacing fixtures (cartesia_tts/tests/test_basic.py)
 # plus two-group cases, with the tokens the client emits for the same input.
@@ -92,6 +93,92 @@ def test_elevenlabs_reference_preserves_first_word_offsets_per_request():
         # from the previous request.
         assert words[0].start_ms == first_start
         assert words[0].end_ms == first_start + 40
+
+
+def test_minimax_reference_keeps_request_relative_word_times():
+    hook = MiniMaxTimingHook()
+    hook.begin_request("req-minimax")
+    hook.observe_send(
+        json.dumps(
+            {
+                "event": "task_start",
+                "audio_setting": {
+                    "format": "pcm",
+                    "sample_rate": 16000,
+                    "channels": 1,
+                },
+            }
+        )
+    )
+
+    for subtitle in (
+        {
+            "text": "First ",
+            "time_begin": 85,
+            "time_end": 320,
+            "timestamped_words": [
+                {
+                    "word": "First",
+                    "word_begin": 0,
+                    "word_end": 5,
+                    "time_begin": 85,
+                    "time_end": 200,
+                },
+                {
+                    "word": "First",
+                    "word_begin": 0,
+                    "word_end": 5,
+                    "time_begin": 85,
+                    "time_end": 300,
+                },
+                {
+                    "word": "[SPACE]",
+                    "word_begin": 5,
+                    "word_end": 12,
+                    "time_begin": 300,
+                    "time_end": 320,
+                },
+            ],
+        },
+        {
+            "text": "Second",
+            "time_begin": 1300,
+            "time_end": 1600,
+            "timestamped_words": [
+                {
+                    "word": "Second",
+                    "word_begin": 0,
+                    "word_end": 6,
+                    "time_begin": 1300,
+                    "time_end": 1600,
+                },
+            ],
+        },
+    ):
+        hook.observe_receive(
+            json.dumps(
+                {
+                    "data": {
+                        "audio": "00" * 1600,
+                        "subtitle": subtitle,
+                    },
+                }
+            )
+        )
+
+    reference = hook.reference("req-minimax")
+    assert reference.error is None
+    assert reference.pcm_bytes == 3200
+    first, second = reference.captions
+    assert [(word.word, word.start_ms, word.end_ms) for word in first] == [
+        ("First", 85, 300),
+        (" ", 300, 320),
+    ]
+    # Word times are request-relative; the segment's time_begin is not added
+    # a second time.
+    assert [(word.word, word.start_ms, word.end_ms) for word in second] == [
+        ("Second", 1300, 1600),
+    ]
 
 
 def _duplex_message(event, payload=None, payload_json=None):

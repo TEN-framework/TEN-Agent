@@ -55,9 +55,7 @@ class MiniMaxTimingHook:
                 message = json.loads(payload)
                 if outgoing:
                     if message.get("event") == "task_start":
-                        self.audio_setting = deepcopy(
-                            message.get("audio_setting", {})
-                        )
+                        self.audio_setting = deepcopy(message.get("audio_setting", {}))
                 elif self.request_id is not None:
                     self._capture_response(message)
             # Capture failures must not change the production wire path.
@@ -110,9 +108,7 @@ class MiniMaxTimingHook:
             TypeError,
             ValueError,
         ) as exc:
-            error = "MiniMax reference calculation failed: " + type(
-                exc
-            ).__name__
+            error = "MiniMax reference calculation failed: " + type(exc).__name__
         return RequestTimingReference(
             "MiniMax",
             sample_rate,
