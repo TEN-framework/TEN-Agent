@@ -5,7 +5,7 @@ WebSocket Server Manager for receiving audio data
 import asyncio
 import json
 import base64
-from typing import Callable, Optional, Any
+from typing import Awaitable, Callable, Optional, Any
 from dataclasses import dataclass
 import websockets
 from ten_runtime.async_ten_env import AsyncTenEnv
@@ -28,7 +28,12 @@ class WebSocketServerManager:
         host: str,
         port: int,
         ten_env: AsyncTenEnv,
-        on_audio_callback: Optional[Callable[[AudioData], None]] = None,
+        on_audio_callback: Optional[
+            Callable[[AudioData], Awaitable[None]]
+        ] = None,
+        on_cmd_callback: Optional[
+            Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]]
+        ] = None,
     ):
         """
         Initialize WebSocket server manager
@@ -38,11 +43,13 @@ class WebSocketServerManager:
             port: Server port
             ten_env: TEN environment for logging
             on_audio_callback: Callback when audio data is received
+            on_cmd_callback: Callback for commands routed through the TEN graph
         """
         self.host = host
         self.port = port
         self.ten_env = ten_env
         self.on_audio_callback = on_audio_callback
+        self.on_cmd_callback = on_cmd_callback
 
         self.server = None
         self.current_client: Optional[Any] = None
@@ -154,6 +161,31 @@ class WebSocketServerManager:
             # Parse JSON message
             data = json.loads(message)
 
+            if not isinstance(data, dict):
+                raise ValueError("message must be a JSON object")
+
+            if data.get("type") == "cmd":
+                name = data.get("name")
+                properties = data.get("data", {})
+                if not isinstance(name, str) or not name.strip():
+                    raise ValueError("command name must be a non-empty string")
+                if not isinstance(properties, dict):
+                    raise ValueError("command data must be a JSON object")
+                if self.on_cmd_callback is None:
+                    raise ValueError("commands are not enabled")
+                result = await self.on_cmd_callback(name, properties)
+                await websocket.send(
+                    json.dumps(
+                        {
+                            "type": "cmd_result",
+                            "name": name,
+                            "request_id": data.get("request_id"),
+                            **result,
+                        }
+                    )
+                )
+                return
+
             # Validate message format
             if "audio" not in data:
                 await self._send_error(
@@ -165,7 +197,9 @@ class WebSocketServerManager:
             # Decode base64 audio
             try:
                 audio_base64 = data["audio"]
-                pcm_data = base64.b64decode(audio_base64)
+                if not isinstance(audio_base64, str):
+                    raise ValueError("audio must be a base64 string")
+                pcm_data = base64.b64decode(audio_base64, validate=True)
             except Exception as e:
                 await self._send_error(
                     websocket, f"Invalid base64 audio data: {e}"
@@ -174,6 +208,9 @@ class WebSocketServerManager:
 
             # Extract metadata
             metadata = data.get("metadata", {})
+            if not isinstance(metadata, dict):
+                raise ValueError("metadata must be a JSON object")
+            metadata = dict(metadata)
             metadata["client_id"] = client_id
 
             # Create audio data container

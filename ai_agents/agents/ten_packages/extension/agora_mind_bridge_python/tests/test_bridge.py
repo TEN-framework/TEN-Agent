@@ -104,6 +104,8 @@ class FakeEnv:
 
 
 runtime = types.ModuleType("ten_runtime")
+runtime.Addon = object
+runtime.register_addon_as_extension = lambda _name: lambda addon: addon
 runtime.AsyncExtension = type(
     "AsyncExtension", (), {"__init__": lambda self, _name: None}
 )
@@ -231,6 +233,7 @@ async def test_turn_completion_is_sent_to_tts_once_with_case_metadata():
     assert output.payload["text"] == "Flight booked."
     assert output.payload["text_input_end"] is True
     assert output.payload["metadata"]["example_id"] == "case-1"
+    assert output.payload["metadata"]["session_id"] == "7"
 
 
 @pytest.mark.asyncio
@@ -255,6 +258,56 @@ async def test_create_session_response_sets_session_id():
     assert len(returned) == 1
     assert returned[0].status == StatusCode.OK
     assert bridge.ten_env.commands[0].properties == command.properties
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "name,properties",
+    [
+        ("flush_session", {"session_id": 7}),
+        ("set_session_debug", {"session_id": 7, "enabled": True}),
+        ("delete_session", {"session_id": 7}),
+    ],
+)
+async def test_session_control_commands_forward_properties_and_results(
+    name, properties
+):
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    command = FakeCmd(name)
+    command.properties = properties
+    await bridge.on_cmd(bridge.ten_env, command)
+    assert len(bridge.ten_env.commands) == 1
+    forwarded = bridge.ten_env.commands[0]
+    assert forwarded.name == name
+    assert forwarded.properties == properties
+    assert forwarded.destinations == [("", "", "agora_mind")]
+    assert returned[0].status == StatusCode.OK
+    assert json.loads(returned[0].response_json)["type"] == f"{name}.completed"
+    if name == "delete_session":
+        assert bridge.session_id is None
+
+
+@pytest.mark.asyncio
+async def test_unsupported_command_returns_bridge_error_without_forwarding():
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    await bridge.on_cmd(bridge.ten_env, FakeCmd("unknown_command"))
+    assert not bridge.ten_env.commands
+    assert returned[0].status == StatusCode.ERROR
+    error = json.loads(returned[0].response_json)
+    assert error["error"]["kind"] == "bridge"
+    assert "unsupported bridge command" in error["error"]["message"]
 
 
 @pytest.mark.asyncio
