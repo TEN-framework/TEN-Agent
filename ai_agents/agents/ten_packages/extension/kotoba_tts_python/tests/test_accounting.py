@@ -210,3 +210,32 @@ def test_split_samples_are_aligned_and_never_cross_requests():
         run_tester(script, make_config(server.url))
     finally:
         server.stop()
+
+
+def test_half_sample_never_crosses_response_boundary():
+    """Two sentences in one request, every chunk one byte too long: the
+    half sample left at the end of the first sentence's response must be
+    dropped, not glued onto the second response's first byte."""
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=3, extra_chunk_bytes=1)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "two", "一文目。二文目。", end=True)
+            end = await tester.wait_for_audio_end("two")
+            audio = tester.recording.audio_bytes("two")
+            # Per response: 3 * 1601 = 4803 bytes, 4802 emitted, 1 dropped.
+            assert len(audio) == 2 * 4802, len(audio)
+            # The second response starts with the ramp's first sample, not
+            # with the first response's stray byte.
+            ramp = server.expected_pcm(1)
+            assert audio[4802:4804] == ramp[:2]
+            assert end.payload["request_total_audio_duration_ms"] == (
+                2 * 4802 * 1000 // 32000
+            )
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["一文目。", "二文目。"]
+    finally:
+        server.stop()

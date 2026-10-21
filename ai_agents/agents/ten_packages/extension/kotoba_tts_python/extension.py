@@ -77,8 +77,9 @@ class _RequestState:
         self.emitted_bytes = 0
         self.ttfb_sent = False
         self.recorder: PCMWriter | None = None
-        # A trailing half sample held back until the next chunk completes
-        # it, so only whole samples are emitted and counted.
+        # A trailing half sample held back until the next chunk of the same
+        # response completes it, so only whole samples are emitted and
+        # counted. Cleared at every response boundary.
         self.pending_bytes = b""
         # A handshake time taken from the client but not yet reported.
         # Kept here so a send interrupted by flush is repeated, not lost.
@@ -397,6 +398,21 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 raise
             finally:
                 await stream.aclose()
+                self._end_response(request)
+
+    def _end_response(self, request: _RequestState) -> None:
+        """A service response is over (done, failed, retried or abandoned).
+
+        Each response is encoded independently, so a half sample left at
+        its end can never be completed by the next one: drop it instead of
+        joining it to the next response's first byte.
+        """
+        if request.pending_bytes:
+            self.ten_env.log_warn(
+                f"request {request.request_id}: response ended on a partial "
+                f"sample; dropped {len(request.pending_bytes)} byte(s)"
+            )
+            request.pending_bytes = b""
 
     async def _emit_audio(self, request: _RequestState, chunk: bytes) -> None:
         assert self.client is not None and self.config is not None
