@@ -1,22 +1,22 @@
 {
   "type": "app",
   "name": "default_app_cpp",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "simple_http_server_cpp",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "default_extension_cpp",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ]
 }

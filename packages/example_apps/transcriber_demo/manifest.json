@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "transcriber_demo",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "display_name": {
     "locales": {
       "en-US": {
@@ -60,7 +60,7 @@
     {
       "type": "addon_loader",
       "name": "nodejs_addon_loader",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "scripts": {
