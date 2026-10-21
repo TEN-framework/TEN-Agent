@@ -1,7 +1,7 @@
 {
   "type": "system",
   "name": "pytest_ten",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "display_name": {
     "locales": {
       "en-US": {
@@ -45,7 +45,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ]
 }
