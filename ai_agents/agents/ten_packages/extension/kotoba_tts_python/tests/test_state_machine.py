@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fake_kotoba_server import FakeKotobaServer, Scenario  # noqa: E402
-from helpers import make_config, run_tester  # noqa: E402
+from helpers import ThreadGate, make_config, run_tester  # noqa: E402
 
 
 async def _wait_until(predicate, timeout_s: float = 5.0) -> None:
@@ -196,5 +196,113 @@ def test_completed_id_history_evicts_oldest():
 
             run_tester(script, make_config(server.url))
         assert server.recorded.texts == ["r1。", "r2。", "r3。", "再び。"]
+    finally:
+        server.stop()
+
+
+def _usage(tester, request_id: str) -> list:
+    return [
+        e
+        for e in tester.recording.named("metrics")
+        if "recv_audio_duration" in e.payload.get("metrics", {})
+        and e.payload["metadata"].get("request_id") == request_id
+    ]
+
+
+def test_late_input_while_usage_settles_does_not_release_the_next_request():
+    """A's usage send is held after its counters were read. B waits in the
+    base queue, then a late delta for A arrives. That delta must not
+    release B early: B may start only after A's terminal sequence is done,
+    and B's usage must hold exactly its own text and audio."""
+    from unittest.mock import patch
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=20, chunk_delay_s=0.05)
+    ).start()
+    original = ext_mod.KotobaTTSExtension.send_metrics
+    entered, release = ThreadGate(), ThreadGate()
+    state = {"held": False}
+
+    async def gated_send_metrics(self, metrics, request_id=""):
+        is_usage = "recv_audio_duration" in metrics.metrics
+        if is_usage and request_id == "A" and not state["held"]:
+            state["held"] = True
+            entered.set()
+            await release.wait()
+        return await original(self, metrics, request_id)
+
+    try:
+        with patch.object(
+            ext_mod.KotobaTTSExtension, "send_metrics", gated_send_metrics
+        ):
+
+            async def script(tester, ten_env):
+                await tester.send_text(ten_env, "A", "前。", end=True)
+                await tester.wait_for_audio_end("A", timeout_s=5.0)
+                await asyncio.wait_for(entered.wait(), 5.0)
+                # A's usage is in flight. B queues behind A, then a late
+                # delta for A arrives.
+                await tester.send_text(ten_env, "B", "後ろの文。", end=True)
+                await tester.send_text(ten_env, "A", "遅い。", end=True)
+                await asyncio.sleep(0.8)
+                b_before_release = len(tester.recording.audio_bytes("B"))
+                release.set()
+                await tester.wait_for_audio_end("B", timeout_s=8.0)
+                await tester.wait_for(
+                    lambda r: len(_usage(tester, "B")) >= 1, timeout_s=2.0
+                )
+                assert (
+                    b_before_release == 0
+                ), "B started while A's usage was still in flight"
+                usage_a, usage_b = _usage(tester, "A"), _usage(tester, "B")
+                assert len(usage_a) == 1 and len(usage_b) == 1
+                assert usage_a[0].payload["metrics"]["input_characters"] == (
+                    len("前。")
+                )
+                b = usage_b[0].payload["metrics"]
+                assert b["input_characters"] == len("後ろの文。"), b
+                assert b["recv_audio_duration"] == (
+                    len(tester.recording.audio_bytes("B")) * 1000 / 32000
+                ), b
+
+            run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["前。", "後ろの文。"]
+    finally:
+        release.set()
+        server.stop()
+
+
+def test_late_input_after_input_end_is_not_spoken_or_counted():
+    """A late delta for a request whose text_input_end already arrived,
+    while that request is still speaking: it is neither sent to the
+    service nor counted in the request's usage."""
+    sentences = ["一つ目の文。", "二つ目の文。", "三つ目の文。"]
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=4, chunk_delay_s=0.05)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            await tester.send_text(ten_env, "L", "".join(sentences), end=True)
+            await tester.wait_for_event("pcm_frame", count=1)
+            await tester.send_text(ten_env, "L", "余分な文。", end=True)
+            end = await tester.wait_for_audio_end("L", timeout_s=8.0)
+            assert end.payload["reason"] == 1
+            await tester.wait_for(
+                lambda r: len(_usage(tester, "L")) >= 1, timeout_s=2.0
+            )
+            usage = _usage(tester, "L")
+            assert len(usage) == 1
+            assert usage[0].payload["metrics"]["input_characters"] == len(
+                "".join(sentences)
+            )
+            assert tester.recording.audio_bytes("L") == server.expected_pcm(
+                len(sentences)
+            )
+            assert len(tester.recording.named("tts_audio_end")) == 1
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.texts == sentences
     finally:
         server.stop()

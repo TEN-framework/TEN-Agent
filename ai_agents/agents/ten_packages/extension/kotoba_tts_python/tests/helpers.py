@@ -10,6 +10,7 @@ flushes. Tests subclass it or pass a ``script`` coroutine.
 """
 import asyncio
 import json
+import threading
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -268,3 +269,28 @@ def dump_path(dump_dir: str, request_id: str) -> str:
     from kotoba_tts_python.extension import dump_file_name
 
     return os.path.join(dump_dir, dump_file_name(request_id))
+
+
+class ThreadGate:
+    """A one-shot flag shared between the tester and the extension.
+
+    The tester and the extension under test run separate asyncio loops on
+    separate threads, and ``asyncio.Event`` is not thread-safe: setting it
+    from the other loop can leave the waiter asleep. Same interface as
+    ``asyncio.Event`` (``set``, ``is_set``, ``wait``), backed by a
+    ``threading.Event`` that each side polls on its own loop.
+    """
+
+    def __init__(self) -> None:
+        self._flag = threading.Event()
+
+    def set(self) -> None:
+        self._flag.set()
+
+    def is_set(self) -> bool:
+        return self._flag.is_set()
+
+    async def wait(self) -> bool:
+        while not self._flag.is_set():
+            await asyncio.sleep(0.005)
+        return True

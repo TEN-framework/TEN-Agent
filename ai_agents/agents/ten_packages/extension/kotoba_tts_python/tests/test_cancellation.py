@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fake_kotoba_server import FakeKotobaServer, Scenario  # noqa: E402
 from helpers import (  # noqa: E402
+    ThreadGate,
     dump_path,
     events_after,
     make_config,
@@ -210,7 +211,7 @@ def test_flush_during_terminal_path_keeps_audio_end_before_flush_end():
         with patch.object(ext_mod.PCMWriter, "flush", slow_flush):
 
             async def script(tester, ten_env):
-                gate["event"] = asyncio.Event()
+                gate["event"] = ThreadGate()
                 await tester.send_text(ten_env, "term", "終了中。", end=True)
                 end = await tester.wait_for_audio_end("term")
                 # Worker is now inside _end_request, blocked on the dump.
@@ -414,8 +415,8 @@ def test_flush_while_the_write_itself_is_suspended():
         ):
 
             async def script(tester, ten_env):
-                gate["event"] = asyncio.Event()
-                gate["entered"] = asyncio.Event()
+                gate["event"] = ThreadGate()
+                gate["entered"] = ThreadGate()
                 await tester.send_text(ten_env, "w", "書き込み中。", end=True)
                 await asyncio.wait_for(gate["entered"].wait(), 5.0)
                 t0 = time.monotonic()
@@ -460,8 +461,8 @@ def test_stop_while_the_write_is_suspended_is_bounded():
         ):
 
             async def script(tester, ten_env):
-                gate["event"] = asyncio.Event()
-                gate["entered"] = asyncio.Event()
+                gate["event"] = ThreadGate()
+                gate["entered"] = ThreadGate()
                 await tester.send_text(ten_env, "s", "停止。", end=True)
                 await asyncio.wait_for(gate["entered"].wait(), 5.0)
                 # Return: the runtime stops the extension mid-write.
@@ -770,9 +771,9 @@ def test_next_request_during_previous_dump_flush_then_stop():
         with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
 
             async def script(tester, ten_env):
-                release = asyncio.Event()
+                release = ThreadGate()
                 gate["event"] = release
-                gate["entered"] = asyncio.Event()
+                gate["entered"] = ThreadGate()
                 await tester.send_text(ten_env, "P", "前。", end=True)
                 await tester.wait_for_audio_end("P")
                 await asyncio.wait_for(gate["entered"].wait(), 5.0)
@@ -832,9 +833,9 @@ def test_flush_waits_for_terminal_events_that_land_in_time():
         ):
 
             async def script(tester, ten_env):
-                release = asyncio.Event()
+                release = ThreadGate()
                 gate["release"] = release
-                gate["entered"] = asyncio.Event()
+                gate["entered"] = ThreadGate()
                 await tester.send_text(ten_env, "wait", "待つ。", end=True)
                 end = await tester.wait_for_audio_end("wait")
                 await asyncio.wait_for(gate["entered"].wait(), 5.0)
@@ -896,7 +897,7 @@ def test_request_released_during_shutdown_never_starts():
         with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
 
             async def script(tester, ten_env):
-                entered = asyncio.Event()
+                entered = ThreadGate()
                 gate["entered"] = entered
                 await tester.send_text(ten_env, "A", "前。", end=True)
                 await tester.wait_for_audio_end("A")
@@ -953,9 +954,9 @@ def test_flush_during_streaming_does_not_wait_for_dump_io():
         with patch.object(ext_mod.PCMWriter, "flush", gated_flush):
 
             async def script(tester, ten_env):
-                release = asyncio.Event()
+                release = ThreadGate()
                 gate["release"] = release
-                gate["entered"] = asyncio.Event()
+                gate["entered"] = ThreadGate()
                 await tester.send_text(
                     ten_env, "io", "書き込み待ち。", end=True
                 )

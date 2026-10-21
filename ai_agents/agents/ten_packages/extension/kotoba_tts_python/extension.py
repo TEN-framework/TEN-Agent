@@ -88,6 +88,8 @@ class _RequestState:
         # ``*_sent`` flag is set right after its event has gone out, so a
         # second caller of ``_finalize()`` repeats only what was cut off.
         self.ended = False
+        # text_input_end has arrived: later input for this id is late.
+        self.input_ended = False
         self.error_sent = False
         self.audio_end_sent = False
         self.usage_sent = False
@@ -239,9 +241,26 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
 
         Returns quickly: the base class awaits this call inline.
         """
+        current = self._request
+        if (
+            current is not None
+            and current.request_id == t.request_id
+            and (current.input_ended or current.ended)
+        ):
+            # Late input for the request still in progress: its input is
+            # closed, or its terminal sequence is running. It is neither
+            # spoken nor counted, and the queue is not released here: the
+            # request's own _finalize() calls finish_request() once its
+            # usage is out, so the next request cannot start early and
+            # share the usage counters with it.
+            self.ten_env.log_warn(
+                f"ignoring late text for {t.request_id}: its input has ended"
+            )
+            return
+
         if t.request_id in self._completed_ids:
-            # Late input for a request that already ended (for example a
-            # repeated empty request, or more deltas after an init-failed
+            # Late input for a request that has fully finished (for example
+            # a repeated empty request, or more deltas after an init-failed
             # request was reported). Not an error: release the queue.
             self.ten_env.log_warn(
                 f"ignoring text for finished request {t.request_id}"
@@ -299,6 +318,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             for segment in request.buffer.push(t.text):
                 await request.segments.put(segment)
         if t.text_input_end:
+            request.input_ended = True
             await self._finalize_input(request)
 
     def _start_request(self, request_id: str) -> _RequestState:
