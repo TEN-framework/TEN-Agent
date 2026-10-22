@@ -609,7 +609,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         if self.config.audio_out:
             su.session.voice = self.config.voice
         else:
-            su.session.modalities = ["text"]
+            su.session.modalities = {"text"}
 
         su.session.input_audio_transcription = InputAudioTranscription(
             language=self.config.language,

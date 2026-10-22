@@ -138,6 +138,7 @@ class Session:
 
 @dataclass
 class SessionUpdateParams:
+    type: Literal["realtime"] = "realtime"  # GA session type
     model: Optional[str] = None  # Optional string to specify the model
     modalities: Optional[Set[str]] = (
         None  # Set of allowed modalities (e.g., "text", "audio")
@@ -270,12 +271,12 @@ class EventType(str, Enum):
     RESPONSE_OUTPUT_ITEM_DONE = "response.output_item.done"
     RESPONSE_CONTENT_PART_ADDED = "response.content_part.added"
     RESPONSE_CONTENT_PART_DONE = "response.content_part.done"
-    RESPONSE_TEXT_DELTA = "response.text.delta"
-    RESPONSE_TEXT_DONE = "response.text.done"
-    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.audio_transcript.delta"
-    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.audio_transcript.done"
-    RESPONSE_AUDIO_DELTA = "response.audio.delta"
-    RESPONSE_AUDIO_DONE = "response.audio.done"
+    RESPONSE_TEXT_DELTA = "response.output_text.delta"
+    RESPONSE_TEXT_DONE = "response.output_text.done"
+    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.output_audio_transcript.delta"
+    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.output_audio_transcript.done"
+    RESPONSE_AUDIO_DELTA = "response.output_audio.delta"
+    RESPONSE_AUDIO_DONE = "response.output_audio.done"
     RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = (
         "response.function_call_arguments.delta"
     )
@@ -903,10 +904,79 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     raise ValueError(f"Unknown message type: {data['type']} {data}")
 
 
-def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
-    # ignore none value
-    return json.dumps(
-        asdict(
-            obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
+def _dataclass_to_dict(obj: Any) -> Any:
+    if is_dataclass(obj):
+        return {
+            k: _dataclass_to_dict(v)
+            for k, v in asdict(obj).items()
+            if v is not None
+        }
+    if isinstance(obj, Enum):
+        return obj.value
+    if isinstance(obj, set):
+        return list(obj)
+    if isinstance(obj, list):
+        return [_dataclass_to_dict(i) for i in obj]
+    if isinstance(obj, dict):
+        return {k: _dataclass_to_dict(v) for k, v in obj.items()}
+    return obj
+
+
+def _session_update_params_to_ga(
+    params: SessionUpdateParams, sample_rate: int = 24000
+) -> Dict[str, Any]:
+    """Map existing SessionUpdateParams fields to GA session.update JSON."""
+    session: Dict[str, Any] = {"type": params.type}
+
+    for key in (
+        "model",
+        "instructions",
+        "tools",
+        "tool_choice",
+        "temperature",
+    ):
+        value = getattr(params, key)
+        if value is not None:
+            session[key] = _dataclass_to_dict(value)
+
+    if params.max_response_output_tokens is not None:
+        session["max_output_tokens"] = params.max_response_output_tokens
+
+    if params.modalities is not None:
+        session["output_modalities"] = list(params.modalities)
+    elif params.voice is not None:
+        session["output_modalities"] = ["audio"]
+
+    audio_input: Dict[str, Any] = {
+        "format": {"type": "audio/pcm", "rate": sample_rate},
+    }
+    if params.turn_detection is not None:
+        audio_input["turn_detection"] = _dataclass_to_dict(params.turn_detection)
+    if params.input_audio_transcription is not None:
+        audio_input["transcription"] = _dataclass_to_dict(
+            params.input_audio_transcription
         )
-    )
+
+    audio: Dict[str, Any] = {"input": audio_input}
+    if params.voice is not None:
+        voice = (
+            params.voice.value
+            if isinstance(params.voice, Voices)
+            else params.voice
+        )
+        audio["output"] = {
+            "format": {"type": "audio/pcm"},
+            "voice": voice,
+        }
+
+    session["audio"] = audio
+    return session
+
+
+def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
+    if isinstance(obj, SessionUpdate) and obj.session is not None:
+        payload = _dataclass_to_dict(obj)
+        payload["session"] = _session_update_params_to_ga(obj.session)
+        return json.dumps(payload)
+
+    return json.dumps(_dataclass_to_dict(obj))
