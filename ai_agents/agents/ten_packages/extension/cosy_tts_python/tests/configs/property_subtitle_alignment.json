@@ -1,0 +1,12 @@
+{
+    "dump": false,
+    "dump_path": "./tests/keep_dump_output/",
+    "enable_words": true,
+    "params": {
+        "api_key": "${env:COSY_TTS_API_KEY}",
+        "model": "cosyvoice-v3-flash",
+        "sample_rate": 16000,
+        "voice": "longanyang"
+    },
+    "url": "${env:COSY_TTS_URL}"
+}
