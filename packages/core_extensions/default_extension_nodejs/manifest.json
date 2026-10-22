@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_nodejs",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "display_name": {
     "locales": {
       "en-US": {
@@ -66,7 +66,7 @@
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "package": {

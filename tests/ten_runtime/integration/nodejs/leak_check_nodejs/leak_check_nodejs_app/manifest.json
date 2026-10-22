@@ -1,27 +1,27 @@
 {
   "type": "app",
   "name": "default_app_nodejs",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "http_server_extension_nodejs",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "simple_echo_cpp",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ]
 }
