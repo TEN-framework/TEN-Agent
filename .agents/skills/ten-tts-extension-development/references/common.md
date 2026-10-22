@@ -13,7 +13,7 @@ async def cancel_tts(self) -> None: ...
 
 `AsyncTTS2HttpExtension` supplies the HTTP request pipeline. An HTTP subclass supplies configuration creation, client creation, vendor name, and output sample rate.
 
-Generated packages should contain `extension.py`, a provider client module, `config.py` when configuration is non-trivial, `addon.py`, `manifest.json`, `property.json`, `requirements.txt`, and `tests/` with a runnable `tests/bin/start`. The manifest must declare the TTS interface and runtime dependency. The property file must expose the provider configuration without embedding secrets.
+Generated packages should contain `__init__.py`, `addon.py`, `extension.py`, a provider client module, `config.py` when configuration is non-trivial, `manifest.json`, `property.json`, `requirements.txt`, and `tests/` with a runnable `tests/bin/start`. `__init__.py` must contain `from . import addon`; the Python addon loader imports the package itself, so a namespace package will not execute registration. The manifest must declare the TTS interface and runtime dependency. The property file must expose the provider configuration without embedding secrets.
 
 ## Input messages
 
@@ -35,25 +35,25 @@ Provider chunks may split a sample. Buffer leftover bytes until a complete `samp
 
 ## Completion and flush
 
-A request is complete only when the provider’s terminal event has arrived, or when the request is intentionally interrupted or fails. Flush must cancel or close provider work, clear pending input, invalidate late callbacks, finish any active request with an interrupted/error reason, then emit `tts_flush_end`. No stale audio may follow flush completion.
+A request is complete only when the logical input is complete (`text_input_end`), the provider’s terminal event has arrived for the work belonging to that request, and no provider work remains for the same request ID. A provider END received after an earlier text chunk must not close a request that may receive more text. When a terminal request completes normally or with an error, send `tts_audio_end()` and then call `finish_request()`; `send_tts_audio_end()` does not perform the base-class request transition by itself. For an error path, report the error and preserve the required audio-end/finish behavior.
+
+For a flush, the base class cancels the current task, clears input and buffered requests, and invokes `cancel_tts()`. The subclass should emit an interrupted audio end for an active request and must not call `finish_request()`. The base class performs the cleanup and emits `tts_flush_end`. No stale audio may follow flush completion.
 
 ## State, callbacks, and metrics
 
-Report state through the extension’s existing state/metric callbacks using exactly these states and triggers:
+Connection state and request state are separate contracts. Report only these three values through the existing connection callbacks:
 
 | State | Emit when |
 |---|---|
 | `connecting` | The connection attempt is about to be sent/started. |
 | `connected` | The provider confirms the connection is ready for text. |
-| `processing` | The first text chunk for a request ID is about to be sent to the provider. |
-| `finalizing` | The final text chunk for a request ID has been sent to the provider. |
 | `disconnected` | An established connection drops during normal operation, before recovery or retry. |
-| `reconnecting` | A retry attempt starts after a disconnect or recoverable connection error. |
-| `interrupted` | TEN flush is received and active provider work is being cancelled. |
-| `error` | An internal error or provider error response is received. |
-| `closed` | The extension/provider connection is permanently closed during shutdown or terminal teardown. |
 
-Do not emit `processing` when text is merely placed into an internal queue: emit it immediately before the actual provider send for that request ID. Do not use `closed` for a transient disconnect. State callbacks must not expose credentials. Provider callbacks must be normalized into one of: audio chunk, request complete, connection event, or `ModuleError` with vendor name/code/message. Send TTFB only once per request ID, before its audio end; send error before error audio end when both are required.
+`on_connecting()`, `on_connected()`, and `on_disconnected()` are the callback surface; the base status enum does not contain `reconnecting`, `processing`, `finalizing`, `interrupted`, `error`, or `closed`. Represent a retry as `disconnected` followed by `connecting`. Keep `reconnecting` as an internal flag/log if useful.
+
+`AsyncTTS2BaseExtension` owns the request states `QUEUED`, `PROCESSING`, `FINALIZING`, and `COMPLETED`. It enters `PROCESSING` before calling `request_tts()` and enters `FINALIZING` when `text_input_end` is present, so those states are not transport status events and must not be emitted through connection callbacks. Record provider-send timestamps independently for TTFB. Request interruptions belong to the interrupted audio-end path, provider failures to the error path, and shutdown is normally reported as `disconnected` followed by internal cleanup. State callbacks must not expose credentials.
+
+Provider callbacks must be normalized into one of: audio chunk, connection event, `ModuleError` with vendor name/code/message, or an internal completion/alignment event. Send TTFB only once per request ID, before its audio end; send error before error audio end when both are required.
 
 ## Provider-to-TEN mapping template
 
@@ -63,15 +63,16 @@ For every provider contract, write and implement a mapping table like this befor
 |---|---|---|
 | Connection attempt | Start/open transport | `connecting` |
 | Connection ready/handshake success | Mark transport ready | `connected` |
-| First text for request ID is sent | Record TTFB start immediately before send | `processing` |
-| Last text for request ID is sent | Mark input finalizing | `finalizing` |
+| First text for request ID is sent | Record TTFB start immediately before send | Internal request state; no connection callback |
+| Last text for request ID is sent | Mark input finalizing; base owns `FINALIZING` | Internal request state; no connection callback |
 | First valid audio bytes | Start request output and compute TTFB | `tts_audio_start`, TTFB metric, `pcm_frame` |
 | Audio bytes | Validate/alignment-buffer and emit | `pcm_frame` |
-| Provider completion | Flush dump and close request | `tts_audio_end(reason=REQUEST_END)` |
-| Provider error response | Normalize vendor code/message | `error`, state `error`, and terminal audio end when required |
-| Connection drop | Invalidate old callbacks and preserve only replayable input | `disconnected`, then `reconnecting` |
-| TEN flush | Cancel, discard queued/late data, invalidate session | `interrupted`, `tts_flush_end` |
-| Permanent shutdown | Stop tasks and close transport | `closed` |
+| Provider END for an incomplete logical request | Treat as intermediate; keep request open | No `tts_audio_end`; no `finish_request` |
+| Provider completion with `text_input_end` and drained work | Flush dump, emit terminal end, complete base request | `tts_audio_end(reason=REQUEST_END)` then `finish_request()` |
+| Provider error response | Normalize vendor code/message | `error`; terminal audio end plus `finish_request` only when the request is ending |
+| Connection drop | Invalidate old callbacks and preserve only replayable input | `disconnected`, then `connecting` for retry |
+| TEN flush | Base cancels, clears queued/buffered work; subclass cancels provider and interrupts active request | `tts_audio_end(reason=INTERRUPTED)` then `tts_flush_end`; no `finish_request` |
+| Permanent shutdown | Stop tasks and close transport | `disconnected` through connection callback; internal closed state only |
 
 The provider’s field names may differ, but every row must have an explicit implementation path and test.
 
@@ -92,7 +93,7 @@ For headers, start with provider-required defaults, derive an authorization head
 
 ## Acceptance tests
 
-Cover event ordering, empty/whitespace input, invalid/missing credentials, malformed and long text, exact duration, TTFB, dump output, flush during synthesis, shutdown, and request isolation. Add reconnect tests whenever reconnect is implemented or promised.
+Cover event ordering, empty/whitespace input, invalid/missing credentials, malformed and long text, exact duration, TTFB, dump output, flush during synthesis, shutdown, and request isolation. Add reconnect tests whenever reconnect is implemented or promised. Add an appended-input scenario where multiple text chunks share one `request_id`, the provider emits an END after an intermediate chunk, and the extension still produces exactly one TEN audio lifecycle when the final input ends. Add a test where request A completes and buffered request B is then processed.
 
 Run the repository’s format and lint tasks from the agent workspace (`task format`, `task lint`, and the focused `task lint-extension EXTENSION=...`), the generated extension’s standalone test command, and the TTS guarder with the extension’s test configs. Include tests for config redaction, endpoint/header precedence, per-request dump filenames, state/error callbacks, pre-connected startup, reconnect after abnormal disconnect, and flush dropping unsent text and unread audio.
 
@@ -121,16 +122,18 @@ Run package/file checks, format, lint, extension-local tests, and these mock sce
 
 Before running tests, verify all of the following:
 
-- The package contains the required files and a runnable `tests/bin/start`.
+- The package contains the required files, including `__init__.py` with `from . import addon`, and a runnable `tests/bin/start`.
+- Importing the generated package executes the addon registration; verify with a package-import test.
 - The manifest declares the TTS interface and all runtime dependencies; the property file contains no secret.
 - HTTP inherits `AsyncTTS2HttpExtension`; WebSocket and SDK implementations inherit `AsyncTTS2BaseExtension`.
-- Streaming transports connect during startup and expose the nine state behaviors above with the specified triggers.
-- `processing` timing is recorded immediately before the first actual provider send for a request ID; connection time and queue time are excluded from TTFB.
-- `finalizing` is emitted after the last text send, and provider completion—not merely queue exhaustion—drives `tts_audio_end`.
+- Streaming transports connect during startup and use only `connecting`, `connected`, and `disconnected` through connection callbacks; retries are `disconnected` -> `connecting`.
+- Provider-send timing for TTFB is recorded immediately before the first actual send; connection time and queue time are excluded. Request-state transitions remain owned by the base class.
+- An intermediate provider END does not produce a TEN end; `tts_audio_end` and `finish_request` occur only after `text_input_end` and provider work are both complete.
 - Every request ID has an isolated PCM dump path, writer, byte count, and terminal cleanup.
 - Config logs redact API keys, tokens, authorization headers, and nested secret fields.
 - Top-level `url` and `headers` precedence over `params.url`, `params.base_url`, generated auth headers, and client defaults is tested.
 - Flush cancels provider work, discards unsent text and unread/late audio, invalidates old callbacks, and prevents output after `tts_flush_end`.
-- `tts_audio_end` reports accurate interval, PCM duration, and reason for normal, empty, interrupted, and error paths.
+- `tts_audio_end` reports accurate interval, PCM duration, and reason for normal, empty, interrupted, and error paths. Normal, empty, and terminal error streaming paths call `finish_request()`; flush relies on base cleanup.
+- Same-request-ID appended input has one audio lifecycle, and a second request ID proceeds after the first completes.
 - Provider errors and callbacks preserve request correlation and vendor metadata without leaking secrets.
 - Standalone tests, formatting, lint, and the real-key TTS guarder are all scheduled and their results will be reported.

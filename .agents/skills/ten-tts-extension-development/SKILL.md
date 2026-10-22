@@ -11,6 +11,7 @@ The requested deliverable is code, not a design essay. Generate only the extensi
 
 ```text
 <extension-name>/
+├── __init__.py
 ├── addon.py
 ├── extension.py
 ├── config.py
@@ -23,6 +24,12 @@ The requested deliverable is code, not a design essay. Generate only the extensi
     ├── conftest.py
     ├── configs/
     └── test_*.py
+```
+
+`__init__.py` must import the addon module so package loading executes its registration decorator:
+
+```python
+from . import addon
 ```
 
 `config.py` may be small but is required for a non-trivial provider. Generate only this extension package and its tests; do not modify graphs, examples, framework base classes, or unrelated files unless the user explicitly asks for that.
@@ -57,6 +64,8 @@ For streaming transports, establish and start the provider connection during ext
 Every implementation must satisfy [references/common.md](references/common.md). In particular:
 
 - Emit `tts_audio_start` before the first PCM frame and exactly one `tts_audio_end` after the final frame.
+- After terminal `tts_audio_end` for a streaming request, call `finish_request()` so the base class completes the request and releases buffered request IDs. Do this for normal, empty, and terminal error completion. Do not call it for a flush; the base class owns flush cleanup.
+- Treat a provider END as a request end only when the logical text input is complete (`text_input_end`) and provider work for that request is drained. A per-chunk END is an intermediate event.
 - Keep `request_id` and metadata attached across queues and asynchronous callbacks.
 - Calculate total audio duration from emitted PCM bytes and the actual format.
 - On flush, stop producers, clear pending input, cancel active provider work, suppress late audio, and send `tts_flush_end` only after cleanup.
