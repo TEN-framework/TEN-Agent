@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-export PYTHONPATH=.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:.ten/app/ten_packages/system/ten_ai_base/interface:$PYTHONPATH
+export PYTHONPATH=.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:.ten/app/ten_packages/system/ten_ai_base/interface:.ten/app/ten_packages/system/pytest_ten:$PYTHONPATH
 
 # If the Python app imports some modules that are compiled with a different
 # version of libstdc++ (ex: PyTorch), the Python app may encounter confusing
@@ -18,4 +18,4 @@ export PYTHONPATH=.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.
 #
 # Refer to https://github.com/pytorch/pytorch/issues/102360?from_wecom=1#issuecomment-1708989096
 
-pytest tests/ -s "$@"
+pytest tests/ -s --forked "$@"

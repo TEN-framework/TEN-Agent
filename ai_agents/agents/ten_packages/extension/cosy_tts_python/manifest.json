@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "cosy_tts_python",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "dependencies": [
     {
       "type": "system",
@@ -12,6 +12,13 @@
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"
+    }
+  ],
+  "dev_dependencies": [
+    {
+      "type": "system",
+      "name": "pytest_ten",
+      "version": "0.11.73"
     }
   ],
   "package": {
@@ -34,6 +41,13 @@
     ],
     "property": {
       "properties": {
+        "enable_words": {
+          "type": "bool"
+        },
+        "headers": {
+          "type": "object",
+          "properties": {}
+        },
         "params": {
           "type": "object",
           "properties": {
@@ -53,6 +67,9 @@
               "type": "string"
             }
           }
+        },
+        "url": {
+          "type": "string"
         }
       }
     }

@@ -1,203 +1,248 @@
-#
-# Copyright © 2024 Agora
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0, with certain conditions.
-# Refer to the "LICENSE" file in the root directory for more information.
-#
 import asyncio
-from typing import Any, Optional
-from unittest.mock import patch, AsyncMock
 import json
+import threading
 
-from ten_ai_base.struct import TTSTextInput
-from ten_runtime import (
-    Data,
-    ExtensionTester,
-    TenEnvTester,
+import pytest
+from pytest_ten import TenTestContext, ten_test
+from ten_ai_base.struct import TTSFlush, TTSTextInput
+from ten_runtime import Data
+
+from .. import cosy_tts
+from ..cosy_tts import (
+    AsyncIteratorCallback,
+    ProviderError,
+    SharedPool,
 )
-from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE
+from .test_connection_reuse import (
+    PROPERTY_JSON,
+    SERVER_PORT,
+    FakeDashScopeServer,
+)
 
 
-# ================ test reconnect after connection drop(robustness) ================
-class ExtensionTesterRobustness(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.first_request_error: Optional[dict[str, Any]] = None
-        self.second_request_successful = False
-        self.ten_env: Optional[TenEnvTester] = None
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends the first TTS request."""
-        self.ten_env = ten_env_tester
-        ten_env_tester.log_info(
-            "Robustness test started, sending first TTS request."
-        )
-
-        # First request, expected to fail
-        tts_input_1 = TTSTextInput(
-            request_id="tts_request_to_fail",
-            text="This request will trigger a simulated connection drop.",
-        )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input_1.model_dump_json())
-        ten_env_tester.send_data(data)
-        ten_env_tester.on_start_done()
-
-    def send_second_request(self):
-        """Sends the second TTS request to verify reconnection."""
-        if self.ten_env is None:
-            print("Error: ten_env is not initialized.")
-            return
-        self.ten_env.log_info(
-            "Sending second TTS request to verify reconnection."
-        )
-        tts_input_2 = TTSTextInput(
-            request_id="tts_request_to_succeed",
-            text="This request should succeed after reconnection.",
-        )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input_2.model_dump_json())
-        self.ten_env.send_data(data)
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        name = data.get_name()
-        json_str, _ = data.get_property_to_json(None)
-        if not json_str:
-            # Not all events have a JSON payload (e.g., tts_audio_start)
-            return
-        payload = json.loads(json_str)
-
-        if name == "error" and payload.get("id") == "tts_request_to_fail":
-            ten_env.log_info(
-                f"Received expected error for the first request: {payload}"
-            )
-            self.first_request_error = payload
-            # After receiving the error for the first request, immediately send the second one.
-            self.send_second_request()
-
-        elif (
-            name == "tts_audio_end"
-            and payload.get("request_id") == "tts_request_to_succeed"
-        ):
-            ten_env.log_info(
-                "Received tts_audio_end for the second request. Test successful."
-            )
-            self.second_request_successful = True
-            # We can now safely stop the test.
-            ten_env.stop_test()
+@pytest.fixture
+def robustness_server() -> FakeDashScopeServer:
+    server = FakeDashScopeServer(SERVER_PORT)
+    server.start()
+    try:
+        yield server
+    finally:
+        server.stop()
 
 
-@patch("cosy_tts_python.extension.CosyTTSClient")
-def test_reconnect_after_connection_drop(MockCosyTTSClient):
-    """
-    Tests that the extension can recover from a connection drop, report a
-    NON_FATAL_ERROR, and then successfully reconnect and process a new request.
-    """
-    print("Starting test_reconnect_after_connection_drop with mock...")
+def test_flush_while_pool_startup_is_pending(
+    monkeypatch: pytest.MonkeyPatch,
+    robustness_server: FakeDashScopeServer,
+) -> None:
+    startup_started = threading.Event()
+    release_startup = threading.Event()
+    original_register = SharedPool.register.__func__
 
-    # --- Mock Configuration ---
-    mock_instance = MockCosyTTSClient.return_value
-    # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    def delayed_register(cls, config):
+        startup_started.set()
+        assert release_startup.wait(2.0)
+        return original_register(cls, config)
 
-    # This mock now manages session state to correctly simulate a failure
-    # on the first attempt and success on the second, without causing loops.
-    class RobustnessStreamer:
-        class Session:
-            def __init__(self, should_fail: bool):
-                self.should_fail = should_fail
-                self.call_count = 0
-
-            async def get_audio_data(self):
-                if self.should_fail:
-                    raise ConnectionRefusedError(
-                        "Simulated connection drop from test"
-                    )
-                # On the second request, simulate a successful audio stream
-                # that completes immediately on first call, then stops loop
-                self.call_count += 1
-                if self.call_count == 1:
-                    return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
-                # Subsequent calls: raise CancelledError to stop the loop
-                raise asyncio.CancelledError()
-
-        def __init__(self):
-            self.session_count = 0
-            self.session: Optional[RobustnessStreamer.Session] = None
-            self._new_session_event = asyncio.Event()
-
-        def synthesize_audio(self, text: str, text_input_end: bool):
-            self.session_count += 1
-            should_fail = self.session_count == 1
-            self.session = RobustnessStreamer.Session(should_fail)
-            self._new_session_event.set()
-
-        async def get_audio_data(self):
-            if not self.session:
-                await self._new_session_event.wait()
-
-            assert self.session is not None
-
-            try:
-                # Delegate to the current session.
-                done, msg_type, data = await self.session.get_audio_data()
-            except ConnectionRefusedError as e:
-                # After a failure, reset the state to allow the next session
-                # to be waited for correctly.
-                self.session = None
-                self._new_session_event.clear()
-                raise e
-
-            # If the session is finished, reset for the next request.
-            if done:
-                self.session = None
-                self._new_session_event.clear()
-
-            return (done, msg_type, data)
-
-    streamer = RobustnessStreamer()
-    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
-    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
-
-    # --- Test Setup ---
-    config = {
-        "params": {
-            "api_key": "a_valid_key",
-        },
-    }
-    tester = ExtensionTesterRobustness()
-    tester.set_test_mode_single("cosy_tts_python", json.dumps(config))
-
-    print("Running robustness test...")
-    tester.run()
-    print("Robustness test completed.")
-
-    # --- Assertions ---
-    # 1. Verify that the first request resulted in a NON_FATAL_ERROR
-    assert (
-        tester.first_request_error is not None
-    ), "Did not receive any error message."
-    assert (
-        tester.first_request_error.get("code") == 1000
-    ), f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
-
-    # 2. Verify that vendor_info was included in the error
-    vendor_info = tester.first_request_error.get("vendor_info")
-    assert vendor_info is not None, "Error message did not contain vendor_info."
-    assert (
-        vendor_info.get("vendor") == "cosy"
-    ), f"Expected vendor 'cosy', got {vendor_info.get('vendor')}"
-
-    # 3. Verify that the client's start method was called twice (initial + reconnect)
-    # This assertion is tricky because the reconnection logic might be inside the client.
-    # A better assertion is to check if the second request succeeded.
-
-    # 4. Verify that the second TTS request was successful
-    assert (
-        tester.second_request_successful
-    ), "The second TTS request after the error did not succeed."
-
-    print(
-        "✅ Robustness test passed: Correctly handled simulated connection drop and recovered."
+    monkeypatch.setattr(
+        SharedPool,
+        "register",
+        classmethod(delayed_register),
     )
+
+    @ten_test(
+        "cosy_tts_python",
+        property_json_str=PROPERTY_JSON,
+        timeout=4.0,
+    )
+    async def scenario(ctx: TenTestContext) -> None:
+        assert await asyncio.to_thread(startup_started.wait, 1.0)
+        first = TTSTextInput(
+            request_id="startup-flush",
+            text="must not be sent",
+            text_input_end=False,
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json("", first.model_dump_json())
+        await ctx.send_data(data)
+        # Let the base input queue enter request_tts() and block on startup.
+        await asyncio.sleep(0.1)
+
+        flush = Data.create("tts_flush")
+        flush.set_property_from_json(
+            "",
+            TTSFlush(flush_id="startup-flush").model_dump_json(),
+        )
+        await ctx.send_data(flush)
+        interrupted = await ctx.expect_data("tts_audio_end", timeout=0.5)
+        payload, error = interrupted.get_property_to_json("")
+        assert error is None
+        assert json.loads(payload)["reason"] == 2
+        await ctx.expect_data("tts_flush_end", timeout=0.5)
+
+        release_startup.set()
+        await ctx.assert_no_data("tts_audio_start", timeout=0.2)
+        await ctx.assert_no_audio_frame(timeout=0.2)
+
+        next_request = TTSTextInput(
+            request_id="after-startup-flush",
+            text="next request",
+            text_input_end=True,
+        )
+        next_data = Data.create("tts_text_input")
+        next_data.set_property_from_json("", next_request.model_dump_json())
+        await ctx.send_data(next_data)
+
+        await ctx.expect_audio_frame(timeout=1.0)
+        end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+        payload, error = end.get_property_to_json("")
+        assert error is None
+        assert json.loads(payload)["request_id"] == "after-startup-flush"
+
+    scenario()
+    assert robustness_server.task_parameters
+
+
+def test_transient_pool_start_failure_recovers_on_next_request(
+    monkeypatch: pytest.MonkeyPatch,
+    robustness_server: FakeDashScopeServer,
+) -> None:
+    original_register = SharedPool.register.__func__
+    calls = 0
+
+    def fail_then_recover(cls, config):
+        nonlocal calls
+        calls += 1
+        if calls <= 3:
+            raise TimeoutError("websocket handshake timed out")
+        return original_register(cls, config)
+
+    monkeypatch.setattr(
+        SharedPool,
+        "register",
+        classmethod(fail_then_recover),
+    )
+    monkeypatch.setattr(
+        cosy_tts,
+        "TTS_STARTUP_RETRY_DELAYS_SECONDS",
+        (0.0, 0.0),
+    )
+
+    @ten_test(
+        "cosy_tts_python",
+        property_json_str=PROPERTY_JSON,
+        timeout=3.0,
+    )
+    async def scenario(ctx: TenTestContext) -> None:
+        failed = TTSTextInput(
+            request_id="startup-failure",
+            text="first attempt",
+            text_input_end=True,
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json("", failed.model_dump_json())
+        await ctx.send_data(data)
+
+        end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+        payload, error = end.get_property_to_json("")
+        assert error is None
+        assert json.loads(payload)["reason"] == 3
+        error_data = await ctx.expect_data("error", timeout=0.5)
+        error_payload, error = error_data.get_property_to_json("")
+        assert error is None
+        assert (
+            json.loads(error_payload)["vendor_info"]["code"] == "TimeoutError"
+        )
+
+        recovered = TTSTextInput(
+            request_id="startup-recovered",
+            text="second attempt",
+            text_input_end=True,
+        )
+        recovered_data = Data.create("tts_text_input")
+        recovered_data.set_property_from_json(
+            "",
+            recovered.model_dump_json(),
+        )
+        await ctx.send_data(recovered_data)
+
+        await ctx.expect_audio_frame(timeout=1.0)
+        end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+        payload, error = end.get_property_to_json("")
+        assert error is None
+        assert json.loads(payload)["request_id"] == "startup-recovered"
+
+    scenario()
+    assert calls == 4
+
+
+@pytest.mark.asyncio
+async def test_stale_callback_is_dropped_after_cancel() -> None:
+    queue: asyncio.Queue = asyncio.Queue()
+    callback = AsyncIteratorCallback(
+        ten_env=None,  # type: ignore[arg-type]
+        queue=queue,
+        loop=asyncio.get_running_loop(),
+        request_id="stale-request",
+        sample_rate=16000,
+        words_enabled=False,
+    )
+    callback.bind_task("stale-task")
+    callback.cancel()
+
+    callback.on_data(b"\x01\x00" * 10)
+    callback.on_error(
+        json.dumps(
+            {
+                "header": {
+                    "task_id": "stale-task",
+                    "error_code": "late-error",
+                    "error_message": "late",
+                }
+            }
+        )
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(queue.get(), timeout=0.05)
+
+
+@pytest.mark.asyncio
+async def test_socket_close_releases_completion_waiter() -> None:
+    completion_event = threading.Event()
+    callback = AsyncIteratorCallback(
+        ten_env=None,  # type: ignore[arg-type]
+        queue=asyncio.Queue(),
+        loop=asyncio.get_running_loop(),
+        request_id="closed-request",
+        sample_rate=16000,
+        words_enabled=False,
+    )
+    callback.bind_task("closed-task")
+    callback.bind_completion_event(completion_event)
+
+    callback.on_close()
+
+    assert completion_event.is_set()
+    assert callback.error == ProviderError(
+        code="ConnectionClosed",
+        message="connection closed before task-finished",
+        task_id="closed-task",
+    )
+
+
+@pytest.mark.asyncio
+async def test_cancelled_callback_disables_old_transport_callbacks() -> None:
+    callback = AsyncIteratorCallback(
+        ten_env=None,  # type: ignore[arg-type]
+        queue=asyncio.Queue(),
+        loop=asyncio.get_running_loop(),
+        request_id="old-request",
+        sample_rate=16000,
+        words_enabled=False,
+    )
+    callback.cancel()
+
+    assert callback.cancelled is True
+    callback.on_complete()
+    callback.on_close()
+    assert callback.error is None
