@@ -1,0 +1,16 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "${env:SONIOX_API_KEY}",
+    "base_url": "wss://tts-rt.soniox.com/tts-websocket",
+    "model": "tts-rt-v2",
+    "language": "en",
+    "voice": "Adrian",
+    "audio_format": "pcm_s16le",
+    "sample_rate": 24000,
+    "speed": 1.0,
+    "reduce_silence": false,
+    "return_timestamps": false
+  }
+}

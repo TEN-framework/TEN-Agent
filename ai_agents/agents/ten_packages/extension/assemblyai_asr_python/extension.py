@@ -24,6 +24,7 @@ from ten_runtime import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from ten_ai_base.dumper import Dumper
@@ -188,7 +189,10 @@ class AssemblyAIASRExtension(
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_debug(f"AssemblyAI ASR result: {message_data}")
+        self.ten_env.log_debug(
+            f"AssemblyAI ASR result: {message_data}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         try:
             text = message_data.get("transcript", "")
             if not text:
@@ -223,7 +227,8 @@ class AssemblyAIASRExtension(
 
             self.ten_env.log_debug(
                 f"AssemblyAI ASR result: {text}, is_final: {all_final}, "
-                f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}"
+                f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             if self.config is not None:
@@ -283,7 +288,7 @@ class AssemblyAIASRExtension(
         """Handle callback when event is received"""
         self.ten_env.log_info(
             f"vendor_status_changed: on_event message_data: {message_data}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
     @override

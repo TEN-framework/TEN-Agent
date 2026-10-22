@@ -9,6 +9,16 @@ from contextlib import contextmanager
 from importlib import import_module
 
 HOOK_FACTORIES = {
+    "bytedance_tts": (".bytedance", "ByteDanceTimingHook"),
+    "bytedance_tts_duplex": (
+        ".bytedance_duplex",
+        "ByteDanceDuplexTimingHook",
+    ),
+    "elevenlabs_multiple_context_tts_python": (
+        ".elevenlabs",
+        "ElevenLabsTimingHook",
+    ),
+    "cartesia_tts": (".cartesia", "CartesiaTimingHook"),
     "minimax_tts_websocket_duplex": (
         ".minimax_duplex",
         "MiniMaxTimingHook",

@@ -1,0 +1,7 @@
+{
+  "agora_mind_extension": "agora_mind",
+  "tts_extension": "tts",
+  "example_id": "${env:AGORA_MIND_FDB_EXAMPLE_ID|}",
+  "session_id": 0,
+  "command_timeout_ms": 30000
+}

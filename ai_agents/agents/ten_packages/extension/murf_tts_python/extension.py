@@ -19,7 +19,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_TRANSCRIPTS
 from .config import MurfTTSConfig
 from .const import INVALID_TEXT_LIST
 
@@ -301,6 +301,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             current_request_id = await self._get_current_request_id()
@@ -421,7 +422,8 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
         except ModuleVendorException as e:
             self.sent_tts = False
             self.ten_env.log_error(
-                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),
@@ -440,7 +442,8 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 )
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             error = ModuleError(
                 message=str(e),

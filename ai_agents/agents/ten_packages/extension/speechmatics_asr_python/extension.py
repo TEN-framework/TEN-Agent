@@ -24,6 +24,7 @@ from ten_runtime import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from ten_ai_base.dumper import Dumper
@@ -167,7 +168,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         """Handle recognition result callback"""
         self.ten_env.log_debug(
             f"vendor_result: on_result: {message_data}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         self.ten_env.log_info(
             f"[EXTENSION] on_asr_result received metadata: {message_data.metadata}"

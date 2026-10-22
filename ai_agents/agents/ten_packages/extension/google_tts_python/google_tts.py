@@ -7,7 +7,7 @@ from .config import GoogleTTSConfig
 from google.oauth2 import service_account
 import json
 import time
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -235,7 +235,8 @@ class GoogleTTS:
 
                 # Debug: Log the request details
                 self.ten_env.log_debug(
-                    f"Starting streaming synthesis for text: '{text[:100]}...' (request_id: {request_id})"
+                    f"Starting streaming synthesis for text: '{text[:100]}...' (request_id: {request_id})",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
                 # Perform the streaming text-to-speech request

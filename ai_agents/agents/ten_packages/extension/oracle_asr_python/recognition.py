@@ -15,7 +15,7 @@ import requests as http_requests
 from oci.signer import Signer
 
 from ten_ai_base.timeline import AudioTimeline
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
 from .const import TIMEOUT_CODE
@@ -152,7 +152,7 @@ class OracleASRRecognition:
 
             self.ten_env.log_debug(
                 f"vendor_result: {message}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             event = data.get("event", "")

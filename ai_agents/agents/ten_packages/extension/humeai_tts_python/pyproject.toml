@@ -1,6 +1,6 @@
 [project]
 name = "humeai-tts-python"
-version = "0.5.2"
+version = "0.5.3"
 requires-python = ">=3.10"
 dependencies = [
     "hume==0.9.1",

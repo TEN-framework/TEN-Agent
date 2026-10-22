@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
 import json
 from pathlib import Path
 from ten_runtime import (
@@ -69,6 +70,7 @@ class WebsocketServerExtension(AsyncExtension):
                 port=self.config.port,
                 ten_env=ten_env,
                 on_audio_callback=self._on_audio_received,
+                on_cmd_callback=self._on_cmd_received,
             )
             await self.ws_server.start()
             ten_env.log_info(
@@ -137,23 +139,17 @@ class WebsocketServerExtension(AsyncExtension):
         data_name = data.get_name()
         ten_env.log_debug(f"Received data: {data_name}")
         try:
-            if data_name == "text_data":
-                # Convert data to JSON
-                data_json, _ = data.get_property_to_json(None)
-                ten_env.log_info(f"Data: {data_json}")
-                data_dict = json.loads(data_json)
-
-                # Broadcast to all WebSocket clients
-                if self.ws_server:
-                    message = {
+            data_json, error = data.get_property_to_json(None)
+            if error:
+                raise ValueError(str(error))
+            if self.ws_server:
+                await self.ws_server.broadcast(
+                    {
                         "type": "data",
                         "name": data_name,
-                        "data": data_dict,
+                        "data": json.loads(data_json),
                     }
-                    await self.ws_server.broadcast(message)
-                    ten_env.log_debug(
-                        f"Broadcasted data {data_name} to WebSocket clients"
-                    )
+                )
 
         except Exception as e:
             ten_env.log_error(
@@ -185,8 +181,10 @@ class WebsocketServerExtension(AsyncExtension):
             # Extract metadata if present
             metadata = {}
             try:
-                metadata_json = audio_frame.get_property_string("metadata")
-                if metadata_json:
+                metadata_json, error = audio_frame.get_property_to_json(
+                    "metadata"
+                )
+                if not error and metadata_json:
                     metadata = json.loads(metadata_json)
             except Exception:
                 # No metadata or invalid JSON, continue without it
@@ -221,6 +219,35 @@ class WebsocketServerExtension(AsyncExtension):
         video_frame_name = video_frame.get_name()
         ten_env.log_debug(f"Received video frame: {video_frame_name}")
 
+    async def _on_cmd_received(self, name: str, properties: dict) -> dict:
+        """Send a command using graph routes and return its TEN result."""
+        try:
+            cmd = Cmd.create(name)
+            cmd.set_property_from_json(None, json.dumps(properties))
+            result, error = await asyncio.wait_for(
+                self.ten_env.send_cmd(cmd),
+                timeout=self.config.command_timeout_ms / 1000,
+            )
+            if error or result is None:
+                raise RuntimeError(str(error or "command returned no result"))
+            payload, error = result.get_property_to_json(None)
+            if error:
+                raise ValueError(str(error))
+            return {
+                "status": int(result.get_status_code()),
+                "data": json.loads(payload),
+            }
+        except asyncio.TimeoutError:
+            return {
+                "status": int(StatusCode.ERROR),
+                "data": {"error": "command timed out"},
+            }
+        except Exception as error:
+            return {
+                "status": int(StatusCode.ERROR),
+                "data": {"error": str(error)},
+            }
+
     async def _on_audio_received(self, audio_data: AudioData) -> None:
         """
         Callback when audio data is received from WebSocket client
@@ -229,6 +256,13 @@ class WebsocketServerExtension(AsyncExtension):
         Args:
             audio_data: Audio data container with PCM data and metadata
         """
+        bytes_per_frame = self.config.bytes_per_sample * self.config.channels
+        if (
+            not audio_data.pcm_data
+            or len(audio_data.pcm_data) % bytes_per_frame
+        ):
+            raise ValueError("audio must contain complete PCM sample frames")
+
         try:
             # Get ten_env (stored during initialization)
             ten_env = self.ten_env
@@ -264,9 +298,6 @@ class WebsocketServerExtension(AsyncExtension):
             audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
 
             # Calculate number of samples
-            bytes_per_frame = (
-                self.config.bytes_per_sample * self.config.channels
-            )
             samples_per_channel = len(audio_data.pcm_data) // bytes_per_frame
             audio_frame.set_samples_per_channel(samples_per_channel)
 

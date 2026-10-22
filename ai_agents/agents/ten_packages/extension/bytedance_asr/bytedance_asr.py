@@ -23,6 +23,7 @@ from urllib.parse import urlparse
 import websockets
 
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 
 PROTOCOL_VERSION = 0b0001
 DEFAULT_HEADER_SIZE = 0b0001
@@ -220,7 +221,8 @@ class AsrWsClient:
                             error_msg += f", reqid: {payload_msg['reqid']}"
                         self.ten_env.log_error(error_msg)
                         self.ten_env.log_error(
-                            f"Full payload_msg: {payload_msg}"
+                            f"Full payload_msg: {payload_msg}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
                         # Use error callback to handle non-1000 error codes
                         if self.on_error:

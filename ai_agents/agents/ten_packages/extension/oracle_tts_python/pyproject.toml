@@ -1,6 +1,6 @@
 [project]
 name = "oracle-tts-python"
-version = "0.1.3"
+version = "0.1.4"
 requires-python = ">=3.10"
 dependencies = [
     "oci>=2.181.0",

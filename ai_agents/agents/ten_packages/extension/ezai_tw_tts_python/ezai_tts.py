@@ -11,7 +11,7 @@ from tn.chinese.normalizer import Normalizer as ZhNormalizer
 
 from .config import EZAITWTTSConfig
 from ten_runtime import AsyncTenEnv
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
@@ -132,7 +132,7 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
                 pcm16_bytes = self.pcm24topcm16(audio_bytes)
                 self.ten_env.log_info(
                     f"EZAITWTTSClient: tts input:|{sent}| output:{j.get('text', '')}",
-                    category=LOG_CATEGORY_VENDOR,
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
                 if len(pcm16_bytes) > 0:

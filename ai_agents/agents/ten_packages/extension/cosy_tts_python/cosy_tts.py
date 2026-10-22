@@ -10,6 +10,7 @@ from dashscope.audio.tts_v2 import (
 import json
 
 from .config import CosyTTSConfig
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 
@@ -236,7 +237,8 @@ class CosyTTSClient:
         Audio data should be consumed from the queue independently.
         """
         self.ten_env.log_info(
-            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
+            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
 
         # Start synthesizer if not initialized

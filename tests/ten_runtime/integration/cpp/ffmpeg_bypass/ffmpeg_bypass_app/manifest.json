@@ -1,32 +1,32 @@
 {
   "type": "app",
   "name": "default_app_cpp",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "ffmpeg_demuxer",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "ffmpeg_muxer",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "extension",
       "name": "ffmpeg_client",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "protocol",
       "name": "msgpack",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "scripts": {

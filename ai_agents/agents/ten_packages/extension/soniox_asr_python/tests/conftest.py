@@ -142,7 +142,7 @@ def create_fake_websocket_mocks(
             await before_send_callback()
         await asyncio.sleep(0)
 
-    async def default_fake_stop():
+    async def default_fake_stop(**_kwargs):
         await asyncio.sleep(0)
 
     return {
@@ -173,10 +173,15 @@ def inject_websocket_mocks(patch_soniox_ws, mocks: dict[str, Callable]) -> None:
 
 @pytest.fixture(scope="function")
 def patch_soniox_ws():
+    from ..websocket import SonioxWebsocketClient
+
     # Use relative import from tests directory perspective
     patch_target = "soniox_asr_python.extension.SonioxWebsocketClient"
 
     with patch(patch_target) as MockWebsocketClient:
+        MockWebsocketClient.is_normal_close.side_effect = (
+            SonioxWebsocketClient.is_normal_close
+        )
         websocket_client_instance = MagicMock()
 
         # Store callbacks registered via on() method
@@ -216,10 +221,18 @@ def patch_soniox_ws():
                     tokens, final_audio_proc_ms, total_audio_proc_ms
                 )
 
-        async def trigger_error(error_code, error_message):
+        async def trigger_error(
+            error_code,
+            error_message,
+            request_id=None,
+            error_type=None,
+        ):
             if "error" in websocket_client_instance._callbacks:
                 await websocket_client_instance._callbacks["error"](
-                    error_code, error_message
+                    error_code,
+                    error_message,
+                    request_id,
+                    error_type,
                 )
 
         async def trigger_exception(exception):

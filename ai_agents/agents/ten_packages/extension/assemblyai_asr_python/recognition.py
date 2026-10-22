@@ -10,9 +10,7 @@ from websockets.protocol import State
 
 from .audio_buffer_manager import AudioBufferManager
 from ten_ai_base.timeline import AudioTimeline
-from ten_ai_base.const import (
-    LOG_CATEGORY_VENDOR,
-)
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -86,7 +84,7 @@ class AssemblyAIWSRecognition:
             # self._log_debug(f"Received message: {message}")
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {message}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             message_type = message_data.get("type", "")
@@ -119,7 +117,8 @@ class AssemblyAIWSRecognition:
                 # on_error would feed a dict into ModuleError(message=str) and
                 # raise a Pydantic validation error, so surface them as events.
                 self.ten_env.log_info(
-                    f"[AssemblyAI] Unknown message: {message_data}"
+                    f"[AssemblyAI] Unknown message: {message_data}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 if self.callback:
                     await self.callback.on_event(message_data)

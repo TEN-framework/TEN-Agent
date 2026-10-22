@@ -3,6 +3,26 @@ version: "3"
 dotenv: ["../../../.env"]
 
 tasks:
+  test-fdb:
+    desc: run the FDB graph and WebSocket tests without provider credentials
+    cmds:
+      - python3 -m pytest -q tests/ {{.CLI_ARGS}}
+
+  test-fdb-runtime:
+    desc: test the packaged FDB graph with local service fixtures on Linux
+    env:
+      FDB_RUNTIME_IMAGE: '{{.IMAGE | default "agora-mind/fdb-ten-agent:ten-0.7.14"}}'
+    cmds:
+      - python3 -m pytest -q tests/test_fdb_runtime.py {{.CLI_ARGS}}
+
+  test-fdb-real:
+    desc: run the graph against a compiled Agora Mind server and scripted custom model
+    env:
+      FDB_RUNTIME_IMAGE: '{{.IMAGE | default "agora-mind/fdb-ten-agent:ten-0.7.14"}}'
+      FDB_AGORA_MIND_ROOT: '{{.AGORA_MIND_ROOT | default ""}}'
+    cmds:
+      - python3 -m pytest -q tests/test_fdb_real_backend.py {{.CLI_ARGS}}
+
   # install scripts
   install-frontend:
     desc: install frontend dependencies
@@ -21,7 +41,7 @@ tasks:
     deps: [install-tenapp]
     dir: ./tenapp
     cmds:
-      - python scripts/install_python_deps.py
+      - python3 scripts/install_python_deps.py
 
   build-api-server:
     desc: build api server
@@ -36,7 +56,6 @@ tasks:
     desc: install dependencies
     dir: ./tenapp
     cmds:
-      - task: install-tenapp
       - task: install-tenapp-python-deps
       - task: install-frontend
       - task: build-api-server

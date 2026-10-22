@@ -27,6 +27,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 
 from ten_ai_base.struct import ASRWord
@@ -264,7 +265,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
         results = transcript_event.transcript.results
         self.ten_env.log_debug(
             f"vendor_result: transcript_event: {results}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         assert self.config is not None
         for result in results:

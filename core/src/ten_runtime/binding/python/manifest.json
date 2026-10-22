@@ -1,17 +1,17 @@
 {
   "type": "system",
   "name": "ten_runtime_python",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "package": {

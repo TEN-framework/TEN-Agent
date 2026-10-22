@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import asyncio
 import websockets
+from urllib.parse import quote
 
 import json
 from .const import TIMEOUT_CODE
@@ -8,6 +9,7 @@ from websockets.protocol import State
 from ten_ai_base.timeline import AudioTimeline
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
 )
 from ten_runtime import (
     AsyncTenEnv,
@@ -108,7 +110,7 @@ class DeepgramASRRecognition:
 
             self.ten_env.log_debug(
                 f"vendor_result: on_recognized: {message}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             message_type = message_data.get("type")
@@ -149,6 +151,35 @@ class DeepgramASRRecognition:
             self.is_started = False
             await self.callback.on_close(close_code, close_message)
 
+    def _uses_keyterm_prompting(self) -> bool:
+        model = (self.config.get("model", "") or "").lower()
+        return "nova-3" in model or "flux" in model
+
+    def _append_keyterm_query_params(
+        self, query_params: list[str], term: str
+    ) -> None:
+        term = term.strip()
+        if not term:
+            return
+        query_params.append(f"keyterm={quote(term)}")
+
+    def _append_config_keyterm_params(self, query_params: list[str]) -> None:
+        keyterm = self.config.get("keyterm")
+        if keyterm is None:
+            return
+        if isinstance(keyterm, list):
+            for item in keyterm:
+                if item is None:
+                    continue
+                self._append_keyterm_query_params(query_params, str(item))
+        elif isinstance(keyterm, str):
+            if keyterm:
+                query_params.append(f"keyterm={keyterm}")
+        else:
+            self.ten_env.log_warn(
+                "invalid keyterm config: expected string or list of strings"
+            )
+
     # This function appends query parameters to a URL
     def append_query_params(self, url: str):
         """
@@ -162,22 +193,38 @@ class DeepgramASRRecognition:
             "key",
             "api_key",
             "hotwords",
+            "keyterm",
             "keep_alive",
             "mute_pkg_duration_ms",
             "finalize_mode",
         }
 
-        keywords = []
         if self.config.get("hotwords"):
-            for hw in self.config.get("hotwords"):
-                tokens = hw.split("|")
-                if len(tokens) == 2 and tokens[1].isdigit():
-                    keywords.append(":".join(tokens))  # replase to ":"
-                else:
-                    self.ten_env.log_warn("invalid hotword format: " + hw)
-        if keywords:
-            result = "&".join([f"keywords={item}" for item in keywords])
-            query_params.append(f"{result}")
+            if self._uses_keyterm_prompting():
+                for hw in self.config.get("hotwords"):
+                    tokens = hw.split("|", 1)
+                    term = tokens[0].strip()
+                    if not term:
+                        self.ten_env.log_warn("invalid hotword format: " + hw)
+                        continue
+                    if len(tokens) == 2 and tokens[1]:
+                        self.ten_env.log_warn(
+                            "keyterm does not support weights; using term only: "
+                            + term
+                        )
+                    self._append_keyterm_query_params(query_params, term)
+            else:
+                keywords = []
+                for hw in self.config.get("hotwords"):
+                    tokens = hw.split("|")
+                    if len(tokens) == 2 and tokens[1].isdigit():
+                        keywords.append(":".join(tokens))
+                    else:
+                        self.ten_env.log_warn("invalid hotword format: " + hw)
+                for item in keywords:
+                    query_params.append(f"keywords={item}")
+
+        self._append_config_keyterm_params(query_params)
 
         for param_key, value in self.config.items():
             if param_key not in excluded_params and value is not None:
