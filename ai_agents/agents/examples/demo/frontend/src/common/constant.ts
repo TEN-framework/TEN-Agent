@@ -95,6 +95,10 @@ export const GROUPED_GRAPH_OPTIONS = {
       label: "Qwen 3 Reasoning",
       value: "qwen3",
     },
+    {
+      label: "OrcaRouter",
+      value: "orcarouter",
+    },
     // {
     //   label: "Grok 4 Reasoning",
     //   value: "grok4",

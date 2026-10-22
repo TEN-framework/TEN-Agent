@@ -7,7 +7,7 @@ Comprehensive demo showcasing TEN Framework's AI agent capabilities with multipl
 ## Features
 
 - **Multiple AI Agent Types**: Support for different AI agent configurations
-  - **Voice AI (STT + LLM + TTS)**: OpenAI GPT 5, Llama 4, Qwen 3 Reasoning
+  - **Voice AI (STT + LLM + TTS)**: OpenAI GPT 5, Llama 4, Qwen 3 Reasoning, OrcaRouter
   - **Speech to Speech Voice AI**: OpenAI GPT Realtime, OpenAI GPT Realtime 1.5, Gemini 2.0/2.5 Flash, Azure Voice AI API
   - **AI Platform Integrations**: OceanBase PowerRAG, Dify Agent, Coze Bot
 - **Multi-language Support**: English, Chinese, Korean, Japanese
@@ -37,6 +37,7 @@ Comprehensive demo showcasing TEN Framework's AI agent capabilities with multipl
    - `GROQ_CLOUD_API_KEY` - For Llama 4 agent
    - `QWEN_API_KEY` - For Qwen 3 agent
    - `DEEPSEEK_API_KEY` - For DeepSeek V3.1 agent
+   - `ORCAROUTER_API_KEY` - For OrcaRouter agent
    - `GEMINI_API_KEY` - For Gemini 2.0/2.5 agents
    - `AZURE_AI_FOUNDRY_API_KEY` - For Azure Voice AI agent
    - `AZURE_AI_FOUNDRY_BASE_URI` - For Azure Voice AI agent
@@ -79,6 +80,7 @@ GROK_API_KEY=your_grok_api_key_here
 GROQ_CLOUD_API_KEY=your_groq_api_key_here
 QWEN_API_KEY=your_qwen_api_key_here
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
+ORCAROUTER_API_KEY=your_orcarouter_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 
@@ -197,6 +199,7 @@ The demo is configured in `property.json`:
 | `GROQ_CLOUD_API_KEY` | string | - | Groq API key (required for Llama agent) |
 | `QWEN_API_KEY` | string | - | Qwen API key (required for Qwen agent) |
 | `DEEPSEEK_API_KEY` | string | - | DeepSeek API key (required for DeepSeek agent) |
+| `ORCAROUTER_API_KEY` | string | - | OrcaRouter API key (required for OrcaRouter agent) |
 | `GEMINI_API_KEY` | string | - | Gemini API key (required for Gemini agents) |
 | `OPENAI_API_KEY` | string | - | OpenAI API key (required for OpenAI agents) |
 | `COZE_TOKEN` | string | - | Coze token (required for Coze agent) |

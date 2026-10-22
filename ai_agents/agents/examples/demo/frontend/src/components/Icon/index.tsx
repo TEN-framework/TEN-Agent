@@ -798,6 +798,24 @@ export const DeepSeekIcon = (props: React.SVGProps<SVGSVGElement>) => {
   );
 };
 
+export const OrcaRouterIcon = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg
+      fill="currentColor"
+      fillRule="evenodd"
+      height="1em"
+      style={{ flex: "none", lineHeight: 1 }}
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <title>OrcaRouter</title>
+      <path d="M12 2c-3.5 0-6 1.6-7.2 4.1-.4.8-.6 1.6-.7 2.6C3.1 9.7 2 11.4 2 13.6c0 2.8 1.5 5 3.6 6.2.8.5 1.7.8 2.7 1 .3.1.5-.2.5-.5v-2.1c0-1.9.9-3.2 3.2-3.2s3.2 1.3 3.2 3.2V20.3c0 .3.2.5.5.5 1-.2 1.9-.5 2.7-1 2.1-1.2 3.6-3.4 3.6-6.2 0-2.2-1.1-3.9-2.1-4.9-.1-1-.3-1.8-.7-2.6C18 3.6 15.5 2 12 2zm0 5.1c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9zm-2.6.7c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9zm5.2 0c.5 0 .9.4.9.9s-.4.9-.9.9-.9-.4-.9-.9.4-.9.9-.9z" />
+    </svg>
+  );
+};
+
 export const XAIIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
     <svg

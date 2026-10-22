@@ -16,6 +16,7 @@ import {
   NovaIcon,
   OceanBaseIcon,
   OpenAIIcon,
+  OrcaRouterIcon,
   QwenIcon,
   XAIIcon,
   MinimaxIcon,
@@ -42,6 +43,7 @@ const getBrandIcon = (label: string) => {
   if (label.includes("Grok")) return XAIIcon;
   if (label.includes("Qwen") || label.includes("QwQ")) return QwenIcon;
   if (label.includes("Minimax")) return MinimaxIcon;
+  if (label.includes("OrcaRouter")) return OrcaRouterIcon;
   if (label.includes("Dify")) return DifyIcon;
   if (label.includes("Coze")) return CozeIcon;
   if (label.includes("OceanBase")) return OceanBaseIcon;
