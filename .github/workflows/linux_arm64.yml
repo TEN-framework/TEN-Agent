@@ -106,6 +106,10 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
+      - name: Install Python dependencies
+        run: |
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+
       - name: Update version
         run: |
           python3 tools/version/update_version_in_ten_framework.py
@@ -125,8 +129,6 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
           sudo apt-get install -y nodejs
-
-          pip3 install --use-pep517 python-dotenv jinja2
 
           df -h .
 
