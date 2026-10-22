@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "typecast_tts_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -66,6 +66,9 @@
                 },
                 "target_lufs": {
                   "type": "float64"
+                },
+                "remove_silence_ms": {
+                  "type": "int64"
                 }
               }
             },

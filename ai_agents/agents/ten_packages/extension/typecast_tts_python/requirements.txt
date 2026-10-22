@@ -1,1 +1,1 @@
-typecast-python==0.3.9
+typecast-python==0.3.15

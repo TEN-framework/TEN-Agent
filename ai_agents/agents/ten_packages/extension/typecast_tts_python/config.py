@@ -8,6 +8,7 @@ from typing import Any
 import copy
 
 from pydantic import Field
+from typecast.models import OutputStream
 from ten_ai_base import utils
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
@@ -60,6 +61,9 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
             raise ValueError("voice_id is required for Typecast TTS")
         if not self.params.get("model"):  # pylint: disable=no-member
             raise ValueError("model is required for Typecast TTS")
+        OutputStream.model_validate(
+            self.params.get("output") or {}  # pylint: disable=no-member
+        )
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         if not sensitive_handling:

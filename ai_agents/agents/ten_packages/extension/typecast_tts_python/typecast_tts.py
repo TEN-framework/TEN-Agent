@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from typing import Any, AsyncIterator, Tuple
+from typing import Any, AsyncGenerator, AsyncIterator, Tuple
 
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
@@ -27,6 +27,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self.ten_env = ten_env
         self._is_cancelled = False
         self._client: AsyncTypecast | None = None
+        self._stream: AsyncGenerator[bytes, None] | None = None
 
         ten_env.log_info(f"TypecastTTS initialized with URL: {self.config.url}")
 
@@ -37,6 +38,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 api_key=self.config.params["api_key"],
             )
             await self._client.__aenter__()
+            self._client.session.headers["User-Agent"] += " ten-framework"
         return self._client
 
     async def cancel(self):
@@ -73,9 +75,10 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 f"TypecastTTS: sending request for request_id: {request_id}"
             )
 
-            async for chunk in client.text_to_speech_stream(
+            self._stream = client.text_to_speech_stream(
                 request, chunk_size=self.config.chunk_size
-            ):
+            )
+            async for chunk in self._stream:
                 if self._is_cancelled:
                     self.ten_env.log_debug(
                         f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
@@ -88,6 +91,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                     yield pcm, TTS2HttpResponseEventType.RESPONSE
 
             if not self._is_cancelled:
+                converter.finish()
                 self.ten_env.log_debug(
                     f"TypecastTTS: sending END event for request_id: {request_id}"
                 )
@@ -106,6 +110,11 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 else TTS2HttpResponseEventType.ERROR
             )
             yield error_message.encode("utf-8"), event
+
+    async def close_stream(self):
+        stream, self._stream = self._stream, None
+        if stream is not None:
+            await stream.aclose()
 
     async def clean(self):
         self.ten_env.log_debug("TypecastTTS: clean() called.")
