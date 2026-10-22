@@ -1,0 +1,8 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "key": "${env:KOTOBA_TTS_KEY}",
+        "sample_rate": 16000
+    }
+}

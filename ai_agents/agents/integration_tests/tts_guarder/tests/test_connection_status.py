@@ -25,6 +25,7 @@ SUPPORTED_WEBSOCKET_TTS_EXTENSIONS = {
     "fish_audio_tts_python",
     "bytedance_tts",
     "bytedance_tts_duplex",
+    "kotoba_tts_python",
     "minimax_tts_websocket",
     "minimax_tts_websocket_python",
     "rime_tts",

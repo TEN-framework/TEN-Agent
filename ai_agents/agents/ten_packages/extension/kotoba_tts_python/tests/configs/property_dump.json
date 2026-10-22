@@ -1,0 +1,7 @@
+{
+    "dump": true,
+    "dump_path": "./tests/dump_output/",
+    "params": {
+        "key": "${env:KOTOBA_TTS_KEY}"
+    }
+}
