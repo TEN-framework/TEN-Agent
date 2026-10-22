@@ -8,16 +8,16 @@
         "content": "WebSocket Server"
       },
       "zh-CN": {
-        "content": "WebSocket 服务器"
+        "content": "WebSocket \u670d\u52a1\u5668"
       },
       "zh-TW": {
-        "content": "WebSocket 伺服器"
+        "content": "WebSocket \u4f3a\u670d\u5668"
       },
       "ja-JP": {
-        "content": "WebSocketサーバー"
+        "content": "WebSocket\u30b5\u30fc\u30d0\u30fc"
       },
       "ko-KR": {
-        "content": "WebSocket 서버"
+        "content": "WebSocket \uc11c\ubc84"
       }
     }
   },
@@ -27,16 +27,16 @@
         "content": "WebSocket server extension that receives base64-encoded PCM audio and forwards it as TEN AudioFrames"
       },
       "zh-CN": {
-        "content": "WebSocket 服务器扩展，接收 base64 编码的 PCM 音频并将其作为 TEN AudioFrames 转发"
+        "content": "WebSocket \u670d\u52a1\u5668\u6269\u5c55\uff0c\u63a5\u6536 base64 \u7f16\u7801\u7684 PCM \u97f3\u9891\u5e76\u5c06\u5176\u4f5c\u4e3a TEN AudioFrames \u8f6c\u53d1"
       },
       "zh-TW": {
-        "content": "WebSocket 伺服器擴充，接收 base64 編碼的 PCM 音訊並將其作為 TEN AudioFrames 轉發"
+        "content": "WebSocket \u4f3a\u670d\u5668\u64f4\u5145\uff0c\u63a5\u6536 base64 \u7de8\u78bc\u7684 PCM \u97f3\u8a0a\u4e26\u5c07\u5176\u4f5c\u70ba TEN AudioFrames \u8f49\u767c"
       },
       "ja-JP": {
-        "content": "base64エンコードされたPCMオーディオを受信し、TEN AudioFramesとして転送するWebSocketサーバー拡張"
+        "content": "base64\u30a8\u30f3\u30b3\u30fc\u30c9\u3055\u308c\u305fPCM\u30aa\u30fc\u30c7\u30a3\u30aa\u3092\u53d7\u4fe1\u3057\u3001TEN AudioFrames\u3068\u3057\u3066\u8ee2\u9001\u3059\u308bWebSocket\u30b5\u30fc\u30d0\u30fc\u62e1\u5f35"
       },
       "ko-KR": {
-        "content": "base64로 인코딩된 PCM 오디오를 수신하고 TEN AudioFrames로 전달하는 WebSocket 서버 확장"
+        "content": "base64\ub85c \uc778\ucf54\ub529\ub41c PCM \uc624\ub514\uc624\ub97c \uc218\uc2e0\ud558\uace0 TEN AudioFrames\ub85c \uc804\ub2ec\ud558\ub294 WebSocket \uc11c\ubc84 \ud655\uc7a5"
       }
     }
   },
@@ -112,10 +112,41 @@
         "params": {
           "type": "object",
           "properties": {}
+        },
+        "command_timeout_ms": {
+          "type": "int32"
         }
       }
     },
-    "data_in": [],
+    "data_in": [
+      {
+        "name": "text_data"
+      },
+      {
+        "name": "asr_result"
+      },
+      {
+        "name": "agora_mind_event"
+      },
+      {
+        "name": "tts_audio_start"
+      },
+      {
+        "name": "tts_audio_end"
+      },
+      {
+        "name": "tts_text_result"
+      },
+      {
+        "name": "tts_flush_end"
+      },
+      {
+        "name": "error"
+      },
+      {
+        "name": "metrics"
+      }
+    ],
     "data_out": [
       {
         "name": "pcm_frame",
@@ -130,7 +161,23 @@
       }
     ],
     "cmd_in": [],
-    "cmd_out": [],
+    "cmd_out": [
+      {
+        "name": "create_workspace"
+      },
+      {
+        "name": "create_session"
+      },
+      {
+        "name": "flush_session"
+      },
+      {
+        "name": "set_session_debug"
+      },
+      {
+        "name": "delete_session"
+      }
+    ],
     "audio_frame_in": [
       {
         "name": "pcm_frame"
