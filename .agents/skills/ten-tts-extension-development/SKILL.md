@@ -64,7 +64,7 @@ For streaming transports, establish and start the provider connection during ext
 Every implementation must satisfy [references/common.md](references/common.md). In particular:
 
 - Emit `tts_audio_start` before the first PCM frame and exactly one `tts_audio_end` after the final frame.
-- After terminal `tts_audio_end` for a streaming request, call `finish_request()` so the base class completes the request and releases buffered request IDs. Do this for normal, empty, and terminal error completion. Do not call it for a flush; the base class owns flush cleanup.
+- After normal, empty, or post-input terminal-error audio output for a streaming request, call `finish_request()` so the base class completes the request and releases buffered request IDs. If an unrecoverable error arrives before final input, report the error and call `finish_request()` directly without waiting for a normal END or audio end. Do not call it for a flush; the base class owns flush cleanup.
 - Treat a provider END as a request end only when the logical text input is complete (`text_input_end`) and provider work for that request is drained. A per-chunk END is an intermediate event.
 - Keep `request_id` and metadata attached across queues and asynchronous callbacks.
 - Calculate total audio duration from emitted PCM bytes and the actual format.
