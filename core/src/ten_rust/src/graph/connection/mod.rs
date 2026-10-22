@@ -167,8 +167,8 @@ impl GraphLoc {
 
     /// Checks if a node exists in the graph.
     pub fn check_node_exists(&self, graph: &Graph) -> Result<()> {
-        let node_name = self.get_node_name().unwrap();
-        let node_type = self.get_node_type().unwrap();
+        let node_name = self.get_node_name()?;
+        let node_type = self.get_node_type()?;
 
         let exists = graph
             .nodes
