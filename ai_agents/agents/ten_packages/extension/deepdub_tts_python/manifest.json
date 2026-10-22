@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "deepdub_tts_python",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": { "content": "Deepdub TTS (Streaming WebSocket) Python" }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Deepdub TTS over the text-streaming WebSocket API. Pre-warmed connection, streams text fragments in, streams PCM out."
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": { "import_uri": "README.md" }
+    }
+  },
+  "tags": ["python", "tts", "deepdub", "websocket", "streaming"],
+  "dependencies": [
+    { "type": "system", "name": "ten_runtime_python", "version": "0.11" },
+    { "type": "system", "name": "ten_ai_base", "version": "0.7" }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**",
+      "requirements.txt"
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "api": {
+    "interface": [
+      { "import_uri": "../../system/ten_ai_base/api/tts-interface.json" }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": { "type": "string" },
+            "url": { "type": "string" },
+            "model": { "type": "string" },
+            "locale": { "type": "string" },
+            "voice_prompt_id": { "type": "string" },
+            "sample_rate": { "type": "int64" },
+            "channels": { "type": "int64" },
+            "format": { "type": "string" },
+            "accept_emojis": { "type": "bool" },
+            "temperature": { "type": "float64" },
+            "variance": { "type": "float64" },
+            "tempo": { "type": "float64" },
+            "prompt_boost": { "type": "bool" },
+            "keepalive_interval_seconds": { "type": "float64" }
+          }
+        },
+        "dump": { "type": "bool" },
+        "dump_path": { "type": "string" }
+      }
+    }
+  }
+}
