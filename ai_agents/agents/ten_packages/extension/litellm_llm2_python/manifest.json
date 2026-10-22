@@ -1,0 +1,57 @@
+{
+  "type": "extension",
+  "name": "litellm_llm2_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/llm-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "proxy_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "custom_headers": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

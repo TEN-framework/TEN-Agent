@@ -1,0 +1,8 @@
+{
+    "base_url": "${env:LITELLM_API_BASE|}",
+    "api_key": "${env:LITELLM_API_KEY|}",
+    "model": "${env:LITELLM_MODEL|}",
+    "max_tokens": 512,
+    "prompt": "",
+    "proxy_url": "${env:LITELLM_PROXY_URL|}"
+}
