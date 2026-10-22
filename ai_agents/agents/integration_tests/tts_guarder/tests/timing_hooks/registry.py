@@ -23,6 +23,7 @@ HOOK_FACTORIES = {
         ".minimax_duplex",
         "MiniMaxTimingHook",
     ),
+    "minimax_tts_websocket": (".minimax", "MiniMaxTimingHook"),
 }
 
 

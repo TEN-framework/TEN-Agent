@@ -21,6 +21,7 @@ from .timing_hooks.bytedance import ByteDanceTimingHook
 from .timing_hooks.bytedance_duplex import ByteDanceDuplexTimingHook
 from .timing_hooks.cartesia import _add_spacing_groups
 from .timing_hooks.elevenlabs import ElevenLabsTimingHook
+from .timing_hooks.minimax import MiniMaxTimingHook
 
 # The cartesia client's own spacing fixtures (cartesia_tts/tests/test_basic.py)
 # plus two-group cases, with the tokens the client emits for the same input.
@@ -70,7 +71,7 @@ def _alignment_payload(request_id, chars, starts, durations):
     )
 
 
-def test_elevenlabs_origin_is_reset_for_each_request():
+def test_elevenlabs_reference_preserves_first_word_offsets_per_request():
     hook = ElevenLabsTimingHook()
 
     for request_id, first_start in (
@@ -88,15 +89,100 @@ def test_elevenlabs_origin_is_reset_for_each_request():
         )
         words = hook.reference(request_id).captions[0]
         assert [word.word for word in words] == ["hi"]
-        # Each request's alignment times are relative to that request.
-        assert words[0].start_ms == 0
-        assert words[0].end_ms == 40
+        # Each request keeps its own provider offset; no capture state leaks
+        # from the previous request.
+        assert words[0].start_ms == first_start
+        assert words[0].end_ms == first_start + 40
+
+
+def test_minimax_reference_keeps_request_relative_word_times():
+    hook = MiniMaxTimingHook()
+    hook.begin_request("req-minimax")
+    hook.observe_send(
+        json.dumps(
+            {
+                "event": "task_start",
+                "audio_setting": {
+                    "format": "pcm",
+                    "sample_rate": 16000,
+                    "channels": 1,
+                },
+            }
+        )
+    )
+
+    for subtitle in (
+        {
+            "text": "First ",
+            "time_begin": 85,
+            "time_end": 320,
+            "timestamped_words": [
+                {
+                    "word": "First",
+                    "word_begin": 0,
+                    "word_end": 5,
+                    "time_begin": 85,
+                    "time_end": 200,
+                },
+                {
+                    "word": "First",
+                    "word_begin": 0,
+                    "word_end": 5,
+                    "time_begin": 85,
+                    "time_end": 300,
+                },
+                {
+                    "word": "[SPACE]",
+                    "word_begin": 5,
+                    "word_end": 12,
+                    "time_begin": 300,
+                    "time_end": 320,
+                },
+            ],
+        },
+        {
+            "text": "Second",
+            "time_begin": 1300,
+            "time_end": 1600,
+            "timestamped_words": [
+                {
+                    "word": "Second",
+                    "word_begin": 0,
+                    "word_end": 6,
+                    "time_begin": 1300,
+                    "time_end": 1600,
+                },
+            ],
+        },
+    ):
+        hook.observe_receive(
+            json.dumps(
+                {
+                    "data": {
+                        "audio": "00" * 1600,
+                        "subtitle": subtitle,
+                    },
+                }
+            )
+        )
+
+    reference = hook.reference("req-minimax")
+    assert reference.error is None
+    assert reference.pcm_bytes == 3200
+    first, second = reference.captions
+    assert [(word.word, word.start_ms, word.end_ms) for word in first] == [
+        ("First", 85, 300),
+        (" ", 300, 320),
+    ]
+    # Word times are request-relative; the segment's time_begin is not added
+    # a second time.
+    assert [(word.word, word.start_ms, word.end_ms) for word in second] == [
+        ("Second", 1300, 1600),
+    ]
 
 
 def _duplex_message(event, payload=None, payload_json=None):
-    return SimpleNamespace(
-        event=event, payload=payload, payload_json=payload_json
-    )
+    return SimpleNamespace(event=event, payload=payload, payload_json=payload_json)
 
 
 def _duplex_hook():
@@ -125,9 +211,9 @@ def test_duplex_reference_follows_sentence_audio_positions():
                         {
                             "word": "hi",
                             "startTime": 0.042667,
-                            "endTime": 0.142667,
+                            "endTime": 0.062667,
                         },
-                        {"word": "there", "startTime": 0.2, "endTime": 0.3},
+                        {"word": "there", "startTime": 0.07, "endTime": 0.09},
                     ]
                 }
             ),
@@ -138,9 +224,12 @@ def test_duplex_reference_follows_sentence_audio_positions():
     hook._capture(
         _duplex_message(
             351,
-            payload_json=(
-                '{"words": [{"word": "again", "startTime": 0.11, '
-                '"endTime": 0.21}]}'
+            payload_json=json.dumps(
+                {
+                    "words": [
+                        {"word": "again", "startTime": 0.11, "endTime": 0.13},
+                    ],
+                }
             ),
         )
     )
@@ -149,25 +238,21 @@ def test_duplex_reference_follows_sentence_audio_positions():
     assert reference.error is None
     assert reference.pcm_bytes == 4800
     first, second = reference.captions
-    # Provider times are turn-relative; each sentence's first word is aligned
-    # with the start of that sentence's audio, as the extension does.
+    # Provider times are cumulative for the request, so sentence boundaries do
+    # not add another offset.
     assert [word.word for word in first] == ["hi", "there"]
-    assert first[0].start_ms == 0
-    assert first[1].start_ms == 158
-    # The second sentence's audio follows the first sentence's 100ms of audio.
+    assert first[0].start_ms == 42
+    assert first[1].start_ms == 70
     assert second[0].word == "again"
-    assert second[0].start_ms == 100
-    # The duration keeps the extension's own float truncation (0.21 - 0.11).
-    assert second[0].end_ms == 199
+    assert second[0].start_ms == 110
+    assert second[0].end_ms == 130
 
 
 def test_bytedance_reference_keeps_leading_silence_offset():
     hook = ByteDanceTimingHook()
     hook.sample_rate = 16000
     hook.begin_request("req-1")
-    session = SimpleNamespace(
-        original_request_id="req-1", tts_input=SimpleNamespace()
-    )
+    session = SimpleNamespace(original_request_id="req-1", tts_input=SimpleNamespace())
 
     hook._observe_frontend_msg(
         session,

@@ -92,8 +92,8 @@ Choose the coverage level before adding support:
 Unregistered extensions install no vendor observer. Generic bounds checks alone
 cannot prove that the first-word offset was converted correctly: shifted words
 can still lie within the audio span. `minimax_tts_websocket_duplex`,
-`cartesia_tts`, `elevenlabs_multiple_context_tts_python`, and `bytedance_tts`
-have a registered hook today; `minimax_tts_websocket`, `soul_tts_python`, and
+`cartesia_tts`, `elevenlabs_multiple_context_tts_python`, `bytedance_tts`, and
+`minimax_tts_websocket` have a registered hook today; `soul_tts_python` and
 `azure_tts` receive generic checks only. `azure_tts` is a C++ extension that
 lives in the conversational agent tree, so its runs copy this guarder there and
 keep the subtitle configuration in that tree. Other extensions skip this case
@@ -243,9 +243,7 @@ reference data must fail the check rather than fall back to generic-only checks.
 Verify that:
 
 - Both requests reset their reference identity and accumulated audio positions.
-- Nonzero first-word offsets are retained and incorrect offsets are rejected,
-  except where a vendor section documents that the extension aligns a
-  sentence's first word with its audio start.
+- Nonzero first-word offsets are retained and incorrect offsets are rejected.
 - Success and failure restore injected dependencies.
 - Unregistered extensions receive no injection.
 
@@ -258,12 +256,6 @@ adaptations. Redact credentials from logs and configuration before sharing them.
 
 These checks validate timestamp conversion; they do not perform acoustic forced
 alignment or prove that provider annotations match actual speech onsets.
-For `bytedance_tts_duplex` the provider sends turn-relative times and the
-extension aligns each sentence's first word with the start of that sentence's
-audio, so about 100ms of provider lead-in silence per sentence is normalized
-away and the ByteDance duplex reference mirrors that alignment instead of
-rejecting it. The remaining word offsets within a sentence are still compared
-against the provider's own fields and independently counted audio bytes.
 Review findings for actual buffer-length validation, nonterminal subtitles with
 empty `words`, and MiniMax `params.url` matching remain unresolved. These
 instructions do not imply that those gaps have been fixed. New vendors should
