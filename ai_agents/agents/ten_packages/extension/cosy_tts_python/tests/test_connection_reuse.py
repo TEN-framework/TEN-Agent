@@ -34,6 +34,9 @@ class FakeDashScopeServer:
         self.connection_count = 0
         self.task_ids: list[str] = []
         self.fail_next_task = False
+        self.fail_error_code = "InvalidParameter"
+        self.fail_error_message = "invalid voice"
+        self.close_on_finish = False
         self.first_audio_delay = 0.0
         self.audio_chunk_interval = 0.0
         self.audio_chunk_count = 1
@@ -123,14 +126,16 @@ class FakeDashScopeServer:
                         self.finish_task_received.set()
                         if self.finish_task_delay > 0:
                             time.sleep(self.finish_task_delay)
-                        if self.fail_next_task:
+                        if self.close_on_finish:
+                            websocket.close()
+                        elif self.fail_next_task:
                             self.fail_next_task = False
                             websocket.send(
                                 self._event(
                                     "task-failed",
                                     task_id,
-                                    error_code="InvalidParameter",
-                                    error_message="invalid voice",
+                                    error_code=self.fail_error_code,
+                                    error_message=self.fail_error_message,
                                 ),
                             )
                             websocket.close()
@@ -209,6 +214,22 @@ async def _synthesize(
     payload_dict = json.loads(payload)
     assert payload_dict["request_id"] == request_id
     return payload_dict
+
+
+async def _collect_audio_frames(
+    ctx: TenTestContext,
+    count: int,
+    timeout: float = 0.5,
+) -> list[int]:
+    sizes: list[int] = []
+    for _ in range(count):
+        frame = await ctx.expect_audio_frame(timeout=timeout)
+        buffer = frame.lock_buf()
+        try:
+            sizes.append(len(bytes(buffer)))
+        finally:
+            frame.unlock_buf(buffer)
+    return sizes
 
 
 async def _expect_metrics(
@@ -389,6 +410,114 @@ async def test_audio_end_interval_excludes_ttfb(
 @ten_test(
     "cosy_tts_python",
     property_json_str=PROPERTY_JSON,
+    timeout=2.0,
+)
+async def test_audio_end_accounts_emitted_pcm_and_monotonic_interval(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+    monotonic_clock,
+) -> None:
+    monotonic_clock(100.0, 100.25)
+    dashscope_server.audio_chunk_count = 3
+
+    request = TTSTextInput(
+        request_id="accounting-success",
+        text="three audio chunks",
+        text_input_end=True,
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+
+    frame_sizes = await _collect_audio_frames(ctx, 3)
+    audio_end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+    payload, error = audio_end.get_property_to_json("")
+    assert error is None
+    end = json.loads(payload)
+
+    emitted_bytes = sum(frame_sizes)
+    assert emitted_bytes == 3 * 320
+    assert end["request_total_audio_duration_ms"] == 30
+    assert end["request_event_interval_ms"] == 250
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=PROPERTY_JSON,
+    timeout=2.0,
+)
+async def test_partial_audio_error_accounts_only_emitted_pcm(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+) -> None:
+    dashscope_server.audio_chunk_count = 2
+    dashscope_server.fail_next_task = True
+
+    request = TTSTextInput(
+        request_id="partial-error",
+        text="partial audio error",
+        text_input_end=True,
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+
+    frame_sizes = await _collect_audio_frames(ctx, 2)
+    audio_end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+    payload, error = audio_end.get_property_to_json("")
+    assert error is None
+    end = json.loads(payload)
+    assert end["reason"] == 3
+    assert end["request_total_audio_duration_ms"] == 20
+    assert sum(frame_sizes) == 2 * 320
+
+    await ctx.expect_data("error", timeout=0.5)
+    await ctx.assert_no_data("tts_audio_end", timeout=0.2)
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=PROPERTY_JSON,
+    timeout=2.0,
+)
+async def test_flush_accounts_emitted_pcm_and_terminates_once(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+) -> None:
+    dashscope_server.audio_chunk_count = 2
+    request = TTSTextInput(
+        request_id="flush-accounting",
+        text="flush after audio",
+        text_input_end=False,
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+
+    frame_sizes = await _collect_audio_frames(ctx, 2)
+    flush = Data.create("tts_flush")
+    flush.set_property_from_json(
+        "",
+        TTSFlush(flush_id="flush-accounting").model_dump_json(),
+    )
+    await ctx.send_data(flush)
+
+    audio_end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+    payload, error = audio_end.get_property_to_json("")
+    assert error is None
+    end = json.loads(payload)
+    assert end["reason"] == 2
+    assert end["request_total_audio_duration_ms"] == 20
+    assert sum(frame_sizes) == 2 * 320
+
+    await ctx.expect_data("tts_flush_end", timeout=0.5)
+    await ctx.assert_no_data("tts_audio_end", timeout=0.2)
+    await ctx.assert_no_audio_frame(timeout=0.2)
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=PROPERTY_JSON,
     timeout=1.5,
 )
 async def test_empty_final_chunk_waits_for_delayed_audio(
@@ -437,7 +566,9 @@ async def test_audio_end_interval_is_zero_without_audio(
     audio_end = await ctx.expect_data("tts_audio_end", timeout=0.5)
     payload, error = audio_end.get_property_to_json("")
     assert error is None
-    assert json.loads(payload)["request_event_interval_ms"] == 0
+    end = json.loads(payload)
+    assert end["request_event_interval_ms"] == 0
+    assert end["request_total_audio_duration_ms"] == 0
 
 
 @ten_test(
@@ -676,3 +807,78 @@ async def test_task_failed_reports_vendor_error_and_finishes_request(
         "code": "InvalidParameter",
         "message": "invalid voice",
     }
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=PROPERTY_JSON,
+    timeout=2.0,
+)
+async def test_quota_failure_is_reported_as_fatal_vendor_error(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+) -> None:
+    dashscope_server.fail_next_task = True
+    dashscope_server.fail_error_code = "Arrearage"
+    dashscope_server.fail_error_message = "account has an outstanding balance"
+    request = TTSTextInput(
+        request_id="quota-error",
+        text="quota error",
+        text_input_end=True,
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+
+    await ctx.expect_audio_frame(timeout=0.5)
+    end = await ctx.expect_data("tts_audio_end", timeout=0.5)
+    payload, error = end.get_property_to_json("")
+    assert error is None
+    assert json.loads(payload)["reason"] == 3
+
+    error_data = await ctx.expect_data("error", timeout=0.5)
+    payload, error = error_data.get_property_to_json("")
+    assert error is None
+    error_payload = json.loads(payload)
+    assert error_payload["code"] == -1000
+    assert error_payload["vendor_info"]["code"] == "Arrearage"
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=PROPERTY_JSON,
+    timeout=2.0,
+)
+async def test_socket_close_without_task_finished_reports_error(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+) -> None:
+    dashscope_server.close_on_finish = True
+    request = TTSTextInput(
+        request_id="socket-close-request",
+        text="close without completion",
+        text_input_end=True,
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+
+    await ctx.expect_audio_frame(timeout=0.5)
+    audio_end = await ctx.expect_data("tts_audio_end", timeout=1.0)
+    payload, error = audio_end.get_property_to_json("")
+    assert error is None
+    assert json.loads(payload)["reason"] == 3
+
+    error_data = await ctx.expect_data("error", timeout=1.0)
+    payload, error = error_data.get_property_to_json("")
+    assert error is None
+    assert json.loads(payload)["vendor_info"]["code"] == "ConnectionClosed"
+
+    dashscope_server.close_on_finish = False
+    await _synthesize(
+        ctx,
+        "after-socket-close",
+        "replacement connection",
+        audio_timeout=1.0,
+    )
+    assert len(dashscope_server.task_ids) == 2

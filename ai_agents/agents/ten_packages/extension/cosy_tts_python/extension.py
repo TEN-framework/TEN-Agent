@@ -48,6 +48,10 @@ _FATAL_VENDOR_ERROR_CODES = {
 }
 
 
+def _monotonic_seconds() -> float:
+    return time.monotonic()
+
+
 class CosyTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -56,6 +60,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.client_start_task: asyncio.Task[int] | None = None
         self.config: CosyTTSConfig | None = None
         self.current_request_id: str | None = None
+        self._request_generation = 0
+        self._client_request_generation = 0
         self.first_chunk_monotonic: float | None = None
         self.total_audio_bytes = 0
         self.request_text_characters = 0
@@ -125,7 +131,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             await self.client.stop()
             self.client = None
         await self._cleanup_all_pcm_writers()
-        await self.on_disconnected(code=0, message="stopped")
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
@@ -135,6 +140,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
     async def cancel_tts(self) -> None:
         request_id = self.current_request_id
+        # Invalidate a request which is still waiting for the pool startup.
+        self._request_generation += 1
         if self.client is not None:
             await self.client.cancel()
         if request_id is not None:
@@ -147,9 +154,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def request_tts(self, t: TTSTextInput) -> None:
+        generation = self._request_generation
         try:
             if self.current_request_id is None:
-                await self._begin_request(t.request_id)
+                if not await self._begin_request(t.request_id):
+                    return
+                generation = self._request_generation
             elif self.current_request_id != t.request_id:
                 raise RuntimeError(
                     "Cosy TTS request overlap, "
@@ -187,6 +197,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             text = t.text.strip()
             if text:
                 await self._ensure_client_ready(t.request_id)
+                if not self._is_request_current(t.request_id, generation):
+                    return
                 if len(text) > 20000:
                     raise ValueError(
                         "Cosy TTS text chunk exceeds 20000 characters"
@@ -195,7 +207,15 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 if self.request_text_characters > 200000:
                     raise ValueError("Cosy TTS task exceeds 200000 characters")
                 self.metrics_add_output_characters(len(t.text))
-                await self.client.synthesize_audio(t.text, t.request_id)
+                submitted = await self.client.synthesize_audio(
+                    t.text,
+                    t.request_id,
+                    self._client_request_generation,
+                )
+                if not submitted or not self._is_request_current(
+                    t.request_id, generation
+                ):
+                    return
             elif not t.text_input_end:
                 self.ten_env.log_debug(
                     f"Skipped empty Cosy TTS chunk, request_id: {t.request_id}",
@@ -208,10 +228,19 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                         TTSAudioEndReason.REQUEST_END,
                     )
                     return
-                await self.client.complete(t.request_id)
+                if not self._is_request_current(t.request_id, generation):
+                    return
+                await self.client.complete(
+                    t.request_id,
+                    self._client_request_generation,
+                )
         except CosyTTSProviderError as exc:
+            if not self._is_request_current(t.request_id, generation):
+                return
             await self._finish_provider_error(t.request_id, exc.error)
         except Exception as exc:
+            if not self._is_request_current(t.request_id, generation):
+                return
             self.ten_env.log_error(
                 "Cosy TTS request failed, "
                 f"request_id: {t.request_id}, error: {traceback.format_exc()}",
@@ -308,7 +337,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.total_audio_bytes += len(audio_chunk)
         if self.first_chunk:
             self.first_chunk = False
-            self.first_chunk_monotonic = time.monotonic()
+            self.first_chunk_monotonic = _monotonic_seconds()
             self._provider_task_id = task_id
             await self.send_tts_audio_start(request_id)
             if ttfb_ms is not None:
@@ -406,7 +435,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self._subtitle_seq_id += 1
         return metadata
 
-    async def _begin_request(self, request_id: str) -> None:
+    async def _begin_request(self, request_id: str) -> bool:
+        self._request_generation += 1
+        generation = self._request_generation
         self.current_request_id = request_id
         self.first_chunk_monotonic = None
         self.total_audio_bytes = 0
@@ -421,12 +452,27 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self._provider_task_id = ""
         self._provider_request_uuid = ""
 
+        if self.client is not None:
+            self._client_request_generation = await self.client.begin_request()
+            if self._request_generation != generation:
+                return False
         await self._create_pcm_writer(request_id)
+        return self._request_generation == generation
+
+    def _is_request_current(self, request_id: str, generation: int) -> bool:
+        return (
+            self.current_request_id == request_id
+            and self._request_generation == generation
+        )
 
     async def _ensure_client_ready(self, request_id: str) -> None:
-        if self.client_start_task is not None:
-            if self.client_start_task.done():
-                self._connect_delay_ms = await self.client_start_task
+        task = self.client_start_task
+        if task is None and self.client is not None:
+            task = asyncio.create_task(self.client.start())
+            self.client_start_task = task
+        if task is not None:
+            if task.done():
+                self._connect_delay_ms = await self._await_client_start(task)
                 self.ten_env.log_debug(
                     "Cosy TTS connection pool already ready, "
                     f"request_id: {request_id}, "
@@ -438,7 +484,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     "Waiting for Cosy TTS connection pool, "
                     f"request_id: {request_id}",
                 )
-                self._connect_delay_ms = await self.client_start_task
+                self._connect_delay_ms = await self._await_client_start(task)
                 wait_ms = int(
                     (asyncio.get_running_loop().time() - wait_started) * 1000
                 )
@@ -455,6 +501,16 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 extra_metadata=self._base_metadata(),
             )
             self._connect_delay_reported = True
+
+    async def _await_client_start(self, task: asyncio.Task[int]) -> int:
+        try:
+            return await task
+        except Exception:
+            # A transient pool startup failure must not poison future
+            # requests with the same completed task exception.
+            if self.client_start_task is task:
+                self.client_start_task = None
+            raise
 
     async def _finish_provider_error(
         self,
@@ -492,7 +548,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self._provider_request_uuid = provider_error.request_uuid
             metadata = self._provider_metadata()
             request_event_interval_ms = (
-                int((time.monotonic() - self.first_chunk_monotonic) * 1000)
+                int((_monotonic_seconds() - self.first_chunk_monotonic) * 1000)
                 if self.first_chunk_monotonic is not None
                 else 0
             )

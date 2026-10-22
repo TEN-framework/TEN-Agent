@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 import json
 import threading
 import time
@@ -34,6 +35,11 @@ SENTENCE_TIME_TOLERANCE_MS = 200
 # audio is generated, so the newest word is held back and published one event
 # later (or by `sentence-end`, which always reports the complete list).
 SUBTITLE_LAG_WORDS = 1
+TTS_STARTUP_ATTEMPTS = 3
+TTS_STARTUP_RETRY_DELAYS_SECONDS = (0.25, 0.75)
+TTS_COMPLETION_TIMEOUT_MS = 30_000
+TTS_CANCEL_TIMEOUT_MS = 2_000
+TTS_OBSERVED_CLOSE_TIMEOUT_MS = 10_000
 
 # DashScope reports sentence lifecycle events in `payload.output.type`.
 SENTENCE_EVENT_TYPES = frozenset(
@@ -48,6 +54,27 @@ AUDIO_FORMAT_MAPPING = {
     44100: AudioFormat.PCM_44100HZ_MONO_16BIT,
     48000: AudioFormat.PCM_48000HZ_MONO_16BIT,
 }
+
+_STARTUP_AUTH_ERROR_MARKERS = (
+    "401",
+    "403",
+    "apikey",
+    "api key",
+    "forbidden",
+    "invalid api",
+    "unauthorized",
+)
+_STARTUP_RETRYABLE_MARKERS = (
+    "connection",
+    "connect",
+    "handshake",
+    "network",
+    "reset by peer",
+    "temporarily unavailable",
+    "timeout",
+    "timed out",
+    "websocket",
+)
 
 
 @dataclass(frozen=True)
@@ -113,6 +140,30 @@ class CosyTTSProviderError(RuntimeError):
         super().__init__(error.message)
 
 
+def startup_error_is_retryable(exc: Exception) -> bool:
+    message = str(exc).lower()
+    if any(marker in message for marker in _STARTUP_AUTH_ERROR_MARKERS):
+        return False
+    if isinstance(exc, (ConnectionError, OSError, TimeoutError)):
+        return True
+    if isinstance(exc, ValueError):
+        return False
+    return any(marker in message for marker in _STARTUP_RETRYABLE_MARKERS)
+
+
+def startup_provider_error(exc: Exception) -> ProviderError:
+    message = str(exc).lower()
+    if any(marker in message for marker in _STARTUP_AUTH_ERROR_MARKERS):
+        return ProviderError(
+            code="InvalidApiKey",
+            message=str(exc),
+        )
+    return ProviderError(
+        code=type(exc).__name__,
+        message=str(exc),
+    )
+
+
 def _as_milliseconds(value: Any) -> int | None:
     """Return a provider timestamp as whole milliseconds, or None."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -137,6 +188,75 @@ class SharedPool:
     _clients = 0
     _synthesizers: dict[int, SpeechSynthesizer] = {}
 
+    @staticmethod
+    def _pool_synthesizers(
+        pool: SpeechSynthesizerObjectPool | None,
+    ) -> list[SpeechSynthesizer]:
+        synthesizers: list[SpeechSynthesizer] = []
+        if pool is None:
+            return synthesizers
+        for pool_object in getattr(pool, "_pool", ()):
+            synthesizer = getattr(pool_object, "synthesizer", None)
+            if isinstance(synthesizer, SpeechSynthesizer):
+                synthesizers.append(synthesizer)
+        return synthesizers
+
+    @staticmethod
+    def _close_synthesizer(synthesizer: SpeechSynthesizer) -> None:
+        websocket_app = getattr(synthesizer, "ws", None)
+        if websocket_app is not None:
+            socket = getattr(websocket_app, "sock", None)
+            if socket is not None:
+                with suppress(Exception):
+                    socket.close()
+            with suppress(Exception):
+                websocket_app.close()
+        with suppress(Exception):
+            synthesizer.close()
+        thread = getattr(synthesizer, "thread", None)
+        if thread is not None and thread is not threading.current_thread():
+            with suppress(Exception):
+                thread.join(timeout=1.0)
+
+    @classmethod
+    def _delete_sdk_instance(
+        cls,
+        expected: SpeechSynthesizerObjectPool | None,
+    ) -> None:
+        def delete_instance() -> None:
+            instance = getattr(SpeechSynthesizerObjectPool, "_instance", None)
+            if instance is expected and hasattr(
+                SpeechSynthesizerObjectPool,
+                "_instance",
+            ):
+                delattr(SpeechSynthesizerObjectPool, "_instance")
+
+        instance_lock = getattr(
+            SpeechSynthesizerObjectPool,
+            "_instance_lock",
+            None,
+        )
+        if instance_lock is None:
+            delete_instance()
+            return
+        with instance_lock:
+            delete_instance()
+
+    @classmethod
+    def _cleanup_failed_sdk_instance(cls) -> None:
+        if not hasattr(SpeechSynthesizerObjectPool, "_instance"):
+            return
+        instance = getattr(SpeechSynthesizerObjectPool, "_instance", None)
+        if instance is None:
+            cls._delete_sdk_instance(None)
+            return
+        if hasattr(instance, "_lock") and hasattr(instance, "_working_thread"):
+            with suppress(Exception):
+                instance.shutdown()
+        for synthesizer in cls._pool_synthesizers(instance):
+            cls._close_synthesizer(synthesizer)
+        cls._delete_sdk_instance(instance)
+
     @classmethod
     def _signature_for(cls, config: CosyTTSConfig) -> tuple[Any, ...]:
         return (
@@ -149,7 +269,7 @@ class SharedPool:
     def _headers(cls, config: CosyTTSConfig) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {config.api_key}",
-            "User-Agent": "ten-cosy-tts/0.4.6",
+            "User-Agent": "ten-cosy-tts/0.4.4",
         }
         headers.update(config.headers)
         return headers
@@ -161,18 +281,21 @@ class SharedPool:
     ) -> SpeechSynthesizerObjectPool:
         signature = cls._signature_for(config)
         if cls._pool is None:
+            cls._cleanup_failed_sdk_instance()
             dashscope.api_key = config.api_key
-            cls._pool = SpeechSynthesizerObjectPool(
-                max_size=COSY_TTS_POOL_SIZE,
-                url=config.url or None,
-                headers=cls._headers(config),
-            )
+            try:
+                cls._pool = SpeechSynthesizerObjectPool(
+                    max_size=COSY_TTS_POOL_SIZE,
+                    url=config.url or None,
+                    headers=cls._headers(config),
+                )
+            except Exception:
+                cls._cleanup_failed_sdk_instance()
+                raise
             cls._signature = signature
             cls._synthesizers = {}
-            for pool_object in getattr(cls._pool, "_pool", ()):
-                synthesizer = getattr(pool_object, "synthesizer", None)
-                if isinstance(synthesizer, SpeechSynthesizer):
-                    cls._synthesizers[id(synthesizer)] = synthesizer
+            for synthesizer in cls._pool_synthesizers(cls._pool):
+                cls._synthesizers[id(synthesizer)] = synthesizer
         elif cls._signature != signature:
             raise ValueError(
                 "Cosy TTS pool is already initialized with different credentials, "
@@ -262,35 +385,25 @@ class SharedPool:
             if cls._clients == 0:
                 pool_to_shutdown = cls._pool
                 synthesizers = dict(cls._synthesizers)
-                if pool_to_shutdown is not None:
-                    for pool_object in getattr(pool_to_shutdown, "_pool", ()):
-                        synthesizer = getattr(pool_object, "synthesizer", None)
-                        if isinstance(synthesizer, SpeechSynthesizer):
-                            synthesizers[id(synthesizer)] = synthesizer
+                for synthesizer in cls._pool_synthesizers(pool_to_shutdown):
+                    synthesizers[id(synthesizer)] = synthesizer
                 synthesizers_to_close = list(synthesizers.values())
                 cls._pool = None
                 cls._signature = None
                 cls._synthesizers = {}
         if pool_to_shutdown is not None:
-            pool_to_shutdown.shutdown()
+            with suppress(Exception):
+                pool_to_shutdown.shutdown()
             # DashScope's pool shutdown drops its references without closing
             # their WebSocket-client threads. Close the tracked objects after
             # the maintenance thread stops so a subsequent test/app can start
             # from a clean networking state.
             for synthesizer in synthesizers_to_close:
-                synthesizer.close()
-                thread = getattr(synthesizer, "thread", None)
-                if (
-                    thread is not None
-                    and thread is not threading.current_thread()
-                ):
-                    thread.join(timeout=1.0)
+                cls._close_synthesizer(synthesizer)
             # The SDK stores its pool in a singleton. Drop the stopped
             # instance so a later extension instance initializes a fresh pool
             # instead of reinitializing the old one in place.
-            instance = getattr(SpeechSynthesizerObjectPool, "_instance", None)
-            if instance is pool_to_shutdown:
-                setattr(SpeechSynthesizerObjectPool, "_instance", None)
+            cls._delete_sdk_instance(pool_to_shutdown)
 
 
 class AsyncIteratorCallback(ResultCallback):
@@ -315,7 +428,10 @@ class AsyncIteratorCallback(ResultCallback):
         self.task_id = ""
         self.cancelled = False
         self.closed = False
+        self.completed = False
         self.error: ProviderError | None = None
+        self._error_reported = False
+        self._completion_event: threading.Event | None = None
         self.billed_characters = 0
         self.request_uuid = ""
         self.first_audio_received = threading.Event()
@@ -334,8 +450,59 @@ class AsyncIteratorCallback(ResultCallback):
     def bind_task(self, task_id: str) -> None:
         self.task_id = task_id
 
+    def bind_completion_event(self, event: threading.Event) -> None:
+        self._completion_event = event
+
+    def bind_transport(
+        self,
+        synthesizer: SpeechSynthesizer,
+    ) -> None:
+        completion_event = getattr(synthesizer, "complete_event", None)
+        if isinstance(completion_event, threading.Event):
+            self.bind_completion_event(completion_event)
+
+        websocket_app = getattr(synthesizer, "ws", None)
+        if websocket_app is None:
+            return
+        original_on_close = getattr(
+            websocket_app,
+            "_cosy_original_on_close",
+            getattr(websocket_app, "on_close", None),
+        )
+        original_on_error = getattr(
+            websocket_app,
+            "_cosy_original_on_error",
+            getattr(websocket_app, "on_error", None),
+        )
+        setattr(websocket_app, "_cosy_original_on_close", original_on_close)
+        setattr(websocket_app, "_cosy_original_on_error", original_on_error)
+
+        def on_transport_close(*args) -> None:
+            if callable(original_on_close):
+                original_on_close(*args)
+            self.on_close()
+
+        def on_transport_error(_ws, error) -> None:
+            if callable(original_on_error):
+                original_on_error(_ws, error)
+            if self.completed or self.cancelled:
+                self._release_completion_wait()
+                return
+            self._report_error(
+                ProviderError(
+                    code="ConnectionClosed",
+                    message=str(error) or "connection error",
+                    task_id=self.task_id,
+                )
+            )
+            self._release_completion_wait()
+
+        websocket_app.on_close = on_transport_close
+        websocket_app.on_error = on_transport_error
+
     def cancel(self) -> None:
         self.cancelled = True
+        self._release_completion_wait()
 
     def close(self) -> None:
         self.closed = True
@@ -347,12 +514,29 @@ class AsyncIteratorCallback(ResultCallback):
     def on_complete(self) -> None:
         # The client returns the object only after streaming_complete() returns.
         # This callback alone isn't a safe object-pool release boundary.
-        return
+        self.completed = True
 
     def on_error(self, message: str) -> None:
-        if self.cancelled or self.closed or self._loop.is_closed():
+        self._report_error(self._parse_error(message))
+
+    def on_close(self) -> None:
+        self.closed = True
+        if not self.completed and not self.cancelled and self.error is None:
+            self._report_error(
+                ProviderError(
+                    code="ConnectionClosed",
+                    message="connection closed before task-finished",
+                    task_id=self.task_id,
+                )
+            )
+        self._release_completion_wait()
+
+    def _report_error(self, error: ProviderError) -> None:
+        if self.error is None:
+            self.error = error
+        if self.cancelled or self._error_reported or self._loop.is_closed():
             return
-        self.error = self._parse_error(message)
+        self._error_reported = True
         self._put(
             QueueItem(
                 done=True,
@@ -363,8 +547,9 @@ class AsyncIteratorCallback(ResultCallback):
             ),
         )
 
-    def on_close(self) -> None:
-        self.closed = True
+    def _release_completion_wait(self) -> None:
+        if self._completion_event is not None:
+            self._completion_event.set()
 
     def on_event(self, message: str) -> None:
         if self.cancelled or self.closed or self._loop.is_closed():
@@ -640,6 +825,7 @@ class CosyTTSClient:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._active: _ActiveTask | None = None
         self._active_lock = asyncio.Lock()
+        self._generation = 0
         self._receive_queue: asyncio.Queue[QueueItem] = asyncio.Queue()
         self._background_tasks: set[asyncio.Task[None]] = set()
         self._registered = False
@@ -648,7 +834,29 @@ class CosyTTSClient:
         """Preconnect the configured pool and return pool-ready latency."""
         self._loop = asyncio.get_running_loop()
         started_ns = time.perf_counter_ns()
-        await asyncio.to_thread(SharedPool.register, self.config)
+        last_error: Exception | None = None
+        for attempt in range(TTS_STARTUP_ATTEMPTS):
+            try:
+                await asyncio.to_thread(SharedPool.register, self.config)
+                break
+            except Exception as exc:
+                last_error = exc
+                retryable = startup_error_is_retryable(exc)
+                if not retryable or attempt + 1 >= TTS_STARTUP_ATTEMPTS:
+                    raise CosyTTSProviderError(
+                        startup_provider_error(exc)
+                    ) from exc
+                retry_delay = TTS_STARTUP_RETRY_DELAYS_SECONDS[attempt]
+                self.ten_env.log_warn(
+                    "Cosy TTS pool startup failed, retrying: "
+                    f"attempt: {attempt + 1}, delay_ms: "
+                    f"{int(retry_delay * 1000)}, error: {exc}",
+                )
+                await asyncio.sleep(retry_delay)
+        else:
+            assert last_error is not None
+            raise CosyTTSProviderError(startup_provider_error(last_error))
+
         self._registered = True
         connect_delay_ms = int(
             (time.perf_counter_ns() - started_ns) / 1_000_000
@@ -662,18 +870,44 @@ class CosyTTSClient:
     async def stop(self) -> None:
         await self.cancel()
         if self._background_tasks:
-            await asyncio.gather(
-                *tuple(self._background_tasks),
-                return_exceptions=True,
-            )
+            tasks = tuple(self._background_tasks)
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(
+                        *tasks,
+                        return_exceptions=True,
+                    ),
+                    timeout=TTS_OBSERVED_CLOSE_TIMEOUT_MS / 1000,
+                )
+            except TimeoutError:
+                self.ten_env.log_warn(
+                    "Cosy TTS shutdown timed out; cancelling tasks",
+                )
+                for task in tasks:
+                    task.cancel()
         if self._registered:
             await asyncio.to_thread(SharedPool.release_client)
             self._registered = False
 
-    async def synthesize_audio(self, text: str, request_id: str) -> None:
-        active = await self._get_or_create_active(request_id)
+    async def begin_request(self) -> int:
+        async with self._active_lock:
+            self._generation += 1
+            return self._generation
+
+    async def synthesize_audio(
+        self,
+        text: str,
+        request_id: str,
+        generation: int,
+    ) -> bool:
+        active = await self._get_or_create_active(request_id, generation)
+        if active is None:
+            return False
         try:
-            await asyncio.to_thread(self._send_text, active, text)
+            async with self._active_lock:
+                if generation != self._generation or self._active is not active:
+                    return False
+                await asyncio.to_thread(self._send_text, active, text)
         except Exception as exc:
             error = active.callback.error or ProviderError(
                 code=type(exc).__name__,
@@ -682,15 +916,20 @@ class CosyTTSClient:
             )
             await self._abort_active(active, error, emit_error=False)
             raise CosyTTSProviderError(error) from exc
+        return True
 
     @staticmethod
     def _send_text(active: _ActiveTask, text: str) -> None:
+        if active.callback.cancelled:
+            raise RuntimeError("Cosy TTS request was cancelled before send")
         if active.callback.first_request_sent_ns is None:
             active.callback.first_request_sent_ns = time.perf_counter_ns()
         active.lease.synthesizer.streaming_call(text)
 
-    async def complete(self, request_id: str) -> None:
+    async def complete(self, request_id: str, generation: int) -> None:
         async with self._active_lock:
+            if generation != self._generation:
+                return
             active = self._active
             if active is None:
                 return
@@ -709,7 +948,10 @@ class CosyTTSClient:
         """Wait for provider completion without blocking the input queue."""
 
         try:
-            await asyncio.to_thread(active.lease.synthesizer.streaming_complete)
+            await asyncio.to_thread(
+                active.lease.synthesizer.streaming_complete,
+                TTS_COMPLETION_TIMEOUT_MS,
+            )
         except Exception as exc:
             error = active.callback.error or ProviderError(
                 code=type(exc).__name__,
@@ -744,6 +986,7 @@ class CosyTTSClient:
 
     async def cancel(self) -> None:
         async with self._active_lock:
+            self._generation += 1
             active = self._active
             self._active = None
         if active is None:
@@ -755,7 +998,10 @@ class CosyTTSClient:
     async def _cancel_active(self, active: _ActiveTask) -> None:
         """Clean up an interrupted provider task without blocking a new turn."""
         try:
-            await asyncio.to_thread(active.lease.synthesizer.streaming_cancel)
+            await asyncio.to_thread(
+                active.lease.synthesizer.streaming_cancel,
+                TTS_CANCEL_TIMEOUT_MS,
+            )
             if active.callback.error is not None:
                 raise CosyTTSProviderError(active.callback.error)
         except Exception as exc:
@@ -786,8 +1032,14 @@ class CosyTTSClient:
     async def get_audio_data(self) -> QueueItem:
         return await self._receive_queue.get()
 
-    async def _get_or_create_active(self, request_id: str) -> _ActiveTask:
+    async def _get_or_create_active(
+        self,
+        request_id: str,
+        generation: int,
+    ) -> _ActiveTask | None:
         async with self._active_lock:
+            if generation != self._generation:
+                return None
             if self._active is not None:
                 if self._active.request_id != request_id:
                     raise RuntimeError(
@@ -811,6 +1063,7 @@ class CosyTTSClient:
                 SharedPool.borrow, self.config, callback
             )
             callback.bind_task(lease.synthesizer.get_last_request_id())
+            callback.bind_transport(lease.synthesizer)
             active = _ActiveTask(request_id, lease, callback)
             self._active = active
             self.ten_env.log_info(
