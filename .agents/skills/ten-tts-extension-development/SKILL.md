@@ -19,6 +19,8 @@ The requested deliverable is code, not a design essay. Generate only the extensi
 ├── manifest.json
 ├── property.json
 ├── requirements.txt
+├── pyproject.toml
+├── README.md
 └── tests/
     ├── bin/start
     ├── conftest.py
@@ -64,7 +66,7 @@ For streaming transports, establish and start the provider connection during ext
 Every implementation must satisfy [references/common.md](references/common.md). In particular:
 
 - Emit `tts_audio_start` before the first PCM frame and exactly one `tts_audio_end` after the final frame.
-- After normal, empty, or post-input terminal-error audio output for a streaming request, call `finish_request()` so the base class completes the request and releases buffered request IDs. If an unrecoverable error arrives before final input, report the error and call `finish_request()` directly without waiting for a normal END or audio end. Do not call it for a flush; the base class owns flush cleanup.
+- After normal, empty, or terminal-error audio output for a streaming request, call `finish_request()` so the base class completes the request and releases buffered request IDs. On any terminal error, report the error; if `tts_audio_start` was emitted, send `tts_audio_end(reason=ERROR)` with the duration emitted so far before calling `finish_request()`. If no audio started, call `finish_request()` without an audio end. Do not call it for a flush; the base class owns flush cleanup.
 - Treat a provider END as a request end only when the logical text input is complete (`text_input_end`) and provider work for that request is drained. A per-chunk END is an intermediate event.
 - Keep `request_id` and metadata attached across queues and asynchronous callbacks.
 - Calculate total audio duration from emitted PCM bytes and the actual format.
@@ -73,7 +75,7 @@ Every implementation must satisfy [references/common.md](references/common.md). 
 - Classify authentication, provider, transport, cancellation, and configuration errors intentionally.
 - Redact keys and authorization values from logs, errors, metadata, and test output.
 - Record the TTFB start timestamp immediately before the provider send/SDK send call for the first text of a request ID. Do not record it when putting text into an internal queue, and do not include connection setup time. TTFB ends when the first audio frame for that request is received.
-- Keep a PCM dump per request ID. Create the writer when a request ID first appears, write exactly the audio belonging to that ID, flush it before audio end, and close/remove stale writers on completion, interruption, error, and shutdown.
+- When `config.dump` is true, keep a PCM dump per request ID: create the writer when a request ID first appears, write exactly the audio belonging to that ID, flush it before audio end, and close/remove stale writers on completion, interruption, error, and shutdown. When `config.dump` is false (the default), create no writer and perform no dump writes.
 - After TEN flush, call provider cancellation, discard queued unsent text and unread/late audio, invalidate old callbacks, and establish a fresh ready connection before accepting new provider work.
 
 ## Build and verify

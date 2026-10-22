@@ -23,7 +23,7 @@ Generated packages should contain `__init__.py`, `addon.py`, `extension.py`, a p
 
 - `tts_audio_start`: once per request, before audio.
 - `pcm_frame`: signed PCM bytes with the configured sample rate, channels, and sample width.
-- `tts_audio_end`: once per request, after all audio. Include the event interval, total audio duration, and an explicit end reason.
+- `tts_audio_end`: once per request after audio has started, after all emitted audio. Include `request_event_interval_ms`, total audio duration, and an explicit end reason. `request_event_interval_ms` is the monotonic elapsed time from emitting `tts_audio_start` to emitting `tts_audio_end`; it excludes queueing, connection setup, provider latency before audio, and TTFB. Use `0` when no audio start was emitted.
 - `tts_flush_end`: after flush cleanup completes.
 - `tts_text_result`: optional word/segment timing when the provider supplies trustworthy alignment.
 - `error`: standardized TEN error with module, code, message, and optional vendor information.
@@ -31,13 +31,13 @@ Generated packages should contain `__init__.py`, `addon.py`, `extension.py`, a p
 
 ## Audio rules
 
-Provider chunks may split a sample. Buffer leftover bytes until a complete `sample_width * channels` unit exists. Count duration from bytes actually emitted: `bytes / (sample_width * channels * sample_rate)`. Do not infer duration from chunk count or wall-clock time.
+Provider chunks may split a sample. Buffer leftover bytes until a complete `sample_width * channels` unit exists. Count duration from bytes actually emitted: `bytes / (sample_width * channels * sample_rate)`. Do not infer duration from chunk count or wall-clock time. Measure `request_event_interval_ms` with a monotonic clock from the audio-start emission to the audio-end emission.
 
 ## Completion and flush
 
 A successful request is complete only when the logical input is complete (`text_input_end`), the provider’s terminal event has arrived for the work belonging to that request, and no provider work remains for the same request ID. A provider END received after an earlier text chunk must not close a request that may receive more text. On successful completion, send `tts_audio_end()` and then call `finish_request()`; `send_tts_audio_end()` does not perform the base-class request transition by itself.
 
-Terminal errors are not subject to the successful-completion gate. After reporting an unrecoverable error that arrived after `text_input_end`, send the terminal error audio end and call `finish_request()`. If the unrecoverable error arrives while input is still incomplete, report the error and call `finish_request()` directly without waiting for a normal provider END or final text. A recoverable error must keep the request active so retry can continue. These rules prevent a failed request from continuing to own `_processing_request_id` and indefinitely buffering later request IDs. Flush remains owned by the base class as described below.
+Terminal errors are not subject to the successful-completion gate. Report the error and, if `tts_audio_start` was emitted, send `tts_audio_end(reason=ERROR)` with the duration emitted so far; then call `finish_request()` regardless of `text_input_end`. If no audio started, call `finish_request()` without an audio end. A recoverable error must keep the request active so retry can continue. These rules prevent a failed request from continuing to own `_processing_request_id` and indefinitely buffering later request IDs. Flush remains owned by the base class as described below.
 
 For a flush, the base class cancels the current task, clears input and buffered requests, and invokes `cancel_tts()`. The subclass should emit an interrupted audio end for an active request and must not call `finish_request()`. The base class performs the cleanup and emits `tts_flush_end`. No stale audio may follow flush completion.
 
@@ -49,7 +49,7 @@ Connection state and request state are separate contracts. Report only these thr
 |---|---|
 | `connecting` | The connection attempt is about to be sent/started. |
 | `connected` | The provider confirms the connection is ready for text. |
-| `disconnected` | An established connection drops during normal operation, before recovery or retry. |
+| `disconnected` | An established connection drops during normal operation or shutdown. |
 
 `on_connecting()`, `on_connected()`, and `on_disconnected()` are the callback surface; the base status enum does not contain `reconnecting`, `processing`, `finalizing`, `interrupted`, `error`, or `closed`. Represent a retry as `disconnected` followed by `connecting`. Keep `reconnecting` as an internal flag/log if useful.
 
@@ -71,7 +71,7 @@ For every provider contract, write and implement a mapping table like this befor
 | Audio bytes | Validate/alignment-buffer and emit | `pcm_frame` |
 | Provider END for an incomplete logical request | Treat as intermediate; keep request open | No `tts_audio_end`; no `finish_request` |
 | Provider completion with `text_input_end` and drained work | Flush dump, emit terminal end, complete base request | `tts_audio_end(reason=REQUEST_END)` then `finish_request()` |
-| Terminal provider error | Normalize vendor code/message | `error`; if input is complete, terminal error audio end then `finish_request`; otherwise `finish_request` directly |
+| Terminal provider error | Normalize vendor code/message | `error`; if audio started, terminal error audio end then `finish_request`; otherwise `finish_request` directly |
 | Recoverable provider error | Preserve the active request and retry according to policy | `error`; no terminal transition |
 | Connection drop | Invalidate old callbacks and preserve only replayable input | `disconnected`, then `connecting` for retry |
 | TEN flush | Base cancels, clears queued/buffered work; subclass cancels provider and interrupts active request | `tts_audio_end(reason=INTERRUPTED)` then `tts_flush_end`; no `finish_request` |
@@ -96,7 +96,7 @@ For headers, start with provider-required defaults, derive an authorization head
 
 ## Acceptance tests
 
-Cover event ordering, empty/whitespace input, invalid/missing credentials, malformed and long text, exact duration, TTFB, dump output, flush during synthesis, shutdown, and request isolation. Add reconnect tests whenever reconnect is implemented or promised. Add an appended-input scenario where multiple text chunks share one `request_id`, the provider emits an END after an intermediate chunk, and the extension still produces exactly one TEN audio lifecycle when the final input ends. Add a test where request A completes and buffered request B is then processed. Also test request A failing with an unrecoverable error before `text_input_end`; A must release the active request and buffered request B must complete. For HTTP, verify a minimal client that returns `{}` from `get_extra_metadata()` emits its first PCM frame and TTFB without raising `NotImplementedError`.
+Cover event ordering, empty/whitespace input, invalid/missing credentials, malformed and long text, exact duration, TTFB, enabled dump output, disabled dumping with no files, flush during synthesis, shutdown, and request isolation. Add reconnect tests whenever reconnect is implemented or promised. Add an appended-input scenario where multiple text chunks share one `request_id`, the provider emits an END after an intermediate chunk, and the extension still produces exactly one TEN audio lifecycle when the final input ends. Add a test where request A completes and buffered request B is then processed. Also test request A failing with an unrecoverable error before `text_input_end`; A must release the active request and buffered request B must complete. For HTTP, verify a minimal client that returns `{}` from `get_extra_metadata()` emits its first PCM frame and TTFB without raising `NotImplementedError`.
 
 Run the repository’s format and lint tasks from the agent workspace (`task format`, `task lint`, and the focused `task lint-extension EXTENSION=...`), the generated extension’s standalone test command, and the TTS guarder with the extension’s test configs. Include tests for config redaction, endpoint/header precedence, per-request dump filenames, state/error callbacks, pre-connected startup, reconnect after abnormal disconnect, and flush dropping unsent text and unread audio.
 
@@ -133,11 +133,11 @@ Before running tests, verify all of the following:
 - Streaming transports connect during startup and use only `connecting`, `connected`, and `disconnected` through connection callbacks; retries are `disconnected` -> `connecting`.
 - Provider-send timing for TTFB is recorded immediately before the first actual send; connection time and queue time are excluded. Request-state transitions remain owned by the base class.
 - An intermediate provider END does not produce a successful TEN end; normal completion requires `text_input_end` and drained provider work. A terminal error may finish directly from `PROCESSING`, while a recoverable error leaves the request active.
-- Every request ID has an isolated PCM dump path, writer, byte count, and terminal cleanup.
+- When dumping is enabled, every request ID has an isolated PCM dump path, writer, byte count, and terminal cleanup; when `dump=false`, no dump file or writer is created.
 - Config logs redact API keys, tokens, authorization headers, and nested secret fields.
 - Top-level `url` and `headers` precedence over `params.url`, `params.base_url`, generated auth headers, and client defaults is tested.
 - Flush cancels provider work, discards unsent text and unread/late audio, invalidates old callbacks, and prevents output after `tts_flush_end`.
-- `tts_audio_end` reports accurate interval, PCM duration, and reason for normal, empty, interrupted, and error paths. Normal, empty, and terminal error streaming paths call `finish_request()`; flush relies on base cleanup.
+- `tts_audio_end` reports monotonic start-to-end `request_event_interval_ms`, PCM duration, and reason for normal, interrupted, and error paths; use interval `0` when no audio started. Normal and terminal error streaming paths call `finish_request()`; flush relies on base cleanup.
 - Same-request-ID appended input has one audio lifecycle, and a second request ID proceeds after the first completes.
 - A request that fails terminally before final input releases its active slot, allowing a buffered second request ID to complete.
 - Provider errors and callbacks preserve request correlation and vendor metadata without leaking secrets.
