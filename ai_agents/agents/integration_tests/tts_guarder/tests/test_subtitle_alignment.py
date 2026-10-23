@@ -42,6 +42,7 @@ SUPPORTED_TTS_EXTENSIONS = {
     "minimax_tts_websocket",
     "soul_tts_python",
     "azure_tts",
+    "cosy_tts_python",
 }
 REQUEST_IDS = ["subtitle_alignment_first", "subtitle_alignment_second"]
 

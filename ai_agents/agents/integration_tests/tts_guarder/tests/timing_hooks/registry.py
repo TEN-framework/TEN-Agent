@@ -23,6 +23,7 @@ HOOK_FACTORIES = {
         ".minimax_duplex",
         "MiniMaxTimingHook",
     ),
+    "cosy_tts_python": (".cosy", "CosyTimingHook"),
 }
 
 

@@ -6,6 +6,7 @@
 import asyncio
 from contextlib import suppress
 import os
+import re
 import time
 import traceback
 from typing import Any
@@ -46,6 +47,8 @@ _FATAL_VENDOR_ERROR_CODES = {
     "Request voice is invalid!",
     "Unauthorized",
 }
+
+_HTTP_401_PATTERN = re.compile(r"\b401\b")
 
 
 def _monotonic_seconds() -> float:
@@ -612,10 +615,17 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         provider_error: ProviderError,
         code: ModuleErrorCode,
     ) -> ModuleError:
+        # Guarder and the TTS contract use -1000 for an authentication failure.
+        # The current ten_ai_base enum exposes FATAL_ERROR as +1000, so preserve
+        # the provider-specific invalid-key contract explicitly here.
+        authentication_failure = provider_error.code == "InvalidApiKey" or (
+            _HTTP_401_PATTERN.search(provider_error.message) is not None
+        )
+        error_code = -1000 if authentication_failure else code.value
         return ModuleError(
             message=provider_error.message,
             module=ModuleType.TTS,
-            code=code.value,
+            code=error_code,
             vendor_info=ModuleErrorVendorInfo(
                 vendor=self.vendor(),
                 code=provider_error.code,
