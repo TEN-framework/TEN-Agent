@@ -1,0 +1,43 @@
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.11.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/elevenlabs_tts2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/message_collector2"
+    },
+    {
+      "path": "../../../ten_packages/extension/moss_tool_python"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh"
+  }
+}

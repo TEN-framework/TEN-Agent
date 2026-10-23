@@ -1,0 +1,5 @@
+{
+  "project_id": "${env:MOSS_PROJECT_ID|}",
+  "project_key": "${env:MOSS_PROJECT_KEY|}",
+  "index_name": "${env:MOSS_INDEX_NAME|}"
+}

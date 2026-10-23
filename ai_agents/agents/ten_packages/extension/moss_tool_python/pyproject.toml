@@ -1,0 +1,7 @@
+[project]
+name = "moss-tool-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "moss>=1.15.0",
+]
