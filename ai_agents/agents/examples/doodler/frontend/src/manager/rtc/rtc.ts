@@ -14,7 +14,7 @@ import {
   type ITextItem,
 } from "@/types";
 import { AGEventEmitter } from "../events";
-import type { IUserTracks, RtcEvents } from "./types";
+import type { IProgressEvent, IUserTracks, RtcEvents } from "./types";
 
 const TIMEOUT_MS = 5000; // Timeout for incomplete messages
 
@@ -267,6 +267,18 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               text: data.text,
             };
           } else if (type === "progress") {
+            if (
+              data?.phase === "queued" ||
+              data?.phase === "drawing" ||
+              data?.phase === "final"
+            ) {
+              const progressEvent: IProgressEvent = {
+                phase: data.phase,
+                pct: typeof data?.pct === "number" ? data.pct : undefined,
+                time: text_ts ?? Date.now(),
+              };
+              this.emit("progressChanged", progressEvent);
+            }
             return;
           } else if (type === "action") {
             const { action, data: actionData } = data;

@@ -20,6 +20,7 @@ import {
   setRtmConnected,
 } from "@/store/reducers/global";
 import { EMessageDataType, EMessageType, type IChatItem } from "@/types";
+import type { IProgressEvent } from "@/manager/rtc/types";
 import BoardStage, { DEFAULT_CRAYON_SWATCHES } from "./BoardStage";
 import MagicCanvasBackground, {
   type CreativeMode,
@@ -120,9 +121,9 @@ export default function ImmersiveShell() {
       const colorDescriptor = lineColorDescriptor;
       const colorLine =
         colorName === "black"
-          ? "Use black lines on white paper."
-          : `Use ${colorDescriptor} lines on white paper.`;
-      return `${raw}\n\nDoodle style notes: simple hand-drawn line art. Two colors only (${colorDescriptor} lines and white background). No shading, no gradients, no fills, no 3D or realistic rendering. No borders, frames, paper edges, or background props. Do not include pens, pencils, crayons, markers, hands, shadows, or signatures. ${colorLine}`;
+          ? "Use black lines on a plain white background."
+          : `Use ${colorDescriptor} lines on a plain white background.`;
+      return `${raw}\n\nDoodle style notes: simple hand-drawn line art. Two colors only (${colorDescriptor} lines and a plain white background). No shading, no gradients, no fills, no 3D or realistic rendering. No borders, frames, paper texture, paper edges, desks, or background props. Never include pens, pencils, crayons, markers, hands, shadows, or signatures. Keep the subject isolated so the white background blends into the board. ${colorLine}`;
     },
     [lineColorDescriptor, lineColorName]
   );
@@ -150,6 +151,12 @@ export default function ImmersiveShell() {
     (text: IChatItem) => dispatch(addChatItem(text)),
     [dispatch]
   );
+  const [progressPhase, setProgressPhase] = React.useState<
+    IProgressEvent["phase"] | null
+  >(null);
+  const onProgressChanged = React.useCallback((progress: IProgressEvent) => {
+    setProgressPhase(progress.phase);
+  }, []);
 
   const latestImage = React.useMemo(() => getLatestImage(chatItems), [chatItems]);
   const visibleImage = React.useMemo(() => {
@@ -165,24 +172,24 @@ export default function ImmersiveShell() {
       ),
     [chatItems]
   );
-  const lastAssistantTime = React.useMemo(
-    () =>
-      getLastTime(
-        chatItems,
-        (i) => i.type === EMessageType.AGENT && i.data_type === EMessageDataType.TEXT
-      ),
-    [chatItems]
-  );
   const lastImageTime = latestImage?.time ?? 0;
   const hasRequest = lastUserTime > 0;
-  const generationStarted =
-    hasRequest && lastAssistantTime >= lastUserTime;
-  const isGenerating =
-    generationStarted && lastImageTime < lastAssistantTime;
+  const imageArrived = hasRequest && lastImageTime >= lastUserTime;
+
+  React.useEffect(() => {
+    if (lastUserTime <= 0) return;
+    setProgressPhase(null);
+  }, [lastUserTime]);
 
   const [phase, setPhase] = React.useState<DoodlePhase>("idle");
   React.useEffect(() => {
-    if (isGenerating) {
+    if (imageArrived) {
+      setPhase("complete");
+      const t = window.setTimeout(() => setPhase("idle"), 1700);
+      return () => window.clearTimeout(t);
+    }
+
+    if (progressPhase === "queued") {
       setPhase("queued");
       const t1 = window.setTimeout(() => setPhase("sketch"), 450);
       const t2 = window.setTimeout(() => setPhase("color"), 1550);
@@ -192,7 +199,13 @@ export default function ImmersiveShell() {
       };
     }
 
-    if (hasRequest && lastImageTime >= lastAssistantTime) {
+    if (progressPhase === "drawing") {
+      setPhase("sketch");
+      const t = window.setTimeout(() => setPhase("color"), 1100);
+      return () => window.clearTimeout(t);
+    }
+
+    if (progressPhase === "final") {
       setPhase("complete");
       const t = window.setTimeout(() => setPhase("idle"), 1700);
       return () => window.clearTimeout(t);
@@ -200,7 +213,7 @@ export default function ImmersiveShell() {
 
     setPhase("idle");
     return;
-  }, [hasRequest, isGenerating, lastImageTime, lastAssistantTime]);
+  }, [imageArrived, progressPhase]);
 
   const canConnect = channel.trim().length > 0 && userId > 0;
   const controlsEnabled = roomConnected && agentConnected && rtmConnected;
@@ -303,6 +316,8 @@ export default function ImmersiveShell() {
       }
       rtc.off("textChanged", onTextChanged);
       rtc.on("textChanged", onTextChanged);
+      rtc.off("progressChanged", onProgressChanged);
+      rtc.on("progressChanged", onProgressChanged);
       await rtc.createMicrophoneAudioTrack();
       const track: IMicrophoneAudioTrack | undefined = rtc.localTracks?.audioTrack;
       setMicTrack(track);
@@ -366,11 +381,13 @@ export default function ImmersiveShell() {
     try {
       await rtmRef.current?.destroy?.();
       rtcRef.current?.off?.("textChanged", onTextChanged);
+      rtcRef.current?.off?.("progressChanged", onProgressChanged);
       await rtcRef.current?.destroy?.();
     } finally {
       dispatch(setRtmConnected(false));
       dispatch(setRoomConnected(false));
       dispatch(setAgentConnected(false));
+      setProgressPhase(null);
       setMicMediaTrack(undefined);
       setMicTrack(undefined);
       toast.message("Disconnected.");

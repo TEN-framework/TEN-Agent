@@ -198,9 +198,11 @@ class OpenAIGPTImageExtension(AsyncLLMToolBaseExtension):
                     ),
                 )
             doodle_modifier = (
-                " in playful crayon doodle style on white paper, hand-drawn, bold uneven outlines, "
+                " in playful crayon doodle style, hand-drawn, bold uneven outlines, "
                 "simple shapes, flat colors, limited palette, minimal detail, no gradients, no 3D, "
-                "no realistic lighting, no photo realism, kid-friendly and cheerful"
+                "no realistic lighting, no photo realism, kid-friendly and cheerful, "
+                "plain white background only (no paper texture or borders), "
+                "no pens, pencils, markers, hands, desks, or background props"
             )
             prompt = f"{prompt.strip()}{doodle_modifier}"
 
