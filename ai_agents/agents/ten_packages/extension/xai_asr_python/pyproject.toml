@@ -1,6 +1,6 @@
 [project]
 name = "xai-asr-python"
-version = "0.4.1"
+version = "0.4.2"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",

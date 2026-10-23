@@ -24,6 +24,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 from ten_ai_base.dumper import Dumper
@@ -266,7 +267,8 @@ class XfyunDialectASRExtension(
             duration_ms = end_ms - start_ms if end_ms > start_ms else 0
 
             self.ten_env.log_debug(
-                f"Xfyun ASR result: {result}, type: {result_type}, is_final: {is_final}, seg_id: {seg_id}"
+                f"Xfyun ASR result: {result}, type: {result_type}, is_final: {is_final}, seg_id: {seg_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # If no valid timestamps, use timeline to estimate

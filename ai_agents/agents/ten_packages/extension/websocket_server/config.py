@@ -13,6 +13,7 @@ class WebSocketServerConfig(BaseModel):
     # Server settings
     port: int = Field(default=8765, description="WebSocket server port")
     host: str = Field(default="0.0.0.0", description="WebSocket server host")
+    command_timeout_ms: int = Field(default=30000, ge=1)
 
     # Fixed audio parameters (16kHz mono 16-bit PCM)
     sample_rate: int = Field(

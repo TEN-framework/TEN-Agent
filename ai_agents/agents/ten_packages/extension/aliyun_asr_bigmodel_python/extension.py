@@ -25,6 +25,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_KEY_POINT,
 )
 
@@ -80,7 +81,8 @@ class AliyunRecognitionCallback(RecognitionCallback):
         """Recognition result event callback"""
         # Avoid str(result): dashscope >=1.26.0 __str__ expects API response headers.
         self.ten_env.log_info(
-            f"Aliyun ASR result event: {result.get_sentence()}"
+            f"Aliyun ASR result event: {result.get_sentence()}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         asyncio.run_coroutine_threadsafe(
             self.extension.on_asr_event(result), self.loop
@@ -300,7 +302,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             sentence = result.get_sentence()
             self.ten_env.log_debug(
                 f"vendor_result: on_event: {sentence}",
-                category=LOG_CATEGORY_VENDOR,
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if (
                 isinstance(sentence, dict)
@@ -335,7 +337,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
 
                 self.ten_env.log_debug(
                     f"Aliyun ASR result: {text}, is_final: {is_final}, "
-                    f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}"
+                    f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
 
                 # Process ASR result

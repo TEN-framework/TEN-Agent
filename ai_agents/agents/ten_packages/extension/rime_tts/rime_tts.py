@@ -13,7 +13,7 @@ from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleVendorException,
 )
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.struct import TTSTextInput
@@ -343,7 +343,8 @@ class RimeTTSynthesizer:
             elif message_type == RIME_MESSAGE_TYPE_TIMESTAMPS:
                 # Handle timestamps (optional, for debugging)
                 self.ten_env.log_debug(
-                    f"RIME TTS timestamps: {data.get('word_timestamps', {})}"
+                    f"RIME TTS timestamps: {data.get('word_timestamps', {})}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
             elif message_type == RIME_MESSAGE_TYPE_DONE:
                 context_id = data.get("contextId")
@@ -388,7 +389,7 @@ class RimeTTSynthesizer:
         message_json = json.dumps(message)
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {message_json}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         if self.cur_request_id is None or self.cur_request_id != request_id:
             self.cur_request_id = request_id

@@ -60,6 +60,9 @@ curl 'http://localhost:8080/stop' \
 ### POST /ping
 This api sends a ping to the server to indicate connection is still alive. This is not needed if you specify `timeout:-1` when starting the agent, otherwise the agent will quit if not receiving ping after timeout in seconds.
 
+WebSocket audio and WebSocket protocol pings do not update this HTTP keepalive
+timer. Keep calling `/ping` while waiting for model or speech output as well.
+
 | Param    | Description |
 | -------- | ------- |
 | request_id  | any uuid for tracing purpose    |

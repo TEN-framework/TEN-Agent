@@ -1,0 +1,273 @@
+import asyncio
+import base64
+import json
+from contextlib import suppress
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from soniox_tts.config import SonioxTTSConfig
+from soniox_tts.soniox_tts import (
+    EVENT_TTS_END,
+    EVENT_TTS_ERROR,
+    EVENT_TTS_RESPONSE,
+    EVENT_TTS_TTFB_METRIC,
+    SonioxTTSClient,
+    SonioxTTSError,
+)
+
+
+class FakeWebSocket:
+    def __init__(self, messages):
+        self.messages = asyncio.Queue()
+        for message in messages:
+            self.messages.put_nowait(message)
+        self.sent = []
+        self.closed = False
+
+    async def send(self, message):
+        self.sent.append(json.loads(message))
+
+    async def recv(self):
+        return await self.messages.get()
+
+    async def close(self):
+        self.closed = True
+
+
+def test_client_sends_soniox_protocol_and_decodes_audio():
+    async def run():
+        audio = b"\x00\x01" * 40
+        stream_id = "stream-1"
+        messages = [
+            json.dumps(
+                {
+                    "stream_id": stream_id,
+                    "audio": base64.b64encode(audio).decode(),
+                    "audio_end": True,
+                }
+            ),
+            json.dumps({"stream_id": stream_id, "terminated": True}),
+        ]
+        websocket = FakeWebSocket(messages)
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=AsyncMock(return_value=websocket),
+        ) as connect:
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            await client.start()
+            await client.start_stream(stream_id)
+            await client.send_text("Hello", False)
+            await client.send_text("", True)
+            events = [event async for event in client.iter_events(stream_id)]
+            await client.stop()
+
+        assert connect.await_args.kwargs["additional_headers"] == {
+            "Authorization": "Bearer secret"
+        }
+        assert websocket.sent[0]["stream_id"] == stream_id
+        assert websocket.sent[0]["audio_format"] == "pcm_s16le"
+        assert websocket.sent[1] == {
+            "text": "Hello",
+            "text_end": False,
+            "stream_id": stream_id,
+        }
+        assert websocket.sent[2] == {
+            "text": "",
+            "text_end": True,
+            "stream_id": stream_id,
+        }
+        assert events[0][1] == EVENT_TTS_TTFB_METRIC
+        assert events[1] == (audio, EVENT_TTS_RESPONSE)
+        assert events[2] == (None, EVENT_TTS_END)
+
+    asyncio.run(run())
+
+
+def test_client_reports_vendor_error():
+    async def run():
+        stream_id = "stream-error"
+        websocket = FakeWebSocket(
+            [
+                json.dumps(
+                    {
+                        "stream_id": stream_id,
+                        "error_code": 401,
+                        "error_type": "unauthenticated",
+                        "error_message": "invalid key",
+                    }
+                ),
+                json.dumps({"stream_id": stream_id, "terminated": True}),
+            ]
+        )
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=AsyncMock(return_value=websocket),
+        ):
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            await client.start()
+            await client.start_stream(stream_id)
+            events = [event async for event in client.iter_events(stream_id)]
+            await client.stop()
+
+        assert events[0][1] == EVENT_TTS_ERROR
+        assert isinstance(events[0][0], SonioxTTSError)
+        assert events[0][0].error_code == 401
+        assert events[-1] == (None, EVENT_TTS_END)
+
+    asyncio.run(run())
+
+
+def test_client_maps_custom_output_settings():
+    async def run():
+        websocket = FakeWebSocket([])
+        config = SonioxTTSConfig(
+            api_key="secret",
+            language="de",
+            voice="Mila",
+            sample_rate=16000,
+            speed=1.2,
+            reduce_silence=True,
+            return_timestamps=True,
+            client_reference_id="turn-1",
+        )
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=AsyncMock(return_value=websocket),
+        ):
+            client = SonioxTTSClient(config, MagicMock())
+            await client.start()
+            await client.start_stream("custom")
+            await client.stop()
+
+        assert websocket.sent[0] == {
+            "model": "tts-rt-v2",
+            "language": "de",
+            "voice": "Mila",
+            "audio_format": "pcm_s16le",
+            "sample_rate": 16000,
+            "stream_id": "custom",
+            "speed": 1.2,
+            "reduce_silence": True,
+            "return_timestamps": True,
+            "client_reference_id": "turn-1",
+        }
+
+    asyncio.run(run())
+
+
+def test_client_reconnects_after_transport_failure():
+    async def run():
+        old_websocket = FakeWebSocket([])
+
+        async def dropped_recv():
+            raise RuntimeError("socket dropped")
+
+        old_websocket.recv = dropped_recv
+        replacement = FakeWebSocket([])
+        connect = AsyncMock(side_effect=[old_websocket, replacement])
+        with patch("soniox_tts.soniox_tts.websockets.connect", new=connect):
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            await client.start()
+            await client.start_stream("old")
+            events = [event async for event in client.iter_events("old")]
+            await client.start_stream("new")
+
+        assert events[0][1] == EVENT_TTS_ERROR
+        assert old_websocket.closed is True
+        assert replacement.sent[0]["stream_id"] == "new"
+        assert connect.await_count == 2
+
+    asyncio.run(run())
+
+
+def test_client_sends_keepalive_between_streams(monkeypatch):
+    async def run():
+        websocket = FakeWebSocket([])
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=AsyncMock(return_value=websocket),
+        ):
+            monkeypatch.setattr(
+                "soniox_tts.soniox_tts.KEEPALIVE_INTERVAL", 0.001
+            )
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            await client.start()
+            await asyncio.sleep(0.003)
+            await client.stop()
+
+        assert {"keep_alive": True} in websocket.sent
+
+    asyncio.run(run())
+
+
+def test_cancel_invalidates_pending_connection():
+    async def run():
+        connect_started = asyncio.Event()
+        release_connect = asyncio.Event()
+        websocket = FakeWebSocket([])
+
+        async def connect(*_args, **_kwargs):
+            connect_started.set()
+            await release_connect.wait()
+            return websocket
+
+        with patch(
+            "soniox_tts.soniox_tts.websockets.connect",
+            new=connect,
+        ):
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            start_task = asyncio.create_task(client.start_stream("stream-1"))
+            await connect_started.wait()
+            await client.cancel()
+            release_connect.set()
+            with suppress(asyncio.CancelledError):
+                await start_task
+
+        assert websocket.closed is True
+        assert client._ws is None
+        assert client._stream_id is None
+
+    asyncio.run(run())
+
+
+def test_cancelled_connection_callback_cannot_replace_new_connection():
+    async def run():
+        connect_started = asyncio.Event()
+        release_connect = asyncio.Event()
+        stale_websocket = FakeWebSocket([])
+        replacement = FakeWebSocket([])
+
+        async def connect(*_args, **_kwargs):
+            if not connect_started.is_set():
+                connect_started.set()
+                await release_connect.wait()
+                return stale_websocket
+            return replacement
+
+        with patch("soniox_tts.soniox_tts.websockets.connect", new=connect):
+            client = SonioxTTSClient(
+                SonioxTTSConfig(api_key="secret"), MagicMock()
+            )
+            stale_task = asyncio.create_task(client.start_stream("stale"))
+            await connect_started.wait()
+            await client.cancel()
+            release_connect.set()
+            with suppress(asyncio.CancelledError):
+                await stale_task
+
+            await client.start_stream("replacement")
+
+        assert stale_websocket.closed is True
+        assert replacement.sent[0]["stream_id"] == "replacement"
+        assert client._ws is replacement
+
+    asyncio.run(run())

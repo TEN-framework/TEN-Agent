@@ -17,7 +17,7 @@ import json
 import azure.cognitiveservices.speech as speechsdk
 
 # We must import it, which means this test fixture will be automatically executed
-from .mock import patch_azure_ws  # noqa: F401
+from .mock import patch_azure_ws, trigger_vendor_live  # noqa: F401
 
 
 class UnlimitedReconnectTester(AsyncExtensionTester):
@@ -93,15 +93,11 @@ def test_unlimited_reconnect_beyond_old_limit(patch_azure_ws):
             patch_azure_ws.event_handlers["connected"](event)
             threading.Timer(0.2, triggerRecognized).start()
 
-        def triggerWillFailSessionStarted():
-            event = SimpleNamespace(session_id="123")
-            patch_azure_ws.event_handlers["session_started"](event)
+        def triggerWillFailAfterHandshake():
             threading.Timer(0.5, triggerCanceled).start()
 
-        def triggerWillSuccessSessionStarted():
-            event = SimpleNamespace(session_id="123")
-            patch_azure_ws.event_handlers["session_started"](event)
-            threading.Timer(0.2, triggerConnected).start()
+        def triggerWillSuccessAfterHandshake():
+            threading.Timer(0.2, triggerRecognized).start()
 
         def triggerSessionStopped():
             event = SimpleNamespace(session_id="123")
@@ -121,12 +117,14 @@ def test_unlimited_reconnect_beyond_old_limit(patch_azure_ws):
         nonlocal start_connection_attempts
         start_connection_attempts += 1
 
-        if start_connection_attempts <= max_failures:
-            # Simulate failures
-            threading.Timer(0.5, triggerWillFailSessionStarted).start()
-        else:
-            # Finally succeed
-            threading.Timer(0.2, triggerWillSuccessSessionStarted).start()
+        def arm_attempt():
+            trigger_vendor_live(patch_azure_ws.event_handlers)
+            if start_connection_attempts <= max_failures:
+                triggerWillFailAfterHandshake()
+            else:
+                triggerWillSuccessAfterHandshake()
+
+        threading.Timer(0.05, arm_attempt).start()
 
         return None
 

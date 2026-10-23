@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "default_app_python",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "display_name": {
     "locales": {
       "en-US": {
@@ -67,12 +67,12 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     },
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "scripts": {

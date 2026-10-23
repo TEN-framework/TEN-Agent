@@ -41,6 +41,7 @@ class AppendInputWithoutTextInputEndTester(AsyncExtensionTester):
     def __init__(
         self,
         session_id: str = "test_append_input_without_text_input_end_session_123",
+        expected_end_reason: int = 1,
     ):
         super().__init__()
         print("=" * 80)
@@ -57,6 +58,7 @@ class AppendInputWithoutTextInputEndTester(AsyncExtensionTester):
         print("   - Verify dump file generation")
         print("=" * 80)
         self.session_id: str = session_id
+        self.expected_end_reason = expected_end_reason
         self.dump_file_name = (
             f"tts_append_input_without_text_input_end_{self.session_id}.pcm"
         )
@@ -410,13 +412,13 @@ class AppendInputWithoutTextInputEndTester(AsyncExtensionTester):
                 )
                 return
 
-            # Validate reason is REQUEST_END (1)
-            # TTSAudioEndReason.REQUEST_END = 1
             received_reason, _ = data.get_property_int("reason")
-            if received_reason != 1:
+            if received_reason != self.expected_end_reason:
                 self._stop_test_with_error(
                     ten_env,
-                    f"Reason mismatch in tts_audio_end. Expected: 1 (REQUEST_END), Received: {received_reason}",
+                    "Reason mismatch in tts_audio_end. "
+                    f"Expected: {self.expected_end_reason}, "
+                    f"Received: {received_reason}",
                 )
                 return
 
@@ -643,6 +645,7 @@ def test_append_input_without_text_input_end(
     # Create and run tester
     tester = AppendInputWithoutTextInputEndTester(
         session_id="test_append_input_without_text_input_end_session_123",
+        expected_end_reason=3 if extension_name == "soniox_tts" else 1,
     )
 
     # Set the tts_extension_dump_folder for the tester

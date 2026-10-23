@@ -1,0 +1,12 @@
+{
+  "dump": true,
+  "dump_path": "./dump/",
+  "params": {
+    "api_key": "${env:SONIOX_API_KEY}",
+    "model": "tts-rt-v2",
+    "language": "en",
+    "voice": "Adrian",
+    "audio_format": "pcm_s16le",
+    "sample_rate": 16000
+  }
+}

@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "webrtc_vad_cpp",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "display_name": {
     "locales": {
       "en-US": {
@@ -84,7 +84,7 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.73"
+      "version": "0.11.74"
     }
   ],
   "dev_dependencies": [

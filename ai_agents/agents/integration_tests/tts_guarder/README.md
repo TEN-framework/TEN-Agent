@@ -1,5 +1,7 @@
 # TTS Guarder Test Guide
 
+As of: 2026-10-13
+
 This document describes how to run Guarder Test for TTS
 
 ## Environment Variables
@@ -44,4 +46,25 @@ task tts-guarder-test EXTENSION=cartesia_tts
 task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 ```
 
-Currently, `test_subtitle_alignment.py` only runs for `cartesia_tts`.
+`test_subtitle_alignment.py` supports `cartesia_tts`,
+`minimax_tts_websocket_duplex`, `elevenlabs_multiple_context_tts_python`,
+`bytedance_tts`, `bytedance_tts_duplex`, `minimax_tts_websocket`, and
+`soul_tts_python`, and `azure_tts`. It validates two sequential requests against
+the cumulative PCM clock. Vendors with a registered hook also compare TEN word
+timestamps with untouched provider messages. See
+[the timing checks](tests/SUBTITLE_TIMING.md) for the validation rules and their
+limits.
+
+See [adding a TTS extension](tests/SUBTITLE_TIMING.md#adding-a-tts-extension)
+for extension setup, the vendor object interface, registry entries, and
+verification steps.
+
+Only `minimax_tts_websocket_duplex`, `minimax_tts_websocket`, `cartesia_tts`,
+`elevenlabs_multiple_context_tts_python`, `bytedance_tts`, and
+`bytedance_tts_duplex` install a vendor timing hook. A hook applies to the
+alignment test's matching connections and restores the client dependency
+afterward. Unregistered vendors receive no hook, and other Guarder cases retain
+their behavior. `soul_tts_python` and `azure_tts` use the strengthened generic
+alignment checks without a vendor hook. `azure_tts` is
+a C++ extension that is not part of this checkout, so its runs use a guarder
+copy in the conversational agent tree.

@@ -1,6 +1,6 @@
 [project]
 name = "bytedance-asr"
-version = "0.2.6"
+version = "0.2.7"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",

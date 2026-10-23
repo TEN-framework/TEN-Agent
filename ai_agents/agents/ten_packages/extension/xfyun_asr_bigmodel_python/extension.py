@@ -24,6 +24,7 @@ from ten_runtime import (
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
     LOG_CATEGORY_VENDOR,
 )
 from ten_ai_base.dumper import Dumper
@@ -327,14 +328,16 @@ class XfyunBigmodelASRExtension(
             if result_data.get("sub_end") is True:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR sub sentence end: {result_to_send}"
+                    f"Xfyun ASR sub sentence end: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 self.wpgs_buffer.clear()
 
             if status == 2:
                 is_final = True
                 self.ten_env.log_debug(
-                    f"Xfyun ASR complete result: {result_to_send}"
+                    f"Xfyun ASR complete result: {result_to_send}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 # Clear buffer when recognition completes
                 min_sn = (
@@ -356,7 +359,8 @@ class XfyunBigmodelASRExtension(
                 self.wpgs_buffer.clear()
 
             self.ten_env.log_debug(
-                f"Xfyun ASR result: {result_to_send}, status: {status}"
+                f"Xfyun ASR result: {result_to_send}, status: {status}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
             # If no valid timestamps, use timeline to estimate

@@ -2,6 +2,9 @@
 
 A comprehensive voice assistant with real-time conversation capabilities using WebSocket communication, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
 
+For the Agora Mind FDB-v3 graph, see [FDB.md](FDB.md), including Session control,
+container configuration, collection events, and quick tests.
+
 ## Features
 
 - **WebSocket-Based Real-time Voice Interaction**: Bidirectional audio streaming over WebSocket with complete STT → LLM → TTS processing

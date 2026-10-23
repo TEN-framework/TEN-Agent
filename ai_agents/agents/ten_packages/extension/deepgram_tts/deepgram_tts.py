@@ -15,7 +15,7 @@ from websockets.exceptions import InvalidStatus
 
 from .config import DeepgramTTSConfig
 from ten_runtime import AsyncTenEnv
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 
 # Event types communicated back to the extension.
 # 4 is reserved (used by other TTS extensions for flush events).
@@ -266,7 +266,10 @@ class DeepgramTTSClient:
                             break
 
                     except json.JSONDecodeError:
-                        self.ten_env.log_warn(f"Failed to parse: {message}")
+                        self.ten_env.log_warn(
+                            f"Failed to parse: {message}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
+                        )
 
             if not self._is_cancelled:
                 self.ten_env.log_debug("DeepgramTTS: complete")

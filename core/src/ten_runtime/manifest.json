@@ -1,7 +1,7 @@
 {
   "type": "system",
   "name": "ten_runtime",
-  "version": "0.11.73",
+  "version": "0.11.74",
   "dependencies": [],
   "package": {
     "include": [

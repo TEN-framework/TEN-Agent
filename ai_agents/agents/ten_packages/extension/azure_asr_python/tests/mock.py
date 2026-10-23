@@ -9,6 +9,15 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 
+def trigger_vendor_live(event_handlers: dict, session_id: str = "123") -> None:
+    """Simulate Azure transport + recognizer session ready (matches production ordering)."""
+    event = SimpleNamespace(session_id=session_id)
+    connected = event_handlers.get("connected")
+    if connected is not None:
+        connected(event)
+    event_handlers["session_started"](event)
+
+
 @pytest.fixture(scope="function")
 def patch_azure_ws():
     patch_target = "ten_packages.extension.azure_asr_python.extension.speechsdk.SpeechRecognizer"
