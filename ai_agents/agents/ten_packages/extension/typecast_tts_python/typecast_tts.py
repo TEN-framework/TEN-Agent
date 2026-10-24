@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import aiohttp
 from typing import Any, AsyncIterator, Tuple
 
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -27,14 +28,24 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self.ten_env = ten_env
         self._is_cancelled = False
         self._client: AsyncTypecast | None = None
+        self._session: aiohttp.ClientSession | None = None
 
         ten_env.log_info(f"TypecastTTS initialized with URL: {self.config.url}")
 
     async def _ensure_client(self) -> AsyncTypecast:
         if self._client is None:
+            trace = aiohttp.TraceConfig()
+
+            async def text_sent(session, context, params):
+                if params.chunk:
+                    self.record_transport_text_sent()
+
+            trace.on_request_chunk_sent.append(text_sent)
+            self._session = aiohttp.ClientSession(trace_configs=[trace])
             self._client = AsyncTypecast(
                 host=self.config.url,
                 api_key=self.config.params["api_key"],
+                session=self._session,
             )
             await self._client.__aenter__()
         return self._client
@@ -73,6 +84,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 f"TypecastTTS: sending request for request_id: {request_id}"
             )
 
+            self.record_text_sent()
             async for chunk in client.text_to_speech_stream(
                 request, chunk_size=self.config.chunk_size
             ):
@@ -83,6 +95,8 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return
 
+                if chunk:
+                    self.record_audio_received()
                 pcm = converter.feed(chunk)
                 if pcm:
                     yield pcm, TTS2HttpResponseEventType.RESPONSE
@@ -112,6 +126,9 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         if self._client is not None:
             await self._client.__aexit__(None, None, None)
             self._client = None
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
 
     def get_extra_metadata(self) -> dict[str, Any]:
         return {

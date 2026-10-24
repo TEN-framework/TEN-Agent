@@ -221,17 +221,22 @@ class GoogleTTS:
         max_retries = 3
         retry_delay = 1.0  # seconds
 
+        report_ttfb = request_id != self.cur_request_id
+
         # Retry loop for network issues
         for attempt in range(max_retries):
             ttfb_ms = None
+            first_text_sent_at = None
             try:
-                start_ts = None
-                if request_id != self.cur_request_id:
-                    start_ts = time.time()
-                    self.cur_request_id = request_id
-
                 # Create request generator
                 request_generator = self._create_request_generator(text)
+
+                def timed_requests():
+                    nonlocal first_text_sent_at
+                    for request in request_generator:
+                        if request.input.text and first_text_sent_at is None:
+                            first_text_sent_at = time.monotonic()
+                        yield request
 
                 # Debug: Log the request details
                 self.ten_env.log_debug(
@@ -242,7 +247,7 @@ class GoogleTTS:
                 # Perform the streaming text-to-speech request
                 try:
                     streaming_responses = self.client.streaming_synthesize(
-                        request_generator
+                        timed_requests()
                     )
                 except Exception as e:
                     self.ten_env.log_error(
@@ -250,8 +255,6 @@ class GoogleTTS:
                     )
                     raise
 
-                if start_ts is not None:
-                    ttfb_ms = int((time.time() - start_ts) * 1000)
                 self.send_text_in_connection = True
 
                 # Process streaming responses
@@ -266,6 +269,13 @@ class GoogleTTS:
                             break
 
                         if response.audio_content:
+                            if report_ttfb and first_text_sent_at is not None:
+                                ttfb_ms = int(
+                                    (time.monotonic() - first_text_sent_at)
+                                    * 1000
+                                )
+                                self.cur_request_id = request_id
+                                report_ttfb = False
                             audio_received = True
                             yield response.audio_content, EVENT_TTS_RESPONSE, ttfb_ms
                             # Reset ttfb_ms after first chunk

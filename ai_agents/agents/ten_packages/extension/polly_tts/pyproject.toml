@@ -1,9 +1,12 @@
 [project]
 name = "polly-tts"
-version = "0.5.5"
+version = "0.5.6"
 requires-python = ">=3.10"
 dependencies = [
     "boto3>=1.26.0",
     "pydantic>=2.0.0",
     "typing-extensions>=4.15.0",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]

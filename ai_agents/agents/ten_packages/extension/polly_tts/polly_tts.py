@@ -183,6 +183,7 @@ class PollyTTSClient(AsyncTTS2HttpClient):
 
     def _synthesize_speech(self, synthesize_params: dict) -> Iterator[bytes]:
         """Synchronous synthesis"""
+        self.record_text_sent()
         response = self.client.synthesize_speech(**synthesize_params)
 
         if "AudioStream" not in response:
@@ -190,6 +191,8 @@ class PollyTTSClient(AsyncTTS2HttpClient):
 
         with closing(response["AudioStream"]) as stream:
             for chunk in stream.iter_chunks(chunk_size=self.frame_size):
+                if chunk:
+                    self.record_audio_received()
                 yield chunk
 
     async def _async_iter_from_sync(

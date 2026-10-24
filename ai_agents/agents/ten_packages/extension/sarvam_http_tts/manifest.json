@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "sarvam_http_tts",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "0.7.63"
     }
   ],
   "package": {

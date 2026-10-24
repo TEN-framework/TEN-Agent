@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_tts2_python",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "0.7.63"
     }
   ],
   "package": {

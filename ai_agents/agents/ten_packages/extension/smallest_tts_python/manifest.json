@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "smallest_tts_python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "0.7.63"
     }
   ],
   "package": {

@@ -512,10 +512,8 @@ class MurfTTSynthesizer:
             f"KEYPOINT Sending text to MURF TTS: {message_json}",
             category=LOG_CATEGORY_TRANSCRIPTS,
         )
+        self._add_first_chunk_sent_time(context_id)
         await ws.send(message_json)
-        self._add_first_chunk_sent_time(
-            context_id
-        )  # add first chunk sent time to request first chunk sent time map
 
     def _clear_text_queue(self) -> None:
         """Clear all queues to prevent old data from being processed"""

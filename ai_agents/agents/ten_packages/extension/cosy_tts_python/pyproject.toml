@@ -1,8 +1,11 @@
 [project]
 name = "cosy-tts-python"
-version = "0.4.3"
+version = "0.4.6"
 requires-python = ">=3.10"
 dependencies = [
     "dashscope>=1.26.4",
     "pydantic>=2.13.4",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]

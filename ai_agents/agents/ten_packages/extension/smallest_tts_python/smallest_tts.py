@@ -123,6 +123,7 @@ class SmallestTTSClient(AsyncTTS2HttpClient):
             http2=True,
             verify=_GLOBAL_SSL_CONTEXT,
         )
+        self.observe_http_ttfb(self.client)
         _elapsed_ms = (time.time() - _start_time) * 1000
         ten_env.log_debug(f"http client initialized in {_elapsed_ms:.2f}ms")
 
@@ -246,6 +247,7 @@ class SmallestTTSClient(AsyncTTS2HttpClient):
                                 )
                                 continue
                             if pcm:
+                                self.record_audio_received()
                                 yield pcm, TTS2HttpResponseEventType.RESPONSE
                         if event.get("done") or event.get("status") in (
                             "complete",
