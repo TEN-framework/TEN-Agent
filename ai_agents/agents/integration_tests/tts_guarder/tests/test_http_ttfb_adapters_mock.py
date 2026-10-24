@@ -81,16 +81,16 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                 payload = {"audio": wav24}
             else:
                 yield b"\x01\x00" * 1600
-                await asyncio.sleep(0.03)
+                await asyncio.sleep(0.01)
                 yield b"\x02\x00" * 1600
                 return
             encoded = json.dumps(payload).encode()
             yield b"data: " + encoded + b"\n\n" if is_sse else encoded
-            await asyncio.sleep(0.03)
+            await asyncio.sleep(0.01)
 
     class Provider(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
             trace = request.extensions.get("trace")
             if trace:
                 await trace("http11.send_request_body.started", {})
