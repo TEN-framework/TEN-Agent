@@ -375,11 +375,11 @@ class SequentialTTFBTester(AsyncExtensionTester):
                 self.first_audio_at[request_id] - self.sent_at[request_id]
             ) * 1000
             ttfb = self.reported_ttfb[request_id]
-            if not 0 <= ttfb <= elapsed_ms + 50:
+            if not 0 <= ttfb <= elapsed_ms:
                 ten_env.stop_test(
                     TenError.create(
                         TenErrorCode.ErrorCodeGeneric,
-                        f"{request_id}: reported TTFB {ttfb}ms exceeds observed first-audio delay {elapsed_ms:.1f}ms + 50ms tolerance",
+                        f"{request_id}: reported TTFB {ttfb}ms exceeds observed first-audio delay {elapsed_ms:.1f}ms",
                     )
                 )
                 return
