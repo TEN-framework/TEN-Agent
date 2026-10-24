@@ -1,8 +1,11 @@
 [project]
 name = "oracle-tts-python"
-version = "0.1.4"
+version = "0.1.5"
 requires-python = ">=3.10"
 dependencies = [
     "oci>=2.181.0",
     "pydantic>=2.13.4",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]

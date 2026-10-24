@@ -398,27 +398,27 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                             await self.send_tts_audio_start(
                                 self.current_request_id
                             )
-                            ttfb = int(
-                                (datetime.now() - self.sent_ts).total_seconds()
-                                * 1000
+                            ttfb = self.client.request_ttfb_ms(
+                                self.current_request_id
                             )
                             if self.current_request_id:
-                                await self.send_tts_ttfb_metrics(
-                                    request_id=self.current_request_id,
-                                    ttfb_ms=ttfb,
-                                    extra_metadata={
-                                        "model": (
-                                            self.config.model
-                                            if self.config
-                                            else ""
-                                        ),
-                                        "voice_id": (
-                                            self.config.voice_id
-                                            if self.config
-                                            else ""
-                                        ),
-                                    },
-                                )
+                                if ttfb is not None:
+                                    await self.send_tts_ttfb_metrics(
+                                        request_id=self.current_request_id,
+                                        ttfb_ms=ttfb,
+                                        extra_metadata={
+                                            "model": (
+                                                self.config.model
+                                                if self.config
+                                                else ""
+                                            ),
+                                            "voice_id": (
+                                                self.config.voice_id
+                                                if self.config
+                                                else ""
+                                            ),
+                                        },
+                                    )
                         self.first_chunk = False
 
                     # Write to dump file if enabled

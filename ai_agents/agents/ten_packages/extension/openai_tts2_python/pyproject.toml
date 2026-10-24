@@ -1,7 +1,10 @@
 [project]
 name = "openai-tts2-python"
-version = "0.6.10"
+version = "0.6.11"
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.28.1",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]

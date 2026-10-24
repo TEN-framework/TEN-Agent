@@ -1,3 +1,5 @@
+from ten_ai_base.tts_timing import TTSRequestTiming
+
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
@@ -75,6 +77,8 @@ class _StepFunTTSInstance:
             Callable[[bytes, int, int], asyncio.Future]
         ] = None,
     ):
+        self.timing = TTSRequestTiming()
+        self._audio_message_received_ns: int | None = None
         self.config = config
         self.ten_env = ten_env
         self.vendor = vendor
@@ -349,6 +353,7 @@ class _StepFunTTSInstance:
                             "text": tts_input.text,
                         },
                     }
+                    self.timing.text_sent(tts_input.request_id)
                     await ws.send(json.dumps(text_delta_msg))
                     if self.ten_env:
                         self.ten_env.log_info(
@@ -385,6 +390,7 @@ class _StepFunTTSInstance:
         while not self.stopping and not self.discarding:
             try:
                 tts_response_bytes = await ws.recv()
+                self._audio_message_received_ns = time.monotonic_ns()
                 tts_response = json.loads(tts_response_bytes)
                 await self._handle_response(tts_response)
             except asyncio.CancelledError:
@@ -500,6 +506,10 @@ class _StepFunTTSInstance:
                 wav_bytes = base64.b64decode(audio_b64)
                 # Convert WAV to PCM
                 audio_bytes = wav_to_pcm(wav_bytes)
+                if audio_bytes:
+                    self.timing.audio_received(
+                        self.request_id, self._audio_message_received_ns
+                    )
 
                 if self.ten_env:
                     self.ten_env.log_info(
@@ -653,6 +663,9 @@ class StepFunTTSWebsocket:
             self.ten_env.log_info(
                 "New TTS client instance created after cancel."
             )
+
+    def request_ttfb_ms(self, request_id: str) -> int | None:
+        return self.current_client.timing.elapsed_ms(request_id)
 
     async def get(self, tts_input: TTSTextInput):
         """Delegate the get call to the current active client instance."""

@@ -157,7 +157,7 @@ class OracleTTS:
             pcm = pcm[:-1]
         return pcm
 
-    def _get_audio_bytes(self, text: str) -> bytes:
+    def _get_audio_bytes(self, text: str) -> tuple[bytes, int | None]:
         """Synchronous: call OCI TTS API and return clean raw PCM audio bytes.
 
         1. Call Oracle synthesize_speech API
@@ -176,23 +176,49 @@ class OracleTTS:
                 speech_settings=self._build_speech_settings(),
             ),
         )
+        sent_at = time.monotonic_ns()
         response = self.client.synthesize_speech(
             synthesize_speech_details=details,
         )
 
         data = response.data
-        if hasattr(data, "content"):
-            raw = data.content
-        elif hasattr(data, "iter_content"):
-            raw = b"".join(c for c in data.iter_content(chunk_size=65536) if c)
+        first_audio_at: int | None = None
+        chunks: list[bytes] = []
+
+        def record(chunk: bytes) -> None:
+            nonlocal first_audio_at
+            if chunk:
+                chunks.append(chunk)
+                if first_audio_at is None:
+                    prefix = b"".join(chunks)
+                    if not prefix.startswith(b"RIFF") or (
+                        len(prefix) >= 44 and self._strip_wav_header(prefix)
+                    ):
+                        first_audio_at = time.monotonic_ns()
+
+        if hasattr(data, "iter_content"):
+            for chunk in data.iter_content(chunk_size=4096):
+                record(chunk)
         elif hasattr(data, "read"):
-            raw = data.read()
+            while chunk := data.read(4096):
+                record(chunk)
+        elif hasattr(data, "content"):
+            record(data.content)
         else:
-            raw = bytes(data)
+            record(bytes(data))
 
-        return self._strip_wav_header(raw)
+        raw = b"".join(chunks)
+        ttfb_ms = (
+            None
+            if first_audio_at is None
+            else (first_audio_at - sent_at) // 1_000_000
+        )
+        return self._strip_wav_header(raw), ttfb_ms
 
-    async def _get_audio_bytes_cancellable(self, text: str) -> bytes | None:
+    async def _get_audio_bytes_cancellable(
+        self,
+        text: str,
+    ) -> tuple[bytes, int | None] | None:
         """Run _get_audio_bytes in a thread, returning None if cancelled.
 
         Polls ``_is_cancelled`` every 100 ms so that the queue processor
@@ -232,13 +258,10 @@ class OracleTTS:
         for attempt in range(max_retries):
             ttfb_ms: int | None = None
             try:
-                start_ts = time.time()
-
-                audio_data = await self._get_audio_bytes_cancellable(text)
-
-                if audio_data is None:
+                result = await self._get_audio_bytes_cancellable(text)
+                if result is None:
                     return
-                ttfb_ms = int((time.time() - start_ts) * 1000)
+                audio_data, ttfb_ms = result
 
                 self.ten_env.log_debug(
                     f"vendor_latency: ttfb={ttfb_ms}ms, "

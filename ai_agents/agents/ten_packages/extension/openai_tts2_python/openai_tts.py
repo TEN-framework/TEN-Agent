@@ -110,6 +110,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             http2=True,
             verify=_GLOBAL_SSL_CONTEXT,
         )
+        self.observe_http_ttfb(self.client)
         _elapsed_ms = (time.time() - _start_time) * 1000
         ten_env.log_debug(f"http client initialized in {_elapsed_ms:.2f}ms")
 
@@ -209,6 +210,8 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                 # Stream audio data
                 cache_audio_bytes = bytearray()
                 async for chunk in response.aiter_bytes():
+                    if chunk:
+                        self.record_audio_received()
                     if self._is_cancelled:
                         self.ten_env.log_debug(
                             f"Cancellation detected, flushing TTS stream for request_id: {request_id}"

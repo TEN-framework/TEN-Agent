@@ -1,6 +1,6 @@
 [project]
 name = "ezai_tw_tts_python"
-version = "0.1.4"
+version = "0.1.5"
 requires-python = ">=3.10"
 dependencies = [
     "httpx[http2]>=0.28.1",
@@ -10,3 +10,6 @@ dependencies = [
     "text_utils @ git+https://github.com/samx81/text_utils.git@a1b49518a36b852705bbc6727ae0fdbf7a63b18b",
     "WeTextProcessing",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]

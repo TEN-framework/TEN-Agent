@@ -1,8 +1,12 @@
 [project]
 name = "humeai-tts-python"
-version = "0.5.3"
+version = "0.5.4"
 requires-python = ">=3.10"
 dependencies = [
+    "httpx>=0.27",
     "hume==0.9.1",
     "pydantic>=2.0.0",
 ]
+
+[tool.pytest.ini_options]
+markers = ["api: External TTS API contract"]
