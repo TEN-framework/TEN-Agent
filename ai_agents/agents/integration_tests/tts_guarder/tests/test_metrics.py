@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 #
 # This file is part of TEN Framework, an open source project.
@@ -293,17 +292,14 @@ class MetricsTester(AsyncExtensionTester):
 def test_metrics(extension_name: str, config_dir: str) -> None:
     """Verify TTS result metrics."""
 
-
     # Get config file path
     config_file_path = os.path.join(config_dir, TTS_METRICS_CONFIG_FILE)
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Config file not found: {config_file_path}")
-    
 
     # Load config file
     with open(config_file_path, "r") as f:
         config: dict[str, Any] = json.load(f)
-
 
     # Create and run tester
     tester = MetricsTester(
@@ -318,3 +314,141 @@ def test_metrics(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
+
+
+class SequentialTTFBTester(AsyncExtensionTester):
+    """Check reported TTFB against first audio received for two requests."""
+
+    def __init__(self):
+        super().__init__()
+        self.request_ids = ("ttfb_streamed", "ttfb_single_final")
+        self.sent_at: dict[str, float] = {}
+        self.first_audio_at: dict[str, float] = {}
+        self.reported_ttfb: dict[str, float] = {}
+        self.audio_request_id: str | None = None
+        self.finished: set[str] = set()
+        self.watchdog: asyncio.Task | None = None
+
+    async def _send(self, ten_env, request_id, text, final):
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(
+            "",
+            json.dumps(
+                {
+                    "request_id": request_id,
+                    "text": text,
+                    "text_input_end": final,
+                    "metadata": {
+                        "session_id": "ttfb_guarder",
+                        "turn_id": self.request_ids.index(request_id) + 1,
+                    },
+                }
+            ),
+        )
+        if text and request_id not in self.sent_at:
+            self.sent_at[request_id] = time.monotonic()
+        await ten_env.send_data(data)
+
+    @override
+    async def on_start(self, ten_env):
+        async def timeout():
+            await asyncio.sleep(20)
+            ten_env.stop_test(
+                TenError.create(
+                    TenErrorCode.ErrorCodeGeneric,
+                    "Timed out waiting for both requests' audio and TTFB metrics",
+                )
+            )
+
+        self.watchdog = asyncio.create_task(timeout())
+        await self._send(ten_env, self.request_ids[0], "Hello world.", False)
+        await self._send(ten_env, self.request_ids[0], "", True)
+
+    def _check(self, ten_env):
+        for request_id in self.request_ids:
+            if (
+                request_id not in self.first_audio_at
+                or request_id not in self.reported_ttfb
+            ):
+                continue
+            elapsed_ms = (
+                self.first_audio_at[request_id] - self.sent_at[request_id]
+            ) * 1000
+            ttfb = self.reported_ttfb[request_id]
+            if not 0 <= ttfb <= elapsed_ms + 50:
+                ten_env.stop_test(
+                    TenError.create(
+                        TenErrorCode.ErrorCodeGeneric,
+                        f"{request_id}: reported TTFB {ttfb}ms exceeds observed first-audio delay {elapsed_ms:.1f}ms + 50ms tolerance",
+                    )
+                )
+                return
+        if all(
+            request_id in self.finished
+            and request_id in self.first_audio_at
+            and request_id in self.reported_ttfb
+            for request_id in self.request_ids
+        ):
+            ten_env.stop_test()
+
+    @override
+    async def on_data(self, ten_env, data):
+        payload_str, _ = data.get_property_to_json("")
+        payload = json.loads(payload_str)
+        match data.get_name():
+            case "error":
+                ten_env.stop_test(
+                    TenError.create(TenErrorCode.ErrorCodeGeneric, "TTS returned error")
+                )
+            case "tts_audio_start":
+                self.audio_request_id = payload["request_id"]
+            case "metrics":
+                if "ttfb" in payload.get("metrics", {}):
+                    turn_id = payload.get("metadata", {}).get("turn_id")
+                    if turn_id not in (1, 2):
+                        ten_env.stop_test(
+                            TenError.create(
+                                TenErrorCode.ErrorCodeGeneric,
+                                "TTFB has no matching turn_id",
+                            )
+                        )
+                        return
+                    request_id = self.request_ids[turn_id - 1]
+                    if request_id in self.reported_ttfb:
+                        ten_env.stop_test(
+                            TenError.create(
+                                TenErrorCode.ErrorCodeGeneric, "Duplicate request TTFB"
+                            )
+                        )
+                        return
+                    self.reported_ttfb[request_id] = payload["metrics"]["ttfb"]
+                self._check(ten_env)
+            case "tts_audio_end":
+                request_id = payload["request_id"]
+                self.finished.add(request_id)
+                if request_id == self.request_ids[0]:
+                    # Separate the requests enough to expose reuse of the old start.
+                    await asyncio.sleep(0.15)
+                    await self._send(ten_env, self.request_ids[1], "Hello again.", True)
+                self._check(ten_env)
+
+    @override
+    async def on_audio_frame(self, ten_env, frame):
+        if frame.get_buf() and self.audio_request_id is not None:
+            self.first_audio_at.setdefault(self.audio_request_id, time.monotonic())
+            self._check(ten_env)
+
+    @override
+    async def on_stop(self, ten_env):
+        if self.watchdog is not None:
+            self.watchdog.cancel()
+
+
+def test_sequential_requests_ttfb(extension_name: str, config_dir: str):
+    """A single final text after a streamed request has its own TTFB clock."""
+    with open(os.path.join(config_dir, TTS_METRICS_CONFIG_FILE)) as config_file:
+        config = json.load(config_file)
+    tester = SequentialTTFBTester()
+    tester.set_test_mode_single(extension_name, json.dumps(config))
+    error = tester.run()
+    assert error is None, error.error_message() if error else ""
